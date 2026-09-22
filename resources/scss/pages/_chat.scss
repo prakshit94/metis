@@ -1,0 +1,228 @@
+// ==========================================================================
+// Chat Page Styles
+// Full-height, theme-aware chat workspace
+// ==========================================================================
+
+// ── Layout ────────────────────────────────────────────────────────────────
+
+// Hide footer on chat page so the panel fills the full viewport below the header
+body[data-page="chat"] .admin-footer {
+  display: none !important;
+}
+
+// Chat workspace fills exactly the space between header and bottom of viewport
+.chat-workspace {
+  height: calc(100vh - var(--header-height));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background-color: var(--bs-body-bg);
+}
+
+// ── Conversation List (Left Sidebar) ──────────────────────────────────────
+
+.chat-conv-item {
+  border-bottom: 1px solid var(--bs-border-color) !important;
+  transition: background 0.15s ease;
+  border-radius: 0 !important;
+
+  &:hover {
+    background-color: var(--bs-secondary-bg) !important;
+  }
+
+  &.active {
+    background-color: rgba(var(--bs-primary-rgb), 0.08) !important;
+  }
+}
+
+// ── Message Bubbles ───────────────────────────────────────────────────────
+
+.chat-bubble {
+  padding: 0.75rem 1rem;
+  box-shadow: var(--bs-box-shadow-sm);
+
+  // Sent (current user) — primary color, right corner flat
+  &.chat-bubble-sent {
+    background-color: var(--bs-primary);
+    color: #fff;
+    border-radius: 1rem 1rem 0 1rem;
+
+    .chat-bubble-reply-bar {
+      border-left: 3px solid rgba(255, 255, 255, 0.5);
+    }
+  }
+
+  // Received (other user) — secondary bg, left corner flat, theme-aware
+  &.chat-bubble-received {
+    background-color: var(--bs-secondary-bg);
+    color: var(--bs-body-color);
+    border: 1px solid var(--bs-border-color);
+    border-radius: 1rem 1rem 1rem 0;
+
+    .chat-bubble-reply-bar {
+      border-left: 3px solid var(--bs-primary);
+    }
+  }
+}
+
+// ── Composer (Message Input Area) ─────────────────────────────────────────
+
+.chat-composer {
+  background-color: var(--bs-body-bg);
+  border-top: 1px solid var(--bs-border-color);
+  padding: 0.75rem 1rem;
+  flex-shrink: 0;
+
+  .chat-composer-textarea {
+    resize: none;
+    max-height: 120px;
+    min-height: 38px;
+    border-radius: 1.25rem;
+    padding: 0.5rem 1rem;
+    overflow-y: auto;
+    line-height: 1.5;
+
+    // Smooth transition when height changes
+    transition: height 0.1s ease;
+  }
+}
+
+// ── User List (Right Sidebar) ─────────────────────────────────────────────
+
+.chat-user-item {
+  border-bottom: 1px solid var(--bs-border-color) !important;
+  transition: background 0.15s ease;
+
+  &:hover {
+    background-color: var(--bs-secondary-bg) !important;
+  }
+
+  // Logged-in user row — non-interactive, always highlighted
+  &.chat-user-item--self,
+  &[style*="cursor: default"] {
+    border-left: 3px solid var(--bs-primary) !important;
+    background-color: rgba(var(--bs-primary-rgb), 0.06) !important;
+    cursor: default !important;
+
+    &:hover {
+      background-color: rgba(var(--bs-primary-rgb), 0.06) !important;
+    }
+  }
+}
+
+// ── Modal Backdrop (custom overlay for Alpine x-show modals) ──────────────
+
+.chat-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1055;
+  background-color: rgba(var(--bs-dark-rgb, 0, 0, 0), 0.5);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+// ── Online Status Dot ─────────────────────────────────────────────────────
+
+.chat-status-dot {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  border: 2px solid var(--bs-body-bg);
+  position: absolute;
+  bottom: 0;
+  right: 0;
+
+  &.online  { background-color: var(--bs-success); }
+  &.offline { background-color: var(--bs-secondary); }
+}
+
+// Larger dot for right sidebar
+.chat-status-dot-lg {
+  width: 12px;
+  height: 12px;
+}
+
+// ── Reply Banner ──────────────────────────────────────────────────────────
+
+.chat-reply-banner {
+  background-color: var(--bs-secondary-bg);
+  border-left: 3px solid var(--bs-primary);
+  border-radius: var(--bs-border-radius-sm);
+  padding: 0.5rem 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+// ── Pending Attachments Preview ───────────────────────────────────────────
+
+.chat-attachment-preview {
+  width: 90px;
+  height: 90px;
+  border-radius: var(--bs-border-radius);
+  overflow: hidden;
+  border: 1px solid var(--bs-border-color);
+  background-color: var(--bs-secondary-bg);
+  position: relative;
+  flex-shrink: 0;
+
+  img {
+    width: 100%;
+    height: 70px;
+    object-fit: cover;
+  }
+
+  .chat-attachment-size {
+    font-size: 9px;
+    color: var(--bs-secondary-color);
+    padding: 2px 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+// ── Dark Mode Overrides ───────────────────────────────────────────────────
+
+[data-bs-theme='dark'] {
+  .chat-bubble-received {
+    background-color: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.1);
+    color: var(--bs-body-color);
+  }
+
+  .chat-modal-backdrop {
+    background-color: rgba(0, 0, 0, 0.65);
+  }
+
+  .chat-conv-item {
+    border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+  }
+
+  .chat-user-item {
+    border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+  }
+}
+
+// ── Scrollbar Customisation (chat message area & sidebars) ────────────────
+
+.chat-scroll-area {
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--bs-secondary-bg) transparent;
+
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background-color: var(--bs-secondary-bg);
+    border-radius: 4px;
+  }
+}

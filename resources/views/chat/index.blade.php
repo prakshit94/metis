@@ -4,9 +4,11 @@
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <style>
         [x-cloak] { display: none !important; }
-        /* Remove global container padding and hide breadcrumb for full-height chat */
-        main.admin-main > .container-fluid { padding: 0 !important; }
+        /* Strip container padding and breadcrumb for full-height chat layout */
+        main.admin-main > .container-fluid { padding: 0 !important; margin: 0 !important; max-width: 100% !important; }
         main.admin-main > .container-fluid > nav[aria-label="breadcrumb"] { display: none !important; }
+        /* Hide the page footer — chat fills the full viewport height */
+        .admin-footer { display: none !important; }
     </style>
     <script>
         // Ensure Axios sends XMLHttpRequest header for Laravel
@@ -23,12 +25,12 @@
 
 @section('content')
     <div
-        class="bg-body d-flex flex-column overflow-hidden"
-        style="height: calc(100vh - 135px);"
+        class="chat-workspace"
         x-data="chatWorkspace({
             conversations: @js($conversations),
             users: @js($users),
             pollInterval: @js($pollInterval),
+            currentUserData: @js($currentUserData),
         })"
         x-init="init()"
     >
@@ -63,7 +65,7 @@
                     </div>
                 </div>
 
-                <div class="flex-grow-1 overflow-y-auto">
+                <div class="flex-grow-1 overflow-y-auto chat-scroll-area">
                     <!-- Search Results -->
                     <template x-if="searchResults.users?.length">
                         <div class="p-2 border-bottom">
@@ -100,9 +102,8 @@
                     <!-- Conversation List -->
                     <template x-for="conversation in filteredConversations" :key="conversation.id">
                         <button type="button" @click="selectConversation(conversation)"
-                            class="btn text-start w-100 d-flex align-items-start gap-3 px-3 py-3 border-0 rounded-0"
-                            style="border-bottom: 1px solid var(--bs-border-color) !important; transition: background 0.15s;"
-                            :class="activeConversation?.id == conversation.id ? 'bg-primary bg-opacity-10' : 'bg-transparent'">
+                            class="btn text-start w-100 d-flex align-items-start gap-3 px-3 py-3 border-0 rounded-0 chat-conv-item"
+                            :class="activeConversation?.id == conversation.id ? 'active' : ''">
                             <div class="position-relative flex-shrink-0">
                                 <img :src="getConversationPhotoUrl(conversation)" class="rounded-circle object-fit-cover shadow-sm border border-2 border-body" style="width: 42px; height: 42px; ">
                                 <span x-show="isOnline(conversation)"
@@ -169,7 +170,7 @@
                         </header>
 
                         <!-- Message List -->
-                        <div class="flex-grow-1 overflow-y-auto p-4 bg-body-tertiary d-flex flex-column gap-3" x-ref="messageScroller">
+                        <div class="flex-grow-1 overflow-y-auto p-4 bg-body-tertiary d-flex flex-column gap-3 chat-scroll-area" x-ref="messageScroller">
                             <template x-for="message in messages" :key="message.id">
                                 <div class="d-flex" :class="message.sender_id == currentUserId ? 'justify-content-end' : 'justify-content-start'">
                                     <div style="max-width: 75%;">
@@ -185,12 +186,14 @@
                                             <span x-show="message.edited_at" class="fst-italic">Edited</span>
                                         </div>
                                         
-                                        <div class="p-3 shadow-sm" 
-                                             :class="message.sender_id == currentUserId ? 'bg-primary text-white' : 'bg-body border text-body'"
-                                             :style="message.sender_id == currentUserId ? 'border-radius: 1rem 1rem 0 1rem;' : 'border-radius: 1rem 1rem 1rem 0;'">
-                                            
+
+                                        <div class="chat-bubble shadow-sm"
+                                             :class="message.sender_id == currentUserId ? 'chat-bubble-sent' : 'chat-bubble-received'">
+
                                             <template x-if="message.parent">
-                                                <button type="button" @click="scrollToMessage(message.parent_id)" class="btn btn-sm w-100 text-start border-start border-3 border-light rounded-0 ps-2 mb-2 p-0 opacity-75 d-flex align-items-center gap-2 overflow-hidden">
+                                                <button type="button" @click="scrollToMessage(message.parent_id)"
+                                                    class="btn btn-sm w-100 text-start border-start border-3 rounded-0 ps-2 mb-2 p-0 opacity-75 d-flex align-items-center gap-2 overflow-hidden"
+                                                    :class="message.sender_id == currentUserId ? 'border-white text-white' : 'border-primary text-body'">
                                                     <template x-if="getPreviewImageUrl(message.parent)">
                                                         <img :src="getPreviewImageUrl(message.parent)" class="rounded flex-shrink-0" style="width: 36px; height: 36px; object-fit: cover;">
                                                     </template>
@@ -207,7 +210,7 @@
 
                                             <template x-if="editingMessageId == message.id">
                                                 <div class="d-flex flex-column gap-2">
-                                                    <textarea x-model="editingDraft" rows="2" class="form-control form-control-sm"></textarea>
+                                                    <textarea x-model="editingDraft" rows="2" class="form-control form-control-sm bg-body text-body"></textarea>
                                                     <div class="d-flex justify-content-end gap-1">
                                                         <button type="button" @click="cancelEdit" class="btn btn-sm btn-outline-secondary py-0" style="font-size: 10px;">Cancel</button>
                                                         <button type="button" @click="saveEdit(message)" class="btn btn-sm btn-success py-0" style="font-size: 10px;">Save</button>
@@ -221,14 +224,16 @@
                                                         <div>
                                                             <template x-if="isImageAttachment(attachment)">
                                                                 <a :href="formatAttachmentUrl(attachment.path)" target="_blank" class="d-block rounded overflow-hidden position-relative">
-                                                                    <img :src="formatAttachmentUrl(attachment.path)" class="img-fluid max-h-100" style="max-height: 200px; object-fit: cover;">
+                                                                    <img :src="formatAttachmentUrl(attachment.path)" class="img-fluid" style="max-height: 200px; object-fit: cover; width: 100%;">
                                                                 </a>
                                                             </template>
                                                             <template x-if="!isImageAttachment(attachment)">
-                                                                <a :href="formatAttachmentUrl(attachment.path)" target="_blank" class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-2 text-start">
+                                                                <a :href="formatAttachmentUrl(attachment.path)" target="_blank"
+                                                                   class="btn btn-sm d-flex align-items-center gap-2 text-start mt-1"
+                                                                   :class="message.sender_id == currentUserId ? 'btn-light bg-white bg-opacity-25 text-white border-0' : 'btn-outline-secondary'">
                                                                     <i class="bi bi-file-earmark-text"></i>
                                                                     <span class="text-truncate flex-grow-1" x-text="attachment.name || attachment.path"></span>
-                                                                    <i class="bi bi-download text-muted"></i>
+                                                                    <i class="bi bi-download opacity-75"></i>
                                                                 </a>
                                                             </template>
                                                         </div>
@@ -236,7 +241,7 @@
                                                 </div>
                                             </template>
                                         </div>
-                                        
+
                                         <div class="mt-1 d-flex gap-2" :class="message.sender_id == currentUserId ? 'justify-content-end' : 'justify-content-start'">
                                             <button type="button" @click="setReply(message)" class="btn btn-link btn-sm p-0 text-muted text-decoration-none" style="font-size: 10px;">REPLY</button>
                                             @can('chat-edit')
@@ -252,12 +257,17 @@
                         </div><!-- end message list -->
 
                         <!-- Composer -->
-                        <form @submit.prevent="sendMessage()" class="p-3 pb-4 border-top bg-body">
-                            <div :class="{'d-flex': errorMessage, 'd-none': !errorMessage}" x-cloak class="alert alert-danger py-2 px-3 mb-2 small justify-content-between align-items-center">
+                        <form @submit.prevent="sendMessage()" class="chat-composer">
+                            {{-- Error banner --}}
+                            <div :class="{'d-flex': errorMessage, 'd-none': !errorMessage}" x-cloak
+                                 class="alert alert-danger py-2 px-3 mb-2 small justify-content-between align-items-center rounded-3">
                                 <span x-text="errorMessage"></span>
                                 <button type="button" @click="errorMessage = ''" class="btn-close" style="font-size:10px;"></button>
                             </div>
-                            <div :class="{'d-flex': replyTo, 'd-none': !replyTo}" x-cloak class="rounded mb-2 px-3 py-2 align-items-center justify-content-between small" style="background:var(--bs-secondary-bg);border-left:3px solid var(--bs-primary);">
+
+                            {{-- Reply banner --}}
+                            <div :class="{'d-flex': replyTo, 'd-none': !replyTo}" x-cloak
+                                 class="chat-reply-banner mb-2 align-items-center justify-content-between small">
                                 <div class="d-flex align-items-center gap-2 overflow-hidden">
                                     <template x-if="replyTo && getPreviewImageUrl(replyTo)">
                                         <img :src="getPreviewImageUrl(replyTo)" class="rounded flex-shrink-0" style="width: 32px; height: 32px; object-fit: cover;">
@@ -269,34 +279,47 @@
                                 </div>
                                 <button type="button" @click="replyTo = null" class="btn-close ms-2 flex-shrink-0" style="font-size:10px;"></button>
                             </div>
-                            <div :class="{'d-flex': pendingAttachments.length, 'd-none': !pendingAttachments.length}" x-cloak class="flex-wrap gap-2 mb-3">
+
+                            {{-- Pending attachments preview --}}
+                            <div :class="{'d-flex': pendingAttachments.length, 'd-none': !pendingAttachments.length}" x-cloak class="flex-wrap gap-2 mb-2">
                                 <template x-for="(file, index) in pendingAttachments" :key="`${file.name}-${file.size}-${index}`">
-                                    <div class="position-relative border rounded-3 overflow-hidden bg-body-secondary" style="width:90px;">
+                                    <div class="chat-attachment-preview">
                                         <template x-if="file.previewUrl">
-                                            <img :src="file.previewUrl" class="w-100" style="height:70px;object-fit:cover;" alt="">
+                                            <img :src="file.previewUrl" alt="">
                                         </template>
                                         <template x-if="!file.previewUrl">
                                             <div class="d-flex align-items-center justify-content-center" style="height:70px;">
                                                 <i class="bi bi-file-earmark-text fs-3 text-muted"></i>
                                             </div>
                                         </template>
-                                        <div class="px-1 pb-1 text-truncate text-muted" style="font-size:9px;" x-text="formatFileSize(file.size)"></div>
-                                        <button type="button" @click="removePendingAttachment(index)" class="btn-close position-absolute top-0 end-0 m-1 bg-body" style="font-size:8px;"></button>
+                                        <div class="chat-attachment-size px-1 pb-1" x-text="formatFileSize(file.size)"></div>
+                                        <button type="button" @click="removePendingAttachment(index)"
+                                                class="btn-close position-absolute top-0 end-0 m-1 bg-body" style="font-size:8px;"></button>
                                     </div>
                                 </template>
                             </div>
+
+                            {{-- Input row --}}
                             <div class="d-flex align-items-end gap-2">
                                 <input x-ref="attachmentInput" type="file" multiple class="d-none" @change="handleAttachmentSelection">
-                                <button type="button" @click="$refs.attachmentInput.click()" class="btn btn-outline-secondary rounded-circle flex-shrink-0 d-flex align-items-center justify-content-center" style="width:40px;height:40px;" title="Attach">
+                                <button type="button" @click="$refs.attachmentInput.click()"
+                                        class="btn btn-outline-secondary rounded-circle flex-shrink-0 d-flex align-items-center justify-content-center"
+                                        style="width:40px;height:40px;" title="Attach">
                                     <i class="bi bi-paperclip"></i>
                                 </button>
-                                <textarea x-model="draft" @keydown.enter.prevent="!$event.shiftKey && sendMessage()" x-ref="composer" rows="1"
-                                    placeholder="Type a message... (Enter to send, Shift+Enter for newline)"
-                                    class="form-control flex-grow-1"
-                                    style="resize:none;max-height:120px;border-radius:1.25rem;padding:.625rem 1rem;"></textarea>
-                                <button type="submit" :disabled="sendingMessage || (!(draft || '').trim() && !pendingAttachments.length)"
-                                    class="btn btn-primary rounded-circle flex-shrink-0 d-flex align-items-center justify-content-center shadow-sm"
-                                    style="width:40px;height:40px;">
+                                <textarea
+                                    x-model="draft"
+                                    x-ref="composer"
+                                    rows="1"
+                                    @keydown.enter.prevent="!$event.shiftKey && sendMessage()"
+                                    @input="$el.style.height = 'auto'; $el.style.height = Math.min($el.scrollHeight, 120) + 'px'"
+                                    placeholder="Type a message… (Enter to send, Shift+Enter for newline)"
+                                    class="form-control flex-grow-1 chat-composer-textarea">
+                                </textarea>
+                                <button type="submit"
+                                        :disabled="sendingMessage || (!(draft || '').trim() && !pendingAttachments.length)"
+                                        class="btn btn-primary rounded-circle flex-shrink-0 d-flex align-items-center justify-content-center shadow-sm"
+                                        style="width:40px;height:40px;">
                                     <span x-show="sendingMessage" class="spinner-border spinner-border-sm"></span>
                                     <i x-show="!sendingMessage" class="bi bi-send"></i>
                                 </button>
@@ -347,40 +370,80 @@
                         <input type="search" x-model.debounce.300ms="userSearch" placeholder="Find users..." class="form-control form-control-sm ps-5 rounded-pill">
                     </div>
                     <div class="d-flex gap-2 mb-2">
-                        <button type="button" @click="userFilter = 'all'" :class="userFilter === 'all' ? 'btn-primary' : 'btn-outline-secondary bg-body'" class="btn btn-sm flex-fill fw-semibold py-1 border" style="font-size: 11px;">All</button>
-                        <button type="button" @click="userFilter = 'online'" :class="userFilter === 'online' ? 'btn-primary' : 'btn-outline-secondary bg-body'" class="btn btn-sm flex-fill fw-semibold py-1 border" style="font-size: 11px;">Online</button>
+                        <button type="button" @click="userFilter = 'all'"
+                                :class="userFilter === 'all' ? 'btn-primary' : 'btn-outline-secondary'"
+                                class="btn btn-sm flex-fill fw-semibold py-1" style="font-size: 11px;">All</button>
+                        <button type="button" @click="userFilter = 'online'"
+                                :class="userFilter === 'online' ? 'btn-primary' : 'btn-outline-secondary'"
+                                class="btn btn-sm flex-fill fw-semibold py-1" style="font-size: 11px;">Online</button>
                     </div>
                     <div class="d-flex gap-2">
-                        <select x-model="userSort" class="form-select form-select-sm" style="font-size: 11px;">
-                            <option value="default">Default Sort</option>
+                        <select x-model="userSort" class="form-select form-select-sm bg-body text-body" style="font-size: 11px;">
                             <option value="revenue_desc">Revenue: High to Low</option>
                             <option value="revenue_asc">Revenue: Low to High</option>
                         </select>
                     </div>
                 </div>
-                <div class="flex-grow-1 overflow-y-auto">
-                    <template x-for="(user, index) in visibleUsers" :key="user.id">
-                        <button type="button" @click="startDirect(user.id)" class="btn bg-transparent border-0 text-start w-100 d-flex align-items-start gap-3 mb-0 p-3" 
-                                style="border-bottom: 1px solid var(--bs-border-color) !important; transition: background 0.15s;"
-                                onmouseover="this.style.backgroundColor='var(--bs-secondary-bg)'" 
-                                onmouseout="this.style.backgroundColor='transparent'"
+                <div class="flex-grow-1 overflow-y-auto chat-scroll-area">
+                    <template x-for="user in visibleUsers" :key="user.id">
+                        <button type="button"
+                                @click="!user.isMe && startDirect(user.id)"
+                                class="btn border-0 text-start w-100 d-flex align-items-start gap-3 mb-0 p-3 chat-user-item"
+                                :class="user.isMe
+                                    ? 'bg-primary bg-opacity-10 border-start border-3 border-primary'
+                                    : 'bg-transparent'"
+                                :style="user.isMe ? 'cursor: default;' : ''"
                                 :disabled="startingUserId == user.id">
                             <div class="position-relative flex-shrink-0 mt-1">
-                                <img :src="getUserPhotoUrl(user)" class="rounded-circle object-fit-cover shadow-sm" style="width: 36px; height: 36px; ">
-                                <span class="position-absolute bottom-0 end-0 rounded-circle border-2 border-body" style="width: 12px; height: 12px;" :class="user.is_online ? 'bg-success' : 'bg-secondary'"></span>
+                                <img :src="getUserPhotoUrl(user)" class="rounded-circle object-fit-cover shadow-sm" style="width: 36px; height: 36px;"
+                                     :class="user.isMe ? 'border border-2 border-primary' : ''">
+                                <span class="position-absolute bottom-0 end-0 rounded-circle border border-2 border-body"
+                                      style="width: 12px; height: 12px;"
+                                      :class="user.is_online ? 'bg-success' : 'bg-secondary'"></span>
                             </div>
                             <div class="min-w-0 flex-grow-1">
-                                <!-- First Row: Name & Badge -->
+                                <!-- First Row: Name & Trophy/Rank + Badge -->
                                 <div class="d-flex justify-content-between align-items-center mb-1 gap-2">
                                     <div class="d-flex align-items-center gap-1 flex-grow-1 min-w-0">
-                                        <template x-if="userSort === 'revenue_desc' && index === 0"><span title="Top Earner" class="fs-5">🥇</span></template>
-                                        <template x-if="userSort === 'revenue_desc' && index === 1"><span title="2nd Earner" class="fs-5">🥈</span></template>
-                                        <template x-if="userSort === 'revenue_desc' && index === 2"><span title="3rd Earner" class="fs-5">🥉</span></template>
-                                        <span class="text-truncate fw-bold text-body" style="font-size: .875rem;" x-text="user.name"></span>
+                                        {{-- Trophy for top 3 — based on global rank, not filtered index --}}
+                                        <template x-if="userSort === 'revenue_desc' && user._globalRank === 0">
+                                            <span title="Top Earner" class="flex-shrink-0" style="font-size: 1.35rem; line-height: 1;">🥇</span>
+                                        </template>
+                                        <template x-if="userSort === 'revenue_desc' && user._globalRank === 1">
+                                            <span title="2nd Earner" class="flex-shrink-0" style="font-size: 1.35rem; line-height: 1;">🥈</span>
+                                        </template>
+                                        <template x-if="userSort === 'revenue_desc' && user._globalRank === 2">
+                                            <span title="3rd Earner" class="flex-shrink-0" style="font-size: 1.35rem; line-height: 1;">🥉</span>
+                                        </template>
+                                        {{-- Show rank number for non-top-3 when in revenue mode --}}
+                                        <template x-if="userSort === 'revenue_desc' && user._globalRank >= 3">
+                                            <span class="flex-shrink-0 fw-bold d-inline-flex align-items-center justify-content-center rounded"
+                                                  style="font-size: 11px; min-width: 22px; height: 22px; padding: 0 4px;
+                                                         background-color: var(--bs-secondary-bg);
+                                                         color: var(--bs-body-color);
+                                                         border: 1px solid var(--bs-border-color);"
+                                                  x-text="user._globalRank + 1"></span>
+                                        </template>
+                                        <span class="text-truncate fw-bold text-body" style="font-size: .875rem;" x-text="user.name + (user.isMe ? ' (You)' : '')"></span>
                                     </div>
-                                    <span class="badge rounded-pill fw-semibold flex-shrink-0" style="font-size: 9px; padding: 0.25em 0.5em;" :class="user.is_online ? 'bg-success bg-opacity-10 text-success border border-success border-opacity-25' : 'bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25'" x-text="user.is_online ? 'Live' : 'Away'"></span>
+                                    {{-- Self gets a primary "You" badge; others get Live/Away --}}
+                                    <template x-if="user.isMe">
+                                        <span class="badge rounded-pill fw-semibold flex-shrink-0"
+                                              style="font-size: 9px; padding: 0.25em 0.6em;
+                                                     background: rgba(var(--bs-primary-rgb), 0.15);
+                                                     color: var(--bs-primary);
+                                                     border: 1px solid rgba(var(--bs-primary-rgb), 0.35);">You</span>
+                                    </template>
+                                    <template x-if="!user.isMe">
+                                        <span class="badge rounded-pill fw-semibold flex-shrink-0"
+                                              style="font-size: 9px; padding: 0.25em 0.6em;"
+                                              :style="user.is_online
+                                                ? 'background: rgba(var(--bs-success-rgb), 0.15); color: var(--bs-success); border: 1px solid rgba(var(--bs-success-rgb), 0.35);'
+                                                : 'background: rgba(var(--bs-secondary-rgb), 0.15); color: var(--bs-secondary); border: 1px solid rgba(var(--bs-secondary-rgb), 0.3);'"
+                                              x-text="user.is_online ? 'Live' : 'Away'"></span>
+                                    </template>
                                 </div>
-                                
+
                                 <!-- Second Row: Location or Email -->
                                 <div class="text-truncate text-muted mb-1" style="font-size: 11px;">
                                     <template x-if="user.location">
@@ -390,23 +453,36 @@
                                         <span><i class="bi bi-envelope me-1 opacity-75"></i><span x-text="user.email"></span></span>
                                     </template>
                                 </div>
-                                
-                                <!-- Third Row: Last Seen & Device -->
+
+                                <!-- Third Row: Last Seen & Device (or "Your position" for self) -->
                                 <div class="d-flex justify-content-between align-items-center text-muted opacity-75" style="font-size: 10px;">
-                                    <span class="text-truncate" x-text="user.last_seen_label"></span>
-                                    <span class="text-truncate ms-2 text-end" x-show="user.active_device" x-text="user.active_device"></span>
+                                    <template x-if="user.isMe">
+                                        <span class="text-primary fw-semibold opacity-100"
+                                              x-text="userSort === 'revenue_desc' ? 'Your rank: #' + (user._globalRank + 1) : 'Active now'"></span>
+                                    </template>
+                                    <template x-if="!user.isMe">
+                                        <span class="text-truncate" x-text="user.last_seen_label"></span>
+                                    </template>
+                                    <span class="text-truncate ms-2 text-end" x-show="user.active_device && !user.isMe" x-text="user.active_device"></span>
                                 </div>
+
                                 <!-- Fourth Row: Today's Stats -->
                                 <div class="d-flex gap-2 mt-2">
-                                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25" style="font-size: 9px;">
+                                    <span class="badge fw-semibold" style="font-size: 9px; padding: 3px 6px;
+                                                 background: rgba(var(--bs-primary-rgb), 0.15);
+                                                 color: var(--bs-primary);
+                                                 border: 1px solid rgba(var(--bs-primary-rgb), 0.3);">
                                         <i class="bi bi-box-seam me-1"></i> <span x-text="user.today_orders || 0"></span> Orders
                                     </span>
-                                    <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25" style="font-size: 9px;">
+                                    <span class="badge fw-semibold" style="font-size: 9px; padding: 3px 6px;
+                                                 background: rgba(var(--bs-success-rgb), 0.15);
+                                                 color: var(--bs-success);
+                                                 border: 1px solid rgba(var(--bs-success-rgb), 0.3);">
                                         <i class="bi bi-currency-rupee me-1"></i> <span x-text="'₹ ' + (user.today_revenue || 0).toLocaleString()"></span>
                                     </span>
                                 </div>
                             </div>
-                            <div x-show="startingUserId == user.id" class="spinner-border spinner-border-sm text-primary ms-auto mt-1" role="status"></div>
+                            <div x-show="startingUserId == user.id && !user.isMe" class="spinner-border spinner-border-sm text-primary ms-auto mt-1" role="status"></div>
                         </button>
                     </template>
                     <div x-show="visibleUsers.length === 0" class="text-center p-5 text-muted">
@@ -419,7 +495,7 @@
 
         <div x-show="showGroupModal"
              x-cloak
-             style="position: fixed; inset: 0; z-index: 1055; background: rgba(0,0,0,0.55); display: flex; align-items: center; justify-content: center; padding: 1rem;"
+             class="chat-modal-backdrop"
              @keydown.escape.window="showGroupModal = false; groupError = ''">
             <form @submit.prevent="createGroup()" class="bg-body rounded-4 shadow-lg w-100" style="max-width: 500px; max-height: 90vh; overflow-y: auto;">
                 <div class="d-flex align-items-center justify-content-between p-4 border-bottom">
@@ -468,7 +544,12 @@
                                         <div class="min-w-0 flex-grow-1 text-truncate">
                                             <div class="d-flex align-items-center gap-2 mb-1">
                                                 <span class="small fw-semibold text-truncate flex-grow-1" x-text="user.name"></span>
-                                                <span class="badge rounded-pill flex-shrink-0" style="font-size: 9px; padding: 0.25em 0.5em;" :class="user.is_online ? 'bg-success bg-opacity-10 text-success border border-success border-opacity-25' : 'bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25'" x-text="user.is_online ? 'Live' : 'Away'"></span>
+                                                <span class="badge rounded-pill flex-shrink-0"
+                                                      style="font-size: 9px; padding: 0.25em 0.6em;"
+                                                      :style="user.is_online
+                                                        ? 'background: rgba(var(--bs-success-rgb), 0.15); color: var(--bs-success); border: 1px solid rgba(var(--bs-success-rgb), 0.35);'
+                                                        : 'background: rgba(var(--bs-secondary-rgb), 0.15); color: var(--bs-secondary); border: 1px solid rgba(var(--bs-secondary-rgb), 0.3);'"
+                                                      x-text="user.is_online ? 'Live' : 'Away'"></span>
                                             </div>
                                             <div class="text-muted text-truncate" style="font-size:10px;" x-show="user.location">
                                                 <i class="bi bi-geo-alt me-1 opacity-75"></i><span x-text="user.location"></span>
@@ -495,22 +576,23 @@
         </div>
 
         <!-- Group Settings Modal -->
-        <div x-show="showGroupSettingsModal && activeConversation?.type === 'group'" 
-             x-cloak 
-             style="position:fixed;inset:0;z-index:1055;background:rgba(0,0,0,0.55);display:flex;align-items:center;justify-content:center;padding:1rem;"
+        <div x-show="showGroupSettingsModal && activeConversation?.type === 'group'"
+             x-cloak
+             class="chat-modal-backdrop"
              @keydown.escape.window="closeGroupSettings">
             <div class="bg-body rounded-4 shadow-lg w-100 d-flex flex-column" style="max-width:800px; max-height:90vh;">
-                <div class="p-4 border-bottom d-flex align-items-center justify-content-between bg-primary text-white" style="border-top-left-radius:1rem; border-top-right-radius:1rem;">
+                <div class="p-4 border-bottom d-flex align-items-center justify-content-between bg-primary text-white"
+                     style="border-top-left-radius:1rem; border-top-right-radius:1rem;">
                     <div>
                         <div class="d-flex align-items-center justify-content-center gap-2 mb-1">
                             <h5 class="mb-0 fw-bold" x-text="conversationTitle(activeConversation)"></h5>
-                            <small class="text-muted" x-show="conversationLocation(activeConversation)">
+                            <small class="text-white text-opacity-75" x-show="conversationLocation(activeConversation)">
                                 <i class="bi bi-geo-alt"></i> <span x-text="conversationLocation(activeConversation)"></span>
                             </small>
                         </div>
                         <small class="opacity-75" x-text="conversationSubtitle(activeConversation)"></small>
                     </div>
-                    <button type="button" @click="closeGroupSettings" class="btn-close btn-close"></button>
+                    <button type="button" @click="closeGroupSettings" class="btn-close btn-close-white"></button>
                 </div>
                 
                 <div class="p-4 overflow-y-auto">
@@ -637,7 +719,8 @@
 
         <!-- Confirm Modal -->
         <div x-show="confirmModal.show" x-cloak
-             style="position:fixed;inset:0;z-index:1065;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;padding:1rem;"
+             class="chat-modal-backdrop"
+             style="z-index: 1065;"
              @keydown.escape.window="closeConfirm()">
             <div class="bg-body rounded-4 shadow-lg text-center p-4" style="max-width:360px;width:100%;">
                 <div class="rounded-circle bg-danger bg-opacity-10 d-inline-flex align-items-center justify-content-center mb-3" style="width:56px;height:56px;">
@@ -662,24 +745,29 @@
             pollInterval: initial.pollInterval || 15000,
             activeConversation: null,
             messages: [],
-            
+
             search: '',
             userSearch: '',
             filter: 'all',
             userFilter: 'all',
-            userSort: 'default',
-            
+            userSort: 'revenue_desc',   // Default: Revenue High → Low
+
+            // Logged-in user's own stats (injected server-side, refreshed on poll)
+            selfUser: initial.currentUserData && Object.keys(initial.currentUserData).length
+                ? { ...initial.currentUserData, isMe: true, is_online: true }
+                : null,
+
             draft: '',
             replyTo: null,
             editingMessageId: null,
             editingDraft: '',
             errorMessage: '',
-            
+
             pendingAttachments: [],
             sendingMessage: false,
             busyMessageId: null,
             startingUserId: null,
-            
+
             showGroupModal: false,
             groupForm: { name: '', description: '', privacy: 'private', member_ids: [] },
             groupCreateSearch: '',
@@ -690,17 +778,17 @@
             groupSettingsForm: { name: '', description: '', privacy: 'private' },
             groupAddMemberSearch: '',
             showAddMember: false,
-            
+
             confirmModal: {
                 show: false, title: '', message: '', cancelText: 'Cancel', confirmText: 'Confirm', onConfirm: () => {}
             },
-            
+
             pollTimer: null,
-            
+
             init() {
                 this.poll();
                 this.pollTimer = setInterval(() => this.poll(), this.pollInterval);
-                
+
                 // Keep chat open after refresh
                 this.$watch('activeConversation', (val) => {
                     const storeKey = 'metis_chat_id_' + this.currentUserId;
@@ -710,7 +798,7 @@
                         localStorage.removeItem(storeKey);
                     }
                 });
-                
+
                 const storeKey = 'metis_chat_id_' + this.currentUserId;
                 const savedId = localStorage.getItem(storeKey);
                 if (savedId) {
@@ -720,23 +808,22 @@
                     }
                 }
             },
-            
+
             get onlineUsers() {
                 return this.users.filter(u => u.is_online);
             },
-            
+
             get onlineLabel() {
                 const count = this.onlineUsers.length;
                 return count + (count === 1 ? ' online now' : ' online now');
             },
-            
+
             get filteredConversations() {
                 let filtered = Array.isArray(this.conversations) ? this.conversations : [];
 
                 if (this.filter === 'unread') {
                     filtered = filtered.filter(c => (c.unread_count || 0) > 0);
                 } else if (this.filter === 'pinned') {
-                    // pinned_at is on the member pivot, returned as is_pinned on conversation
                     filtered = filtered.filter(c => c.is_pinned ||
                         c.active_members?.some(m => m.user_id == this.currentUserId && m.pinned_at));
                 }
@@ -761,24 +848,46 @@
                     users: this.users.filter(u => (u.name || '').toLowerCase().includes(q)).slice(0, 5)
                 };
             },
-            
+
             get visibleUsers() {
-                let filtered = Array.isArray(this.users) ? [...this.users] : [];
-                if (this.userFilter === 'online') {
-                    filtered = filtered.filter(u => u.is_online);
+                // Build full list: other users + inject self (logged-in user)
+                let allUsers = Array.isArray(this.users) ? [...this.users] : [];
+                if (this.selfUser) {
+                    // Remove stale self entry if server happens to include it, then prepend
+                    allUsers = allUsers.filter(u => u.id !== this.currentUserId);
+                    allUsers.push({ ...this.selfUser });
                 }
+
+                // ── Compute global revenue rank on the FULL unsorted/unfiltered list ──
+                // Sort a clone by revenue desc to get the true global position
+                const ranked = [...allUsers].sort((a, b) => (b.today_revenue || 0) - (a.today_revenue || 0));
+                const rankMap = {};
+                ranked.forEach((u, i) => { rankMap[u.id] = i; }); // 0-based
+
+                // Attach global rank to every user object (non-mutating copy)
+                allUsers = allUsers.map(u => ({ ...u, _globalRank: rankMap[u.id] }));
+
+                // ── Apply filter ──
+                if (this.userFilter === 'online') {
+                    allUsers = allUsers.filter(u => u.is_online);
+                }
+
+                // ── Apply search ──
                 if (this.userSearch) {
                     const q = this.userSearch.toLowerCase();
-                    filtered = filtered.filter(u => (u.name || '').toLowerCase().includes(q));
+                    allUsers = allUsers.filter(u => (u.name || '').toLowerCase().includes(q));
                 }
+
+                // ── Apply sort ──
                 if (this.userSort === 'revenue_desc') {
-                    filtered.sort((a, b) => (b.today_revenue || 0) - (a.today_revenue || 0));
+                    allUsers.sort((a, b) => (b.today_revenue || 0) - (a.today_revenue || 0));
                 } else if (this.userSort === 'revenue_asc') {
-                    filtered.sort((a, b) => (a.today_revenue || 0) - (b.today_revenue || 0));
+                    allUsers.sort((a, b) => (a.today_revenue || 0) - (b.today_revenue || 0));
                 }
-                return filtered;
+
+                return allUsers;
             },
-            
+
             get filteredGroupUsers() {
                 let filtered = this.users;
                 if (this.groupCreateSearch) {
@@ -823,6 +932,16 @@
                     const usersRaw = userRes.data.data || userRes.data.users || userRes.data || [];
                     this.users = Array.isArray(usersRaw) ? usersRaw : [];
 
+                    // Refresh logged-in user's own stats (include_self=1 returns self in the list)
+                    try {
+                        const selfRes = await axios.get('/api/chat/users', { params: { include_self: 1 } });
+                        const selfRaw = selfRes.data.data || selfRes.data.users || selfRes.data || [];
+                        const selfData = (Array.isArray(selfRaw) ? selfRaw : []).find(u => u.id == this.currentUserId);
+                        if (selfData) {
+                            this.selfUser = { ...selfData, isMe: true, is_online: true };
+                        }
+                    } catch (_) {}
+
                     if (this.activeConversation) {
                         const updated = this.conversations.find(c => c.id == this.activeConversation.id);
                         if (updated) this.activeConversation = updated;
@@ -847,7 +966,7 @@
                     console.error('Poll failed:', e);
                 }
             },
-            
+
             async fetchUsers() {
                 try {
                     const res = await axios.get('/api/chat/users');

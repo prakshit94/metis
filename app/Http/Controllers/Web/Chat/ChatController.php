@@ -15,8 +15,10 @@ class ChatController extends Controller
 
         return view('chat.index', [
             'conversations' => $chat->listConversations($user),
-            'users' => $chat->listUsersWithPresence($user),
-            'pollInterval' => config('chat.realtime.poll_interval_ms'),
+            'users'         => $chat->listUsersWithPresence($user),
+            'currentUserData' => $chat->listUsersWithPresence($user, null, includeSelf: true)
+                ->firstWhere('id', $user->id) ?? [],
+            'pollInterval'  => config('chat.realtime.poll_interval_ms'),
         ]);
     }
 }
