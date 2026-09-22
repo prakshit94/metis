@@ -57,7 +57,7 @@ export default () => ({
     warehouse_id: '',
     reason: '',
     items: [
-      { product_id: '', current_qty: 0, new_qty: 0, adjustment_type: 'Set', adjustment_value: 0 },
+      { product_id: '', current_qty: 0, new_qty: 0, adjustment_type: 'Add', adjustment_value: 0 },
     ],
   },
   warehouseStocks: {},
@@ -133,12 +133,12 @@ export default () => ({
   toggleAll(checked) {
     if (checked) {
       this.items.forEach((item) => {
-        if (!this.selectedItems.includes(String(item.id))) {
-          this.selectedItems.push(String(item.id));
+        if (!this.selectedItems.includes(item.id)) {
+          this.selectedItems.push(item.id);
         }
       });
     } else {
-      const currentIds = this.items.map((item) => String(item.id));
+      const currentIds = this.items.map((item) => item.id);
       this.selectedItems = this.selectedItems.filter((id) => !currentIds.includes(id));
     }
   },
@@ -261,7 +261,7 @@ export default () => ({
       warehouse_id: '',
       reason: '',
       items: [
-        { product_id: '', current_qty: 0, new_qty: 0, adjustment_type: 'Set', adjustment_value: 0 },
+        { product_id: '', current_qty: 0, new_qty: 0, adjustment_type: 'Add', adjustment_value: 0 },
       ],
     };
     this.warehouseStocks = {};
@@ -311,7 +311,7 @@ export default () => ({
       product_id: '',
       current_qty: 0,
       new_qty: 0,
-      adjustment_type: 'Set',
+      adjustment_type: 'Add',
       adjustment_value: 0,
     });
   },

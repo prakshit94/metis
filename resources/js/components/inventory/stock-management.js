@@ -1,5 +1,4 @@
 import Alpine from 'alpinejs';
-import { Modal } from 'bootstrap';
 import Swal from 'sweetalert2';
 
 function showToast(message, type = 'success') {
@@ -28,8 +27,6 @@ export default () => ({
   warehouses: [],
   productOptions: [],
   isLoading: false,
-  saving: false,
-  isEditing: false,
   searchQuery: '',
   warehouseFilter: '',
   stockLevelFilter: '',
@@ -39,17 +36,6 @@ export default () => ({
   itemsPerPage: 25,
   totalItems: 0,
   totalPages: 1,
-  modalInstance: null,
-  adjustForm: {
-    productId: null,
-    warehouseId: null,
-    productName: '',
-    warehouseName: '',
-    currentQty: 0,
-    newQty: 0,
-    currentDamagedQty: 0,
-    newDamagedQty: 0,
-  },
 
   // Selection state
   selectedItems: [],
@@ -57,8 +43,6 @@ export default () => ({
   async init() {
     await this.loadOptions();
     await this.loadData();
-    const modalEl = document.getElementById('adjustStockModal');
-    if (modalEl) this.modalInstance = Modal.getOrCreateInstance(modalEl);
   },
 
   async apiRequest(url, options = {}) {
@@ -299,95 +283,5 @@ export default () => ({
     }
   },
 
-  openAdjustModal(item) {
-    if (!item) {
-      this.isEditing = false;
-      this.adjustForm = {
-        productId: '',
-        warehouseId: '',
-        productName: '',
-        warehouseName: '',
-        currentQty: 0,
-        newQty: 0,
-        currentDamagedQty: 0,
-        newDamagedQty: 0,
-      };
-    } else {
-      this.isEditing = true;
-      this.adjustForm = {
-        productId: item.product_id,
-        warehouseId: item.warehouse_id,
-        productName:
-          (item.product?.name || '') + (item.product?.sku ? ` (${item.product.sku})` : ''),
-        warehouseName: item.warehouse?.name || '',
-        currentQty: parseFloat(item.quantity || 0),
-        newQty: parseFloat(item.quantity || 0),
-        currentDamagedQty: parseFloat(item.damaged_qty || 0),
-        newDamagedQty: parseFloat(item.damaged_qty || 0),
-      };
-    }
-    this.modalInstance?.show();
-  },
-
-  async fetchCurrentStock() {
-    const prodId = this.adjustForm.productId;
-    const whId = this.adjustForm.warehouseId;
-    if (!prodId || !whId) {
-      this.adjustForm.currentQty = 0;
-      this.adjustForm.currentDamagedQty = 0;
-      return;
-    }
-    try {
-      const data = await this.apiRequest(
-        `/api/inventory/stocks/show?product_id=${prodId}&warehouse_id=${whId}`
-      );
-      this.adjustForm.currentQty = parseFloat(data.data?.quantity || 0);
-      this.adjustForm.currentDamagedQty = parseFloat(data.data?.damaged_qty || 0);
-    } catch (e) {
-      this.adjustForm.currentQty = 0;
-      this.adjustForm.currentDamagedQty = 0;
-    }
-  },
-
-  async saveAdjustment() {
-    if (!this.adjustForm.productId || !this.adjustForm.warehouseId) {
-      showToast('Please select both product and warehouse.', 'error');
-      return;
-    }
-    if (
-      this.adjustForm.newQty === undefined ||
-      this.adjustForm.newQty === null ||
-      parseFloat(this.adjustForm.newQty) < 0
-    ) {
-      showToast('Please enter a valid non-negative new quantity.', 'error');
-      return;
-    }
-    if (
-      this.adjustForm.newDamagedQty === undefined ||
-      this.adjustForm.newDamagedQty === null ||
-      parseFloat(this.adjustForm.newDamagedQty) < 0
-    ) {
-      showToast('Please enter a valid non-negative bad quantity.', 'error');
-      return;
-    }
-    this.saving = true;
-    try {
-      await this.apiRequest('/api/inventory/stocks/set', {
-        method: 'POST',
-        body: JSON.stringify({
-          product_id: this.adjustForm.productId,
-          warehouse_id: this.adjustForm.warehouseId,
-          quantity: this.adjustForm.newQty,
-          damaged_qty: this.adjustForm.newDamagedQty,
-        }),
-      });
-      showToast('Stock level updated successfully.', 'success');
-      this.modalInstance?.hide();
-      await this.loadData();
-    } catch (e) {
-      showToast(e.message, 'error');
-    } finally {
-      this.saving = false;
-    }
-  },
 });
+

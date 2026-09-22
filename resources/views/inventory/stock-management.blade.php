@@ -18,11 +18,7 @@
                 <i class="bi bi-download me-2"></i>Export
             </button>
             @endcan
-            @can('stockmanagement-edit')
-            <button type="button" class="btn btn-primary" @click.prevent="openAdjustModal(null)">
-                <i class="bi bi-plus-lg me-2"></i>Set Stock
-            </button>
-            @endcan
+
         </div>
     </div>
 
@@ -359,13 +355,7 @@
                                                 <i class="bi bi-three-dots"></i>
                                             </button>
                                             <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
-                                                @can('stockmanagement-edit')
-                                                <li>
-                                                    <a class="dropdown-item" href="#" @click.prevent="openAdjustModal(item)">
-                                                        <i class="bi bi-pencil me-2"></i>Set Stock Level
-                                                    </a>
-                                                </li>
-                                                @endcan
+
                                                 @can('stocktransfer-create')
                                                 <li>
                                                     <a class="dropdown-item" href="{{ route('inventory.stock-transfers') }}">
@@ -411,118 +401,6 @@
         </div>
     </div> {{-- End stock management container --}}
 
-    {{-- ── Set Stock Modal ─────────────────────────────────────── --}}
-    <div class="modal fade" id="adjustStockModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header border-bottom-0 pb-0">
-                    <h5 class="modal-title fw-bold">Set Stock Level</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body pt-3">
-                    <form @submit.prevent="saveAdjustment()">
-                        <div class="row g-4">
-                            <div class="col-12">
-                                {{-- Card: Stock Override --}}
-                                <div class="card border-start border-4 border-primary shadow-sm mb-4 bg-body-tertiary">
-                                    <div class="card-body p-4">
-                                        <div class="d-flex align-items-center mb-3">
-                                            <div class="bg-primary bg-opacity-10 text-primary rounded-circle p-2 me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
-                                                <i class="bi bi-bar-chart-steps"></i>
-                                            </div>
-                                            <h6 class="card-title mb-0 fw-bold">Stock Override</h6>
-                                        </div>
-                                        <div class="row g-3">
-                                            <div class="col-12" x-show="!isEditing">
-                                                <label class="form-label fw-medium text-muted small">Product <span class="text-danger">*</span></label>
-                                                <div class="position-relative" x-data="{ open: false, search: '' }" @click.outside="open = false">
-                                                    <div class="input-group" @click="open = !open">
-                                                        <input type="text" 
-                                                               class="form-control cursor-pointer bg-body" 
-                                                               placeholder="Search & choose product..." 
-                                                               :value="adjustForm.productId ? (productOptions.find(p => p.id == adjustForm.productId)?.name + ' (' + productOptions.find(p => p.id == adjustForm.productId)?.sku + ')') : ''"
-                                                               readonly>
-                                                        <span class="input-group-text bg-body"><i class="bi bi-chevron-down small text-muted"></i></span>
-                                                    </div>
-                                                    
-                                                    <div x-show="open" 
-                                                         class="position-absolute w-100 bg-body border rounded shadow-lg mt-1 p-2" 
-                                                         style="z-index: 1050; max-height: 200px; overflow-y: auto;"
-                                                         x-transition>
-                                                        <div class="mb-2">
-                                                            <input type="text" 
-                                                                   class="form-control form-control-sm" 
-                                                                   placeholder="Type to search..." 
-                                                                   x-model="search"
-                                                                   @click.stop>
-                                                        </div>
-                                                        <div class="list-group list-group-flush small">
-                                                            <template x-for="p in productOptions.filter(p => !search || p.name.toLowerCase().includes(search.toLowerCase()) || p.sku.toLowerCase().includes(search.toLowerCase()))" :key="p.id">
-                                                                <button type="button" 
-                                                                        class="list-group-item list-group-item-action text-start border-0 py-2 px-3 rounded"
-                                                                        :class="adjustForm.productId == p.id ? 'active' : ''"
-                                                                        @click="adjustForm.productId = p.id; open = false; search = ''; fetchCurrentStock()">
-                                                                    <div class="fw-bold" x-text="p.name"></div>
-                                                                    <div class="small" :class="adjustForm.productId == p.id ? 'text-white-50' : 'text-muted'" x-text="'SKU: ' + p.sku"></div>
-                                                                </button>
-                                                            </template>
-                                                            <template x-if="productOptions.filter(p => !search || p.name.toLowerCase().includes(search.toLowerCase()) || p.sku.toLowerCase().includes(search.toLowerCase())).length === 0">
-                                                                <div class="text-muted text-center py-2">No products found</div>
-                                                            </template>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="col-12" x-show="isEditing">
-                                                <label class="form-label fw-medium text-muted small">Product</label>
-                                                <input type="text" class="form-control bg-body-secondary" :value="adjustForm.productName" disabled>
-                                            </div>
-                                            <div class="col-12" x-show="!isEditing">
-                                                <label class="form-label fw-medium text-muted small">Warehouse <span class="text-danger">*</span></label>
-                                                <select class="form-select" x-model="adjustForm.warehouseId" @change="fetchCurrentStock()" required>
-                                                    <option value="">Select warehouse...</option>
-                                                    <template x-for="wh in warehouses" :key="wh.id">
-                                                        <option :value="wh.id" x-text="wh.name"></option>
-                                                    </template>
-                                                </select>
-                                            </div>
-                                            <div class="col-12" x-show="isEditing">
-                                                <label class="form-label fw-medium text-muted small">Warehouse</label>
-                                                <input type="text" class="form-control bg-body-secondary" :value="adjustForm.warehouseName" disabled>
-                                            </div>
-                                            <div class="col-6">
-                                                <label class="form-label fw-medium text-muted small">Current Quantity</label>
-                                                <input type="number" class="form-control bg-body-secondary" :value="adjustForm.currentQty" disabled>
-                                            </div>
-                                            <div class="col-6">
-                                                <label class="form-label fw-medium text-muted small">New Quantity <span class="text-danger">*</span></label>
-                                                <input type="number" class="form-control" x-model.number="adjustForm.newQty" min="0" step="0.01" required>
-                                            </div>
-                                            <div class="col-6">
-                                                <label class="form-label fw-medium text-muted small">Current Bad Qty</label>
-                                                <input type="number" class="form-control bg-body-secondary" :value="adjustForm.currentDamagedQty" disabled>
-                                            </div>
-                                            <div class="col-6">
-                                                <label class="form-label fw-medium text-muted small">New Bad Qty <span class="text-danger">*</span></label>
-                                                <input type="number" class="form-control" x-model.number="adjustForm.newDamagedQty" min="0" step="0.01" required>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="modal-footer border-top-0 pt-0">
-                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                            <button type="submit" class="btn btn-primary px-4" :disabled="saving">
-                                <span x-show="saving" class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
-                                Update Stock
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
 
 </div>
 @endsection

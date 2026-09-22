@@ -127,6 +127,7 @@
                         </div>
                     </div>
                 </div>
+            </div>
             <div class="card-body p-0">
                 <!-- Bulk Actions Bar -->
                 <div class="bulk-actions-bar p-3 bg-primary bg-opacity-10 border-bottom border-primary border-opacity-25"
