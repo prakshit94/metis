@@ -713,18 +713,89 @@
                 ->map(function($msg) {
                     $payload = json_decode($msg->payload, true);
                     return (object)[
-                        'id' => $msg->id,
+                        'id'          => $msg->id,
                         'sender_name' => $payload['sender_name'] ?? 'System',
-                        'snippet' => $payload['snippet'] ?? 'You have a new message.',
-                        'time_ago' => $msg->created_at ? \Carbon\Carbon::parse($msg->created_at)->diffForHumans() : null
+                        'snippet'     => $payload['snippet'] ?? 'You have a new message.',
+                        'time_ago'    => $msg->created_at ? \Carbon\Carbon::parse($msg->created_at)->diffForHumans() : null
                     ];
                 });
+        } catch (\Exception $e) {}
+    }
+
+    // ── Team Chat unread count (for the header chat icon badge only) ──
+    $chatTotalUnread = 0;
+    if (config('chat.enabled', false) && auth()->check() && auth()->user()->can('chat-view')) {
+        try {
+            if (\Illuminate\Support\Facades\Schema::hasTable('chat_conversations')
+                && \Illuminate\Support\Facades\Schema::hasTable('chat_members')
+                && \Illuminate\Support\Facades\Schema::hasTable('chat_messages')) {
+
+                $userId = auth()->id();
+
+                $chatTotalUnread = (int) \Illuminate\Support\Facades\DB::table('chat_messages as msg')
+                    ->join('chat_members as m', function($j) use ($userId) {
+                        $j->on('m.conversation_id', '=', 'msg.conversation_id')
+                          ->where('m.user_id', $userId)
+                          ->where('m.status', 'active');
+                    })
+                    ->whereRaw('msg.sender_id != ?', [$userId])
+                    ->whereNull('msg.deleted_at')
+                    ->whereNotExists(function($q) use ($userId) {
+                        $q->from('chat_message_reads as r')
+                          ->whereColumn('r.message_id', 'msg.id')
+                          ->where('r.user_id', $userId);
+                    })
+                    ->count();
+            }
         } catch (\Exception $e) {}
     }
 
     $otherAlertsCount = $systemAlerts->count() + $unreadMessages->count();
     $totalInitialUnread = $initialUnreadCount + $otherAlertsCount;
 @endphp
+                @can('chat-view')
+                {{-- Team Chat quick-access with live unread badge --}}
+                <div class="h-100 d-flex align-items-center"
+                     x-data="{
+                         chatUnread: 0,
+                         init() {
+                             // Prefer localStorage (updated by chat page poll) over server value
+                             const serverCount = {{ (int) $chatTotalUnread }};
+                             const stored = parseInt(localStorage.getItem('metis_chat_unread_{{ (int) auth()->id() }}') ?? '', 10);
+                             this.chatUnread = isNaN(stored) ? serverCount : stored;
+
+                             // Live update from same-tab chat page poll
+                             window.addEventListener('metis:chat-unread', (e) => {
+                                 this.chatUnread = parseInt(e.detail.count, 10) || 0;
+                             });
+                             // Cross-tab update via storage event
+                             window.addEventListener('storage', (e) => {
+                                 if (e.key === 'metis_chat_unread_{{ (int) auth()->id() }}') {
+                                     this.chatUnread = parseInt(e.newValue ?? '0', 10) || 0;
+                                 }
+                             });
+                         }
+                     }">
+                    <a href="{{ route('chat.index') }}"
+                       target="_blank"
+                       rel="noopener noreferrer"
+                       class="btn btn-outline-secondary border-0 shadow-sm bg-body rounded-circle p-2 d-flex align-items-center justify-content-center transition-all hover-scale position-relative"
+                       style="width: 42px; height: 42px;"
+                       data-bs-toggle="tooltip"
+                       data-bs-placement="bottom"
+                       title="Team Chat (opens in new tab)"
+                       aria-label="Team Chat">
+                        <i class="bi bi-chat-dots-fill fs-5 text-secondary" aria-hidden="true"></i>
+                        {{-- Badge: hidden by default via d-none; Alpine shows it only when count > 0 --}}
+                        <span x-cloak
+                              class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger border border-2 border-body shadow-sm align-items-center justify-content-center"
+                              :class="chatUnread > 0 ? 'd-flex' : 'd-none'"
+                              style="font-size: 10px; min-width: 18px; height: 18px; margin-top: 8px; margin-left: -12px;"
+                              x-text="chatUnread > 99 ? '99+' : chatUnread"></span>
+                    </a>
+                </div>
+                @endcan
+
                 {{-- Notifications Dropdown --}}
                 <div class="dropdown h-100 d-flex align-items-center" x-data="notificationApp(@js($initialActivities), {{ $initialUnreadCount }}, {{ $otherAlertsCount }})">
                     <button class="btn btn-outline-secondary border-0 shadow-sm bg-body rounded-circle p-2 d-flex align-items-center justify-content-center transition-all hover-scale position-relative"
@@ -1173,10 +1244,10 @@ document.addEventListener('alpine:init', () => {
             messagesRead: localStorage.getItem(messagesKey) === '1',
 
             get totalCount() {
-                // If alerts have been dismissed client-side, remove their contribution from badge
+                // If alerts/messages have been dismissed client-side, remove their contribution
                 const effectiveOther = (this.alertsRead && this.messagesRead) ? 0
-                    : this.alertsRead ? this.otherCount - Math.max(0, {{ $systemAlerts->count() }})
-                    : this.messagesRead ? this.otherCount - Math.max(0, {{ $unreadMessages->count() }})
+                    : this.alertsRead ? this.otherCount - Math.max(0, {{ (int) $systemAlerts->count() }})
+                    : this.messagesRead ? this.otherCount - Math.max(0, {{ (int) $unreadMessages->count() }})
                     : this.otherCount;
                 return this.count + Math.max(0, effectiveOther);
             },

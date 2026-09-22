@@ -932,6 +932,11 @@
                     const usersRaw = userRes.data.data || userRes.data.users || userRes.data || [];
                     this.users = Array.isArray(usersRaw) ? usersRaw : [];
 
+                    // ── Sync unread count to localStorage so the header badge updates live ──
+                    const totalUnread = this.conversations.reduce((sum, c) => sum + (c.unread_count || 0), 0);
+                    localStorage.setItem('metis_chat_unread_' + this.currentUserId, totalUnread);
+                    window.dispatchEvent(new CustomEvent('metis:chat-unread', { detail: { count: totalUnread } }));
+
                     // Refresh logged-in user's own stats (include_self=1 returns self in the list)
                     try {
                         const selfRes = await axios.get('/api/chat/users', { params: { include_self: 1 } });
