@@ -102,8 +102,10 @@
                     <!-- Conversation List -->
                     <template x-for="conversation in filteredConversations" :key="conversation.id">
                         <button type="button" @click="selectConversation(conversation)"
-                            class="btn text-start w-100 d-flex align-items-start gap-3 px-3 py-3 border-0 rounded-0 chat-conv-item"
-                            :class="activeConversation?.id == conversation.id ? 'active' : ''">
+                            class="btn text-start w-100 d-flex align-items-start gap-3 p-3 shadow-sm rounded-3 mb-2"
+                            :class="activeConversation?.id == conversation.id ? 'bg-primary bg-opacity-10 border-start border-3 border-primary' : 'bg-body border border-secondary border-opacity-10'"
+                            onmouseover="if(this.className.indexOf('bg-primary') === -1) this.style.backgroundColor = 'var(--bs-secondary-bg)'"
+                            onmouseout="if(this.className.indexOf('bg-primary') === -1) this.style.backgroundColor = ''">
                             <div class="position-relative flex-shrink-0">
                                 <img :src="getConversationPhotoUrl(conversation)" class="rounded-circle object-fit-cover shadow-sm border border-2 border-body" style="width: 42px; height: 42px; ">
                                 <span x-show="isOnline(conversation)"
@@ -111,22 +113,22 @@
                                       style="width:11px;height:11px;"></span>
                             </div>
                             <div class="min-w-0 flex-grow-1">
-                                <div class="d-flex justify-content-between align-items-center mb-1 gap-2">
-                                    <span class="text-truncate fw-semibold flex-grow-1" style="font-size:.875rem;" x-text="conversationTitle(conversation)"></span>
+                                <div class="d-flex justify-content-between align-items-center mb-1 gap-2 min-w-0">
+                                    <span class="text-truncate fw-semibold flex-grow-1 min-w-0" style="font-size:.875rem;" x-text="conversationTitle(conversation)"></span>
                                     <small class="text-muted flex-shrink-0 ms-2" style="font-size:10px;" x-text="lastTime(conversation)"></small>
                                 </div>
-                                <div class="text-truncate text-muted mb-1" style="font-size: 10px;" x-show="conversationLocation(conversation)">
-                                    <i class="bi bi-geo-alt me-1 opacity-75"></i><span x-text="conversationLocation(conversation)"></span>
+                                <div class="text-truncate text-muted mb-1 min-w-0" style="font-size: 10px;" x-show="conversationLocation(conversation)">
+                                    <i class="bi bi-geo-alt me-1 opacity-75"></i><span class="text-truncate" x-text="conversationLocation(conversation)"></span>
                                 </div>
-                                <div class="d-flex justify-content-between align-items-center gap-1">
-                                    <div class="d-flex align-items-center gap-1 text-truncate flex-grow-1 text-muted" style="font-size:.78rem;">
+                                <div class="d-flex justify-content-between align-items-center gap-1 min-w-0">
+                                    <div class="d-flex align-items-center gap-1 text-truncate flex-grow-1 text-muted min-w-0" style="font-size:.78rem;">
                                         <template x-if="getPreviewImageUrl(lastMessageObj(conversation))">
                                             <img :src="getPreviewImageUrl(lastMessageObj(conversation))" class="rounded flex-shrink-0" style="width:16px; height:16px; object-fit:cover;">
                                         </template>
-                                        <span class="text-truncate" x-text="lastPreview(conversation)"></span>
+                                        <span class="text-truncate flex-grow-1 min-w-0" x-text="lastPreview(conversation)"></span>
                                     </div>
                                     <span x-show="conversation.unread_count > 0"
-                                          class="badge rounded-pill bg-primary flex-shrink-0"
+                                          class="badge rounded-pill bg-primary flex-shrink-0 ms-1"
                                           style="font-size:10px;" x-text="conversation.unread_count"></span>
                                 </div>
                             </div>
@@ -346,12 +348,12 @@
                 </template>
             </section>
 
-            <!-- Right Sidebar: Live Users -->
+            <!-- Right Sidebar: Online Users -->
             <aside class="d-none d-lg-flex col-lg-3 flex-column border-start bg-body-tertiary h-100">
                 <div class="p-3 border-bottom">
                     <div class="d-flex align-items-center justify-content-between mb-3">
                         <div>
-                            <h6 class="mb-0 fw-bold text-uppercase" style="font-size:0.75rem; letter-spacing:0.5px;">Live Users</h6>
+                            <h6 class="mb-0 fw-bold text-uppercase" style="font-size:0.75rem; letter-spacing:0.5px;">Online Users</h6>
                             <p class="mb-0 text-muted" style="font-size: 11px;" x-text="`${onlineUsers.length} active, ${users.length} available`"></p>
                         </div>
                         <div class="d-flex gap-1">
@@ -388,10 +390,10 @@
                     <template x-for="user in visibleUsers" :key="user.id">
                         <button type="button"
                                 @click="!user.isMe && startDirect(user.id)"
-                                class="btn border-0 text-start w-100 d-flex align-items-start gap-3 mb-0 p-3 chat-user-item"
+                                class="btn border-0 text-start w-100 d-flex align-items-start gap-3 p-3 chat-user-item shadow-sm rounded-3 mb-2"
                                 :class="user.isMe
                                     ? 'bg-primary bg-opacity-10 border-start border-3 border-primary'
-                                    : 'bg-transparent'"
+                                    : 'bg-body border border-secondary border-opacity-10'"
                                 :style="user.isMe ? 'cursor: default;' : ''"
                                 :disabled="startingUserId == user.id">
                             <div class="position-relative flex-shrink-0 mt-1">
@@ -440,34 +442,34 @@
                                               :style="user.is_online
                                                 ? 'background: rgba(var(--bs-success-rgb), 0.15); color: var(--bs-success); border: 1px solid rgba(var(--bs-success-rgb), 0.35);'
                                                 : 'background: rgba(var(--bs-secondary-rgb), 0.15); color: var(--bs-secondary); border: 1px solid rgba(var(--bs-secondary-rgb), 0.3);'"
-                                              x-text="user.is_online ? 'Live' : 'Away'"></span>
+                                              x-text="user.is_online ? 'Online' : 'Offline'"></span>
                                     </template>
                                 </div>
 
                                 <!-- Second Row: Location or Email -->
-                                <div class="text-truncate text-muted mb-1" style="font-size: 11px;">
+                                <div class="text-truncate text-muted mb-1 min-w-0" style="font-size: 11px;">
                                     <template x-if="user.location">
-                                        <span><i class="bi bi-geo-alt me-1 opacity-75"></i><span x-text="user.location"></span></span>
+                                        <span class="text-truncate"><i class="bi bi-geo-alt me-1 opacity-75"></i><span x-text="user.location"></span></span>
                                     </template>
                                     <template x-if="!user.location">
-                                        <span><i class="bi bi-envelope me-1 opacity-75"></i><span x-text="user.email"></span></span>
+                                        <span class="text-truncate"><i class="bi bi-envelope me-1 opacity-75"></i><span x-text="user.email"></span></span>
                                     </template>
                                 </div>
 
                                 <!-- Third Row: Last Seen & Device (or "Your position" for self) -->
-                                <div class="d-flex justify-content-between align-items-center text-muted opacity-75" style="font-size: 10px;">
+                                <div class="d-flex justify-content-between align-items-center text-muted opacity-75 min-w-0" style="font-size: 10px;">
                                     <template x-if="user.isMe">
-                                        <span class="text-primary fw-semibold opacity-100"
+                                        <span class="text-primary fw-semibold opacity-100 text-truncate"
                                               x-text="userSort === 'revenue_desc' ? 'Your rank: #' + (user._globalRank + 1) : 'Active now'"></span>
                                     </template>
                                     <template x-if="!user.isMe">
-                                        <span class="text-truncate" x-text="user.last_seen_label"></span>
+                                        <span class="text-truncate flex-grow-1 min-w-0" x-text="user.last_seen_label"></span>
                                     </template>
-                                    <span class="text-truncate ms-2 text-end" x-show="user.active_device && !user.isMe" x-text="user.active_device"></span>
+                                    <span class="text-truncate ms-2 text-end flex-shrink-0" style="max-width: 50%;" x-show="user.active_device && !user.isMe" x-text="user.active_device"></span>
                                 </div>
 
                                 <!-- Fourth Row: Today's Stats -->
-                                <div class="d-flex gap-2 mt-2">
+                                <div class="d-flex gap-2 mt-2 flex-wrap">
                                     <span class="badge fw-semibold" style="font-size: 9px; padding: 3px 6px;
                                                  background: rgba(var(--bs-primary-rgb), 0.15);
                                                  color: var(--bs-primary);
@@ -549,7 +551,7 @@
                                                       :style="user.is_online
                                                         ? 'background: rgba(var(--bs-success-rgb), 0.15); color: var(--bs-success); border: 1px solid rgba(var(--bs-success-rgb), 0.35);'
                                                         : 'background: rgba(var(--bs-secondary-rgb), 0.15); color: var(--bs-secondary); border: 1px solid rgba(var(--bs-secondary-rgb), 0.3);'"
-                                                      x-text="user.is_online ? 'Live' : 'Away'"></span>
+                                                      x-text="user.is_online ? 'Online' : 'Offline'"></span>
                                             </div>
                                             <div class="text-muted text-truncate" style="font-size:10px;" x-show="user.location">
                                                 <i class="bi bi-geo-alt me-1 opacity-75"></i><span x-text="user.location"></span>
@@ -1160,17 +1162,18 @@
             scrollToMessage(id) {
                 // Logic to scroll to message
             },
-            
             async togglePin() {
                 try {
-                    await axios.post(`/api/chat/conversations/${this.activeConversation.id}/pin`);
-                    this.activeConversation.is_pinned = !this.activeConversation.is_pinned;
+                    const nextState = !this.activeConversation.is_pinned;
+                    await axios.post(`/api/chat/conversations/${this.activeConversation.id}/pin`, { pinned: nextState });
+                    this.activeConversation.is_pinned = nextState;
                 } catch (e) {}
             },
             
             async toggleArchive() {
                 try {
-                    await axios.post(`/api/chat/conversations/${this.activeConversation.id}/archive`);
+                    const nextState = !this.activeConversation.is_archived;
+                    await axios.post(`/api/chat/conversations/${this.activeConversation.id}/archive`, { archived: nextState });
                     this.activeConversation = null;
                     this.poll();
                 } catch (e) {}
@@ -1480,7 +1483,7 @@
                 const encodedUri = encodeURI(csvContent);
                 const link = document.createElement("a");
                 link.setAttribute("href", encodedUri);
-                link.setAttribute("download", `live_users_${new Date().toISOString().split('T')[0]}.csv`);
+                link.setAttribute("download", `online_users_${new Date().toISOString().split('T')[0]}.csv`);
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);

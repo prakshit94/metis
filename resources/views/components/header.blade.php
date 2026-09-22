@@ -702,25 +702,8 @@
     }
 
     $unreadMessages = collect();
-    if (\Illuminate\Support\Facades\Schema::hasTable('chat_notifications') && auth()->check()) {
-        try {
-            $unreadMessages = \Illuminate\Support\Facades\DB::table('chat_notifications')
-                ->where('user_id', auth()->id())
-                ->whereNull('read_at')
-                ->latest()
-                ->limit(5)
-                ->get()
-                ->map(function($msg) {
-                    $payload = json_decode($msg->payload, true);
-                    return (object)[
-                        'id'          => $msg->id,
-                        'sender_name' => $payload['sender_name'] ?? 'System',
-                        'snippet'     => $payload['snippet'] ?? 'You have a new message.',
-                        'time_ago'    => $msg->created_at ? \Carbon\Carbon::parse($msg->created_at)->diffForHumans() : null
-                    ];
-                });
-        } catch (\Exception $e) {}
-    }
+    // Chat notifications are no longer loaded into the notification bell.
+    // They are handled exclusively by the dedicated chat button in the header.
 
     // ── Team Chat unread count (for the header chat icon badge only) ──
     $chatTotalUnread = 0;
@@ -777,13 +760,11 @@
                          }
                      }">
                     <a href="{{ route('chat.index') }}"
-                       target="_blank"
-                       rel="noopener noreferrer"
                        class="btn btn-outline-secondary border-0 shadow-sm bg-body rounded-circle p-2 d-flex align-items-center justify-content-center transition-all hover-scale position-relative"
                        style="width: 42px; height: 42px;"
                        data-bs-toggle="tooltip"
                        data-bs-placement="bottom"
-                       title="Team Chat (opens in new tab)"
+                       title="Team Chat"
                        aria-label="Team Chat">
                         <i class="bi bi-chat-dots-fill fs-5 text-secondary" aria-hidden="true"></i>
                         {{-- Badge: hidden by default via d-none; Alpine shows it only when count > 0 --}}
@@ -827,12 +808,6 @@
                                     <button class="nav-link active py-1 px-3 fs-12 text-white border-0 bg-transparent fw-semibold" data-bs-toggle="tab" data-bs-target="#all-noti-tab" type="button" role="tab" aria-controls="all-noti-tab" aria-selected="true" style="opacity: 0.8;">
                                         All Activity
                                         <span class="badge bg-danger rounded-pill ms-1" style="font-size: 10px;" x-show="count > 0" x-text="count"></span>
-                                    </button>
-                                </li>
-                                <li class="nav-item" role="presentation">
-                                    <button class="nav-link py-1 px-3 fs-12 text-white border-0 bg-transparent fw-semibold" data-bs-toggle="tab" data-bs-target="#messages-noti-tab" type="button" role="tab" aria-controls="messages-noti-tab" aria-selected="false" style="opacity: 0.8;">
-                                        Messages
-                                        <span class="badge bg-danger rounded-pill ms-1" style="font-size: 10px;" x-show="!messagesRead && {{ $unreadMessages->count() }} > 0">{{ $unreadMessages->count() }}</span>
                                     </button>
                                 </li>
                                 <li class="nav-item" role="presentation">
@@ -888,45 +863,6 @@
                                     <button type="button" class="btn btn-sm btn-link text-primary fw-bold text-decoration-none p-0">View All Activity <i class="bi bi-arrow-right-short align-middle"></i></button>
                                     <button type="button" @click="markAsRead('activities')" x-show="count > 0" class="btn btn-sm btn-link text-muted text-decoration-none p-0 fw-semibold" style="font-size: 11px;"><i class="bi bi-check2-all me-1"></i>Mark read</button>
                                 </div>
-                            </div>
-                            <div class="tab-pane fade" id="messages-noti-tab" role="tabpanel">
-                                @if($unreadMessages->isEmpty())
-                                <div class="p-5 text-center opacity-75">
-                                    <i class="bi bi-chat-slash fs-2 text-muted mb-2 d-block"></i>
-                                    <p class="text-muted mb-0">No new messages.</p>
-                                </div>
-                                @else
-                                <div style="max-height: 300px; overflow-y: auto;" class="custom-scrollbar">
-                                    @foreach($unreadMessages as $msg)
-                                    <a class="dropdown-item p-3 border-bottom d-flex align-items-start gap-3 text-wrap transition-all" href="{{ route('chat.index') }}"
-                                       :class="!messagesRead ? 'bg-primary bg-opacity-10 position-relative' : 'hover-bg-secondary opacity-75'">
-                                        <template x-if="!messagesRead">
-                                            <div class="position-absolute top-50 start-0 translate-middle-y bg-primary rounded-circle ms-2 shadow-sm" style="width: 8px; height: 8px;"></div>
-                                        </template>
-                                        <div class="text-primary rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 ms-2"
-                                             :class="!messagesRead ? 'bg-primary bg-opacity-25 border border-2 border-primary border-opacity-25' : 'bg-secondary bg-opacity-10 text-secondary'" style="width: 40px; height: 40px;">
-                                            <i class="bi bi-person-fill fs-5"></i>
-                                        </div>
-                                        <div class="flex-grow-1">
-                                            <div class="d-flex justify-content-between align-items-center mb-1">
-                                                <h6 class="mb-0 fs-13" :class="!messagesRead ? 'fw-bold text-primary' : 'fw-semibold text-body'">{{ $msg->sender_name }}</h6>
-                                                <template x-if="!messagesRead">
-                                                    <span class="badge bg-primary rounded-pill shadow-sm" style="font-size: 9px;">New</span>
-                                                </template>
-                                            </div>
-                                            <p class="mb-1 fs-13" :class="!messagesRead ? 'text-body fw-bold' : 'text-muted'">{{ $msg->snippet }}</p>
-                                            @if($msg->time_ago)
-                                            <p class="mb-0 small" :class="!messagesRead ? 'text-primary text-opacity-75 fw-semibold' : 'text-muted'"><i class="bi bi-clock me-1"></i> {{ $msg->time_ago }}</p>
-                                            @endif
-                                        </div>
-                                    </a>
-                                    @endforeach
-                                </div>
-                                <div class="p-2 bg-body-secondary bg-opacity-50 rounded-bottom-4 d-flex align-items-center justify-content-between px-3">
-                                    <button type="button" class="btn btn-sm btn-link text-primary fw-bold text-decoration-none p-0">View All Messages <i class="bi bi-arrow-right-short align-middle"></i></button>
-                                    <button type="button" @click="markAsRead('messages')" x-show="!messagesRead" class="btn btn-sm btn-link text-muted text-decoration-none p-0 fw-semibold" style="font-size: 11px;"><i class="bi bi-check2-all me-1"></i>Mark read</button>
-                                </div>
-                                @endif
                             </div>
                             <div class="tab-pane fade" id="alerts-noti-tab" role="tabpanel">
                                 @if($systemAlerts->isEmpty())
