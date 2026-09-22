@@ -424,14 +424,14 @@
                 @endcanany
 
                 {{-- ── ADMINISTRATION ─────────────────────────────── --}}
-                @canany(['user-view', 'role-view', 'department-view', 'attendance-view', 'leave-view', 'village-view', 'orderreason-view', 'settings-view'])
+                @canany(['role-view', 'department-view', 'attendance-view', 'leave-view', 'orderreason-view', 'settings-view'])
                 <li class="nav-item sidebar-section-label mt-3">
                     <small class="text-muted px-3 text-uppercase fw-bold">Administration</small>
                 </li>
                 @endcanany
 
                 {{-- CRM & People Dropdown --}}
-                @canany(['user-view', 'role-view', 'department-view'])
+                @canany(['role-view', 'department-view'])
                 <li class="nav-item">
                     <a class="nav-link {{ in_array($current, ['users', 'roles-permissions', 'teams', 'customers', 'customer-settings.index', 'departments']) ? 'active' : 'collapsed' }}"
                        href="#"

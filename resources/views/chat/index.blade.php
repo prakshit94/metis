@@ -114,7 +114,10 @@
                             </div>
                             <div class="min-w-0 flex-grow-1">
                                 <div class="d-flex justify-content-between align-items-center mb-1 gap-2 min-w-0">
-                                    <span class="text-truncate fw-semibold flex-grow-1 min-w-0" style="font-size:.875rem;" x-text="conversationTitle(conversation)"></span>
+                                    <div class="d-flex align-items-center flex-grow-1 min-w-0 gap-1">
+                                        <span class="text-truncate fw-semibold" style="font-size:.875rem;" x-text="conversationTitle(conversation)"></span>
+                                        <i x-show="conversation.is_pinned" class="bi bi-star-fill text-warning" style="font-size: 10px;" title="Pinned"></i>
+                                    </div>
                                     <small class="text-muted flex-shrink-0 ms-2" style="font-size:10px;" x-text="lastTime(conversation)"></small>
                                 </div>
                                 <div class="text-truncate text-muted mb-1 min-w-0" style="font-size: 10px;" x-show="conversationLocation(conversation)">
@@ -159,11 +162,11 @@
                                 </div>
                             </div>
                             <div class="d-flex gap-2 shrink-0">
-                                <button type="button" @click="togglePin" class="btn btn-outline-secondary btn-sm" title="Pin chat">
-                                    <i class="bi bi-star-fill"></i>
+                                <button type="button" @click="togglePin" class="btn btn-sm" :class="activeConversation.is_pinned ? 'btn-warning' : 'btn-outline-secondary'" :title="activeConversation.is_pinned ? 'Unpin chat' : 'Pin chat'">
+                                    <i class="bi" :class="activeConversation.is_pinned ? 'bi-star-fill text-white' : 'bi-star'"></i>
                                 </button>
-                                <button type="button" @click="toggleArchive" class="btn btn-outline-secondary btn-sm" title="Archive chat">
-                                    <i class="bi bi-archive-fill"></i>
+                                <button type="button" @click="toggleArchive" class="btn btn-sm" :class="activeConversation.is_archived ? 'btn-secondary' : 'btn-outline-secondary'" :title="activeConversation.is_archived ? 'Unarchive chat' : 'Archive chat'">
+                                    <i class="bi" :class="activeConversation.is_archived ? 'bi-archive-fill text-white' : 'bi-archive'"></i>
                                 </button>
                                 <button type="button" x-show="activeConversation?.type === 'group'" @click="openGroupSettings" class="btn btn-outline-secondary btn-sm" title="Group settings">
                                     <i class="bi bi-gear-fill"></i>
@@ -750,9 +753,9 @@
 
             search: '',
             userSearch: '',
-            filter: 'all',
-            userFilter: 'all',
-            userSort: 'revenue_desc',   // Default: Revenue High → Low
+            filter: localStorage.getItem('metis_chat_filter_' + @js(auth()->id())) || 'all',
+            userFilter: localStorage.getItem('metis_chat_userFilter_' + @js(auth()->id())) || 'all',
+            userSort: localStorage.getItem('metis_chat_userSort_' + @js(auth()->id())) || 'revenue_desc',
 
             // Logged-in user's own stats (injected server-side, refreshed on poll)
             selfUser: initial.currentUserData && Object.keys(initial.currentUserData).length
@@ -788,6 +791,10 @@
             pollTimer: null,
 
             init() {
+                this.$watch('filter', val => localStorage.setItem('metis_chat_filter_' + this.currentUserId, val));
+                this.$watch('userFilter', val => localStorage.setItem('metis_chat_userFilter_' + this.currentUserId, val));
+                this.$watch('userSort', val => localStorage.setItem('metis_chat_userSort_' + this.currentUserId, val));
+
                 this.poll();
                 this.pollTimer = setInterval(() => this.poll(), this.pollInterval);
 

@@ -37,6 +37,10 @@ class ConversationController extends Controller
             ? $chat->createDirectConversation($request->user(), (int) $data['user_id'])
             : $chat->createGroup($request->user(), $data);
 
+        $member = $conversation->activeMembers->firstWhere('user_id', $request->user()->id);
+        $conversation->is_pinned = $member ? !is_null($member->pinned_at) : false;
+        $conversation->is_archived = $member ? !is_null($member->archived_at) : false;
+
         return response()->json(['data' => $conversation], 201);
     }
 
@@ -46,8 +50,14 @@ class ConversationController extends Controller
 
         $chat->ensureMember($conversation, $request->user());
 
+        $conversation->load(['activeMembers.user:id,name,email,photo', 'owner:id,name']);
+        
+        $member = $conversation->activeMembers->firstWhere('user_id', $request->user()->id);
+        $conversation->is_pinned = $member ? !is_null($member->pinned_at) : false;
+        $conversation->is_archived = $member ? !is_null($member->archived_at) : false;
+
         return response()->json([
-            'data' => $conversation->load(['activeMembers.user:id,name,email,photo', 'owner:id,name']),
+            'data' => $conversation,
         ]);
     }
 

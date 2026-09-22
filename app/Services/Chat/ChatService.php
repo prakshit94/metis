@@ -43,7 +43,13 @@ class ChatService
                     ->limit(1)
             )
             ->latest('updated_at')
-            ->get();
+            ->get()
+            ->map(function ($conversation) use ($user) {
+                $member = $conversation->activeMembers->firstWhere('user_id', $user->id);
+                $conversation->is_pinned = $member ? !is_null($member->pinned_at) : false;
+                $conversation->is_archived = $member ? !is_null($member->archived_at) : false;
+                return $conversation;
+            });
     }
 
     public function createDirectConversation(User $creator, int $recipientId): Conversation
