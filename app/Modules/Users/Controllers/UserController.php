@@ -196,6 +196,19 @@ class UserController extends Controller implements HasMiddleware
     {
         $validated = $request->validated();
 
+        // Validate privileged role/permission assignments before creating the
+        // record. Previously a 403 here left behind a partially-created user.
+        if (! empty($validated['roles'])) {
+            abort_unless($request->user()?->can('user-sync-roles'), 403, 'You do not have permission to sync roles.');
+            if (in_array('Super Admin', $validated['roles'], true) && ! $request->user()?->hasRole('Super Admin')) {
+                return response()->json(['message' => 'You cannot assign the Super Admin role without being a Super Admin.'], 403);
+            }
+        }
+
+        if (! empty($validated['permissions'])) {
+            abort_unless($request->user()?->can('user-sync-permissions'), 403, 'You do not have permission to sync permissions.');
+        }
+
         $user = User::create([
             'name' => $validated['name'],
             'first_name' => $validated['first_name'] ?? null,
@@ -238,10 +251,6 @@ class UserController extends Controller implements HasMiddleware
         }
 
         if (! empty($validated['roles'])) {
-            abort_unless($request->user()?->can('user-sync-roles'), 403, 'You do not have permission to sync roles.');
-            if (in_array('Super Admin', $validated['roles']) && ! $request->user()?->hasRole('Super Admin')) {
-                return response()->json(['message' => 'You cannot assign the Super Admin role without being a Super Admin.'], 403);
-            }
             if ($request->has('team_id')) {
                 setPermissionsTeamId($request->team_id ?: null);
             }
@@ -249,7 +258,6 @@ class UserController extends Controller implements HasMiddleware
         }
 
         if (! empty($validated['permissions'])) {
-            abort_unless($request->user()?->can('user-sync-permissions'), 403, 'You do not have permission to sync permissions.');
             $user->syncPermissions($validated['permissions']);
         }
 
@@ -292,11 +300,37 @@ class UserController extends Controller implements HasMiddleware
      */
     public function update(UpdateUserRequest $request, User $user): JsonResponse
     {
-        if ($user->hasRole('Super Admin') && ! $request->user()?->hasRole('Super Admin')) {
+        if ($this->hasSuperAdminRole($user) && ! $request->user()?->hasRole('Super Admin')) {
             return response()->json(['message' => 'You cannot modify a Super Admin user.'], 403);
         }
 
         $validated = $request->validated();
+
+        if (array_key_exists('is_active', $validated)) {
+            abort_unless($request->user()?->can('user-activate'), 403, 'You do not have permission to change account status.');
+
+            if (! $validated['is_active'] && $user->id === 1) {
+                return response()->json(['message' => 'The Master Admin cannot be deactivated.'], 403);
+            }
+
+            if (! $validated['is_active'] && $this->isLastActiveSuperAdmin($user)) {
+                return response()->json(['message' => 'Cannot deactivate the last active Super Admin user.'], 403);
+            }
+        }
+
+        if (array_key_exists('roles', $validated)) {
+            abort_unless($request->user()?->can('user-sync-roles'), 403, 'You do not have permission to sync roles.');
+            if (in_array('Super Admin', $validated['roles'], true) && ! $request->user()?->hasRole('Super Admin')) {
+                return response()->json(['message' => 'You cannot assign the Super Admin role without being a Super Admin.'], 403);
+            }
+            if ($this->hasSuperAdminRole($user) && ! in_array('Super Admin', $validated['roles'], true) && $this->superAdminCount() <= 1) {
+                return response()->json(['message' => 'Cannot remove the last Super Admin role.'], 403);
+            }
+        }
+
+        if (array_key_exists('permissions', $validated)) {
+            abort_unless($request->user()?->can('user-sync-permissions'), 403, 'You do not have permission to sync permissions.');
+        }
 
         $fillable = [];
         $allowedFields = [
@@ -334,10 +368,6 @@ class UserController extends Controller implements HasMiddleware
         }
 
         if (array_key_exists('roles', $validated)) {
-            abort_unless($request->user()?->can('user-sync-roles'), 403, 'You do not have permission to sync roles.');
-            if (in_array('Super Admin', $validated['roles']) && ! $request->user()?->hasRole('Super Admin')) {
-                return response()->json(['message' => 'You cannot assign the Super Admin role without being a Super Admin.'], 403);
-            }
             if ($request->has('team_id')) {
                 // To cleanly move a user between teams (or to Global), we first strip existing roles
                 // across any team context so they do not stack.
@@ -349,7 +379,6 @@ class UserController extends Controller implements HasMiddleware
         }
 
         if (array_key_exists('permissions', $validated)) {
-            abort_unless($request->user()?->can('user-sync-permissions'), 403, 'You do not have permission to sync permissions.');
             $user->syncPermissions($validated['permissions']);
         }
 
@@ -387,11 +416,11 @@ class UserController extends Controller implements HasMiddleware
             ]);
         }
 
-        if ($user->hasRole('Super Admin')) {
+        if ($this->hasSuperAdminRole($user)) {
             if (! $request->user()?->hasRole('Super Admin')) {
                 return response()->json(['message' => 'You cannot delete a Super Admin user.'], 403);
             }
-            $superAdminCount = User::role('Super Admin')->count();
+            $superAdminCount = $this->superAdminCount();
             if ($superAdminCount <= 1) {
                 return response()->json([
                     'message' => 'Cannot delete the last Super Admin user.',
@@ -459,12 +488,12 @@ class UserController extends Controller implements HasMiddleware
             return response()->json(['message' => 'The Master Admin cannot be permanently deleted.'], 403);
         }
 
-        if ($user->hasRole('Super Admin')) {
+        if ($this->hasSuperAdminRole($user)) {
             if (! $request->user()?->hasRole('Super Admin')) {
                 return response()->json(['message' => 'You cannot permanently delete a Super Admin user.'], 403);
             }
-            $superAdminCount = User::role('Super Admin')->count();
-            if (! $user->trashed() && $superAdminCount <= 1) {
+            $superAdminCount = $this->superAdminCount();
+            if ($superAdminCount <= 1) {
                 return response()->json([
                     'message' => 'Cannot permanently delete the last Super Admin user.',
                 ], 403);
@@ -495,11 +524,15 @@ class UserController extends Controller implements HasMiddleware
             return response()->json(['message' => 'The Master Admin cannot be deactivated.'], 403);
         }
 
-        if ($user->hasRole('Super Admin') && ! $request->user()?->hasRole('Super Admin')) {
+        if ($this->hasSuperAdminRole($user) && ! $request->user()?->hasRole('Super Admin')) {
             return response()->json(['message' => 'You cannot modify a Super Admin user.'], 403);
         }
 
         $newState = ! $user->is_active;
+
+        if (! $newState && $this->isLastActiveSuperAdmin($user)) {
+            return response()->json(['message' => 'Cannot deactivate the last active Super Admin user.'], 403);
+        }
 
         $user->update(['is_active' => $newState]);
 
@@ -537,6 +570,10 @@ class UserController extends Controller implements HasMiddleware
             return response()->json(['message' => 'You cannot assign the Super Admin role without being a Super Admin.'], 403);
         }
 
+        if ($this->hasSuperAdminRole($user) && ! in_array('Super Admin', $rolesToAssign, true) && $this->superAdminCount() <= 1) {
+            return response()->json(['message' => 'Cannot remove the last Super Admin role.'], 403);
+        }
+
         if ($request->has('team_id')) {
             setPermissionsTeamId($request->team_id ?: null);
         }
@@ -560,7 +597,7 @@ class UserController extends Controller implements HasMiddleware
     {
         abort_unless($request->user()?->can('user-sync-permissions'), 403);
 
-        if ($user->hasRole('Super Admin') && ! $request->user()?->hasRole('Super Admin')) {
+        if ($this->hasSuperAdminRole($user) && ! $request->user()?->hasRole('Super Admin')) {
             return response()->json(['message' => 'You cannot modify a Super Admin user.'], 403);
         }
 
@@ -595,5 +632,24 @@ class UserController extends Controller implements HasMiddleware
             ->paginate((int) $request->input('per_page', 25));
 
         return response()->json($history);
+    }
+
+    private function hasSuperAdminRole(User $user): bool
+    {
+        return $user->allRoles()->where('name', 'Super Admin')->exists();
+    }
+
+    private function superAdminCount(): int
+    {
+        return User::whereHas('allRoles', fn ($query) => $query->where('name', 'Super Admin'))->count();
+    }
+
+    private function isLastActiveSuperAdmin(User $user): bool
+    {
+        return $user->is_active
+            && $this->hasSuperAdminRole($user)
+            && User::where('is_active', true)
+                ->whereHas('allRoles', fn ($query) => $query->where('name', 'Super Admin'))
+                ->count() <= 1;
     }
 }

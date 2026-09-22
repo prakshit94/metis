@@ -455,29 +455,40 @@
                 @endif
 
 @php
-    $activityQuery = \Spatie\Activitylog\Models\Activity::with(['causer', 'subject'])->latest();
-    if (auth()->check() && !auth()->user()->hasRole('Super Admin')) {
-        $activityQuery->where('causer_id', auth()->id());
-    }
-    
-    $initialActivities = $activityQuery->limit(50)->get()->map(function($a) {
-        return [
-            'id' => $a->id,
-            'formatted_description' => \App\Http\Controllers\AuditLogController::formatActivityDescription($a),
-            'causer_name' => $a->causer->name ?? 'System',
-            'causer_photo' => $a->causer->photo ?? null,
-            'time_ago' => $a->created_at->diffForHumans(),
-            'is_read' => auth()->check() ? in_array($a->id, auth()->user()->readActivities()->pluck('activity_id')->toArray()) : false,
-        ];
-    });
+    $notificationUser = auth()->user();
+    $canViewActivities = $notificationUser
+        && ($notificationUser->can('audit-log-view') || $notificationUser->hasAnyRole(['Super Admin', 'Admin']));
+    $initialActivities = collect();
     $initialUnreadCount = 0;
-    if (auth()->check()) {
+    if ($canViewActivities) {
+        $activityQuery = \Spatie\Activitylog\Models\Activity::with(['causer', 'subject'])->latest();
+        if (! $notificationUser->hasRole('Super Admin')) {
+            $activityQuery->where('causer_id', $notificationUser->id);
+        }
+        $activityRecords = $activityQuery->limit(50)->get();
+        $initialReadIds = $notificationUser->readActivities()
+            ->whereIn('activity_id', $activityRecords->pluck('id'))
+            ->pluck('activity_id')
+            ->all();
+        $initialActivities = $activityRecords->map(function ($a) use ($initialReadIds) {
+            $causer = $a->causer;
+            $formattedDescription = \App\Http\Controllers\AuditLogController::formatActivityDescription($a);
+            return [
+                'id' => $a->id,
+                'formatted_description' => $formattedDescription,
+                'plain_description' => \App\Http\Controllers\AuditLogController::plainActivityDescription($formattedDescription),
+                'causer_name' => $causer?->name ?? 'System',
+                'causer_photo' => $causer?->photo,
+                'time_ago' => $a->created_at->diffForHumans(),
+                'is_read' => in_array($a->id, $initialReadIds, true),
+            ];
+        });
         $recentQuery = \Spatie\Activitylog\Models\Activity::latest('id');
-        if (!auth()->user()->hasRole('Super Admin')) {
-            $recentQuery->where('causer_id', auth()->id());
+        if (! $notificationUser->hasRole('Super Admin')) {
+            $recentQuery->where('causer_id', $notificationUser->id);
         }
         $recentIds = $recentQuery->limit(500)->pluck('id');
-        $readIdsForCount = auth()->user()->readActivities()->whereIn('activity_id', $recentIds)->pluck('activity_id');
+        $readIdsForCount = $notificationUser->readActivities()->whereIn('activity_id', $recentIds)->pluck('activity_id');
         $initialUnreadCount = $recentIds->diff($readIdsForCount)->count();
     }
 
@@ -502,7 +513,7 @@
                     'type' => 'warning',
                     'icon' => 'bi-box-seam',
                     'title' => 'Low Stock Alert',
-                    'message' => "<b>{$product->name}</b> is low on stock (<b>{$qty}</b> left).",
+                    'message' => '<b>'.e($product->name).'</b> is low on stock (<b>'.$qty.'</b> left).',
                     'time_ago' => null,
                     'link' => route('catalog.products', ['search' => $product->sku])
                 ]);
@@ -523,7 +534,7 @@
                     'type' => 'danger',
                     'icon' => 'bi-exclamation-triangle',
                     'title' => 'Open Complaint',
-                    'message' => "Complaint <b>{$complaint->complaint_number}</b> requires attention.",
+                    'message' => 'Complaint <b>'.e($complaint->complaint_number).'</b> requires attention.',
                     'time_ago' => $complaint->created_at ? $complaint->created_at->diffForHumans() : null,
                     'link' => '#'
                 ]);
@@ -544,7 +555,7 @@
                     'type' => 'info',
                     'icon' => 'bi-calendar-event',
                     'title' => 'Pending Leave Request',
-                    'message' => "<b>{$leave->user?->name}</b> applied for leave.",
+                    'message' => '<b>'.e($leave->user?->name ?? 'A user').'</b> applied for leave.',
                     'time_ago' => $leave->created_at ? $leave->created_at->diffForHumans() : null,
                     'link' => route('leaves')
                 ]);
@@ -565,7 +576,7 @@
                     'type' => 'primary',
                     'icon' => 'bi-cart-check',
                     'title' => 'Pending Order Confirmation',
-                    'message' => "Order <b>{$order->order_no}</b> is awaiting confirmation.",
+                    'message' => 'Order <b>'.e($order->order_no).'</b> is awaiting confirmation.',
                     'time_ago' => $order->created_at ? $order->created_at->diffForHumans() : null,
                     'link' => '/orders'
                 ]);
@@ -588,7 +599,7 @@
                     'type' => 'danger',
                     'icon' => 'bi-receipt',
                     'title' => 'Overdue Invoice',
-                    'message' => "Invoice <b>{$invoice->invoice_no}</b> is overdue.",
+                    'message' => 'Invoice <b>'.e($invoice->invoice_no).'</b> is overdue.',
                     'time_ago' => $invoice->due_date ? \Carbon\Carbon::parse($invoice->due_date)->diffForHumans() : null,
                     'link' => '/invoices'
                 ]);
@@ -609,7 +620,7 @@
                     'type' => 'warning',
                     'icon' => 'bi-arrow-return-left',
                     'title' => 'Pending Return Request',
-                    'message' => "Return <b>{$returnRequest->return_no}</b> is awaiting approval.",
+                    'message' => 'Return <b>'.e($returnRequest->return_no).'</b> is awaiting approval.',
                     'time_ago' => $returnRequest->created_at ? $returnRequest->created_at->diffForHumans() : null,
                     'link' => '/returns'
                 ]);
@@ -630,7 +641,7 @@
                     'type' => 'danger',
                     'icon' => 'bi-cash-coin',
                     'title' => 'Pending Refund',
-                    'message' => "Refund <b>{$refund->refund_no}</b> requires processing.",
+                    'message' => 'Refund <b>'.e($refund->refund_no).'</b> requires processing.',
                     'time_ago' => $refund->created_at ? $refund->created_at->diffForHumans() : null,
                     'link' => '/refunds'
                 ]);
@@ -651,7 +662,7 @@
                     'type' => 'danger',
                     'icon' => 'bi-truck',
                     'title' => 'Failed Shipment',
-                    'message' => "Shipment <b>{$shipment->shipment_no}</b> has failed delivery.",
+                    'message' => 'Shipment <b>'.e($shipment->shipment_no).'</b> has failed delivery.',
                     'time_ago' => $shipment->updated_at ? $shipment->updated_at->diffForHumans() : null,
                     'link' => '/shipping'
                 ]);
@@ -672,7 +683,7 @@
                     'type' => 'info',
                     'icon' => 'bi-sliders',
                     'title' => 'Pending Stock Adjustment',
-                    'message' => "Adjustment <b>{$adj->reference_no}</b> awaits approval.",
+                    'message' => 'Adjustment <b>'.e($adj->reference_no).'</b> awaits approval.',
                     'time_ago' => $adj->created_at ? $adj->created_at->diffForHumans() : null,
                     'link' => '/inventory/adjustments'
                 ]);
@@ -693,7 +704,7 @@
                     'type' => 'success',
                     'icon' => 'bi-box-seam-fill',
                     'title' => 'New Product Catalogued',
-                    'message' => "<b>{$prod->name}</b> was recently added.",
+                    'message' => '<b>'.e($prod->name).'</b> was recently added.',
                     'time_ago' => $prod->created_at ? $prod->created_at->diffForHumans() : null,
                     'link' => route('catalog.products', ['search' => $prod->sku])
                 ]);
@@ -778,7 +789,7 @@
                 @endcan
 
                 {{-- Notifications Dropdown --}}
-                <div class="dropdown h-100 d-flex align-items-center" x-data="notificationApp(@js($initialActivities), {{ $initialUnreadCount }}, {{ $otherAlertsCount }})">
+                <div class="dropdown h-100 d-flex align-items-center" x-data="notificationApp(@js($initialActivities), {{ $initialUnreadCount }}, {{ $otherAlertsCount }}, @js($canViewActivities))">
                     <button class="btn btn-outline-secondary border-0 shadow-sm bg-body rounded-circle p-2 d-flex align-items-center justify-content-center transition-all hover-scale position-relative"
                             style="width: 42px; height: 42px;"
                             type="button"
@@ -853,7 +864,7 @@
                                                         <span class="badge bg-primary rounded-pill shadow-sm" style="font-size: 9px;">New</span>
                                                     </template>
                                                 </div>
-                                                <p class="mb-1 fs-13" :class="!activity.is_read ? 'text-body' : 'text-muted'" style="line-height: 1.4;" x-html="activity.formatted_description"></p>
+                                                <p class="mb-1 fs-13" :class="!activity.is_read ? 'text-body' : 'text-muted'" style="line-height: 1.4;" x-text="activity.plain_description || activity.formatted_description"></p>
                                                 <p class="mb-0 small" :class="!activity.is_read ? 'text-primary text-opacity-75 fw-semibold' : 'text-muted'"><i class="bi bi-clock me-1"></i> <span x-text="activity.time_ago"></span></p>
                                             </div>
                                         </a>
@@ -1163,10 +1174,10 @@ document.addEventListener('alpine:init', () => {
 
 
 
-    window.notificationApp = function(initialActivities, initialCount, otherAlertsCount) {
+    window.notificationApp = function(initialActivities, initialCount, otherAlertsCount, canFetchActivities) {
         // Build a localStorage key scoped to this user + the current alert snapshot count.
         // When the count changes (new alerts arrive), the key changes → dismissed state resets.
-        const userId = document.querySelector('meta[name="user-name"]')?.getAttribute('content') || 'guest';
+        const userId = document.querySelector('meta[name="user-id"]')?.getAttribute('content') || 'guest';
         const alertsKey    = `metis_alerts_dismissed_${userId}_${otherAlertsCount}`;
         const messagesKey  = `metis_messages_dismissed_${userId}_${otherAlertsCount}`;
 
@@ -1174,6 +1185,7 @@ document.addEventListener('alpine:init', () => {
             activities: initialActivities || [],
             count: initialCount || 0,
             otherCount: otherAlertsCount || 0,
+            canFetchActivities: Boolean(canFetchActivities),
 
             // Restore persisted dismissed state from localStorage on init
             alertsRead:   localStorage.getItem(alertsKey)   === '1',
@@ -1190,12 +1202,13 @@ document.addEventListener('alpine:init', () => {
 
             init() {
                 // Periodically fetch updates every 3 seconds for instant-like feel
-                setInterval(() => {
-                    this.fetchActivities();
-                }, 3000);
+                if (this.canFetchActivities) {
+                    setInterval(() => this.fetchActivities(), 30000);
+                }
             },
 
             fetchActivities() {
+                if (!this.canFetchActivities) return;
                 fetch('/api/activities/recent', {
                     headers: { 
                         'Accept': 'application/json',
@@ -1279,7 +1292,15 @@ document.addEventListener('alpine:init', () => {
                         'Accept': 'application/json',
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                     }
-                }).catch(err => console.error('Failed to mark as read', err));
+                })
+                .then(res => res.ok ? res.json() : Promise.reject(res))
+                .then(data => {
+                    if (typeof data.count === 'number') this.count = data.count;
+                })
+                .catch(err => {
+                    console.error('Failed to mark as read', err);
+                    this.fetchActivities();
+                });
             }
         };
     };

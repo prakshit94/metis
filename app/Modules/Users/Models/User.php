@@ -301,6 +301,17 @@ class User extends Authenticatable implements Auditable
     public function suspend(int $minutes = 15): void
     {
         $this->update(['suspended_until' => Carbon::now()->addMinutes($minutes)]);
+
+        // A lockout must also terminate credentials issued before the lockout.
+        $this->tokens()->delete();
+        if (config('session.driver') === 'database') {
+            DB::table(config('session.table', 'sessions'))
+                ->where('user_id', $this->id)
+                ->delete();
+        }
+
+        $this->setRememberToken(null);
+        $this->saveQuietly();
     }
 
     /**

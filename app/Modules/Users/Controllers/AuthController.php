@@ -122,7 +122,7 @@ class AuthController extends Controller
             RateLimiter::hit($ipKey, self::LOCKOUT_WINDOW_MIN * 60);
 
             // Fire the native Failed event so our listener captures it
-            Event::dispatch(new Failed('web', $user, ['email' => $email, 'password' => $request->validated('password')]));
+            Event::dispatch(new Failed('web', $user, ['email' => $email]));
 
             return $this->genericFailure($request);
         }
@@ -132,7 +132,7 @@ class AuthController extends Controller
             RateLimiter::hit($emailKey, self::LOCKOUT_WINDOW_MIN * 60);
             RateLimiter::hit($ipKey, self::LOCKOUT_WINDOW_MIN * 60);
 
-            Event::dispatch(new Failed('web', $user, ['email' => $email, 'password' => $request->validated('password')]));
+            Event::dispatch(new Failed('web', $user, ['email' => $email]));
 
             return $this->genericFailure($request);
         }
@@ -141,7 +141,7 @@ class AuthController extends Controller
             RateLimiter::hit($emailKey, self::LOCKOUT_WINDOW_MIN * 60);
             RateLimiter::hit($ipKey, self::LOCKOUT_WINDOW_MIN * 60);
 
-            Event::dispatch(new Failed('web', $user, ['email' => $email, 'password' => $request->validated('password')]));
+            Event::dispatch(new Failed('web', $user, ['email' => $email]));
 
             return $this->genericFailure($request);
         }
@@ -165,13 +165,14 @@ class AuthController extends Controller
      */
     public function logout(Request $request): JsonResponse|RedirectResponse
     {
-        $user = $request->user() ?? Auth::guard('web')->user();
+        $apiUser = $request->user('sanctum');
+        $user = $apiUser ?? Auth::guard('web')->user();
         if ($user) {
             $this->recordAttendanceCheckOut($user);
         }
 
         if ($this->isMobileRequest($request)) {
-            $request->user()?->currentAccessToken()?->delete();
+            $apiUser?->currentAccessToken()?->delete();
 
             return response()->json(['message' => 'Logged out successfully.']);
         }
@@ -192,12 +193,15 @@ class AuthController extends Controller
      */
     public function revokeOtherTokens(Request $request): JsonResponse
     {
-        $user = $request->user();
+        $user = $request->user('sanctum');
         $currentToken = $user->currentAccessToken();
 
-        $revokedCount = $user->tokens()
-            ->where('id', '!=', $currentToken->id)
-            ->delete();
+        $tokens = $user->tokens();
+        if ($currentToken !== null) {
+            $tokens->where('id', '!=', $currentToken->id);
+        }
+
+        $revokedCount = $tokens->delete();
 
         return response()->json([
             'message' => 'Other tokens revoked successfully.',
@@ -232,8 +236,9 @@ class AuthController extends Controller
     {
         Event::dispatch(new Login('sanctum', $user, false)); // fires the Login event → LogAuthenticationAttempts
 
-        // Revoke all existing mobile tokens for this user
-        $user->tokens()->delete();
+        // One account has one active login. This clears prior browser sessions,
+        // API tokens, and remember-me cookies before issuing the new token.
+        $this->invalidateExistingCredentials($user);
 
         $deviceName = $this->extractDeviceName($request);
         $expiresAt = Carbon::now()->addDays(self::TOKEN_EXPIRY_DAYS);
@@ -264,8 +269,8 @@ class AuthController extends Controller
      */
     private function issueWebSession(Request $request, User $user): RedirectResponse
     {
-        // Delete any existing sessions for this user from the database
-        DB::table('sessions')->where('user_id', $user->id)->delete();
+        // A new browser login invalidates every older browser and mobile login.
+        $this->invalidateExistingCredentials($user);
 
         $remember = (bool) $request->boolean('remember');
         Auth::guard('web')->login($user, $remember);
@@ -288,6 +293,27 @@ class AuthController extends Controller
         }
 
         return $response;
+    }
+
+    /**
+     * Enforce the application's single-active-login policy.
+     *
+     * Rotating the remember token is required in addition to deleting database
+     * sessions: an old "remember me" cookie could otherwise create a fresh
+     * session after its original session was removed.
+     */
+    private function invalidateExistingCredentials(User $user): void
+    {
+        $user->tokens()->delete();
+
+        if (config('session.driver') === 'database') {
+            DB::table(config('session.table', 'sessions'))
+                ->where('user_id', $user->id)
+                ->delete();
+        }
+
+        $user->setRememberToken(Str::random(60));
+        $user->saveQuietly();
     }
 
     /**

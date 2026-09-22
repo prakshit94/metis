@@ -45,7 +45,9 @@ class BulkUserController extends Controller
         }
 
         // Prevent unauthorized modification of Super Admins
-        $superAdminIds = User::role('Super Admin')->pluck('id')->toArray();
+        $superAdminIds = User::whereHas('allRoles', fn ($query) => $query->where('name', 'Super Admin'))
+            ->pluck('id')
+            ->toArray();
         $overlapping = array_intersect($ids, $superAdminIds);
 
         if (! empty($overlapping)) {
@@ -108,6 +110,20 @@ class BulkUserController extends Controller
         }
 
         $isActive = $action === 'activate';
+
+        if (! $isActive) {
+            $activeSuperAdminCount = User::where('is_active', true)
+                ->whereHas('allRoles', fn ($query) => $query->where('name', 'Super Admin'))
+                ->count();
+            $activeSelectedSuperAdminCount = User::whereIn('id', $ids)
+                ->where('is_active', true)
+                ->whereHas('allRoles', fn ($query) => $query->where('name', 'Super Admin'))
+                ->count();
+
+            if ($activeSelectedSuperAdminCount >= $activeSuperAdminCount && $activeSuperAdminCount > 0) {
+                return response()->json(['message' => 'Cannot deactivate the last active Super Admin user.'], 403);
+            }
+        }
 
         User::whereIn('id', $ids)->update(['is_active' => $isActive]);
 

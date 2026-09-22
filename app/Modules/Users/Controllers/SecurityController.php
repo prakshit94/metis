@@ -183,11 +183,13 @@ class SecurityController extends Controller
     {
         abort_unless($request->user()->hasRole('Super Admin'), 403, 'Only Super Admins can impersonate.');
         abort_if($user->id === $request->user()->id, 400, 'Cannot impersonate yourself.');
+        abort_if(! $user->isActive() || $user->isSuspended(), 422, 'Cannot impersonate an inactive or suspended user.');
 
         $originalId = $request->user()->id;
         
         // Log in as the target user using the web guard
         Auth::guard('web')->login($user);
+        $request->session()->regenerate();
         
         // Store original ID in session AFTER login
         Session::put('impersonated_by', $originalId);
@@ -212,8 +214,9 @@ class SecurityController extends Controller
         Session::forget('impersonated_by');
         Session::forget('team_id');
 
-        if ($originalUser) {
+        if ($originalUser && $originalUser->isActive() && ! $originalUser->isSuspended()) {
             Auth::guard('web')->login($originalUser);
+            $request->session()->regenerate();
             Session::save();
             return response()->json(['message' => 'Welcome back, ' . $originalUser->name, 'redirect' => '/users']);
         }

@@ -195,43 +195,26 @@ class AuditLogController extends Controller implements HasMiddleware
      */
     public function recentActivities(Request $request)
     {
-        abort_unless(
-            $request->user()?->can('audit-log-view')
-            || $request->user()?->hasAnyRole(['Super Admin', 'Admin']),
-            403,
-            'You do not have permission to view activity logs.'
-        );
+        $user = $request->user();
+        $this->authorizeActivityAccess($user);
 
-        $user = auth()->user();
-        
-        $activityQuery = Activity::with(['causer', 'subject'])->latest();
-        if ($user && !$user->hasRole('Super Admin')) {
-            $activityQuery->where('causer_id', $user->id);
-        }
+        $activityQuery = $this->activityQueryFor($user)->with(['causer', 'subject'])->latest();
         $activities = $activityQuery->limit(50)->get();
-        $readIds = $user ? $user->readActivities()->whereIn('activity_id', $activities->pluck('id'))->pluck('activity_id')->toArray() : [];
-
-        $unreadCount = 0;
-        if ($user) {
-            $recentQuery = Activity::latest('id');
-            if (!$user->hasRole('Super Admin')) {
-                $recentQuery->where('causer_id', $user->id);
-            }
-            $recentIds = $recentQuery->limit(500)->pluck('id');
-            $readIdsForCount = $user->readActivities()->whereIn('activity_id', $recentIds)->pluck('activity_id');
-            $unreadCount = $recentIds->diff($readIdsForCount)->count();
-        }
+        $readIds = $user->readActivities()->whereIn('activity_id', $activities->pluck('id'))->pluck('activity_id')->all();
+        $unreadCount = $this->unreadActivityCount($user);
 
         return response()->json([
             'count' => $unreadCount,
             'activities' => $activities->map(function ($a) use ($readIds) {
                 $causer = $a->causer;
+                $formattedDescription = self::formatActivityDescription($a);
                 $causerName = $causer
                     ? (trim(implode(' ', array_filter([$causer->first_name, $causer->last_name]))) ?: $causer->name)
                     : 'System';
                 return [
                     'id'                    => $a->id,
-                    'formatted_description' => self::formatActivityDescription($a),
+                    'formatted_description' => $formattedDescription,
+                    'plain_description'     => self::plainActivityDescription($formattedDescription),
                     'causer_name'           => $causerName,
                     'causer_photo'          => $causer?->photo ?? null,
                     'time_ago'              => $a->created_at->diffForHumans(),
@@ -246,24 +229,64 @@ class AuditLogController extends Controller implements HasMiddleware
      */
     public function markAsRead(Request $request, $id)
     {
-        $user = auth()->user();
-        if (! $user) {
-            return response()->json(['success' => false], 401);
-        }
+        $user = $request->user();
+        $this->authorizeActivityAccess($user);
 
         if ($id === 'all') {
-            Activity::whereNotIn('id', function($query) use ($user) {
-                $query->select('activity_id')
-                      ->from('user_read_activities')
-                      ->where('user_id', $user->id);
-            })->chunk(1000, function ($activities) use ($user) {
+            $this->activityQueryFor($user)->select('id')->chunkById(1000, function ($activities) use ($user) {
                 $user->readActivities()->syncWithoutDetaching($activities->pluck('id'));
             });
         } else {
-            $user->readActivities()->syncWithoutDetaching([$id]);
+            abort_unless(ctype_digit((string) $id), 422, 'Invalid activity ID.');
+
+            $activity = $this->activityQueryFor($user)->findOrFail((int) $id);
+            $user->readActivities()->syncWithoutDetaching([$activity->id]);
         }
 
-        return response()->json(['success' => true]);
+        return response()->json([
+            'success' => true,
+            'count' => $this->unreadActivityCount($user),
+        ]);
+    }
+
+    private function authorizeActivityAccess($user): void
+    {
+        abort_unless(
+            $user && ($user->can('audit-log-view') || $user->hasAnyRole(['Super Admin', 'Admin'])),
+            403,
+            'You do not have permission to view activity logs.'
+        );
+    }
+
+    private function activityQueryFor($user)
+    {
+        $query = Activity::query();
+
+        // Preserve the existing visibility rule: only Super Admins see the
+        // system-wide feed; other authorised users see their own actions.
+        if (! $user->hasRole('Super Admin')) {
+            $query->where('causer_id', $user->id);
+        }
+
+        return $query;
+    }
+
+    private function unreadActivityCount($user): int
+    {
+        $recentIds = $this->activityQueryFor($user)->latest('id')->limit(500)->pluck('id');
+
+        if ($recentIds->isEmpty()) {
+            return 0;
+        }
+
+        return $recentIds->diff(
+            $user->readActivities()->whereIn('activity_id', $recentIds)->pluck('activity_id')
+        )->count();
+    }
+
+    public static function plainActivityDescription(string $formattedDescription): string
+    {
+        return trim((string) preg_replace('/\s+/', ' ', html_entity_decode(strip_tags($formattedDescription))));
     }
 
     public static function formatOwenItAuditDescription($audit)
@@ -451,7 +474,7 @@ class AuditLogController extends Controller implements HasMiddleware
                 $subjectName = $label ? "({$label}) Address" : 'Address';
                 $detail = " for {$customerName}";
             } else {
-                $name = $subject->name ?? $subject->title ?? $attrs['name'] ?? $attrs['title'] ?? null;
+                $name = $subject?->name ?? $subject?->title ?? $attrs['name'] ?? $attrs['title'] ?? null;
                 if ($name) $detail = ' ' . $name;
             }
 
