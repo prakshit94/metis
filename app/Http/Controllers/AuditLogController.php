@@ -225,13 +225,17 @@ class AuditLogController extends Controller implements HasMiddleware
         return response()->json([
             'count' => $unreadCount,
             'activities' => $activities->map(function ($a) use ($readIds) {
+                $causer = $a->causer;
+                $causerName = $causer
+                    ? (trim(implode(' ', array_filter([$causer->first_name, $causer->last_name]))) ?: $causer->name)
+                    : 'System';
                 return [
-                    'id' => $a->id,
+                    'id'                    => $a->id,
                     'formatted_description' => self::formatActivityDescription($a),
-                    'causer_name' => $a->causer->name ?? 'System',
-                    'causer_photo' => $a->causer->photo ?? null,
-                    'time_ago' => $a->created_at->diffForHumans(),
-                    'is_read' => in_array($a->id, $readIds),
+                    'causer_name'           => $causerName,
+                    'causer_photo'          => $causer?->photo ?? null,
+                    'time_ago'              => $a->created_at->diffForHumans(),
+                    'is_read'               => in_array($a->id, $readIds),
                 ];
             }),
         ]);
@@ -400,8 +404,10 @@ class AuditLogController extends Controller implements HasMiddleware
                 $orderNo = $subject ? $subject->order_no : ($attrs['order_no'] ?? null);
                 if ($orderNo) $detail = ' #' . $orderNo;
             } elseif ($subjectName === 'User') {
-                $name = $subject ? $subject->name : ($attrs['name'] ?? null);
-                if ($name) $detail = ' ' . $name;
+                $userName  = $subject ? trim(implode(' ', array_filter([$subject->first_name, $subject->last_name]))) ?: $subject->name : ($attrs['name'] ?? null);
+                $userEmail = $subject ? $subject->email : ($attrs['email'] ?? null);
+                if ($userName)  $detail  = ' ' . $userName;
+                if ($userEmail) $detail .= " ({$userEmail})";
             } elseif ($subjectName === 'Attendance') {
                 $date = $subject ? $subject->date : ($attrs['date'] ?? null);
                 if ($date) $detail = ' for ' . \Carbon\Carbon::parse($date)->format('d M Y');
@@ -474,6 +480,14 @@ class AuditLogController extends Controller implements HasMiddleware
                         $diff = $newQty - $oldQty;
                         $actionStr = $diff > 0 ? "reserved {$diff} qty" : "unreserved " . abs($diff) . " qty";
                         $transition = " <span class='text-muted' style='font-size: 0.8em;'>({$actionStr})</span>";
+                    } elseif ($subjectName === 'User' && in_array('is_active', $changedKeys)) {
+                        // Spatie stores cast booleans as true/false in JSON; also handle 1/0
+                        $newIsActive = !empty($attrs['is_active']);
+                        if ($newIsActive) {
+                            $transition = " account status to <span class='badge bg-success'>✓ Activated</span>";
+                        } else {
+                            $transition = " account status to <span class='badge bg-danger'>✗ Deactivated</span>";
+                        }
                     } else {
                         $parts = [];
                         foreach ($changedKeys as $k) {

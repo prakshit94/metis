@@ -122,10 +122,13 @@ class BulkUserController extends Controller
                 ->delete();
         }
 
+        $status = $isActive ? 'activated' : 'deactivated';
+
         return response()->json([
-            'message' => count($ids).' user(s) '.($isActive ? 'activated' : 'deactivated').' successfully.',
+            'message'   => count($ids).' user(s) '.$status.' successfully.',
             'is_active' => $isActive,
-            'ids' => $ids,
+            'status'    => $status,
+            'ids'       => $ids,
         ]);
     }
 }

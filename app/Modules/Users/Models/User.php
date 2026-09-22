@@ -119,6 +119,16 @@ class User extends Authenticatable implements Auditable
             ->dontSubmitEmptyLogs();
     }
 
+    protected static function booted(): void
+    {
+        static::updated(function (User $user) {
+            if ($user->wasChanged('is_active') && ! $user->is_active) {
+                $user->tokens()->delete();
+                \Illuminate\Support\Facades\DB::table('sessions')->where('user_id', $user->id)->delete();
+            }
+        });
+    }
+
     // ─── Relationships ────────────────────────────────────────────────────────
 
     /**

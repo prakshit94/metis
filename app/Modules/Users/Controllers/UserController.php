@@ -325,6 +325,12 @@ class UserController extends Controller implements HasMiddleware
 
         if (! empty($fillable)) {
             $user->update($fillable);
+
+            // Revoke all active API tokens and web sessions when deactivating the account
+            if (array_key_exists('is_active', $fillable) && ! $fillable['is_active']) {
+                $user->tokens()->delete();
+                \Illuminate\Support\Facades\DB::table('sessions')->where('user_id', $user->id)->delete();
+            }
         }
 
         if (array_key_exists('roles', $validated)) {
@@ -503,10 +509,14 @@ class UserController extends Controller implements HasMiddleware
             DB::table('sessions')->where('user_id', $user->id)->delete();
         }
 
+        $status = $newState ? 'activated' : 'deactivated';
+        $displayName = trim(implode(' ', array_filter([$user->first_name, $user->last_name]))) ?: $user->name;
+
         return response()->json([
-            'message' => 'User account '.($newState ? 'activated' : 'deactivated').'.',
+            'message'   => "User \"{$displayName}\" ({$user->email}) has been {$status} successfully.",
             'is_active' => $newState,
-            'user_id' => $user->id,
+            'user_id'   => $user->id,
+            'status'    => $status,
         ]);
     }
 

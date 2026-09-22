@@ -696,7 +696,8 @@ document.addEventListener('alpine:init', () => {
         return;
       }
 
-      const form = Alpine.$data(document.querySelector('[x-data="userForm"]'));
+      const formEl = document.querySelector('[x-data="userForm"]');
+      const form = formEl ? Alpine.$data(formEl) : null;
       if (!form) return;
       form.isViewMode = isView;
       form.editingUserId = user.id;
@@ -750,7 +751,8 @@ document.addEventListener('alpine:init', () => {
     },
 
     openCreateUser() {
-      const form = Alpine.$data(document.querySelector('[x-data="userForm"]'));
+      const formEl = document.querySelector('[x-data="userForm"]');
+      const form = formEl ? Alpine.$data(formEl) : null;
       if (form) form.resetForm();
       const title = document.querySelector('#userModal .modal-title');
       if (title) title.textContent = 'Add New User';
@@ -758,7 +760,8 @@ document.addEventListener('alpine:init', () => {
     },
 
     async viewUser(user) {
-      const form = Alpine.$data(document.querySelector('[x-data="userForm"]'));
+      const formEl = document.querySelector('[x-data="userForm"]');
+      const form = formEl ? Alpine.$data(formEl) : null;
       if (!form) return;
 
       form.isViewMode = true;
@@ -790,10 +793,12 @@ document.addEventListener('alpine:init', () => {
 
       try {
         const res = await apiFetch(`/api/users/${user.id}/toggle-active`, { method: 'PATCH' });
-        showToast(res.message);
+        const toastType = res.is_active ? 'success' : 'warning';
+        showToast(res.message, toastType);
         await this.loadUsers();
 
-        const profile = Alpine.$data(document.querySelector('[x-data="userProfile"]'));
+        const profileEl = document.querySelector('[x-data="userProfile"]');
+        const profile = profileEl ? Alpine.$data(profileEl) : null;
         if (profile?.user?.id === user.id) {
           const refreshed = this.users.find((u) => u.id === user.id);
           if (refreshed) profile.user = refreshed;
@@ -899,7 +904,9 @@ document.addEventListener('alpine:init', () => {
           method: 'POST',
           body: JSON.stringify({ action, ids: this.selectedUsers }),
         });
-        showToast(res.message, 'success');
+        // Use 'warning' for deactivate, 'success' for everything else
+        const toastType = res.status === 'deactivated' ? 'warning' : 'success';
+        showToast(res.message, toastType);
         this.selectedUsers = [];
         await this.loadUsers();
       } catch (err) {
@@ -1560,7 +1567,8 @@ document.addEventListener('alpine:init', () => {
         getModal('#userModal')?.hide();
 
         // Reload table
-        const table = Alpine.$data(document.querySelector('[x-data="userTable"]'));
+        const tableEl = document.querySelector('[x-data="userTable"]');
+        const table = tableEl ? Alpine.$data(tableEl) : null;
         if (table) await table.loadUsers();
       } catch (err) {
         showToast(
@@ -1645,7 +1653,8 @@ document.addEventListener('alpine:init', () => {
       let errors = [];
 
       // We need to resolve departments and managers to IDs
-      const formComp = Alpine.$data(document.querySelector('[x-data="userForm"]'));
+      const formCompEl = document.querySelector('[x-data="userForm"]');
+      const formComp = formCompEl ? Alpine.$data(formCompEl) : null;
       const deps = formComp ? formComp.departments : [];
       const mgrs = formComp ? formComp.managers : [];
 
@@ -1688,7 +1697,8 @@ document.addEventListener('alpine:init', () => {
 
       if (created > 0) {
         showToast(`Imported ${created} user(s) successfully.`);
-        const table = Alpine.$data(document.querySelector('[x-data="userTable"]'));
+        const tableEl = document.querySelector('[x-data="userTable"]');
+        const table = tableEl ? Alpine.$data(tableEl) : null;
         if (table) await table.loadUsers();
       }
       if (errors.length > 0) {
@@ -1703,7 +1713,8 @@ document.addEventListener('alpine:init', () => {
     createSearchComponent({
       delayMs: 300,
       getResults(query) {
-        const table = Alpine.$data(document.querySelector('[x-data="userTable"]'));
+        const tableEl = document.querySelector('[x-data="userTable"]');
+        const table = tableEl ? Alpine.$data(tableEl) : null;
         if (table) {
           table.searchQuery = query;
           table.filterUsers();
