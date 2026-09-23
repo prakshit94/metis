@@ -47,10 +47,15 @@ class CallTaggingController extends Controller
     public function storeCallLog(Request $request)
     {
         $validated = $request->validate([
+            'call_sid' => 'nullable|string',
             'customer_id' => 'nullable|integer',
             'tag_l1_id' => 'required|exists:call_tags,id',
             'tag_l2_id' => 'required|exists:call_tags,id',
             'tag_l3_id' => 'nullable|exists:call_tags,id',
+            'duration_seconds' => 'nullable|integer',
+            'direction' => 'nullable|string|in:inbound,outbound',
+            'status' => 'nullable|string|max:30',
+            'recording_url' => 'nullable|url',
             'notes' => 'nullable|string',
             'meta' => 'nullable|array',
         ]);
@@ -59,11 +64,16 @@ class CallTaggingController extends Controller
             DB::beginTransaction();
 
             $callLog = CallLog::create([
+                'call_sid' => $validated['call_sid'] ?? null,
                 'customer_id' => $validated['customer_id'] ?? null,
                 'agent_id' => auth()->id() ?? 1, // Fallback if no auth
                 'tag_l1_id' => $validated['tag_l1_id'],
                 'tag_l2_id' => $validated['tag_l2_id'],
                 'tag_l3_id' => $validated['tag_l3_id'] ?? null,
+                'duration_seconds' => $validated['duration_seconds'] ?? 0,
+                'direction' => $validated['direction'] ?? 'inbound',
+                'status' => $validated['status'] ?? 'completed',
+                'recording_url' => $validated['recording_url'] ?? null,
                 'notes' => $validated['notes'] ?? null,
             ]);
 

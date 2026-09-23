@@ -33,6 +33,8 @@ class CallTagAdminController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
+            'description' => 'nullable|string|max:255',
+            'color' => 'nullable|string|max:20',
             'parent_id' => 'nullable|exists:call_tags,id',
             'level' => 'required|integer|in:1,2,3',
             'is_active' => 'boolean',
@@ -41,6 +43,8 @@ class CallTagAdminController extends Controller
             'form_fields.*.label' => 'required|string',
             'form_fields.*.type' => 'required|string',
             'form_fields.*.options' => 'nullable|json',
+            'form_fields.*.placeholder' => 'nullable|string|max:255',
+            'form_fields.*.validation_rules' => 'nullable|string|max:255',
             'form_fields.*.is_required' => 'boolean',
         ]);
 
@@ -48,6 +52,8 @@ class CallTagAdminController extends Controller
             DB::beginTransaction();
             $tag = CallTag::create([
                 'name' => $validated['name'],
+                'description' => $validated['description'] ?? null,
+                'color' => $validated['color'] ?? null,
                 'parent_id' => $validated['parent_id'] ?? null,
                 'level' => $validated['level'],
                 'is_active' => filter_var($validated['is_active'] ?? true, FILTER_VALIDATE_BOOLEAN),
@@ -61,7 +67,9 @@ class CallTagAdminController extends Controller
                         'name' => $field['name'],
                         'label' => $field['label'],
                         'type' => $field['type'],
-                            'options' => empty($field['options']) ? null : $field['options'],
+                        'options' => empty($field['options']) ? null : $field['options'],
+                        'placeholder' => $field['placeholder'] ?? null,
+                        'validation_rules' => $field['validation_rules'] ?? null,
                         'is_required' => filter_var($field['is_required'] ?? false, FILTER_VALIDATE_BOOLEAN),
                         'sort_order' => $index + 1,
                     ]);
@@ -81,12 +89,16 @@ class CallTagAdminController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
+            'description' => 'nullable|string|max:255',
+            'color' => 'nullable|string|max:20',
             'is_active' => 'boolean',
             'form_fields' => 'nullable|array',
             'form_fields.*.name' => 'required|string',
             'form_fields.*.label' => 'required|string',
             'form_fields.*.type' => 'required|string',
             'form_fields.*.options' => 'nullable|json',
+            'form_fields.*.placeholder' => 'nullable|string|max:255',
+            'form_fields.*.validation_rules' => 'nullable|string|max:255',
             'form_fields.*.is_required' => 'boolean',
         ]);
 
@@ -94,6 +106,8 @@ class CallTagAdminController extends Controller
             DB::beginTransaction();
             $callTag->update([
                 'name' => $validated['name'],
+                'description' => $validated['description'] ?? null,
+                'color' => $validated['color'] ?? null,
                 'is_active' => filter_var($validated['is_active'] ?? true, FILTER_VALIDATE_BOOLEAN),
             ]);
 
@@ -107,6 +121,8 @@ class CallTagAdminController extends Controller
                             'label' => $field['label'],
                             'type' => $field['type'],
                             'options' => empty($field['options']) ? null : $field['options'],
+                            'placeholder' => $field['placeholder'] ?? null,
+                            'validation_rules' => $field['validation_rules'] ?? null,
                             'is_required' => filter_var($field['is_required'] ?? false, FILTER_VALIDATE_BOOLEAN),
                             'sort_order' => $index + 1,
                         ]);

@@ -161,10 +161,16 @@
                                         </div>
                                         @endif
                                         <div>
-                                            <div class="fw-bold text-primary" @if($l1->children->count() > 0) @click.stop.prevent="toggleL1({{ $l1->id }})" style="cursor: pointer; text-decoration: underline;" @endif>
-                                                {{ $l1->name }}
+                                            <div class="fw-bold text-primary d-flex align-items-center" @if($l1->children->count() > 0) @click.stop.prevent="toggleL1({{ $l1->id }})" style="cursor: pointer; text-decoration: underline;" @endif>
+                                                <span>{{ $l1->name }}</span>
+                                                @if($l1->color)
+                                                    <span class="bg-{{ $l1->color }} ms-2" style="width: 8px; height: 8px; border-radius: 50%; display: inline-block;" title="Color Badge: {{ ucfirst($l1->color) }}"></span>
+                                                @endif
                                             </div>
                                             <div class="text-muted small" style="font-size: 10px;">ID: #{{ $l1->id }}</div>
+                                            @if($l1->description)
+                                                <div class="text-muted mt-1 fst-italic" style="font-size: 11px;">{{ \Illuminate\Support\Str::limit($l1->description, 60) }}</div>
+                                            @endif
                                         </div>
                                     </div>
                                 </td>
@@ -178,7 +184,7 @@
                                 </td>
                                 <td>-</td>
                                 <td class="text-end">
-                                    <button class="btn btn-sm btn-outline-secondary border shadow-sm me-1 rounded-circle transition-all hover-shadow" style="width: 32px; height: 32px; padding: 0;" @click="openModal({{ $l1->id }}, {{ \Illuminate\Support\Js::from($l1->name) }}, 1, null, {{ $l1->is_active ? 1 : 0 }})" title="Edit">
+                                    <button class="btn btn-sm btn-outline-secondary border shadow-sm me-1 rounded-circle transition-all hover-shadow" style="width: 32px; height: 32px; padding: 0;" @click="openModal({{ $l1->id }}, {{ \Illuminate\Support\Js::from($l1->name) }}, 1, null, {{ $l1->is_active ? 1 : 0 }}, [], {{ \Illuminate\Support\Js::from($l1->description) }}, {{ \Illuminate\Support\Js::from($l1->color) }})" title="Edit">
                                         <i class="bi bi-pencil text-secondary"></i>
                                     </button>
                                     <button class="btn btn-sm btn-outline-primary shadow-sm me-1 rounded-pill fw-bold px-3 transition-all hover-shadow" style="font-size: 11px; letter-spacing: 0.5px;" @click="openModal(null, '', 2, {{ $l1->id }}, 1)" title="Add L2 Tag">
@@ -209,10 +215,16 @@
                                             </div>
                                             @endif
                                             <div>
-                                                <div class="fw-semibold text-body-emphasis" @if($l2->children->count() > 0) @click.stop.prevent="toggleL2({{ $l2->id }})" style="cursor: pointer; text-decoration: underline;" @endif>
-                                                    {{ $l2->name }}
+                                                <div class="fw-semibold text-body-emphasis d-flex align-items-center" @if($l2->children->count() > 0) @click.stop.prevent="toggleL2({{ $l2->id }})" style="cursor: pointer; text-decoration: underline;" @endif>
+                                                    <span>{{ $l2->name }}</span>
+                                                    @if($l2->color)
+                                                        <span class="bg-{{ $l2->color }} ms-2" style="width: 8px; height: 8px; border-radius: 50%; display: inline-block;" title="Color Badge: {{ ucfirst($l2->color) }}"></span>
+                                                    @endif
                                                 </div>
                                                 <div class="text-muted small" style="font-size: 10px;">ID: #{{ $l2->id }}</div>
+                                                @if($l2->description)
+                                                    <div class="text-muted mt-1 fst-italic" style="font-size: 11px;">{{ \Illuminate\Support\Str::limit($l2->description, 60) }}</div>
+                                                @endif
                                             </div>
                                         </div>
                                     </td>
@@ -232,7 +244,7 @@
                                         @endif
                                     </td>
                                     <td class="text-end">
-                                        <button class="btn btn-sm btn-outline-secondary border shadow-sm me-1 rounded-circle transition-all hover-shadow" style="width: 32px; height: 32px; padding: 0;" @click="openModal({{ $l2->id }}, {{ \Illuminate\Support\Js::from($l2->name) }}, 2, {{ $l2->parent_id ?? 'null' }}, {{ $l2->is_active ? 1 : 0 }}, {{ \Illuminate\Support\Js::from($l2->formFields) }})" title="Edit">
+                                        <button class="btn btn-sm btn-outline-secondary border shadow-sm me-1 rounded-circle transition-all hover-shadow" style="width: 32px; height: 32px; padding: 0;" @click="openModal({{ $l2->id }}, {{ \Illuminate\Support\Js::from($l2->name) }}, 2, {{ $l2->parent_id ?? 'null' }}, {{ $l2->is_active ? 1 : 0 }}, {{ \Illuminate\Support\Js::from($l2->formFields) }}, {{ \Illuminate\Support\Js::from($l2->description) }}, {{ \Illuminate\Support\Js::from($l2->color) }})" title="Edit">
                                             <i class="bi bi-pencil text-secondary"></i>
                                         </button>
                                         <button class="btn btn-sm btn-outline-info shadow-sm me-1 rounded-pill fw-bold px-3 transition-all hover-shadow" style="font-size: 11px; letter-spacing: 0.5px;" @click="openModal(null, '', 3, {{ $l2->id }}, 1)" title="Add L3 Tag">
@@ -252,7 +264,17 @@
                                             <div class="d-flex align-items-center" style="padding-left: 4rem;">
                                                 <i class="bi bi-arrow-return-right text-muted me-2"></i>
                                                 <i class="bi bi-tag text-success me-2"></i>
-                                                <span class="text-secondary fw-medium">{{ $l3->name }}</span>
+                                                <div>
+                                                    <div class="d-flex align-items-center">
+                                                        <span class="text-secondary fw-medium">{{ $l3->name }}</span>
+                                                        @if($l3->color)
+                                                            <span class="bg-{{ $l3->color }} ms-2" style="width: 8px; height: 8px; border-radius: 50%; display: inline-block;" title="Color Badge: {{ ucfirst($l3->color) }}"></span>
+                                                        @endif
+                                                    </div>
+                                                    @if($l3->description)
+                                                        <div class="text-muted mt-1 fst-italic" style="font-size: 11px;">{{ \Illuminate\Support\Str::limit($l3->description, 60) }}</div>
+                                                    @endif
+                                                </div>
                                             </div>
                                         </td>
                                         <td><span class="badge bg-success bg-opacity-10 text-success border border-success-subtle">Level 3</span></td>
@@ -265,7 +287,7 @@
                                         </td>
                                         <td>-</td>
                                         <td class="text-end">
-                                            <button class="btn btn-sm btn-outline-secondary border shadow-sm me-1 rounded-circle transition-all hover-shadow" style="width: 32px; height: 32px; padding: 0;" @click="openModal({{ $l3->id }}, {{ \Illuminate\Support\Js::from($l3->name) }}, 3, {{ $l3->parent_id ?? 'null' }}, {{ $l3->is_active ? 1 : 0 }})" title="Edit">
+                                            <button class="btn btn-sm btn-outline-secondary border shadow-sm me-1 rounded-circle transition-all hover-shadow" style="width: 32px; height: 32px; padding: 0;" @click="openModal({{ $l3->id }}, {{ \Illuminate\Support\Js::from($l3->name) }}, 3, {{ $l3->parent_id ?? 'null' }}, {{ $l3->is_active ? 1 : 0 }}, [], {{ \Illuminate\Support\Js::from($l3->description) }}, {{ \Illuminate\Support\Js::from($l3->color) }})" title="Edit">
                                                 <i class="bi bi-pencil text-secondary"></i>
                                             </button>
                                             <button class="btn btn-sm btn-outline-secondary text-danger border shadow-sm rounded-circle transition-all hover-shadow" style="width: 32px; height: 32px; padding: 0;" @click="deleteTag({{ $l3->id }})" title="Delete">
@@ -319,11 +341,27 @@
                                     <label class="form-label fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.5px;">Tag Name <span class="text-danger">*</span></label>
                                     <input type="text" class="form-control" x-model="form.name" placeholder="e.g. Sales Enquiry">
                                 </div>
-                                <div class="col-md-6">
+                                <div class="col-md-12">
+                                    <label class="form-label fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.5px;">Description (Optional)</label>
+                                    <input type="text" class="form-control" x-model="form.description" placeholder="Brief guide for agents on when to use this tag">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.5px;">Tag Color</label>
+                                    <select class="form-select bg-body" x-model="form.color">
+                                        <option value="">Default</option>
+                                        <option value="primary">Blue</option>
+                                        <option value="success">Green</option>
+                                        <option value="danger">Red</option>
+                                        <option value="warning">Yellow</option>
+                                        <option value="info">Light Blue</option>
+                                        <option value="dark">Dark</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
                                     <label class="form-label fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.5px;">Level</label>
                                     <input type="text" class="form-control bg-body-secondary" x-model="form.level" readonly>
                                 </div>
-                                <div class="col-md-6">
+                                <div class="col-md-4">
                                     <label class="form-label fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.5px;">Status</label>
                                     <select class="form-select" x-model="form.is_active">
                                         <option value="1">Active</option>
@@ -365,15 +403,14 @@
                                                 <label class="form-label fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.5px;">Key Name</label>
                                                 <input type="text" class="form-control form-control-sm bg-body font-monospace text-primary" x-model="field.name" placeholder="e.g. search_product" @input="field.name = field.name.toLowerCase().replace(/[^a-z0-9_]/g, '_')">
                                             </div>
-                                            <div class="col-md-3">
+                                            <div class="col-md-2">
                                                 <label class="form-label fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.5px;">Type</label>
                                                 <select class="form-select form-select-sm bg-body" x-model="field.type">
-                                                    <option value="text">Text Input</option>
+                                                    <option value="text">Text</option>
                                                     <option value="textarea">Textarea</option>
                                                     <option value="date">Date</option>
-                                                    <option value="select">Dropdown Select</option>
-                                                    <option value="product_search">Product Search (API)</option>
-                                                    <option value="agent_search">Agent Search (API)</option>
+                                                    <option value="select">Dropdown</option>
+                                                    <option value="multi_select">Multi-Select</option>
                                                 </select>
                                             </div>
                                             <div class="col-md-2">
@@ -388,7 +425,15 @@
                                                     <i class="bi bi-trash"></i>
                                                 </button>
                                             </div>
-                                            <div class="col-md-12 mt-2" x-show="field.type === 'select'">
+                                            <div class="col-md-6 mt-2">
+                                                <label class="form-label fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.5px;">Placeholder</label>
+                                                <input type="text" class="form-control form-control-sm bg-body" x-model="field.placeholder" placeholder="Hint text">
+                                            </div>
+                                            <div class="col-md-6 mt-2">
+                                                <label class="form-label fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.5px;">Validation Rules</label>
+                                                <input type="text" class="form-control form-control-sm bg-body font-monospace" x-model="field.validation_rules" placeholder="e.g. min:10|max:255|email">
+                                            </div>
+                                            <div class="col-md-12 mt-2" x-show="field.type === 'select' || field.type === 'multi_select'">
                                                 <label class="form-label fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.5px;">Options (JSON Array)</label>
                                                 <input type="text" class="form-control form-control-sm bg-body font-monospace" x-model="field.options" placeholder='["Option 1", "Option 2"]'>
                                             </div>
@@ -424,6 +469,8 @@ document.addEventListener('alpine:init', () => {
         
         form: {
             name: '',
+            description: '',
+            color: '',
             level: 1,
             parent_id: null,
             is_active: 1,
@@ -495,9 +542,11 @@ document.addEventListener('alpine:init', () => {
             this.modalInstance = new bootstrap.Modal(document.getElementById('tagFormModal'));
         },
         
-        openModal(id = null, name = '', level = 1, parentId = null, isActive = 1, formFields = []) {
+        openModal(id = null, name = '', level = 1, parentId = null, isActive = 1, formFields = [], description = '', color = '') {
             this.tagId = id;
             this.form.name = name;
+            this.form.description = description || '';
+            this.form.color = color || '';
             this.form.level = level;
             this.form.parent_id = parentId;
             this.form.is_active = isActive;
@@ -506,7 +555,9 @@ document.addEventListener('alpine:init', () => {
             if (formFields && formFields.length > 0) {
                 this.form.form_fields = formFields.map(f => ({
                     ...f,
-                    is_required: f.is_required ? "1" : "0"
+                    is_required: f.is_required ? "1" : "0",
+                    placeholder: f.placeholder || '',
+                    validation_rules: f.validation_rules || ''
                 }));
             } else {
                 this.form.form_fields = [];
@@ -521,6 +572,8 @@ document.addEventListener('alpine:init', () => {
                 name: '',
                 type: 'text',
                 options: '',
+                placeholder: '',
+                validation_rules: '',
                 is_required: "0"
             });
         },

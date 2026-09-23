@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Auditable as AuditableTrait;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Activitylog\LogOptions;
@@ -12,9 +13,12 @@ class CallTag extends Model implements Auditable
 {
     use LogsActivity;
     use AuditableTrait;
+    use SoftDeletes;
 
     protected $fillable = [
         'name',
+        'description',
+        'color',
         'parent_id',
         'level',
         'sort_order',

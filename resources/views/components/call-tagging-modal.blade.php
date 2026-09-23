@@ -45,6 +45,11 @@
                                         <span class="spinner-border spinner-border-sm text-primary"></span>
                                     </template>
                                 </div>
+                                <template x-if="selectedL1Data?.description">
+                                    <div class="mt-2 small text-muted fst-italic">
+                                        <i class="bi bi-info-circle me-1 text-primary"></i> <span x-text="selectedL1Data.description"></span>
+                                    </div>
+                                </template>
                             </div>
                         </div>
                     </div>
@@ -79,6 +84,11 @@
                                         <span class="text-muted small fst-italic">No sub-categories available.</span>
                                     </template>
                                 </div>
+                                <template x-if="selectedL2Data?.description">
+                                    <div class="mt-2 small text-muted fst-italic">
+                                        <i class="bi bi-info-circle me-1 text-info"></i> <span x-text="selectedL2Data.description"></span>
+                                    </div>
+                                </template>
                             </div>
 
                             {{-- Dynamic Fields integrated into Level 2 Card --}}
@@ -94,7 +104,7 @@
                                                 </label>
                                                 
                                                 <template x-if="['text', 'date', 'datetime-local', 'number'].includes(field.type)">
-                                                    <input :type="field.type" class="form-control form-control-sm fw-semibold" style="font-size: 12px;" x-model="formData[field.name]" :required="field.is_required">
+                                                    <input :type="field.type" class="form-control form-control-sm fw-semibold" style="font-size: 12px;" x-model="formData[field.name]" :required="field.is_required" :placeholder="field.placeholder || ''">
                                                 </template>
 
                                                 <template x-if="field.type === 'select'">
@@ -173,7 +183,7 @@
                                                 </template>
 
                                                 <template x-if="field.type === 'textarea'">
-                                                    <textarea class="form-control form-control-sm fw-semibold" style="font-size: 12px;" rows="2" x-model="formData[field.name]" :required="field.is_required"></textarea>
+                                                    <textarea class="form-control form-control-sm fw-semibold" style="font-size: 12px;" rows="2" x-model="formData[field.name]" :required="field.is_required" :placeholder="field.placeholder || ''"></textarea>
                                                 </template>
                                             </div>
                                         </template>
@@ -213,6 +223,11 @@
                                         <span class="text-muted small fst-italic">No outcomes available for this category.</span>
                                     </template>
                                 </div>
+                                <template x-if="selectedL3Data?.description">
+                                    <div class="mt-2 small text-muted fst-italic">
+                                        <i class="bi bi-info-circle me-1 text-success"></i> <span x-text="selectedL3Data.description"></span>
+                                    </div>
+                                </template>
                             </div>
                             
                             <div class="col-md-6">
@@ -274,6 +289,18 @@ document.addEventListener('alpine:init', () => {
         submitting: false,
         
         modalInstance: null,
+        
+        get selectedL1Data() {
+            return this.selectedL1 ? this.l1Tags.find(t => t.id == this.selectedL1) : null;
+        },
+        
+        get selectedL2Data() {
+            return this.selectedL2 ? this.l2Tags.find(t => t.id == this.selectedL2) : null;
+        },
+        
+        get selectedL3Data() {
+            return this.selectedL3 ? this.l3Tags.find(t => t.id == this.selectedL3) : null;
+        },
 
         init() {
             this.modalInstance = new bootstrap.Modal(document.getElementById('callTaggingModal'));

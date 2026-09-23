@@ -93,93 +93,116 @@ class CallTagSeeder extends Seeder
         ];
 
         $l1Sort = 1;
+        $colors = ['primary', 'success', 'danger', 'warning', 'info', 'dark'];
+        
         foreach ($tags as $l1Name => $l2Tags) {
-            $l1 = CallTag::create(['name' => $l1Name, 'level' => 1, 'sort_order' => $l1Sort++]);
+            $l1Color = $colors[array_rand($colors)];
+            $l1 = CallTag::create([
+                'name' => $l1Name, 
+                'level' => 1, 
+                'sort_order' => $l1Sort++,
+                'description' => "Primary category for {$l1Name} calls.",
+                'color' => $l1Color
+            ]);
 
             $l2Sort = 1;
             foreach ($l2Tags as $l2Name => $l3Tags) {
-                $l2 = CallTag::create(['name' => $l2Name, 'parent_id' => $l1->id, 'level' => 2, 'sort_order' => $l2Sort++]);
+                $l2 = CallTag::create([
+                    'name' => $l2Name, 
+                    'parent_id' => $l1->id, 
+                    'level' => 2, 
+                    'sort_order' => $l2Sort++,
+                    'description' => "Sub-category for {$l2Name} interactions.",
+                    'color' => $l1Color
+                ]);
 
                 $l3Sort = 1;
                 foreach ($l3Tags as $l3Name) {
-                    CallTag::create(['name' => $l3Name, 'parent_id' => $l2->id, 'level' => 3, 'sort_order' => $l3Sort++]);
+                    CallTag::create([
+                        'name' => $l3Name, 
+                        'parent_id' => $l2->id, 
+                        'level' => 3, 
+                        'sort_order' => $l3Sort++,
+                        'description' => "Resolution: {$l3Name}",
+                        'color' => 'success'
+                    ]);
                 }
 
                 // Dynamic Form Field Logic Map
                 if (in_array($l2Name, ['Product Inquiry', 'Store Visit Inquiry'])) {
                     CallTagFormField::insert([
-                        ['call_tag_id' => $l2->id, 'name' => 'search_product', 'label' => 'Search Product', 'type' => 'product_search', 'options' => null, 'sort_order' => 1, 'is_required' => false, 'created_at' => $now, 'updated_at' => $now],
-                        ['call_tag_id' => $l2->id, 'name' => 'crop', 'label' => 'Crop (Multi-Select)', 'type' => 'multi_select', 'options' => $majorCrops, 'sort_order' => 2, 'is_required' => false, 'created_at' => $now, 'updated_at' => $now],
+                        ['call_tag_id' => $l2->id, 'name' => 'search_product', 'label' => 'Search Product', 'type' => 'product_search', 'options' => null, 'placeholder' => 'Search by name or SKU', 'validation_rules' => 'nullable|string', 'sort_order' => 1, 'is_required' => false, 'created_at' => $now, 'updated_at' => $now],
+                        ['call_tag_id' => $l2->id, 'name' => 'crop', 'label' => 'Crop (Multi-Select)', 'type' => 'multi_select', 'options' => $majorCrops, 'placeholder' => 'Select relevant crops', 'validation_rules' => 'nullable|array', 'sort_order' => 2, 'is_required' => false, 'created_at' => $now, 'updated_at' => $now],
                     ]);
                 }
 
                 if ($l2Name === 'New Product Inquiry') {
                     CallTagFormField::insert([
-                        ['call_tag_id' => $l2->id, 'name' => 'product_name', 'label' => 'Product Name', 'type' => 'text', 'options' => null, 'sort_order' => 1, 'is_required' => true, 'created_at' => $now, 'updated_at' => $now],
-                        ['call_tag_id' => $l2->id, 'name' => 'remarks', 'label' => 'Remarks', 'type' => 'textarea', 'options' => null, 'sort_order' => 2, 'is_required' => false, 'created_at' => $now, 'updated_at' => $now],
+                        ['call_tag_id' => $l2->id, 'name' => 'product_name', 'label' => 'Product Name', 'type' => 'text', 'options' => null, 'placeholder' => 'Enter requested product name', 'validation_rules' => 'required|string|max:255', 'sort_order' => 1, 'is_required' => true, 'created_at' => $now, 'updated_at' => $now],
+                        ['call_tag_id' => $l2->id, 'name' => 'remarks', 'label' => 'Remarks', 'type' => 'textarea', 'options' => null, 'placeholder' => 'Additional context or alternatives suggested', 'validation_rules' => 'nullable|string', 'sort_order' => 2, 'is_required' => false, 'created_at' => $now, 'updated_at' => $now],
                     ]);
                 }
 
                 if (in_array($l2Name, ['Pest Identification', 'Disease Identification'])) {
                     CallTagFormField::insert([
-                        ['call_tag_id' => $l2->id, 'name' => 'crop', 'label' => 'Affected Crop(s)', 'type' => 'multi_select', 'options' => $majorCrops, 'sort_order' => 1, 'is_required' => true, 'created_at' => $now, 'updated_at' => $now],
-                        ['call_tag_id' => $l2->id, 'name' => 'affected_part', 'label' => 'Affected Plant Part', 'type' => 'select', 'options' => json_encode(['Leaves', 'Stem', 'Roots', 'Fruit/Flower', 'Whole Plant']), 'sort_order' => 2, 'is_required' => true, 'created_at' => $now, 'updated_at' => $now],
-                        ['call_tag_id' => $l2->id, 'name' => 'symptoms', 'label' => 'Symptoms', 'type' => 'textarea', 'options' => null, 'sort_order' => 3, 'is_required' => true, 'created_at' => $now, 'updated_at' => $now],
+                        ['call_tag_id' => $l2->id, 'name' => 'crop', 'label' => 'Affected Crop(s)', 'type' => 'multi_select', 'options' => $majorCrops, 'placeholder' => 'Select affected crops', 'validation_rules' => 'required|array', 'sort_order' => 1, 'is_required' => true, 'created_at' => $now, 'updated_at' => $now],
+                        ['call_tag_id' => $l2->id, 'name' => 'affected_part', 'label' => 'Affected Plant Part', 'type' => 'select', 'options' => json_encode(['Leaves', 'Stem', 'Roots', 'Fruit/Flower', 'Whole Plant']), 'placeholder' => 'Select plant part', 'validation_rules' => 'required|string', 'sort_order' => 2, 'is_required' => true, 'created_at' => $now, 'updated_at' => $now],
+                        ['call_tag_id' => $l2->id, 'name' => 'symptoms', 'label' => 'Symptoms', 'type' => 'textarea', 'options' => null, 'placeholder' => 'Describe the symptoms accurately', 'validation_rules' => 'required|string', 'sort_order' => 3, 'is_required' => true, 'created_at' => $now, 'updated_at' => $now],
                     ]);
                 }
 
                 if (in_array($l2Name, ['Farming Practices (PoP)', 'Growth Advisory'])) {
                     CallTagFormField::insert([
-                        ['call_tag_id' => $l2->id, 'name' => 'crop', 'label' => 'Crop Discussed', 'type' => 'multi_select', 'options' => $majorCrops, 'sort_order' => 1, 'is_required' => true, 'created_at' => $now, 'updated_at' => $now],
-                        ['call_tag_id' => $l2->id, 'name' => 'advisory_notes', 'label' => 'Advisory Details Provided', 'type' => 'textarea', 'options' => null, 'sort_order' => 2, 'is_required' => true, 'created_at' => $now, 'updated_at' => $now],
+                        ['call_tag_id' => $l2->id, 'name' => 'crop', 'label' => 'Crop Discussed', 'type' => 'multi_select', 'options' => $majorCrops, 'placeholder' => 'Select discussed crops', 'validation_rules' => 'required|array', 'sort_order' => 1, 'is_required' => true, 'created_at' => $now, 'updated_at' => $now],
+                        ['call_tag_id' => $l2->id, 'name' => 'advisory_notes', 'label' => 'Advisory Details Provided', 'type' => 'textarea', 'options' => null, 'placeholder' => 'Summary of advice given to farmer', 'validation_rules' => 'required|string', 'sort_order' => 2, 'is_required' => true, 'created_at' => $now, 'updated_at' => $now],
                     ]);
                 }
 
                 if ($l2Name === 'Call Connectivity') {
                     CallTagFormField::insert([
-                        ['call_tag_id' => $l2->id, 'name' => 'callback', 'label' => 'Callback Schedule (If applicable)', 'type' => 'datetime-local', 'options' => null, 'sort_order' => 1, 'is_required' => false, 'created_at' => $now, 'updated_at' => $now],
+                        ['call_tag_id' => $l2->id, 'name' => 'callback', 'label' => 'Callback Schedule (If applicable)', 'type' => 'datetime-local', 'options' => null, 'placeholder' => 'Select date and time', 'validation_rules' => 'nullable|date', 'sort_order' => 1, 'is_required' => false, 'created_at' => $now, 'updated_at' => $now],
                     ]);
                 }
 
                 if ($l2Name === 'Call Transfer') {
                     CallTagFormField::insert([
-                        ['call_tag_id' => $l2->id, 'name' => 'transfer_to', 'label' => 'Transfer To Agent (Optional)', 'type' => 'agent_search', 'options' => null, 'sort_order' => 1, 'is_required' => false, 'created_at' => $now, 'updated_at' => $now],
+                        ['call_tag_id' => $l2->id, 'name' => 'transfer_to', 'label' => 'Transfer To Agent (Optional)', 'type' => 'agent_search', 'options' => null, 'placeholder' => 'Search agent name', 'validation_rules' => 'nullable|array', 'sort_order' => 1, 'is_required' => false, 'created_at' => $now, 'updated_at' => $now],
                     ]);
                 }
 
                 if (in_array($l1Name, ['Order Management', 'Delivery & Fulfillment'])) {
                     CallTagFormField::insert([
-                        ['call_tag_id' => $l2->id, 'name' => 'order_number', 'label' => 'Order Number', 'type' => 'text', 'options' => null, 'sort_order' => 1, 'is_required' => true, 'created_at' => $now, 'updated_at' => $now],
-                        ['call_tag_id' => $l2->id, 'name' => 'awb_number', 'label' => 'AWB / Tracking Number (If applicable)', 'type' => 'text', 'options' => null, 'sort_order' => 2, 'is_required' => false, 'created_at' => $now, 'updated_at' => $now],
-                        ['call_tag_id' => $l2->id, 'name' => 'action_requested', 'label' => 'Notes', 'type' => 'textarea', 'options' => null, 'sort_order' => 3, 'is_required' => false, 'created_at' => $now, 'updated_at' => $now],
+                        ['call_tag_id' => $l2->id, 'name' => 'order_number', 'label' => 'Order Number', 'type' => 'text', 'options' => null, 'placeholder' => 'e.g. ORD-12345', 'validation_rules' => 'required|string|max:50', 'sort_order' => 1, 'is_required' => true, 'created_at' => $now, 'updated_at' => $now],
+                        ['call_tag_id' => $l2->id, 'name' => 'awb_number', 'label' => 'AWB / Tracking Number (If applicable)', 'type' => 'text', 'options' => null, 'placeholder' => 'e.g. AWB987654321', 'validation_rules' => 'nullable|string|max:100', 'sort_order' => 2, 'is_required' => false, 'created_at' => $now, 'updated_at' => $now],
+                        ['call_tag_id' => $l2->id, 'name' => 'action_requested', 'label' => 'Notes', 'type' => 'textarea', 'options' => null, 'placeholder' => 'Any specific logistics action required', 'validation_rules' => 'nullable|string', 'sort_order' => 3, 'is_required' => false, 'created_at' => $now, 'updated_at' => $now],
                     ]);
                 }
 
                 if (in_array($l1Name, ['Payments & Offers'])) {
                     CallTagFormField::insert([
-                        ['call_tag_id' => $l2->id, 'name' => 'transaction_id', 'label' => 'Transaction/Order ID (If applicable)', 'type' => 'text', 'options' => null, 'sort_order' => 1, 'is_required' => false, 'created_at' => $now, 'updated_at' => $now],
-                        ['call_tag_id' => $l2->id, 'name' => 'amount', 'label' => 'Amount', 'type' => 'number', 'options' => null, 'sort_order' => 2, 'is_required' => false, 'created_at' => $now, 'updated_at' => $now],
+                        ['call_tag_id' => $l2->id, 'name' => 'transaction_id', 'label' => 'Transaction/Order ID (If applicable)', 'type' => 'text', 'options' => null, 'placeholder' => 'e.g. TXN998877', 'validation_rules' => 'nullable|string|max:100', 'sort_order' => 1, 'is_required' => false, 'created_at' => $now, 'updated_at' => $now],
+                        ['call_tag_id' => $l2->id, 'name' => 'amount', 'label' => 'Amount', 'type' => 'number', 'options' => null, 'placeholder' => 'e.g. 1500.00', 'validation_rules' => 'nullable|numeric|min:0', 'sort_order' => 2, 'is_required' => false, 'created_at' => $now, 'updated_at' => $now],
                     ]);
                 }
 
                 if (in_array($l1Name, ['Complaints & Escalations'])) {
                     CallTagFormField::insert([
-                        ['call_tag_id' => $l2->id, 'name' => 'order_number', 'label' => 'Related Order Number (If any)', 'type' => 'text', 'options' => null, 'sort_order' => 1, 'is_required' => false, 'created_at' => $now, 'updated_at' => $now],
-                        ['call_tag_id' => $l2->id, 'name' => 'description', 'label' => 'Complaint Description', 'type' => 'textarea', 'options' => null, 'sort_order' => 2, 'is_required' => true, 'created_at' => $now, 'updated_at' => $now],
+                        ['call_tag_id' => $l2->id, 'name' => 'order_number', 'label' => 'Related Order Number (If any)', 'type' => 'text', 'options' => null, 'placeholder' => 'e.g. ORD-12345', 'validation_rules' => 'nullable|string|max:50', 'sort_order' => 1, 'is_required' => false, 'created_at' => $now, 'updated_at' => $now],
+                        ['call_tag_id' => $l2->id, 'name' => 'description', 'label' => 'Complaint Description', 'type' => 'textarea', 'options' => null, 'placeholder' => 'Detail the customer\'s complaint', 'validation_rules' => 'required|string', 'sort_order' => 2, 'is_required' => true, 'created_at' => $now, 'updated_at' => $now],
                     ]);
                 }
 
                 if (in_array($l1Name, ['Feedback & Feature Requests'])) {
                     CallTagFormField::insert([
-                        ['call_tag_id' => $l2->id, 'name' => 'feedback_rating', 'label' => 'Rating (1-5)', 'type' => 'select', 'options' => json_encode(['1 - Very Poor', '2 - Poor', '3 - Average', '4 - Good', '5 - Excellent']), 'sort_order' => 1, 'is_required' => false, 'created_at' => $now, 'updated_at' => $now],
-                        ['call_tag_id' => $l2->id, 'name' => 'feedback_details', 'label' => 'Feedback Details', 'type' => 'textarea', 'options' => null, 'sort_order' => 2, 'is_required' => true, 'created_at' => $now, 'updated_at' => $now],
+                        ['call_tag_id' => $l2->id, 'name' => 'feedback_rating', 'label' => 'Rating (1-5)', 'type' => 'select', 'options' => json_encode(['1 - Very Poor', '2 - Poor', '3 - Average', '4 - Good', '5 - Excellent']), 'placeholder' => 'Select rating', 'validation_rules' => 'nullable|string', 'sort_order' => 1, 'is_required' => false, 'created_at' => $now, 'updated_at' => $now],
+                        ['call_tag_id' => $l2->id, 'name' => 'feedback_details', 'label' => 'Feedback Details', 'type' => 'textarea', 'options' => null, 'placeholder' => 'What did the customer suggest?', 'validation_rules' => 'required|string', 'sort_order' => 2, 'is_required' => true, 'created_at' => $now, 'updated_at' => $now],
                     ]);
                 }
 
                 if (in_array($l1Name, ['Referrals & Farmer Network'])) {
                     CallTagFormField::insert([
-                        ['call_tag_id' => $l2->id, 'name' => 'farmer_b_mobile', 'label' => 'Referred Farmer Mobile', 'type' => 'text', 'options' => null, 'sort_order' => 1, 'is_required' => false, 'created_at' => $now, 'updated_at' => $now],
-                        ['call_tag_id' => $l2->id, 'name' => 'referral_code', 'label' => 'Referral Code', 'type' => 'text', 'options' => null, 'sort_order' => 2, 'is_required' => false, 'created_at' => $now, 'updated_at' => $now],
+                        ['call_tag_id' => $l2->id, 'name' => 'farmer_b_mobile', 'label' => 'Referred Farmer Mobile', 'type' => 'text', 'options' => null, 'placeholder' => '10-digit mobile number', 'validation_rules' => 'nullable|string|size:10', 'sort_order' => 1, 'is_required' => false, 'created_at' => $now, 'updated_at' => $now],
+                        ['call_tag_id' => $l2->id, 'name' => 'referral_code', 'label' => 'Referral Code', 'type' => 'text', 'options' => null, 'placeholder' => 'e.g. REFXYZ', 'validation_rules' => 'nullable|string|max:20', 'sort_order' => 2, 'is_required' => false, 'created_at' => $now, 'updated_at' => $now],
                     ]);
                 }
             }

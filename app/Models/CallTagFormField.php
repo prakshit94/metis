@@ -19,6 +19,8 @@ class CallTagFormField extends Model implements Auditable
         'label',
         'type',
         'options',
+        'placeholder',
+        'validation_rules',
         'is_required',
         'sort_order',
     ];

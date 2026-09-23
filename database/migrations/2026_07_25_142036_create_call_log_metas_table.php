@@ -11,9 +11,11 @@ return new class extends Migration
         Schema::create('call_log_metas', function (Blueprint $table) {
             $table->id();
             $table->foreignId('call_log_id')->constrained()->onDelete('cascade');
-            $table->string('key');
-            $table->text('value')->nullable();
+            $table->string('key')->index(); // Index for querying specific meta values across logs
+            $table->longText('value')->nullable(); // Use longText instead of text for large JSON payloads
             $table->timestamps();
+
+            $table->unique(['call_log_id', 'key']); // Prevent duplicate keys per log
         });
     }
 

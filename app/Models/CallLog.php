@@ -4,19 +4,26 @@ namespace App\Models;
 
 use App\Modules\Users\Models\User;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Auditable as AuditableTrait;
 use OwenIt\Auditing\Contracts\Auditable;
 
 class CallLog extends Model implements Auditable
 {
     use AuditableTrait;
+    use SoftDeletes;
 
     protected $fillable = [
+        'call_sid',
         'customer_id',
         'agent_id',
         'tag_l1_id',
         'tag_l2_id',
         'tag_l3_id',
+        'duration_seconds',
+        'direction',
+        'status',
+        'recording_url',
         'notes',
     ];
 
