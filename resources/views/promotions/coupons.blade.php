@@ -148,7 +148,7 @@
                             <tr><td colspan="9" class="text-center py-5 text-muted"><i class="bi bi-ticket-perforated fs-1 d-block mb-2"></i>No coupons found</td></tr>
                         </template>
                         <template x-for="c in coupons" :key="c.id">
-                            <tr :class="{ 'selected': selected.includes(c.id) }">
+                            <tr :class="{ 'selected': selected.includes(c.id), 'coupon-row-active': c.is_active }">
                                 <td><input type="checkbox" class="user-select-checkbox" :value="c.id" x-model="selected"></td>
                                 <td>
                                     <div class="d-flex align-items-center">
@@ -463,6 +463,22 @@ input[type="text"]:focus, input[type="email"]:focus, input[type="number"]:focus,
     border-color: var(--bs-primary) !important;
 }
 .cursor-pointer { cursor: pointer; }
+
+/* Active coupon row highlight — works in both light and dark themes */
+.coupon-row-active {
+    --bs-table-bg-state: rgba(var(--bs-success-rgb), 0.10);
+    --bs-table-color-state: inherit;
+}
+.coupon-row-active > td {
+    background-color: rgba(var(--bs-success-rgb), 0.10) !important;
+    transition: background-color 0.2s ease;
+}
+.coupon-row-active:hover > td {
+    background-color: rgba(var(--bs-success-rgb), 0.18) !important;
+}
+.coupon-row-active > td:first-child {
+    box-shadow: inset 3px 0 0 0 rgba(var(--bs-success-rgb), 0.75);
+}
 </style>
 
 @push('scripts')

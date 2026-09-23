@@ -488,9 +488,9 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
     Route::get('/call-tags-admin', [CallTagAdminController::class, 'index'])->name('api.call-tags.index');
     Route::post('/call-tags-admin', [CallTagAdminController::class, 'store']);
+    Route::post('/call-tags-admin/bulk-action', [CallTagAdminController::class, 'bulkAction']); // must be before {callTag} wildcard
     Route::put('/call-tags-admin/{callTag}', [CallTagAdminController::class, 'update']);
     Route::delete('/call-tags-admin/{callTag}', [CallTagAdminController::class, 'destroy']);
-    Route::post('/call-tags-admin/bulk-action', [CallTagAdminController::class, 'bulkAction']);
 
     // ── System Audit Logs ───────────────────────────────────────────────────
     Route::get('/admin/audit-logs', [AuditLogController::class, 'index'])->name('api.audit-logs.index');

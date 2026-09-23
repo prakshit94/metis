@@ -155,7 +155,7 @@
                             <tr><td colspan="11" class="text-center py-5 text-muted"><i class="bi bi-star fs-1 d-block mb-2"></i>No offers found</td></tr>
                         </template>
                         <template x-for="o in offers" :key="o.id">
-                            <tr :class="{ 'selected': selected.includes(o.id) }">
+                            <tr :class="{ 'selected': selected.includes(o.id), 'offer-row-active': o.is_active }">
                                 <td><input type="checkbox" class="user-select-checkbox" :value="o.id" x-model="selected"></td>
                                 <td>
                                     <div class="d-flex align-items-center">
@@ -637,6 +637,26 @@
 .custom-hover-opacity { transition: all 0.2s; }
 .custom-hover-opacity:hover { opacity: 1 !important; color: var(--bs-danger) !important; transform: scale(1.1); }
 .cursor-pointer { cursor: pointer; }
+
+/* Active offer row highlight — works in both light and dark themes.
+   Bootstrap 5 .table-hover applies bg via --bs-table-bg-state on each <td>,
+   so we must override the Bootstrap CSS custom properties at the <tr> level
+   AND target <td> directly to beat specificity. */
+.offer-row-active {
+    --bs-table-bg-state: rgba(var(--bs-success-rgb), 0.10);
+    --bs-table-color-state: inherit;
+}
+.offer-row-active > td {
+    background-color: rgba(var(--bs-success-rgb), 0.10) !important;
+    transition: background-color 0.2s ease;
+}
+.offer-row-active:hover > td {
+    background-color: rgba(var(--bs-success-rgb), 0.18) !important;
+}
+/* Left-border accent on the first cell only */
+.offer-row-active > td:first-child {
+    box-shadow: inset 3px 0 0 0 rgba(var(--bs-success-rgb), 0.75);
+}
 </style>
 
 @push('scripts')

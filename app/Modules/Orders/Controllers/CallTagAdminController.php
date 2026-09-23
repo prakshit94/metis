@@ -40,7 +40,7 @@ class CallTagAdminController extends Controller
             'form_fields.*.name' => 'required|string',
             'form_fields.*.label' => 'required|string',
             'form_fields.*.type' => 'required|string',
-            'form_fields.*.options' => 'nullable|string',
+            'form_fields.*.options' => 'nullable|json',
             'form_fields.*.is_required' => 'boolean',
         ]);
 
@@ -50,7 +50,7 @@ class CallTagAdminController extends Controller
                 'name' => $validated['name'],
                 'parent_id' => $validated['parent_id'] ?? null,
                 'level' => $validated['level'],
-                'is_active' => $validated['is_active'] ?? true,
+                'is_active' => filter_var($validated['is_active'] ?? true, FILTER_VALIDATE_BOOLEAN),
                 'sort_order' => CallTag::where('parent_id', $validated['parent_id'] ?? null)->max('sort_order') + 1,
             ]);
 
@@ -61,7 +61,7 @@ class CallTagAdminController extends Controller
                         'name' => $field['name'],
                         'label' => $field['label'],
                         'type' => $field['type'],
-                        'options' => $field['options'] ?? null,
+                            'options' => empty($field['options']) ? null : $field['options'],
                         'is_required' => filter_var($field['is_required'] ?? false, FILTER_VALIDATE_BOOLEAN),
                         'sort_order' => $index + 1,
                     ]);
@@ -86,7 +86,7 @@ class CallTagAdminController extends Controller
             'form_fields.*.name' => 'required|string',
             'form_fields.*.label' => 'required|string',
             'form_fields.*.type' => 'required|string',
-            'form_fields.*.options' => 'nullable|string',
+            'form_fields.*.options' => 'nullable|json',
             'form_fields.*.is_required' => 'boolean',
         ]);
 
@@ -94,7 +94,7 @@ class CallTagAdminController extends Controller
             DB::beginTransaction();
             $callTag->update([
                 'name' => $validated['name'],
-                'is_active' => $validated['is_active'] ?? true,
+                'is_active' => filter_var($validated['is_active'] ?? true, FILTER_VALIDATE_BOOLEAN),
             ]);
 
             if ($callTag->level == 2) {
@@ -106,7 +106,7 @@ class CallTagAdminController extends Controller
                             'name' => $field['name'],
                             'label' => $field['label'],
                             'type' => $field['type'],
-                            'options' => $field['options'] ?? null,
+                            'options' => empty($field['options']) ? null : $field['options'],
                             'is_required' => filter_var($field['is_required'] ?? false, FILTER_VALIDATE_BOOLEAN),
                             'sort_order' => $index + 1,
                         ]);

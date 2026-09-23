@@ -142,7 +142,7 @@
                     </thead>
                     <tbody>
                         @forelse($programs as $program)
-                            <tr>
+                            <tr class="{{ $program->is_active ? 'referral-row-active' : '' }}">
                                 <td class="ps-4">
                                     <input type="checkbox" class="form-check-input" value="{{ $program->id }}" x-model="selected">
                                 </td>
@@ -410,6 +410,22 @@
 .custom-hover-opacity { transition: all 0.2s; }
 .custom-hover-opacity:hover { opacity: 1 !important; color: var(--bs-danger) !important; transform: scale(1.1); }
 .cursor-pointer { cursor: pointer; }
+
+/* Active referral program row highlight — works in both light and dark themes */
+.referral-row-active {
+    --bs-table-bg-state: rgba(var(--bs-success-rgb), 0.10);
+    --bs-table-color-state: inherit;
+}
+.referral-row-active > td {
+    background-color: rgba(var(--bs-success-rgb), 0.10) !important;
+    transition: background-color 0.2s ease;
+}
+.referral-row-active:hover > td {
+    background-color: rgba(var(--bs-success-rgb), 0.18) !important;
+}
+.referral-row-active > td:first-child {
+    box-shadow: inset 3px 0 0 0 rgba(var(--bs-success-rgb), 0.75);
+}
 
 /* Keep the program editor usable when its content is taller than the viewport. */
 #createProgramModal .modal-content {

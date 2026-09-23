@@ -66,11 +66,13 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('/leaves', [PageController::class, 'leaves'])->name('leaves')->middleware('permission:leave-view');
 
     // Call Tags Admin CRUD
+    // NOTE: bulk-action must be registered BEFORE {callTag} wildcard routes
+    // so Laravel does not attempt to bind "bulk-action" as a CallTag model ID.
     Route::get('/call-tags-admin', [CallTagAdminController::class, 'index'])->name('call-tags.index')->middleware('permission:settings-view');
     Route::post('/call-tags-admin', [CallTagAdminController::class, 'store'])->middleware('permission:settings-view');
+    Route::post('/call-tags-admin/bulk-action', [CallTagAdminController::class, 'bulkAction'])->middleware('permission:settings-view');
     Route::put('/call-tags-admin/{callTag}', [CallTagAdminController::class, 'update'])->middleware('permission:settings-view');
     Route::delete('/call-tags-admin/{callTag}', [CallTagAdminController::class, 'destroy'])->middleware('permission:settings-view');
-    Route::post('/call-tags-admin/bulk-action', [CallTagAdminController::class, 'bulkAction'])->middleware('permission:settings-view');
 
     Route::prefix('catalog')->name('catalog.')->group(function (): void {
         Route::get('/products', [CatalogController::class, 'products'])->name('products');

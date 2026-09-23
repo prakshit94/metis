@@ -468,7 +468,7 @@
                                         </thead>
                                         <tbody>
                                             <template x-for="user in paginatedUsers" :key="user.id">
-                                                <tr :class="{ 'table-active': selectedUsers.includes(String(user.id)) }">
+                                                <tr :class="{ 'table-active': selectedUsers.includes(String(user.id)), 'user-row-active': user.status === 'active' }">
                                                     <td class="ps-3">
                                                         <input type="checkbox"
                                                                class="user-select-checkbox"
@@ -1362,6 +1362,22 @@
 .view-mode-active .form-control:disabled, 
 .view-mode-active .form-select:disabled {
     background-color: transparent !important;
+}
+
+/* Active user row highlight — works in both light and dark themes */
+.user-row-active {
+    --bs-table-bg-state: rgba(var(--bs-success-rgb), 0.10);
+    --bs-table-color-state: inherit;
+}
+.user-row-active > td {
+    background-color: rgba(var(--bs-success-rgb), 0.10) !important;
+    transition: background-color 0.2s ease;
+}
+.user-row-active:hover > td {
+    background-color: rgba(var(--bs-success-rgb), 0.18) !important;
+}
+.user-row-active > td:first-child {
+    box-shadow: inset 3px 0 0 0 rgba(var(--bs-success-rgb), 0.75);
 }
 </style>
 
