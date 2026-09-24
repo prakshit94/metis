@@ -30,7 +30,7 @@ class TargetController extends Controller implements HasMiddleware
         $query = Target::with('targetable');
         
         $user = auth()->user();
-        if ($user && !$user->hasRole('Super Admin') && !$user->can('target-view-all')) {
+        if ($user && !$user->hasAnyRole(['Super Admin', 'Admin']) && !$user->can('target-view-all')) {
             $query->where('targetable_type', $user->getMorphClass())
                   ->where('targetable_id', $user->id);
         }
@@ -81,14 +81,10 @@ class TargetController extends Controller implements HasMiddleware
             });
         }
 
+        $baseStatsQuery = clone $query;
+        
         $perPage = $request->input('per_page', 20);
         $targets = $query->orderByDesc('start_date')->paginate($perPage);
-
-        $baseStatsQuery = Target::query();
-        if ($user && !$user->hasRole('Super Admin') && !$user->can('target-view-all')) {
-            $baseStatsQuery->where('targetable_type', $user->getMorphClass())
-                           ->where('targetable_id', $user->id);
-        }
 
         $stats = [
             'total' => (clone $baseStatsQuery)->count(),
@@ -97,7 +93,7 @@ class TargetController extends Controller implements HasMiddleware
             'failed' => (clone $baseStatsQuery)->where('status', 'failed')->count(),
         ];
 
-        $isGlobalViewer = $user && ($user->hasRole('Super Admin') || $user->can('target-view-all'));
+        $isGlobalViewer = $user && ($user->hasAnyRole(['Super Admin', 'Admin']) || $user->can('target-view-all'));
 
         if ($isGlobalViewer) {
             $availableAssignees = [
@@ -155,7 +151,7 @@ class TargetController extends Controller implements HasMiddleware
         }
 
         $user = auth()->user();
-        if ($user && !$user->hasRole('Super Admin') && !$user->can('target-view-all')) {
+        if ($user && !$user->hasAnyRole(['Super Admin', 'Admin']) && !$user->can('target-view-all')) {
             if ($validated['targetable_type'] !== $user->getMorphClass() || count($validated['targetable_ids']) !== 1 || (int) $validated['targetable_ids'][0] !== $user->id) {
                 abort(403, 'Unauthorized action. You can only assign targets to yourself.');
             }
@@ -430,7 +426,7 @@ class TargetController extends Controller implements HasMiddleware
         $query = Target::query();
         
         $user = auth()->user();
-        if ($user && !$user->hasRole('Super Admin') && !$user->can('target-view-all')) {
+        if ($user && !$user->hasAnyRole(['Super Admin', 'Admin']) && !$user->can('target-view-all')) {
             $query->where('targetable_type', $user->getMorphClass())
                   ->where('targetable_id', $user->id);
         }
@@ -460,7 +456,7 @@ class TargetController extends Controller implements HasMiddleware
     public function update(Request $request, Target $target)
     {
         $user = auth()->user();
-        if ($user && !$user->hasRole('Super Admin') && !$user->can('target-view-all')) {
+        if ($user && !$user->hasAnyRole(['Super Admin', 'Admin']) && !$user->can('target-view-all')) {
             if ($target->targetable_type !== $user->getMorphClass() || $target->targetable_id !== $user->id) {
                 abort(403, 'Unauthorized action.');
             }
@@ -551,7 +547,7 @@ class TargetController extends Controller implements HasMiddleware
     public function destroy(Target $target)
     {
         $user = auth()->user();
-        if ($user && !$user->hasRole('Super Admin') && !$user->can('target-view-all')) {
+        if ($user && !$user->hasAnyRole(['Super Admin', 'Admin']) && !$user->can('target-view-all')) {
             if ($target->targetable_type !== $user->getMorphClass() || $target->targetable_id !== $user->id) {
                 abort(403, 'Unauthorized action.');
             }

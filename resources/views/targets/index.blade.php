@@ -85,7 +85,7 @@
     </div>
 
     <!-- Stats Row -->
-    <div class="row g-4 g-lg-5 g-xl-6 mb-5 mb-lg-5 mb-xl-6">
+    <div id="targetsStatsRow" class="row g-4 g-lg-5 g-xl-6 mb-5 mb-lg-5 mb-xl-6">
         <div class="col-xl-3 col-lg-6">
             <div class="card stats-card h-100 shadow-sm rounded-4 border-start border-4 border-primary">
                 <div class="card-body p-3 p-lg-4">
@@ -517,7 +517,7 @@
                 </div>
 
                 <div class="modal-body p-4 p-md-5 pt-4">
-                    <form method="POST" :action="isEdit ? '{{ url('targets') }}/' + form.id : '{{ route('targets.store') }}'">
+                    <form method="POST" :action="isEdit ? '{{ url('targets') }}/' + form.id : '{{ route('targets.store') }}'" @submit="isSubmitting = true">
                         @csrf
                         <input type="hidden" :name="isEdit ? '_method' : ''" value="PUT">
 
@@ -612,9 +612,9 @@
                                             </div>
                                             <div class="col-md-4">
                                                 <label class="form-label mb-2 fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.1em;">Achieved Amount</label>
-                                                <div class="input-group input-group-lg bg-body border border-secondary border-opacity-25 rounded-3 overflow-hidden">
+                                                <div class="input-group input-group-lg bg-body-tertiary border border-secondary border-opacity-25 rounded-3 overflow-hidden" title="Achieved amount is calculated automatically">
                                                     <span class="input-group-text border-0 bg-transparent text-muted fw-bold">₹</span>
-                                                    <input type="number" step="0.01" name="achieved_amount" x-model="form.achieved_amount" class="form-control fw-semibold border-0 bg-transparent shadow-none px-2" placeholder="0" style="font-size: 14px;">
+                                                    <input type="number" step="0.01" name="achieved_amount" x-model="form.achieved_amount" class="form-control fw-semibold border-0 bg-transparent shadow-none px-2" placeholder="0" style="font-size: 14px; cursor: not-allowed;" readonly>
                                                 </div>
                                             </div>
                                         </div>
@@ -674,11 +674,12 @@
                                             </div>
                                             <div class="col-md-3" x-show="isEdit">
                                                 <label class="form-label mb-2 fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.1em;">Status</label>
-                                                <select name="status" x-model="form.status" class="form-select form-select-lg fw-semibold rounded-3 bg-body border-secondary border-opacity-25 shadow-none px-3" style="font-size: 14px;">
+                                                <select x-model="form.status" class="form-select form-select-lg fw-semibold rounded-3 bg-body-tertiary border-secondary border-opacity-25 shadow-none px-3" style="font-size: 14px; cursor: not-allowed;" disabled title="Status is calculated automatically">
                                                     <option value="active">Active</option>
                                                     <option value="achieved">Achieved</option>
                                                     <option value="failed">Failed</option>
                                                 </select>
+                                                <input type="hidden" name="status" :value="form.status">
                                             </div>
                                             <div class="col-md-3" x-show="daysCount > 0 && !isEdit">
                                                 <label class="form-label mb-2 fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.1em;">Total Days</label>
@@ -693,9 +694,14 @@
                         </div>
 
                         <div class="d-flex justify-content-end gap-3 mt-4 pt-3 border-top">
-                            <button type="button" class="btn btn-lg btn-light border-secondary border-opacity-25 fw-semibold px-4 rounded-3 shadow-sm" data-bs-dismiss="modal">Cancel</button>
-                            <button type="submit" class="btn btn-lg btn-primary fw-semibold px-5 rounded-3 shadow-sm">
-                                <i class="bi bi-save me-2"></i><span x-text="isEdit ? 'Save Changes' : 'Create Target'"></span>
+                            <button type="button" class="btn btn-lg btn-light border-secondary border-opacity-25 fw-semibold px-4 rounded-3 shadow-sm" data-bs-dismiss="modal" :disabled="isSubmitting">Cancel</button>
+                            <button type="submit" class="btn btn-lg btn-primary fw-semibold px-5 rounded-3 shadow-sm" :disabled="isSubmitting">
+                                <span x-show="!isSubmitting">
+                                    <i class="bi bi-save me-2"></i><span x-text="isEdit ? 'Save Changes' : 'Create Target'"></span>
+                                </span>
+                                <span x-show="isSubmitting" style="display: none;">
+                                    <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Processing...
+                                </span>
                             </button>
                         </div>
                     </form>
@@ -791,8 +797,16 @@ function targetsModule() {
                 let newTable = doc.querySelector('#targetsTableBody');
                 let oldTable = document.querySelector('#targetsTableBody');
                 
+                let newStats = doc.querySelector('#targetsStatsRow');
+                let oldStats = document.querySelector('#targetsStatsRow');
+                
                 if (newTable && oldTable) {
                     oldTable.innerHTML = newTable.innerHTML;
+                    
+                    if (newStats && oldStats) {
+                        oldStats.innerHTML = newStats.innerHTML;
+                    }
+                    
                     window.history.pushState({}, '', url);
                 } else {
                     window.location.href = url;
@@ -813,6 +827,7 @@ function targetsModule() {
         availableAssignees: @json($availableAssignees),
         searchQuery: '',
         isEdit: false,
+        isSubmitting: false,
         form: {
             id: null,
             targetable_type: 'User',
@@ -916,6 +931,7 @@ function targetsModule() {
             return 0;
         },
         openModal(target = null) {
+            this.isSubmitting = false;
             if (target) {
                 this.isEdit = true;
                 // Spread target data but always ensure targetable_ids is an array

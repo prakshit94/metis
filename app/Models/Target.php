@@ -33,6 +33,19 @@ class Target extends Model implements Auditable
         'achieved_amount' => 'decimal:2',
     ];
 
+    protected static function booted()
+    {
+        static::saving(function ($target) {
+            if ($target->achieved_amount >= $target->target_amount) {
+                $target->status = 'achieved';
+            } elseif ($target->end_date && $target->end_date->isPast() && !$target->end_date->isToday()) {
+                $target->status = 'failed';
+            } else {
+                $target->status = 'active';
+            }
+        });
+    }
+
     public function targetable(): MorphTo
     {
         return $this->morphTo();

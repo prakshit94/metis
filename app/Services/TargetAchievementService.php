@@ -34,8 +34,25 @@ class TargetAchievementService
 
         $achieved = round($achieved, 2);
 
+        $changed = false;
         if (round((float) $target->achieved_amount, 2) !== $achieved) {
             $target->achieved_amount = $achieved;
+            $changed = true;
+        }
+
+        $newStatus = 'active';
+        if ($target->achieved_amount >= $target->target_amount) {
+            $newStatus = 'achieved';
+        } elseif ($target->end_date && $target->end_date->isPast() && !$target->end_date->isToday()) {
+            $newStatus = 'failed';
+        }
+
+        if ($target->status !== $newStatus) {
+            $target->status = $newStatus;
+            $changed = true;
+        }
+
+        if ($changed) {
             // Disable model events during save to prevent infinite observer loops
             Target::withoutEvents(fn () => $target->save());
         }

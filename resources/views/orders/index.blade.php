@@ -121,24 +121,6 @@
             </div>
         </div>
         @endcan
-        @can('orders.view.pending_confirmation')
-        <div class="flex-shrink-0" style="width: 260px;">
-            <div class="card stats-card h-100 shadow-sm rounded-4 border-start border-4 border-warning">
-                <div class="card-body p-3 p-lg-4">
-                    <div class="d-flex flex-column align-items-start">
-                        <div class="stats-icon text-bg-warning-subtle text-warning-emphasis mb-3 rounded-3 p-2">
-                            <i class="bi bi-hourglass-split fs-4"></i>
-                        </div>
-                        <div class="w-100" style="min-width: 0;">
-                            <p class="h6 mb-0 text-muted fw-semibold text-uppercase" style="font-size: 0.75rem;" title="Pending Confirmation">Pending Confirmation</p>
-                            <div class="h3 mb-0 fw-bold" aria-live="polite"><span x-text="stats.pending_confirmation"></span></div>
-                            <small class="text-warning d-block text-wrap fw-medium mt-1" style="word-break: break-all; font-size: 0.8rem;" x-text="'Value: ' + formatCurrency(stats.pending_confirmation_amount)"></small>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        @endcan
         @can('orders.view.pending')
         <div class="flex-shrink-0" style="width: 260px;">
             <div class="card stats-card h-100 shadow-sm rounded-4 border-start border-4 border-warning">
@@ -169,6 +151,24 @@
                             <p class="h6 mb-0 text-muted fw-semibold text-uppercase text-truncate" style="font-size: 0.75rem;" title="Unfulfillable (OOS)">Unfulfillable (OOS)</p>
                             <div class="h3 mb-0 fw-bold" aria-live="polite"><span x-text="stats.unfulfillable"></span></div>
                             <small class="text-danger d-block text-wrap fw-medium mt-1" style="word-break: break-all; font-size: 0.8rem;" x-text="'Value: ' + formatCurrency(stats.unfulfillable_amount)"></small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        @endcan
+        @can('orders.view.pending_confirmation')
+        <div class="flex-shrink-0" style="width: 260px;">
+            <div class="card stats-card h-100 shadow-sm rounded-4 border-start border-4 border-warning">
+                <div class="card-body p-3 p-lg-4">
+                    <div class="d-flex flex-column align-items-start">
+                        <div class="stats-icon text-bg-warning-subtle text-warning-emphasis mb-3 rounded-3 p-2">
+                            <i class="bi bi-hourglass-split fs-4"></i>
+                        </div>
+                        <div class="w-100" style="min-width: 0;">
+                            <p class="h6 mb-0 text-muted fw-semibold text-uppercase" style="font-size: 0.75rem;" title="Pending Confirmation">Pending Confirmation</p>
+                            <div class="h3 mb-0 fw-bold" aria-live="polite"><span x-text="stats.pending_confirmation"></span></div>
+                            <small class="text-warning d-block text-wrap fw-medium mt-1" style="word-break: break-all; font-size: 0.8rem;" x-text="'Value: ' + formatCurrency(stats.pending_confirmation_amount)"></small>
                         </div>
                     </div>
                 </div>
@@ -283,24 +283,6 @@
             </div>
         </div>
         @endcan
-        @can('orders.view.cancelled')
-        <div class="flex-shrink-0" style="width: 260px;">
-            <div class="card stats-card h-100 shadow-sm rounded-4 border-start border-4 border-danger">
-                <div class="card-body p-3 p-lg-4">
-                    <div class="d-flex flex-column align-items-start">
-                        <div class="stats-icon text-bg-danger-subtle text-danger-emphasis mb-3 rounded-3 p-2">
-                            <i class="bi bi-x-circle fs-4"></i>
-                        </div>
-                        <div class="w-100" style="min-width: 0;">
-                            <p class="h6 mb-0 text-muted fw-semibold text-uppercase" style="font-size: 0.75rem;" title="Cancelled">Cancelled</p>
-                            <div class="h3 mb-0 fw-bold" aria-live="polite"><span x-text="stats.cancelled"></span></div>
-                            <small class="text-danger d-block text-wrap fw-medium mt-1" style="word-break: break-all; font-size: 0.8rem;" x-text="'Value: ' + formatCurrency(stats.cancelled_amount)"></small>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        @endcan
         @can('orders.view.return_requested')
         <div class="flex-shrink-0" style="width: 260px;">
             <div class="card stats-card h-100 shadow-sm rounded-4 border-start border-4 border-warning">
@@ -331,6 +313,24 @@
                             <p class="h6 mb-0 text-muted fw-semibold text-uppercase" style="font-size: 0.75rem;" title="Returned">Returned</p>
                             <div class="h3 mb-0 fw-bold" aria-live="polite"><span x-text="stats.returned"></span></div>
                             <small class="text-secondary d-block text-wrap fw-medium mt-1" style="word-break: break-all; font-size: 0.8rem;" x-text="'Value: ' + formatCurrency(stats.returned_amount)"></small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        @endcan
+        @can('orders.view.cancelled')
+        <div class="flex-shrink-0" style="width: 260px;">
+            <div class="card stats-card h-100 shadow-sm rounded-4 border-start border-4 border-danger">
+                <div class="card-body p-3 p-lg-4">
+                    <div class="d-flex flex-column align-items-start">
+                        <div class="stats-icon text-bg-danger-subtle text-danger-emphasis mb-3 rounded-3 p-2">
+                            <i class="bi bi-x-circle fs-4"></i>
+                        </div>
+                        <div class="w-100" style="min-width: 0;">
+                            <p class="h6 mb-0 text-muted fw-semibold text-uppercase" style="font-size: 0.75rem;" title="Cancelled">Cancelled</p>
+                            <div class="h3 mb-0 fw-bold" aria-live="polite"><span x-text="stats.cancelled"></span></div>
+                            <small class="text-danger d-block text-wrap fw-medium mt-1" style="word-break: break-all; font-size: 0.8rem;" x-text="'Value: ' + formatCurrency(stats.cancelled_amount)"></small>
                         </div>
                     </div>
                 </div>
