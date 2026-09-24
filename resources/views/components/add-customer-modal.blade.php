@@ -305,25 +305,7 @@
                                             </div>
                                         </template>
                             
-                                        <!-- Manual Input Fields (no village selected) -->
-                                        <template x-if="!form.village_name && form.address_line_1">
-                                            <div class="col-12 mt-2">
-                                                <div class="row g-2">
-                                                    <div class="col-md-4">
-                                                        <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">City *</label>
-                                                        <input type="text" class="form-control form-control-sm fw-semibold" style="font-size: 12px;" x-model="form.city" :required="!isEdit && !form.village_name && form.address_line_1.length > 0">
-                                                    </div>
-                                                    <div class="col-md-4">
-                                                        <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">State *</label>
-                                                        <input type="text" class="form-control form-control-sm fw-semibold" style="font-size: 12px;" x-model="form.state" :required="!isEdit && !form.village_name && form.address_line_1.length > 0">
-                                                    </div>
-                                                    <div class="col-md-4">
-                                                        <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Pincode *</label>
-                                                        <input type="text" class="form-control form-control-sm fw-semibold" style="font-size: 12px;" x-model="form.pincode" :required="!isEdit && !form.village_name && form.address_line_1.length > 0">
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </template>
+
                                     </div>
                                 </div>
                             </div>

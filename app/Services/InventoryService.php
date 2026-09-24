@@ -303,7 +303,7 @@ class InventoryService
                         $productId,
                         $warehouseId,
                         abs($diffDamaged),
-                        $diffDamaged > 0 ? 'damage' : 'adjustment'
+                        $diffDamaged > 0 ? 'damage_in' : 'damage_out'
                     );
                 }
             }
@@ -315,7 +315,7 @@ class InventoryService
                     $productId,
                     $warehouseId,
                     abs($diff),
-                    'adjustment'
+                    $diff > 0 ? 'adjustment_in' : 'adjustment_out'
                 );
             }
 
@@ -548,7 +548,7 @@ class InventoryService
         $to->quantity = (float) $to->quantity + $quantity;
         $to->save();
 
-        $this->logMovement($productId, $fromWarehouseId, $quantity, 'transfer', StockTransfer::class, $transferId);
+        $this->logMovement($productId, $fromWarehouseId, $quantity, 'out', StockTransfer::class, $transferId);
         $this->logMovement($productId, $toWarehouseId, $quantity, 'in', StockTransfer::class, $transferId);
         $this->syncProductStatus($productId);
     }
@@ -715,7 +715,7 @@ class InventoryService
                     $productId,
                     $warehouseId,
                     abs($diff),
-                    'adjustment',
+                    $diff > 0 ? 'adjustment_in' : 'adjustment_out',
                     InventoryAdjustment::class,
                     $adjustment->id
                 );
@@ -1401,7 +1401,7 @@ class InventoryService
 
                 if ($damageQty > 0) {
                     $stock->damaged_qty = (float) $stock->damaged_qty + $damageQty;
-                    $this->logMovement($productId, $warehouseId, $damageQty, 'damage', OrderReturn::class, $orderReturnId);
+                    $this->logMovement($productId, $warehouseId, $damageQty, 'damage_in', OrderReturn::class, $orderReturnId);
                 }
 
                 $stock->save();

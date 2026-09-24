@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('reference_type')->nullable(); // Order, Adjustment, Transfer
             $table->unsignedBigInteger('reference_id')->nullable();
             $table->decimal('quantity', 15, 4);
-            $table->enum('type', ['in', 'out', 'adjustment', 'transfer', 'reserve', 'release', 'damage'])->index();
+            $table->enum('type', ['in', 'out', 'adjustment', 'adjustment_in', 'adjustment_out', 'transfer', 'transfer_in', 'transfer_out', 'reserve', 'release', 'damage', 'damage_in', 'damage_out'])->index();
             $table->string('status')->default('active')->index();
             $table->foreignId('performed_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();

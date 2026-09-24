@@ -21,7 +21,13 @@ use App\Modules\Customers\Controllers\CustomerSettingsController;
 use App\Modules\Inventory\Controllers\GoodsReceiptController;
 use App\Modules\Inventory\Controllers\PurchaseOrderController;
 use App\Modules\Inventory\Controllers\SupplierController;
+use Illuminate\Support\Facades\Artisan;
 use App\Modules\Inventory\Controllers\WarehouseDashboardController;
+
+Route::get('/clear-views', function() {
+    Artisan::call('view:clear');
+    return 'View cache cleared';
+});
 use App\Modules\Orders\Controllers\CallTagAdminController;
 use App\Modules\Orders\Controllers\CallTaggingController;
 use App\Modules\Orders\Controllers\CouponController;
