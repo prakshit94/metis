@@ -2061,70 +2061,58 @@
                                 <h6 class="fw-bold text-primary mb-3" style="font-size:11px; text-transform:uppercase; letter-spacing:1px;"><i class="bi bi-receipt me-1"></i> Summary</h6>
                                 <div class="d-flex justify-content-between mb-1 small"><span class="text-body-secondary">Subtotal:</span> <span class="fw-bold" x-text="'₹ ' + Number(subtotal).toFixed(2)"></span></div>
                                 
-                                <template x-if="bogoDiscount > 0">
-                                    <div class="d-flex justify-content-between mb-1 small text-success">
-                                        <div>
-                                            <span>BOGO Savings:</span>
-                                            <div style="font-size: 9px; opacity: 0.8;" x-text="appliedBogoOfferNames"></div>
-                                        </div>
-                                        <span class="fw-bold" x-text="'- ₹ ' + Number(bogoDiscount).toFixed(2)"></span>
+                                <div class="d-flex justify-content-between mb-1 small text-success" x-show="bogoDiscount > 0" x-cloak>
+                                    <div>
+                                        <span>BOGO Savings:</span>
+                                        <div style="font-size: 9px; opacity: 0.8;" x-text="appliedBogoOfferNames"></div>
                                     </div>
-                                </template>
+                                    <span class="fw-bold" x-text="'- ₹ ' + Number(bogoDiscount).toFixed(2)"></span>
+                                </div>
 
-                                <template x-if="orderOfferDiscountAmount > 0">
-                                    <div class="d-flex justify-content-between mb-1 small text-success">
-                                        <div>
-                                            <span>Order Discount:</span>
-                                            <div style="font-size: 9px; opacity: 0.8;" x-text="bestOrderOffer?.name"></div>
-                                        </div>
-                                        <span class="fw-bold" x-text="'- ₹ ' + Number(orderOfferDiscountAmount).toFixed(2)"></span>
+                                <div class="d-flex justify-content-between mb-1 small text-success" x-show="orderOfferDiscountAmount > 0" x-cloak>
+                                    <div>
+                                        <span>Order Discount:</span>
+                                        <div style="font-size: 9px; opacity: 0.8;" x-text="bestOrderOffer?.name"></div>
                                     </div>
-                                </template>
+                                    <span class="fw-bold" x-text="'- ₹ ' + Number(orderOfferDiscountAmount).toFixed(2)"></span>
+                                </div>
 
-                                <template x-if="couponApplied && appliedCouponObj && appliedCouponObj.type !== 'free_shipping' && appliedCouponObj.type !== 'free_product'">
-                                    <div class="d-flex justify-content-between mb-1 small text-success">
-                                        <div>
-                                            <span>Coupon Savings:</span>
-                                            <div style="font-size: 9px; opacity: 0.8;" x-text="couponCode"></div>
-                                        </div>
-                                        <span class="fw-bold" x-text="'- ₹ ' + Number(couponDiscount).toFixed(2)"></span>
+                                <div class="d-flex justify-content-between mb-1 small text-success" x-show="couponApplied && appliedCouponObj && appliedCouponObj.type !== 'free_shipping' && appliedCouponObj.type !== 'free_product'" x-cloak>
+                                    <div>
+                                        <span>Coupon Savings:</span>
+                                        <div style="font-size: 9px; opacity: 0.8;" x-text="couponCode"></div>
                                     </div>
-                                </template>
+                                    <span class="fw-bold" x-text="'- ₹ ' + Number(couponDiscount).toFixed(2)"></span>
+                                </div>
                                 
-                                <template x-if="couponApplied && appliedCouponObj && appliedCouponObj.type === 'free_product'">
-                                    <div class="d-flex justify-content-between mb-1 small text-success">
-                                        <div>
-                                            <span>Coupon (Free Gift):</span>
-                                            <div style="font-size: 9px; opacity: 0.8;" x-text="couponCode"></div>
-                                        </div>
-                                        <span class="fw-bold">Applied</span>
+                                <div class="d-flex justify-content-between mb-1 small text-success" x-show="couponApplied && appliedCouponObj && appliedCouponObj.type === 'free_product'" x-cloak>
+                                    <div>
+                                        <span>Coupon (Free Gift):</span>
+                                        <div style="font-size: 9px; opacity: 0.8;" x-text="couponCode"></div>
                                     </div>
-                                </template>
+                                    <span class="fw-bold">Applied</span>
+                                </div>
 
                                 <div class="d-flex justify-content-between mb-1 small">
                                     <span class="text-body-secondary">Tax Amount (GST):</span> 
                                     <span class="fw-bold" x-text="'₹ ' + Number(taxAmount).toFixed(2)"></span>
                                 </div>
                                 
-                                <template x-if="couponApplied && appliedCouponObj && appliedCouponObj.type === 'free_shipping'">
-                                    <div class="d-flex justify-content-between mb-1 small text-success">
-                                        <div>
-                                            <span>Shipping:</span>
-                                            <div style="font-size: 9px; opacity: 0.8;" x-text="couponCode"></div>
-                                        </div>
-                                        <span class="fw-bold">Free</span>
+                                <div class="d-flex justify-content-between mb-1 small text-success" x-show="couponApplied && appliedCouponObj && appliedCouponObj.type === 'free_shipping'" x-cloak>
+                                    <div>
+                                        <span>Shipping:</span>
+                                        <div style="font-size: 9px; opacity: 0.8;" x-text="couponCode"></div>
                                     </div>
-                                </template>
-                                <template x-if="(!couponApplied || !appliedCouponObj || appliedCouponObj.type !== 'free_shipping') && shippingFee > 0">
-                                    <div class="d-flex justify-content-between mb-1 small"><span class="text-body-secondary">Shipping:</span> <span class="fw-bold" x-text="'₹ ' + Number(shippingFee).toFixed(2)"></span></div>
-                                </template>
+                                    <span class="fw-bold">Free</span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-1 small" x-show="(!couponApplied || !appliedCouponObj || appliedCouponObj.type !== 'free_shipping') && shippingFee > 0" x-cloak>
+                                    <span class="text-body-secondary">Shipping:</span> <span class="fw-bold" x-text="'₹ ' + Number(shippingFee).toFixed(2)"></span>
+                                </div>
 
-                                <template x-if="cashbackEarned > 0">
-                                    <div class="d-flex justify-content-between mb-1 small text-info">
-                                        <span class="text-info">Cashback Earned:</span>
-                                        <span class="fw-bold" x-text="'+ ₹ ' + Number(cashbackEarned).toFixed(2)"></span>
-                                    </div>
-                                </template>
+                                <div class="d-flex justify-content-between mb-1 small text-info" x-show="cashbackEarned > 0" x-cloak>
+                                    <span class="text-info">Cashback Earned:</span>
+                                    <span class="fw-bold" x-text="'+ ₹ ' + Number(cashbackEarned).toFixed(2)"></span>
+                                </div>
                                 
                                 <div class="d-flex justify-content-between mt-2 pt-2 border-top border-primary border-opacity-25 fs-5">
                                     <div>

@@ -1466,8 +1466,7 @@ class InventoryService
         if ($order->wallet_amount_used > 0 && $order->party_id) {
             $party = Party::find($order->party_id);
             if ($party) {
-                $party->wallet_balance += $order->wallet_amount_used;
-                $party->save();
+                $party->increment('wallet_balance', (float) $order->wallet_amount_used);
 
                 WalletTransaction::create([
                     'party_id' => $party->id,
