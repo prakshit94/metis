@@ -157,6 +157,24 @@
             </div>
         </div>
         @endcan
+        @can('orders.view.pending')
+        <div class="flex-shrink-0" style="width: 260px;">
+            <div class="card stats-card h-100 shadow-sm rounded-4 border-start border-4 border-danger">
+                <div class="card-body p-3 p-lg-4">
+                    <div class="d-flex flex-column align-items-start">
+                        <div class="stats-icon text-bg-danger-subtle text-danger-emphasis mb-3 rounded-3 p-2">
+                            <i class="bi bi-x-octagon fs-4"></i>
+                        </div>
+                        <div class="w-100" style="min-width: 0;">
+                            <p class="h6 mb-0 text-muted fw-semibold text-uppercase text-truncate" style="font-size: 0.75rem;" title="Unfulfillable (OOS)">Unfulfillable (OOS)</p>
+                            <div class="h3 mb-0 fw-bold" aria-live="polite"><span x-text="stats.unfulfillable"></span></div>
+                            <small class="text-danger d-block text-wrap fw-medium mt-1" style="word-break: break-all; font-size: 0.8rem;" x-text="'Value: ' + formatCurrency(stats.unfulfillable_amount)"></small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        @endcan
         @can('orders.view.confirmed')
         <div class="flex-shrink-0" style="width: 260px;">
             <div class="card stats-card h-100 shadow-sm rounded-4 border-start border-4 border-info">
@@ -223,6 +241,24 @@
                             <p class="h6 mb-0 text-muted fw-semibold text-uppercase" style="font-size: 0.75rem;" title="Dispatched">Dispatched</p>
                             <div class="h3 mb-0 fw-bold" aria-live="polite"><span x-text="stats.dispatched"></span></div>
                             <small class="text-info d-block text-wrap fw-medium mt-1" style="word-break: break-all; font-size: 0.8rem;" x-text="'Value: ' + formatCurrency(stats.dispatched_amount)"></small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        @endcan
+        @can('orders.view.dispatched')
+        <div class="flex-shrink-0" style="width: 260px;">
+            <div class="card stats-card h-100 shadow-sm rounded-4 border-start border-4 border-warning">
+                <div class="card-body p-3 p-lg-4">
+                    <div class="d-flex flex-column align-items-start">
+                        <div class="stats-icon text-bg-warning-subtle text-warning-emphasis mb-3 rounded-3 p-2">
+                            <i class="bi bi-exclamation-triangle fs-4"></i>
+                        </div>
+                        <div class="w-100" style="min-width: 0;">
+                            <p class="h6 mb-0 text-muted fw-semibold text-uppercase text-truncate" style="font-size: 0.75rem;" title="Delivery Attempted">Delivery Attempted</p>
+                            <div class="h3 mb-0 fw-bold" aria-live="polite"><span x-text="stats.delivery_attempted"></span></div>
+                            <small class="text-warning d-block text-wrap fw-medium mt-1" style="word-break: break-all; font-size: 0.8rem;" x-text="'Value: ' + formatCurrency(stats.delivery_attempted_amount)"></small>
                         </div>
                     </div>
                 </div>
@@ -884,6 +920,7 @@
                             bulkAvailableActions.canProcess ? 'Process' : null,
                             bulkAvailableActions.canDispatch ? 'Dispatch' : null,
                             bulkAvailableActions.canDeliver ? 'Deliver' : null,
+                            @can('orders.bulk_return') bulkAvailableActions.canReturn ? 'Return' : null, @endcan
                           ].filter(Boolean).join(', ') || 'No transitions'">
                     </span>
                 </div>
@@ -925,6 +962,15 @@
                             @click="bulkUpdateStatus('delivered')"
                             title="Move dispatched orders → Delivered">
                         <i class="bi bi-check2-all me-1"></i>Deliver
+                    </button>
+                    @endcan
+                    @can('orders.bulk_return')
+                    <button class="btn btn-sm btn-outline-warning"
+                            x-show="bulkAvailableActions.canReturn"
+                            x-transition
+                            @click="bulkInitiateReturn()"
+                            title="Mark selected orders as Returned">
+                        <i class="bi bi-arrow-return-left me-1"></i>Return
                     </button>
                     @endcan
                     @endcan

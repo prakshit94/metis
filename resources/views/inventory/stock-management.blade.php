@@ -25,16 +25,16 @@
     {{-- ── Stats Widgets ───────────────────────────────────────── --}}
     <div class="row g-4 g-lg-5 mb-5">
         <div class="col-xl-2 col-lg-4 col-md-6">
-            <div class="card stats-card cursor-pointer border-start border-4 border-primary" @click="stockLevelFilter = ''; loadData()">
+            <div class="card stats-card h-100 cursor-pointer border-start border-4 border-primary" @click="stockLevelFilter = ''; loadData()">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-primary bg-opacity-10 text-primary me-3">
                             <i class="bi bi-box-seam-fill"></i>
                         </div>
-                        <div>
-                            <p class="h6 mb-0 text-muted">Total SKUs</p>
+                        <div class="overflow-hidden" style="min-width: 0;">
+                            <p class="h6 mb-0 text-muted text-truncate">Total SKUs</p>
                             <div class="h3 mb-0" aria-live="polite"><span x-text="stats.total_products ?? 0"></span></div>
-                            <small class="text-success-emphasis">
+                            <small class="text-success-emphasis text-truncate d-block">
                                 <i class="bi bi-database"></i> Unique products tracked
                             </small>
                         </div>
@@ -43,16 +43,16 @@
             </div>
         </div>
         <div class="col-xl-2 col-lg-4 col-md-6">
-            <div class="card stats-card border-start border-4 border-success">
+            <div class="card stats-card h-100 border-start border-4 border-success">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-info bg-opacity-10 text-info me-3">
                             <i class="bi bi-buildings-fill"></i>
                         </div>
-                        <div>
-                            <p class="h6 mb-0 text-muted">Warehouses</p>
+                        <div class="overflow-hidden" style="min-width: 0;">
+                            <p class="h6 mb-0 text-muted text-truncate">Warehouses</p>
                             <div class="h3 mb-0" aria-live="polite"><span x-text="stats.total_warehouses ?? 0"></span></div>
-                            <small class="text-info">
+                            <small class="text-info text-truncate d-block">
                                 <i class="bi bi-info-circle"></i> Active locations
                             </small>
                         </div>
@@ -61,16 +61,16 @@
             </div>
         </div>
         <div class="col-xl-2 col-lg-4 col-md-6">
-            <div class="card stats-card border-start border-4 border-warning">
+            <div class="card stats-card h-100 border-start border-4 border-warning">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-secondary bg-opacity-10 text-secondary me-3">
                             <i class="bi bi-boxes"></i>
                         </div>
-                        <div>
-                            <p class="h6 mb-0 text-muted">Total Units</p>
+                        <div class="overflow-hidden" style="min-width: 0;">
+                            <p class="h6 mb-0 text-muted text-truncate">Total Units</p>
                             <div class="h3 mb-0" aria-live="polite"><span x-text="parseFloat(stats.total_units || 0).toFixed(0)"></span></div>
-                            <small class="text-secondary">
+                            <small class="text-secondary text-truncate d-block">
                                 <i class="bi bi-info-circle"></i> Sum of all quantity
                             </small>
                         </div>
@@ -79,16 +79,16 @@
             </div>
         </div>
         <div class="col-xl-2 col-lg-4 col-md-6">
-            <div class="card stats-card cursor-pointer border-start border-4 border-info" @click="stockLevelFilter = 'in_stock'; loadData()">
+            <div class="card stats-card h-100 cursor-pointer border-start border-4 border-info" @click="stockLevelFilter = 'in_stock'; loadData()">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-success bg-opacity-10 text-success me-3">
                             <i class="bi bi-check-circle-fill"></i>
                         </div>
-                        <div>
-                            <p class="h6 mb-0 text-muted">In Stock</p>
+                        <div class="overflow-hidden" style="min-width: 0;">
+                            <p class="h6 mb-0 text-muted text-truncate">In Stock</p>
                             <div class="h3 mb-0" aria-live="polite"><span x-text="stats.in_stock ?? 0"></span></div>
-                            <small class="text-success">
+                            <small class="text-success text-truncate d-block">
                                 <i class="bi bi-check-circle"></i> Healthy stock levels
                             </small>
                         </div>
@@ -97,16 +97,16 @@
             </div>
         </div>
         <div class="col-xl-2 col-lg-4 col-md-6">
-            <div class="card stats-card cursor-pointer border-start border-4 border-danger" @click="stockLevelFilter = 'low_stock'; loadData()">
+            <div class="card stats-card h-100 cursor-pointer border-start border-4 border-danger" @click="stockLevelFilter = 'low_stock'; loadData()">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-warning bg-opacity-10 text-warning me-3">
                             <i class="bi bi-exclamation-triangle-fill"></i>
                         </div>
-                        <div>
-                            <p class="h6 mb-0 text-muted">Low Stock</p>
+                        <div class="overflow-hidden" style="min-width: 0;">
+                            <p class="h6 mb-0 text-muted text-truncate">Low Stock</p>
                             <div class="h3 mb-0" aria-live="polite"><span x-text="stats.low_stock_count ?? 0"></span></div>
-                            <small class="text-warning">
+                            <small class="text-warning text-truncate d-block">
                                 <i class="bi bi-exclamation-circle"></i> Needs attention
                             </small>
                         </div>
@@ -115,16 +115,16 @@
             </div>
         </div>
         <div class="col-xl-2 col-lg-4 col-md-6">
-            <div class="card stats-card cursor-pointer border-start border-4 border-secondary" @click="stockLevelFilter = 'out_of_stock'; loadData()">
+            <div class="card stats-card h-100 cursor-pointer border-start border-4 border-secondary" @click="stockLevelFilter = 'out_of_stock'; loadData()">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-danger bg-opacity-10 text-danger me-3">
                             <i class="bi bi-x-circle-fill"></i>
                         </div>
-                        <div>
-                            <p class="h6 mb-0 text-muted">Out of Stock</p>
+                        <div class="overflow-hidden" style="min-width: 0;">
+                            <p class="h6 mb-0 text-muted text-truncate">Out of Stock</p>
                             <div class="h3 mb-0" aria-live="polite"><span x-text="stats.out_of_stock ?? 0"></span></div>
-                            <small class="text-danger">
+                            <small class="text-danger text-truncate d-block">
                                 <i class="bi bi-dash-circle"></i> Needs restocking
                             </small>
                         </div>
@@ -215,23 +215,53 @@
                 <div class="table-responsive">
                     <table class="table table-hover align-middle mb-0 text-nowrap">
                         <thead class="table-group-divider">
+                            <tr class="table-light">
+                                <th colspan="3" class="text-center border-end">Product Info</th>
+                                <th colspan="4" class="text-center border-end bg-primary bg-opacity-10">Physical Inventory</th>
+                                <th colspan="12" class="text-center border-end bg-info bg-opacity-10">Order Pipeline (Chronological)</th>
+                                <th colspan="6" class="text-center bg-warning bg-opacity-10">Returns Pipeline</th>
+                                @canany(['stockmanagement-edit', 'stocktransfer-create'])
+                                <th class="border-start"></th>
+                                @endcanany
+                            </tr>
                             <tr>
-                                <th style="width: 50px;" class="ps-3">
+                                <th style="width: 50px;" class="ps-3 border-end">
                                     <input type="checkbox"
                                            class="user-select-checkbox"
                                            @change="$event.isTrusted && toggleAll($event.target.checked)"
                                            :checked="selectedItems.length === paginatedItems.length && paginatedItems.length > 0">
                                 </th>
                                 <th @click="sortBy('product_id')" class="sortable"><i class="bi bi-box-seam me-1 text-secondary"></i>Product</th>
-                                <th @click="sortBy('warehouse_id')" class="sortable"><i class="bi bi-buildings-fill me-1 text-secondary"></i>Warehouse</th>
-                                <th @click="sortBy('quantity')" class="sortable text-center"><i class="bi bi-inboxes me-1 text-secondary"></i>In Stock</th>
-                                <th @click="sortBy('available')" class="sortable text-center"><i class="bi bi-check-circle me-1 text-secondary"></i>Available For Sell</th>
-                                <th @click="sortBy('pending_qty')" class="sortable text-center"><i class="bi bi-hourglass-split me-1 text-secondary"></i>Order Placed</th>
-                                <th @click="sortBy('reserved_qty')" class="sortable text-center"><i class="bi bi-bookmark-dash me-1 text-secondary"></i>Reserved</th>
-                                <th @click="sortBy('dispatched_qty')" class="sortable text-center"><i class="bi bi-send-check me-1 text-secondary"></i>Dispatched</th>
-                                <th @click="sortBy('delivered_qty')" class="sortable text-center"><i class="bi bi-box2-heart me-1 text-secondary"></i>Delivered</th>
-                                <th @click="sortBy('return_requested_qty')" class="sortable text-center"><i class="bi bi-arrow-return-left me-1 text-secondary"></i>Return Req</th>
-                                <th @click="sortBy('damaged_qty')" class="sortable text-center"><i class="bi bi-exclamation-octagon me-1 text-secondary"></i>Bad Qty</th>
+                                <th @click="sortBy('warehouse_id')" class="sortable border-end"><i class="bi bi-buildings-fill me-1 text-secondary"></i>Warehouse</th>
+                                
+                                <!-- Physical Inventory -->
+                                <th @click="sortBy('quantity')" class="sortable text-center" title="Total physical stock"><i class="bi bi-inboxes me-1 text-secondary"></i>In Stock</th>
+                                <th @click="sortBy('reserved_qty')" class="sortable text-center" title="Stock reserved for orders"><i class="bi bi-bookmark-dash me-1 text-secondary"></i>Reserved</th>
+                                <th @click="sortBy('available')" class="sortable text-center" title="Available to sell (In Stock - Reserved)"><i class="bi bi-check-circle me-1 text-secondary"></i>Available For Sell</th>
+                                <th @click="sortBy('damaged_qty')" class="sortable text-center border-end" title="Damaged or bad quantity"><i class="bi bi-exclamation-octagon me-1 text-secondary"></i>Bad Qty</th>
+                                
+                                <!-- Order Statuses Pipeline -->
+                                <th class="text-center" title="Future Order"><i class="bi bi-calendar-event me-1 text-secondary"></i>Future</th>
+                                <th @click="sortBy('pending_qty')" class="sortable text-center" title="Order Placed (Pending)"><i class="bi bi-hourglass-split me-1 text-secondary"></i>Order Placed</th>
+                                <th class="text-center" title="Unfulfillable (Out of Stock)"><i class="bi bi-x-octagon me-1 text-secondary"></i>Unfulfillable</th>
+                                <th class="text-center" title="Pending Confirmation"><i class="bi bi-clock-history me-1 text-secondary"></i>Pending Conf</th>
+                                <th class="text-center" title="Confirmed"><i class="bi bi-check2-circle me-1 text-secondary"></i>Confirmed</th>
+                                <th class="text-center" title="Processing"><i class="bi bi-gear me-1 text-secondary"></i>Processing</th>
+                                <th class="text-center" title="Ready to Ship"><i class="bi bi-box-seam-fill me-1 text-secondary"></i>Ready to Ship</th>
+                                <th @click="sortBy('dispatched_qty')" class="sortable text-center" title="Dispatched"><i class="bi bi-send-check me-1 text-secondary"></i>Dispatched</th>
+                                <th class="text-center" title="Shipped"><i class="bi bi-truck me-1 text-secondary"></i>Shipped</th>
+                                <th class="text-center" title="Delivery Attempted"><i class="bi bi-exclamation-triangle me-1 text-secondary"></i>Delivery Att</th>
+                                <th @click="sortBy('delivered_qty')" class="sortable text-center" title="Delivered"><i class="bi bi-box2-heart me-1 text-secondary"></i>Delivered</th>
+                                <th class="text-center border-end" title="Cancelled"><i class="bi bi-x-circle me-1 text-secondary"></i>Cancelled</th>
+                                
+                                <!-- Return Statuses Pipeline -->
+                                <th @click="sortBy('return_requested_qty')" class="sortable text-center" title="Total Returns Requested"><i class="bi bi-arrow-return-left me-1 text-secondary"></i>Return Req</th>
+                                <th class="text-center" title="Return Pending"><i class="bi bi-clock me-1 text-secondary"></i>Ret Pending</th>
+                                <th class="text-center" title="Return Approved"><i class="bi bi-hand-thumbs-up me-1 text-secondary"></i>Ret Approved</th>
+                                <th class="text-center" title="Return Received"><i class="bi bi-box-arrow-in-down me-1 text-secondary"></i>Ret Received</th>
+                                <th class="text-center" title="Return QC In Progress"><i class="bi bi-search me-1 text-secondary"></i>Ret QC</th>
+                                <th class="text-center border-end" title="Return Rejected"><i class="bi bi-x-square me-1 text-secondary"></i>Ret Rejected</th>
+                                
                                 @canany(['stockmanagement-edit', 'stocktransfer-create'])
                                 <th style="width: 120px;" class="text-end pe-4"><i class="bi bi-lightning-charge me-1 text-secondary"></i>Actions</th>
                                 @endcanany
@@ -240,7 +270,7 @@
                         <tbody>
                             <template x-if="paginatedItems.length === 0">
                                 <tr>
-                                    <td colspan="12" class="text-center py-5 text-muted">
+                                    <td colspan="26" class="text-center py-5 text-muted">
                                         <div x-show="isLoading" class="spinner-border text-primary" role="status">
                                             <span class="visually-hidden">Loading...</span>
                                         </div>
@@ -295,7 +325,7 @@
                                             </div>
                                         </div>
                                     </td>
-                                    <td>
+                                    <td class="border-end">
                                         <span class="badge bg-body-secondary text-body-emphasis border" x-text="item.warehouse?.name || '-'"></span>
                                     </td>
                                     <td class="text-center">
@@ -311,6 +341,10 @@
                                         </div>
                                     </td>
                                     <td class="text-center">
+                                        <span class="badge bg-warning-subtle text-warning border border-warning-subtle"
+                                              x-text="parseFloat(item.reserved_qty || 0).toFixed(2)"></span>
+                                    </td>
+                                    <td class="text-center">
                                         <div class="d-flex align-items-center justify-content-center gap-1">
                                             <span class="badge stock-badge"
                                                   :class="{
@@ -322,29 +356,85 @@
                                             </span>
                                         </div>
                                     </td>
+                                    <td class="text-center border-end">
+                                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle"
+                                              x-text="parseFloat(item.damaged_qty || 0).toFixed(2)"></span>
+                                    </td>
+
+                                    <!-- Order Statuses Pipeline -->
+                                    <td class="text-center">
+                                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle"
+                                              x-text="parseFloat(item.future_order_qty || 0).toFixed(2)"></span>
+                                    </td>
                                     <td class="text-center">
                                         <span class="badge bg-primary-subtle text-primary border border-primary-subtle"
                                               x-text="parseFloat(item.pending_qty || 0).toFixed(2)"></span>
                                     </td>
                                     <td class="text-center">
-                                        <span class="badge bg-warning-subtle text-warning border border-warning-subtle"
-                                              x-text="parseFloat(item.reserved_qty || 0).toFixed(2)"></span>
+                                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle"
+                                              x-text="parseFloat(item.unfulfillable_qty || 0).toFixed(2)"></span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle"
+                                              x-text="parseFloat(item.pending_confirmation_qty || 0).toFixed(2)"></span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle"
+                                              x-text="parseFloat(item.confirmed_qty || 0).toFixed(2)"></span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle"
+                                              x-text="parseFloat(item.processing_qty || 0).toFixed(2)"></span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle"
+                                              x-text="parseFloat(item.ready_to_ship_qty || 0).toFixed(2)"></span>
                                     </td>
                                     <td class="text-center">
                                         <span class="badge bg-info-subtle text-info border border-info-subtle"
                                               x-text="parseFloat((parseFloat(item.dispatched_qty || 0) + parseFloat(item.in_transit_qty || 0)).toFixed(2))"></span>
                                     </td>
                                     <td class="text-center">
+                                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle"
+                                              x-text="parseFloat(item.shipped_qty || 0).toFixed(2)"></span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle"
+                                              x-text="parseFloat(item.delivery_attempted_qty || 0).toFixed(2)"></span>
+                                    </td>
+                                    <td class="text-center">
                                         <span class="badge bg-success-subtle text-success border border-success-subtle"
                                               x-text="parseFloat(item.delivered_qty || 0).toFixed(2)"></span>
                                     </td>
+                                    <td class="text-center border-end">
+                                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle"
+                                              x-text="parseFloat(item.cancelled_qty || 0).toFixed(2)"></span>
+                                    </td>
+
+                                    <!-- Return Statuses Pipeline -->
                                     <td class="text-center">
                                         <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle"
                                               x-text="parseFloat(item.return_requested_qty || 0).toFixed(2)"></span>
                                     </td>
                                     <td class="text-center">
-                                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle"
-                                              x-text="parseFloat(item.damaged_qty || 0).toFixed(2)"></span>
+                                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle"
+                                              x-text="parseFloat(item.return_pending_qty || 0).toFixed(2)"></span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle"
+                                              x-text="parseFloat(item.return_approved_qty || 0).toFixed(2)"></span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle"
+                                              x-text="parseFloat(item.return_received_qty || 0).toFixed(2)"></span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle"
+                                              x-text="parseFloat(item.return_qc_qty || 0).toFixed(2)"></span>
+                                    </td>
+                                    <td class="text-center border-end">
+                                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle"
+                                              x-text="parseFloat(item.return_rejected_qty || 0).toFixed(2)"></span>
                                     </td>
                                     @canany(['stockmanagement-edit', 'stocktransfer-create'])
                                     <td class="text-end pe-4">

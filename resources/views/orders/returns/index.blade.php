@@ -7,7 +7,7 @@
 
     {{-- Page Header --}}
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
+         <div class="overflow-hidden" style="min-width: 0;">
             <h1 class="h3 mb-1 fw-bold"><i class="bi bi-arrow-return-left text-primary me-2"></i>Returns &amp; QC</h1>
             <p class="text-muted mb-0 small">Inspect returned items, update stock, and process financials.</p>
         </div>
@@ -20,8 +20,8 @@
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex align-items-center gap-3">
                         <div class="stats-icon bg-primary bg-opacity-10 text-primary fs-3 rounded-3 p-2 flex-shrink-0"><i class="bi bi-box-seam"></i></div>
-                        <div>
-                            <p class="mb-1 small text-muted">Total Returns</p>
+                         <div class="overflow-hidden" style="min-width: 0;">
+                            <p class="mb-1 small text-muted text-truncate">Total Returns</p>
                             <div class="h4 mb-0 fw-bold" x-text="stats.total || '—'"></div>
                         </div>
                     </div>
@@ -33,9 +33,61 @@
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex align-items-center gap-3">
                         <div class="stats-icon bg-warning bg-opacity-10 text-warning fs-3 rounded-3 p-2 flex-shrink-0"><i class="bi bi-hourglass-split"></i></div>
-                        <div>
-                            <p class="mb-1 small text-muted">Pending QC</p>
+                         <div class="overflow-hidden" style="min-width: 0;">
+                            <p class="mb-1 small text-muted text-truncate">Pending / QC Total</p>
                             <div class="h4 mb-0 fw-bold text-warning" x-text="stats.pending_qc || '—'"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-lg-6">
+            <div class="card stats-card h-100 border-start border-4 border-info">
+                <div class="card-body p-3 p-lg-4">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="stats-icon bg-info bg-opacity-10 text-info fs-3 rounded-3 p-2 flex-shrink-0"><i class="bi bi-clock"></i></div>
+                         <div class="overflow-hidden" style="min-width: 0;">
+                            <p class="mb-1 small text-muted text-truncate">Pending</p>
+                            <div class="h4 mb-0 fw-bold text-info" x-text="stats.pending || '—'"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-lg-6">
+            <div class="card stats-card h-100 border-start border-4 border-info">
+                <div class="card-body p-3 p-lg-4">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="stats-icon bg-info bg-opacity-10 text-info fs-3 rounded-3 p-2 flex-shrink-0"><i class="bi bi-hand-thumbs-up"></i></div>
+                         <div class="overflow-hidden" style="min-width: 0;">
+                            <p class="mb-1 small text-muted text-truncate">Approved</p>
+                            <div class="h4 mb-0 fw-bold text-info" x-text="stats.approved || '—'"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-lg-6">
+            <div class="card stats-card h-100 border-start border-4 border-info">
+                <div class="card-body p-3 p-lg-4">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="stats-icon bg-info bg-opacity-10 text-info fs-3 rounded-3 p-2 flex-shrink-0"><i class="bi bi-box-arrow-in-down"></i></div>
+                         <div class="overflow-hidden" style="min-width: 0;">
+                            <p class="mb-1 small text-muted text-truncate">Received</p>
+                            <div class="h4 mb-0 fw-bold text-info" x-text="stats.received || '—'"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-lg-6">
+            <div class="card stats-card h-100 border-start border-4 border-info">
+                <div class="card-body p-3 p-lg-4">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="stats-icon bg-info bg-opacity-10 text-info fs-3 rounded-3 p-2 flex-shrink-0"><i class="bi bi-search"></i></div>
+                         <div class="overflow-hidden" style="min-width: 0;">
+                            <p class="mb-1 small text-muted text-truncate">QC In Progress</p>
+                            <div class="h4 mb-0 fw-bold text-info" x-text="stats.qc_in_progress || '—'"></div>
                         </div>
                     </div>
                 </div>
@@ -46,8 +98,8 @@
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex align-items-center gap-3">
                         <div class="stats-icon bg-success bg-opacity-10 text-success fs-3 rounded-3 p-2 flex-shrink-0"><i class="bi bi-check2-circle"></i></div>
-                        <div>
-                            <p class="mb-1 small text-muted">Completed</p>
+                         <div class="overflow-hidden" style="min-width: 0;">
+                            <p class="mb-1 small text-muted text-truncate">Completed</p>
                             <div class="h4 mb-0 fw-bold text-success" x-text="stats.completed || '—'"></div>
                         </div>
                     </div>
@@ -59,8 +111,8 @@
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex align-items-center gap-3">
                         <div class="stats-icon bg-danger bg-opacity-10 text-danger fs-3 rounded-3 p-2 flex-shrink-0"><i class="bi bi-x-circle"></i></div>
-                        <div>
-                            <p class="mb-1 small text-muted">Rejected</p>
+                         <div class="overflow-hidden" style="min-width: 0;">
+                            <p class="mb-1 small text-muted text-truncate">Rejected</p>
                             <div class="h4 mb-0 fw-bold text-danger" x-text="stats.rejected || '—'"></div>
                         </div>
                     </div>
@@ -277,7 +329,7 @@
                                 <div class="bg-body-secondary text-primary p-3 rounded-circle shadow-sm d-flex align-items-center justify-content-center" style="width:56px;height:56px;">
                                     <i class="bi bi-clipboard2-check fs-3"></i>
                                 </div>
-                                <div>
+                                 <div class="overflow-hidden" style="min-width: 0;">
                                     <h5 class="modal-title fw-bold mb-1" id="qcInspectModalLabel">
                                         QC Inspection — <span class="text-primary font-monospace" x-text="selectedReturn?.return_no || ''"></span>
                                     </h5>
@@ -322,7 +374,7 @@
 
                         {{-- QC Items Table --}}
                         <template x-if="selectedReturn && ['approved', 'qc_in_progress', 'received'].includes(selectedReturn.status)">
-                            <div>
+                             <div class="overflow-hidden" style="min-width: 0;">
                                 <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
                                     <h6 class="fw-bold mb-0">
                                         <i class="bi bi-list-check me-2 text-primary"></i>Per-Item QC Quantities
@@ -437,7 +489,7 @@
 
                         {{-- Already processed or pending view --}}
                         <template x-if="selectedReturn && !['approved', 'qc_in_progress', 'received'].includes(selectedReturn.status)">
-                            <div>
+                             <div class="overflow-hidden" style="min-width: 0;">
                                 <h6 class="fw-bold mb-3"><i class="bi bi-list-check me-2 text-muted"></i>QC Results</h6>
                                 <div class="table-responsive rounded-3 border">
                                     <table class="table table-sm align-middle mb-0">
@@ -518,7 +570,7 @@
                                 <div class="bg-body-secondary text-primary p-3 rounded-circle shadow-sm d-flex align-items-center justify-content-center" style="width:56px;height:56px;">
                                     <i class="bi bi-layers-half fs-3"></i>
                                 </div>
-                                <div>
+                                 <div class="overflow-hidden" style="min-width: 0;">
                                     <h5 class="modal-title fw-bold mb-1" id="bulkQcModalLabel">
                                         Bulk QC Inspection
                                     </h5>

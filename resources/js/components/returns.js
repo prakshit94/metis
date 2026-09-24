@@ -99,6 +99,10 @@ document.addEventListener('alpine:init', () => {
     // --- Stats ---
     stats: {
       total: 0,
+      pending: 0,
+      approved: 0,
+      received: 0,
+      qc_in_progress: 0,
       pending_qc: 0,
       completed: 0,
       rejected: 0,

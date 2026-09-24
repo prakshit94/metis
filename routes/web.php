@@ -114,6 +114,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         Route::resource('/suppliers', SupplierController::class)->except(['create', 'show', 'edit']);
     });
     Route::post('orders/bulk-status', [OrderController::class, 'bulkStatus'])->name('orders.bulk-status');
+    Route::post('orders/bulk-return', [\App\Modules\Orders\Controllers\OrderReturnController::class, 'bulkStore'])->name('orders.bulk-return');
     Route::post('orders/bulk-generate-invoices', [OrderController::class, 'generateBulkInvoices'])->name('orders.bulk-generate-invoices');
     Route::get('orders/bulk-print', [OrderController::class, 'bulkPrint'])->name('orders.bulk-print');
     Route::get('orders/export', [OrderController::class, 'bulkExport'])->name('orders.export');

@@ -138,6 +138,8 @@ document.addEventListener('alpine:init', () => {
       pending_amount: 0,
       pending_confirmation: 0,
       pending_confirmation_amount: 0,
+      unfulfillable: 0,
+      unfulfillable_amount: 0,
       confirmed: 0,
       confirmed_amount: 0,
       processing: 0,
@@ -146,8 +148,14 @@ document.addEventListener('alpine:init', () => {
       ready_to_ship_amount: 0,
       dispatched: 0,
       dispatched_amount: 0,
+      delivery_attempted: 0,
+      delivery_attempted_amount: 0,
       delivered: 0,
       delivered_amount: 0,
+      return_requested: 0,
+      return_requested_amount: 0,
+      returned: 0,
+      returned_amount: 0,
       cancelled: 0,
       cancelled_amount: 0,
       revenue: 0,
@@ -1222,6 +1230,8 @@ document.addEventListener('alpine:init', () => {
         canDispatch: statuses.has('ready_to_ship'),
         // Dispatched/Shipped → Delivered
         canDeliver: statuses.has('dispatched') || statuses.has('shipped'),
+        // Return (delivered, dispatched, shipped)
+        canReturn: statuses.has('delivered') || statuses.has('dispatched') || statuses.has('shipped'),
         // Cancel (any order that is still active)
         canCancel: [...statuses].some((s) => cancellableStatuses.includes(s)),
       };
@@ -1794,11 +1804,78 @@ document.addEventListener('alpine:init', () => {
 
     // ─── Bulk Actions ────────────────────────────────────────────────────────
 
+    async bulkInitiateReturn() {
+      if (this.selectedOrders.length === 0) return;
+
+      const { value: formValues } = await Swal.fire({
+        title: 'Bulk Initiate Return',
+        html: `
+          <div class="text-start">
+            <p>Initiating return for ${this.selectedOrders.length} order(s). All items in these orders will be returned.</p>
+            <div class="mb-3">
+              <label class="form-label fw-medium">Reason <span class="text-danger">*</span></label>
+              <select id="swal-return-reason" class="form-select">
+                <option value="">Select Reason</option>
+                <option value="defective">Defective / Damaged</option>
+                <option value="wrong_item">Wrong Item Sent</option>
+                <option value="not_needed">No Longer Needed</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-medium">Notes</label>
+              <textarea id="swal-return-notes" class="form-control" rows="2"></textarea>
+            </div>
+          </div>
+        `,
+        focusConfirm: false,
+        showCancelButton: true,
+        confirmButtonText: 'Initiate Return',
+        cancelButtonText: 'Cancel',
+        customClass: {
+          confirmButton: 'btn btn-warning me-2',
+          cancelButton: 'btn btn-secondary',
+          popup: 'rounded-4 shadow-lg border-0 bg-body',
+        },
+        buttonsStyling: false,
+        preConfirm: () => {
+          const reason = document.getElementById('swal-return-reason').value;
+          if (!reason) {
+            Swal.showValidationMessage('Please select a reason.');
+            return false;
+          }
+          return {
+            reason: reason,
+            notes: document.getElementById('swal-return-notes').value,
+          };
+        },
+      });
+
+      if (!formValues) return;
+
+      try {
+        const res = await apiFetch('/orders/bulk-return', {
+          method: 'POST',
+          body: JSON.stringify({
+            order_ids: this.selectedOrders,
+            reason: formValues.reason,
+            notes: formValues.notes,
+          }),
+        });
+        showToast(res || 'Bulk return initiated successfully.');
+        this.selectedOrders = [];
+        this.loadOrders();
+      } catch (err) {
+        showToast(err.message, 'danger');
+      }
+    },
+
     async bulkUpdateStatus(status) {
       if (this.selectedOrders.length === 0) return;
 
       if (status === 'confirmed') {
         const unfulfillableSelected = this.orders.filter(
+
           (o) => this.selectedOrders.includes(String(o.id)) && o.isUnfulfillable
         );
         if (unfulfillableSelected.length > 0) {

@@ -24,6 +24,7 @@ class OrderReturnController extends Controller implements HasMiddleware
         return [
             new Middleware('permission:orders.view', only: ['index', 'show']),
             new Middleware('permission:orders.return', only: ['store', 'process', 'processQc', 'processFinancials']),
+            new Middleware('permission:orders.bulk_return', only: ['bulkStore']),
         ];
     }
 
@@ -107,7 +108,11 @@ class OrderReturnController extends Controller implements HasMiddleware
         if ($request->wantsJson() || $request->ajax()) {
             $stats = [
                 'total' => (clone $query)->count(),
-                'pending_qc' => (clone $query)->whereIn('order_returns.status', ['pending', 'received', 'qc_in_progress'])->count(),
+                'pending' => (clone $query)->where('order_returns.status', 'pending')->count(),
+                'approved' => (clone $query)->where('order_returns.status', 'approved')->count(),
+                'received' => (clone $query)->where('order_returns.status', 'received')->count(),
+                'qc_in_progress' => (clone $query)->where('order_returns.status', 'qc_in_progress')->count(),
+                'pending_qc' => (clone $query)->whereIn('order_returns.status', ['pending', 'approved', 'received', 'qc_in_progress'])->count(),
                 'completed' => (clone $query)->where('order_returns.status', 'completed')->count(),
                 'rejected' => (clone $query)->where('order_returns.status', 'rejected')->count(),
                 'total_refunded' => (clone $query)->sum('order_returns.refund_amount'),
@@ -208,6 +213,93 @@ class OrderReturnController extends Controller implements HasMiddleware
         }
 
         return back()->with('success', 'Return request initiated successfully.');
+    }
+
+    public function bulkStore(Request $request)
+    {
+        $validated = $request->validate([
+            'order_ids' => 'required|array|min:1',
+            'order_ids.*' => 'integer|exists:orders,id',
+            'reason' => 'required|string',
+            'notes' => 'nullable|string',
+        ]);
+
+        $count = 0;
+        $skipped = 0;
+        $errors = [];
+
+        DB::transaction(function () use ($validated, &$count, &$skipped, &$errors) {
+            $orders = Order::with('items')->whereIn('id', $validated['order_ids'])->get();
+            
+            foreach ($orders as $order) {
+                if (!in_array($order->status, ['delivered', 'dispatched', 'shipped'], true)) {
+                    $skipped++;
+                    continue;
+                }
+
+                try {
+                    $baseNo = str_replace('ORD-', 'RET-', $order->order_no);
+                    if ($baseNo === $order->order_no) {
+                        $baseNo = 'RET-'.$order->order_no;
+                    }
+                    $returnCount = OrderReturn::where('order_id', $order->id)->count();
+                    $returnNo = $returnCount > 0 ? $baseNo.'-'.($returnCount + 1) : $baseNo;
+
+                    $return = OrderReturn::create([
+                        'order_id' => $order->id,
+                        'return_no' => $returnNo,
+                        'status' => 'pending',
+                        'reason' => $validated['reason'],
+                        'notes' => $validated['notes'],
+                    ]);
+
+                    $wasInTransit = in_array($order->status, Order::inTransitStatuses(), true);
+
+                    foreach ($order->items as $item) {
+                        OrderReturnItem::create([
+                            'order_return_id' => $return->id,
+                            'product_id' => $item->product_id,
+                            'requested_qty' => $item->quantity,
+                        ]);
+
+                        if ($wasInTransit && $order->warehouse_id) {
+                            $stock = Stock::where('product_id', $item->product_id)
+                                ->where('warehouse_id', $order->warehouse_id)
+                                ->lockForUpdate()
+                                ->first();
+
+                            if ($stock) {
+                                $stock->dispatched_qty = max(0.0, (float) $stock->dispatched_qty - (float) $item->quantity);
+                                $stock->save();
+                            }
+                        }
+                    }
+
+                    $order->update([
+                        'status' => 'return_requested',
+                        'updated_by' => auth()->id(),
+                    ]);
+
+                    $order->statusLogs()->create([
+                        'status' => 'return_requested',
+                        'notes' => 'Bulk Return initiated. Reason: '.$validated['reason'],
+                        'changed_by' => auth()->id(),
+                    ]);
+
+                    $count++;
+                } catch (\Exception $e) {
+                    $errors[] = "Order #{$order->order_no}: ".$e->getMessage();
+                    $skipped++;
+                }
+            }
+        });
+
+        $msg = "Bulk return initiated. Success: {$count}, Skipped: {$skipped}.";
+        if (! empty($errors)) {
+            $msg .= ' Errors: '.implode(' ', array_slice($errors, 0, 3));
+        }
+
+        return response()->json($msg);
     }
 
     public function show(OrderReturn $return)

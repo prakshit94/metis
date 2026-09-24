@@ -247,6 +247,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::delete('/{order}', [OrderController::class, 'destroy'])->name('destroy');
         // Bulk Actions & Helpers
         Route::post('/bulk-status', [OrderController::class, 'bulkStatus'])->name('bulk-status');
+        Route::post('/bulk-return', [\App\Modules\Orders\Controllers\OrderReturnController::class, 'bulkStore'])->name('bulk-return');
         Route::post('/bulk-generate-invoices', [OrderController::class, 'generateBulkInvoices'])->name('bulk-generate-invoices');
         Route::get('/bulk-print', [OrderController::class, 'bulkPrint'])->name('bulk-print');
         Route::get('/export', [OrderController::class, 'bulkExport'])->name('export');
