@@ -1228,7 +1228,7 @@ document.addEventListener('alpine:init', () => {
         canReadyToShip: statuses.has('processing'),
         // Ready to Ship → Dispatched
         canDispatch: statuses.has('ready_to_ship'),
-        // Dispatched/Shipped → Delivered
+        // Dispatched → Delivered
         canDeliver: statuses.has('dispatched'),
         // Return (delivered, dispatched)
         canReturn: statuses.has('delivered') || statuses.has('dispatched'),

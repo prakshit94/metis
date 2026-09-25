@@ -249,7 +249,7 @@
                                 <th class="text-center" title="Processing"><i class="bi bi-gear me-1 text-secondary"></i>Processing</th>
                                 <th class="text-center" title="Ready to Ship"><i class="bi bi-box-seam-fill me-1 text-secondary"></i>Ready to Ship</th>
                                 <th @click="sortBy('dispatched_qty')" class="sortable text-center" title="Dispatched"><i class="bi bi-send-check me-1 text-secondary"></i>Dispatched</th>
-                                <th class="text-center" title="Shipped"><i class="bi bi-truck me-1 text-secondary"></i>Shipped</th>
+                                <th class="text-center" title="Dispatched"><i class="bi bi-truck me-1 text-secondary"></i>Dispatched</th>
                                 <th class="text-center" title="Delivery Attempted"><i class="bi bi-exclamation-triangle me-1 text-secondary"></i>Delivery Att</th>
                                 <th @click="sortBy('delivered_qty')" class="sortable text-center" title="Delivered"><i class="bi bi-box2-heart me-1 text-secondary"></i>Delivered</th>
                                 <th class="text-center border-end" title="Cancelled"><i class="bi bi-x-circle me-1 text-secondary"></i>Cancelled</th>
