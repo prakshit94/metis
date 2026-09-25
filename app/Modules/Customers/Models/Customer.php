@@ -151,6 +151,11 @@ class Customer extends Model implements Auditable
         return $this->hasMany(OrderComplaint::class, 'customer_id');
     }
 
+    public function walletTransactions(): HasMany
+    {
+        return $this->hasMany(WalletTransaction::class, 'party_id');
+    }
+
     public function referredOrders(): HasManyThrough
     {
         return $this->hasManyThrough(Order::class, self::class, 'referred_by', 'party_id');
