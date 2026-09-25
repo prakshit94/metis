@@ -6,10 +6,21 @@
 <div class="returns-management" x-data="returnsTable()" x-init="init()">
 
     {{-- Page Header --}}
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center mb-4 gap-3">
          <div class="overflow-hidden" style="min-width: 0;">
             <h1 class="h3 mb-1 fw-bold"><i class="bi bi-arrow-return-left text-primary me-2"></i>Returns &amp; QC</h1>
             <p class="text-muted mb-0 small">Inspect returned items, update stock, and process financials.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <button class="btn btn-outline-secondary shadow-sm" @click="downloadBulkQcTemplate()">
+                <i class="bi bi-file-earmark-spreadsheet me-1"></i>Template
+            </button>
+            <button class="btn btn-primary shadow-sm" @click="$refs.importQcFile.click()" :disabled="importingQc">
+                <i class="bi bi-upload me-1"></i>
+                <span x-show="!importingQc">Import QC CSV</span>
+                <span x-show="importingQc">Importing...</span>
+            </button>
+            <input type="file" x-ref="importQcFile" class="d-none" accept=".csv" @change="uploadBulkQc($event)">
         </div>
     </div>
 

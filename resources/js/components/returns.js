@@ -87,6 +87,8 @@ document.addEventListener('alpine:init', () => {
     itemsPerPage: 15,
     isLoading: false,
     isSubmitting: false,
+    importingQc: false,
+    qcImportRows: [],
 
     // --- Filters ---
     searchQuery: '',
@@ -126,6 +128,90 @@ document.addEventListener('alpine:init', () => {
     financeMethod: 'upi',
 
     // ─── Lifecycle ───────────────────────────────────────────────────────────
+
+    downloadBulkQcTemplate() {
+      const headers = ['return_no', 'sku', 'received_qty', 'restocked_qty', 'damaged_qty', 'qc_notes'];
+      const csvContent = headers.join(',') + '\n';
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = 'bulk_qc_template.csv';
+      document.body.appendChild(link);
+      link.click();
+      URL.revokeObjectURL(link.href);
+      document.body.removeChild(link);
+    },
+
+    async uploadBulkQc(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      this.importingQc = true;
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('is_preview', 1);
+
+      try {
+        const res = await fetch('/returns/bulk-qc-import', {
+          method: 'POST',
+          body: formData,
+          headers: {
+            Accept: 'application/json',
+            'X-CSRF-TOKEN': getCsrfToken(),
+          },
+        });
+        const data = await res.json();
+        if (data.preview) {
+          this.qcImportRows = data.preview;
+          getModal('#bulkQcImportPreviewModal')?.show();
+        } else if (data.error || !res.ok) {
+          showToast(data.error || data.message || 'Error occurred during upload.', 'danger');
+        }
+      } catch (err) {
+        showToast(err.message || 'Error uploading QC CSV preview.', 'danger');
+      } finally {
+        this.importingQc = false;
+        event.target.value = '';
+      }
+    },
+
+    cancelBulkQcImport() {
+      this.qcImportRows = [];
+      getModal('#bulkQcImportPreviewModal')?.hide();
+    },
+
+    async confirmBulkQcImport() {
+      const fileInput = this.$refs.importQcFile;
+      if (!fileInput || !fileInput.files.length) return;
+
+      this.importingQc = true;
+      const formData = new FormData();
+      formData.append('file', fileInput.files[0]);
+
+      try {
+        const res = await fetch('/returns/bulk-qc-import', {
+          method: 'POST',
+          body: formData,
+          headers: {
+            Accept: 'application/json',
+            'X-CSRF-TOKEN': getCsrfToken(),
+          },
+        });
+        const data = await res.json();
+        if (data.error || !res.ok) {
+          showToast(data.error || data.message || 'Error occurred.', 'danger');
+        } else {
+          showToast(data.message || 'Bulk QC completed successfully.', 'success');
+          this.cancelBulkQcImport();
+          this.loadReturns();
+        }
+      } catch (err) {
+        showToast(err.message || 'Error processing Bulk QC.', 'danger');
+      } finally {
+        this.importingQc = false;
+        if (fileInput) fileInput.value = '';
+      }
+    },
 
     init() {
       this.loadReturns();

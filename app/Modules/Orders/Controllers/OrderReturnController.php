@@ -371,6 +371,177 @@ class OrderReturnController extends Controller implements HasMiddleware
         return response()->json(['success' => true, 'message' => 'Return cancelled successfully.']);
     }
 
+    
+    public function importBulkQc(Request $request, InventoryService $inventoryService)
+    {
+        $request->validate([
+            'file' => 'required|max:10240',
+            'is_preview' => 'nullable|boolean',
+        ]);
+
+        $isPreview = $request->input('is_preview', false);
+        $file = $request->file('file');
+
+        $handle = fopen($file->getRealPath(), 'r');
+        if ($handle === false) {
+            return response()->json(['error' => 'Unable to read uploaded file.'], 400);
+        }
+
+        $firstRow = fgetcsv($handle);
+        if (isset($firstRow[0])) { $firstRow[0] = preg_replace('/^﻿/', '', $firstRow[0]); }
+
+        if ($firstRow === false) {
+            fclose($handle);
+            return response()->json(['error' => 'CSV file is empty.'], 400);
+        }
+
+        $headers = array_map('trim', array_map('strtolower', $firstRow));
+        $required = ['return_no', 'sku', 'received_qty', 'restocked_qty', 'damaged_qty'];
+        foreach ($required as $req) {
+            if (!in_array($req, $headers, true)) {
+                fclose($handle);
+                return response()->json(['error' => "Missing required column: {$req}"], 400);
+            }
+        }
+
+        $idxReturnNo = array_search('return_no', $headers, true);
+        $idxSku = array_search('sku', $headers, true);
+        $idxReceived = array_search('received_qty', $headers, true);
+        $idxRestocked = array_search('restocked_qty', $headers, true);
+        $idxDamaged = array_search('damaged_qty', $headers, true);
+        $idxNotes = array_search('qc_notes', $headers, true);
+
+        $rowsByReturn = [];
+
+        while (($row = fgetcsv($handle)) !== false) {
+            if (!isset($row[$idxReturnNo]) || !isset($row[$idxSku])) continue;
+
+            $returnNo = trim($row[$idxReturnNo]);
+            $sku = trim($row[$idxSku]);
+            if ($returnNo === '' || $sku === '') continue;
+
+            $received = $idxReceived !== false ? (float)($row[$idxReceived] ?? 0) : 0;
+            $restocked = $idxRestocked !== false ? (float)($row[$idxRestocked] ?? 0) : 0;
+            $damaged = $idxDamaged !== false ? (float)($row[$idxDamaged] ?? 0) : 0;
+            $notes = $idxNotes !== false ? trim($row[$idxNotes] ?? '') : '';
+
+            $rowsByReturn[$returnNo][] = [
+                'sku' => $sku,
+                'received_qty' => $received,
+                'restocked_qty' => $restocked,
+                'damaged_qty' => $damaged,
+                'qc_notes' => $notes,
+            ];
+        }
+        fclose($handle);
+
+        $previewData = [];
+        $updated = 0;
+        $skipped = [];
+
+        try {
+            DB::beginTransaction();
+
+            foreach ($rowsByReturn as $returnNo => $itemsData) {
+                $return = OrderReturn::with(['items.product'])->where('return_no', $returnNo)->first();
+
+                $isValidReturn = $return && in_array($return->status, ['approved', 'received', 'qc_in_progress'], true);
+                $returnError = null;
+                if (!$return) $returnError = 'Return not found';
+                elseif (!$isValidReturn) $returnError = 'Invalid status: ' . $return->status;
+
+                $returnItemsPayload = [];
+                $allPassed = true;
+                
+                foreach ($itemsData as $csvItem) {
+                    $itemError = $returnError;
+                    $matchedItem = null;
+
+                    if ($return) {
+                        $matchedItem = $return->items->first(function($i) use ($csvItem) {
+                            return $i->product && $i->product->sku === $csvItem['sku'];
+                        });
+
+                        if (!$matchedItem) {
+                            $itemError = "SKU not found in return request";
+                            $allPassed = false;
+                        } else {
+                            $totalProcessed = $csvItem['restocked_qty'] + $csvItem['damaged_qty'];
+                            if ($totalProcessed > $csvItem['received_qty']) {
+                                $itemError = "Restocked + Damaged cannot exceed Received";
+                                $allPassed = false;
+                            } else {
+                                $returnItemsPayload[] = [
+                                    'id' => $matchedItem->id,
+                                    'received_qty' => $csvItem['received_qty'],
+                                    'restocked_qty' => $csvItem['restocked_qty'],
+                                    'damaged_qty' => $csvItem['damaged_qty'],
+                                    'qc_notes' => $csvItem['qc_notes'],
+                                ];
+                            }
+                        }
+                    } else {
+                        $allPassed = false;
+                    }
+
+                    if ($isPreview) {
+                        $previewData[] = [
+                            'return_no' => $returnNo,
+                            'sku' => $csvItem['sku'],
+                            'requested_qty' => $matchedItem ? $matchedItem->requested_qty : 0,
+                            'received_qty' => $csvItem['received_qty'],
+                            'restocked_qty' => $csvItem['restocked_qty'],
+                            'damaged_qty' => $csvItem['damaged_qty'],
+                            'error' => $itemError,
+                            'is_valid' => empty($itemError)
+                        ];
+                    }
+                } // End foreach CSV item
+
+                if (!$isPreview && $allPassed && $return) {
+                    // Simulate Request and invoke processQc core logic
+                    $simulatedRequest = new Request();
+                    $simulatedRequest->merge(['items' => $returnItemsPayload]);
+                    
+                    try {
+                        $qcResponse = $this->processQc($simulatedRequest, $return, $inventoryService);
+                        if ($qcResponse->getStatusCode() === 200) {
+                            $updated++;
+                        } else {
+                            $skipped[] = $returnNo . ' (' . (json_decode($qcResponse->getContent())->message ?? 'Validation failed') . ')';
+                        }
+                    } catch (\Illuminate\Validation\ValidationException $e) {
+                        $skipped[] = $returnNo . ' (Validation Error: ' . collect($e->errors())->flatten()->first() . ')';
+                    } catch (\Exception $e) {
+                        $skipped[] = $returnNo . ' (Error: ' . $e->getMessage() . ')';
+                    }
+                }
+            } // End foreach Return
+
+            if ($isPreview) {
+                DB::rollBack();
+                return response()->json(['preview' => $previewData]);
+            }
+
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['error' => 'Error processing CSV: '.$e->getMessage()], 400);
+        }
+
+        $message = "Bulk QC completed successfully. Updated {$updated} return(s).";
+        if (count($skipped) > 0) {
+            $message .= "
+
+Skipped " . count($skipped) . " return(s):
+- " . implode("
+- ", array_slice($skipped, 0, 5)) . (count($skipped) > 5 ? "
+...and more" : "");
+        }
+        
+        return response()->json(['success' => true, 'message' => $message]);
+    }
+
     public function processQc(Request $request, OrderReturn $return, InventoryService $inventoryService)
     {
         // Guard: only allow QC on returns that have not already been completed or rejected
