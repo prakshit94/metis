@@ -223,13 +223,26 @@ export default () => ({
         'SKU',
         'Warehouse',
         'In Stock',
-        'Available For Sell',
-        'Order Placed',
         'Reserved',
-        'Dispatched',
-        'Delivered',
-        'Return Req',
+        'Available For Sell',
         'Bad Qty',
+        'Future',
+        'Order Placed',
+        'Unfulfillable',
+        'Pending Conf',
+        'Confirmed',
+        'Processing',
+        'Ready to Ship',
+        'Dispatched',
+        'Delivery Att',
+        'Delivered',
+        'Cancelled',
+        'Return Req',
+        'Ret Pending',
+        'Ret Approved',
+        'Ret Received',
+        'Ret QC',
+        'Ret Rejected',
         'Alert Level',
         'Status',
       ];
@@ -237,29 +250,60 @@ export default () => ({
         const qty = parseFloat(item.quantity || 0);
         const reserved = parseFloat(item.reserved_qty || 0);
         const pending = Math.min(parseFloat(item.pending_qty || 0), Math.max(0, qty - reserved));
+        const unfulfillable = Math.max(0, parseFloat(item.pending_qty || 0) - Math.max(0, qty - reserved));
+        
         const inTransit = parseFloat(item.in_transit_qty || 0);
         const dispatched = parseFloat(item.dispatched_qty || 0) + inTransit;
+        
+        const future = parseFloat(item.future_order_qty || 0);
+        const pendingConf = parseFloat(item.pending_confirmation_qty || 0);
+        const confirmed = parseFloat(item.confirmed_qty || 0);
+        const processing = parseFloat(item.processing_qty || 0);
+        const readyToShip = parseFloat(item.ready_to_ship_qty || 0);
+        const deliveryAtt = parseFloat(item.delivery_attempted_qty || 0);
         const delivered = parseFloat(item.delivered_qty || 0);
+        const cancelled = parseFloat(item.cancelled_qty || 0);
+        
         const returnReq = parseFloat(item.return_requested_qty || 0);
+        const retPending = parseFloat(item.return_pending_qty || 0);
+        const retApproved = parseFloat(item.return_approved_qty || 0);
+        const retReceived = parseFloat(item.return_received_qty || 0);
+        const retQc = parseFloat(item.return_qc_qty || 0);
+        const retRejected = parseFloat(item.return_rejected_qty || 0);
+        
         const damaged = parseFloat(item.damaged_qty || 0);
         const available = Math.max(0, parseFloat((qty - reserved - pending).toFixed(4)));
-        const alert = parseFloat(item.product?.alert_quantity || 0);
+        const alert = parseFloat(item.product?.min_stock_level || item.product?.alert_quantity || 5);
+        
         let status = 'In Stock';
-        if (qty <= 0) status = 'Out of Stock';
-        else if (qty <= alert) status = 'Low Stock';
+        if (available <= 0) status = 'Out of Stock';
+        else if (available <= alert) status = 'Low Stock';
 
         return [
           item.product?.name || '',
           item.product?.sku || '',
           item.warehouse?.name || '',
           qty,
-          available,
-          pending,
           reserved,
-          dispatched,
-          delivered,
-          returnReq,
+          available,
           damaged,
+          future,
+          pending,
+          unfulfillable,
+          pendingConf,
+          confirmed,
+          processing,
+          readyToShip,
+          dispatched,
+          deliveryAtt,
+          delivered,
+          cancelled,
+          returnReq,
+          retPending,
+          retApproved,
+          retReceived,
+          retQc,
+          retRejected,
           alert,
           status,
         ];
