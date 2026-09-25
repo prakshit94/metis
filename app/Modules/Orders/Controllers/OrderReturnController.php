@@ -23,7 +23,7 @@ class OrderReturnController extends Controller implements HasMiddleware
     {
         return [
             new Middleware('permission:orders.view', only: ['index', 'show']),
-            new Middleware('permission:orders.return', only: ['store', 'process', 'processQc', 'processFinancials']),
+            new Middleware('permission:orders.return', only: ['store', 'process', 'importBulkQc', 'processQc', 'processFinancials']),
             new Middleware('permission:orders.bulk_return', only: ['bulkStore']),
         ];
     }
@@ -382,6 +382,7 @@ class OrderReturnController extends Controller implements HasMiddleware
         $isPreview = $request->input('is_preview', false);
         $file = $request->file('file');
 
+        ini_set('auto_detect_line_endings', true);
         $handle = fopen($file->getRealPath(), 'r');
         if ($handle === false) {
             return response()->json(['error' => 'Unable to read uploaded file.'], 400);
