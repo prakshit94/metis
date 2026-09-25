@@ -41,9 +41,23 @@
         </button>
         @endcan
         @can('orders.import')
-        <button class="btn btn-outline-secondary" type="button" @click.prevent="document.getElementById('import-new-orders-file').click()" title="Import New Orders">
-            <i class="bi bi-file-earmark-plus me-2"></i>Import Orders
-        </button>
+        <div class="dropdown">
+            <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" title="Import New Orders">
+                <i class="bi bi-upload me-2"></i>Import Orders
+            </button>
+            <ul class="dropdown-menu">
+                <li>
+                    <a class="dropdown-item" href="#" @click.prevent="document.getElementById('import-new-orders-file').click()">
+                        <i class="bi bi-file-earmark-plus me-2"></i>Upload Orders CSV
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item" href="{{ route('orders.import-new-template') }}">
+                        <i class="bi bi-file-earmark-arrow-down me-2"></i>Download Orders Template
+                    </a>
+                </li>
+            </ul>
+        </div>
         @endcan
         @can('orders.create')
         <a href="{{ route('orders.create') }}" class="btn btn-primary">
