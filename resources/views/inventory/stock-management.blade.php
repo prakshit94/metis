@@ -351,7 +351,7 @@
                                                       'low-stock':    (parseFloat(item.quantity||0) - parseFloat(item.reserved_qty||0) - parseFloat(item.pending_qty||0)) > 0 && (parseFloat(item.quantity||0) - parseFloat(item.reserved_qty||0) - parseFloat(item.pending_qty||0)) <= 5,
                                                       'out-of-stock': (parseFloat(item.quantity||0) - parseFloat(item.reserved_qty||0) - parseFloat(item.pending_qty||0)) <= 0
                                                   }"
-                                                  x-text="parseFloat((parseFloat(item.quantity||0) - parseFloat(item.reserved_qty||0) - parseFloat(item.pending_qty||0)).toFixed(4))">
+                                                  x-text="parseFloat(Math.max(0, parseFloat(item.quantity||0) - parseFloat(item.reserved_qty||0) - parseFloat(item.pending_qty||0))).toFixed(2)">
                                             </span>
                                         </div>
                                     </td>
@@ -367,11 +367,11 @@
                                     </td>
                                     <td class="text-center">
                                         <span class="badge bg-primary-subtle text-primary border border-primary-subtle"
-                                              x-text="parseFloat(item.pending_qty || 0).toFixed(2)"></span>
+                                              x-text="parseFloat(Math.min(parseFloat(item.pending_qty||0), Math.max(0, parseFloat(item.quantity||0) - parseFloat(item.reserved_qty||0)))).toFixed(2)"></span>
                                     </td>
                                     <td class="text-center">
                                         <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle"
-                                              x-text="parseFloat(item.unfulfillable_qty || 0).toFixed(2)"></span>
+                                              x-text="parseFloat(Math.max(0, parseFloat(item.pending_qty||0) - Math.max(0, parseFloat(item.quantity||0) - parseFloat(item.reserved_qty||0)))).toFixed(2)"></span>
                                     </td>
                                     <td class="text-center">
                                         <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle"
