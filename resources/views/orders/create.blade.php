@@ -354,11 +354,11 @@
                                             </div>
                                             
                                             <div class="d-flex justify-content-between align-items-center mb-1 pt-1 border-top border-warning border-opacity-25">
-                                                <span class="text-body-secondary small">Total Orders</span><span class="fw-bold text-primary" style="font-size: 11px;" x-text="Math.max(customerDetails.orders_count || 0, (customerDetails.orders || []).length)"></span>
+                                                <span class="text-body-secondary small">Total Orders</span><span class="fw-bold text-primary" style="font-size: 11px;" x-text="Math.max(customerDetails.orders_count || 0, (customerDetails.orders || []).filter(o => String(o.lifecycle_status || o.status).toLowerCase() !== 'future_order').length)"></span>
                                             </div>
                                             <div class="d-flex justify-content-between align-items-center mb-1" x-show="customerDetails.orders && customerDetails.orders.length > 0" x-cloak>
                                                 <span class="text-body-secondary small">Total Revenue</span>
-                                                <span class="fw-bold text-primary" style="font-size: 11px;">₹ <span x-text="(customerDetails.orders || []).filter(o => o.lifecycle_status !== 'cancelled').reduce((sum, o) => sum + Number(o.net_amount), 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})"></span></span>
+                                                <span class="fw-bold text-primary" style="font-size: 11px;">₹ <span x-text="(customerDetails.orders || []).filter(o => o.lifecycle_status !== 'cancelled' && o.lifecycle_status !== 'future_order').reduce((sum, o) => sum + Number(o.net_amount), 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})"></span></span>
                                             </div>
                                             <div class="d-flex justify-content-between align-items-center mb-1" x-show="customerDetails.orders && customerDetails.orders.length > 0" x-cloak>
                                                 <span class="text-body-secondary small">Delivered / Rev</span>
@@ -3198,7 +3198,8 @@ mapOrder(o) {
             // 2. Computed Analytics Tags
             const wallet = Number(this.customerDetails.wallet_balance || 0);
             const orders = this.customerDetails.orders || [];
-            const ordersCount = Math.max(this.customerDetails.orders_count || 0, orders.length);
+            const validOrders = orders.filter(o => String(o.lifecycle_status || o.status).toLowerCase() !== 'future_order');
+            const ordersCount = Math.max(this.customerDetails.orders_count || 0, validOrders.length);
             
             const deliveredOrders = orders.filter(o => o.lifecycle_status === 'delivered');
             const deliveredRev = deliveredOrders.reduce((sum, o) => sum + Number(o.net_amount), 0);

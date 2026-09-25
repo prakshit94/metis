@@ -343,7 +343,9 @@ class CustomerController extends Controller implements HasMiddleware
                 'complaints as active_complaints' => function ($q) {
                     $q->whereNotIn('status', ['resolved', 'closed']);
                 },
-                'orders',
+                'orders' => function ($q) {
+                    $q->where('status', '!=', 'future_order');
+                },
             ])
             ->with([
                 'addresses.village.services',

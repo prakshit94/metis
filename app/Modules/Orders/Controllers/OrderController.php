@@ -636,6 +636,9 @@ class OrderController extends Controller implements HasMiddleware
                 'complaints as active_complaints' => function ($q) {
                     $q->whereNotIn('status', ['resolved', 'closed']);
                 },
+                'orders' => function ($q) {
+                    $q->where('status', '!=', 'future_order');
+                },
             ])->find(request()->integer('customer_id'));
 
             if ($initialCustomer && empty($initialCustomer->referral_code)) {
@@ -698,6 +701,9 @@ class OrderController extends Controller implements HasMiddleware
                     'complaints as total_complaints',
                     'complaints as active_complaints' => function ($q) {
                         $q->whereNotIn('status', ['resolved', 'closed']);
+                    },
+                    'orders' => function ($q) {
+                        $q->where('status', '!=', 'future_order');
                     },
                 ])->find($initialOrder->party_id);
             }
