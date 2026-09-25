@@ -85,9 +85,10 @@
                         <i class="bi bi-file-earmark-arrow-down me-2"></i>Download Return Template
                     </a>
                 </li>
+                @endcan
             </ul>
         </div>
-        @endcan
+        @endcanany
         @can('orders.create')
         <a href="{{ route('orders.create') }}" class="btn btn-primary">
             <i class="bi bi-plus-lg me-2"></i>New Order
