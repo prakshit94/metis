@@ -125,9 +125,8 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('orders/bulk-print', [OrderController::class, 'bulkPrint'])->name('orders.bulk-print');
     Route::get('orders/export', [OrderController::class, 'bulkExport'])->name('orders.export');
     Route::post('orders/export-selected', [OrderController::class, 'exportSelected'])->name('orders.export-selected');
-    Route::post('orders/import', [OrderController::class, 'bulkImport'])->name('orders.import');
-    Route::get('orders/import-template', [OrderController::class, 'bulkImportTemplate'])->name('orders.import-template');
-    
+    // Route::post('orders/import', [OrderController::class, 'bulkImport'])->name('orders.import');
+    // Route::get('orders/import-template', [OrderController::class, 'bulkImportTemplate'])->name('orders.import-template');    
     Route::post('orders/import-new', [OrderController::class, 'importNewOrders'])->name('orders.import-new');
     Route::get('orders/import-new-template', [OrderController::class, 'importNewTemplate'])->name('orders.import-new-template');
     Route::get('orders/{order}/invoice-pdf', [OrderController::class, 'downloadInvoice'])->name('orders.invoice-pdf');

@@ -41,28 +41,9 @@
         </button>
         @endcan
         @can('orders.import')
-        <div class="dropdown">
-            <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                <i class="bi bi-upload me-2"></i>Import
-            </button>
-            <ul class="dropdown-menu">
-                <li><h6 class="dropdown-header">Update Shipping Data</h6></li>
-                <li><a class="dropdown-item" href="#" @click.prevent="document.getElementById('import-file').click()">
-                    <i class="bi bi-truck me-2"></i>Upload Shipping CSV
-                </a></li>
-                <li><a class="dropdown-item" href="{{ route('orders.import-template') }}">
-                    <i class="bi bi-file-earmark-arrow-down me-2"></i>Download Shipping Template
-                </a></li>
-                <li><hr class="dropdown-divider"></li>
-                <li><h6 class="dropdown-header">Import New Orders</h6></li>
-                <li><a class="dropdown-item" href="#" @click.prevent="document.getElementById('import-new-orders-file').click()">
-                    <i class="bi bi-file-earmark-plus me-2"></i>Upload Orders CSV
-                </a></li>
-                <li><a class="dropdown-item" href="{{ route('orders.import-new-template') }}">
-                    <i class="bi bi-file-earmark-arrow-down me-2"></i>Download Orders Template
-                </a></li>
-            </ul>
-        </div>
+        <button class="btn btn-outline-secondary" type="button" @click.prevent="document.getElementById('import-new-orders-file').click()" title="Import New Orders">
+            <i class="bi bi-file-earmark-plus me-2"></i>Import Orders
+        </button>
         @endcan
         @can('orders.create')
         <a href="{{ route('orders.create') }}" class="btn btn-primary">
@@ -72,11 +53,6 @@
     </div>
 </div>
 
-<!-- Hidden CSV Import Form -->
-<form id="import-form" action="{{ route('orders.import') }}" method="POST" enctype="multipart/form-data" class="d-none">
-    @csrf
-    <input type="file" name="file" id="import-file" accept=".csv,.txt" @change="handleImportFileSelect($event)">
-</form>
 
 <form id="import-new-orders-form" action="{{ route('orders.import-new') }}" method="POST" enctype="multipart/form-data" class="d-none">
     @csrf
