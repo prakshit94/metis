@@ -130,8 +130,14 @@ document.addEventListener('alpine:init', () => {
     // ─── Lifecycle ───────────────────────────────────────────────────────────
 
     downloadBulkQcTemplate() {
-      const headers = ['return_no', 'sku', 'received_qty', 'restocked_qty', 'damaged_qty', 'qc_notes'];
-      const csvContent = headers.join(',') + '\n';
+      const headers = ['order_no', 'sku', 'received_qty', 'restocked_qty', 'damaged_qty', 'qc_notes'];
+      const demoData = [
+        ['ORD-0001', 'SKU-ABC-123', '2', '2', '0', 'Perfect condition'],
+        ['ORD-0001', 'SKU-XYZ-999', '1', '0', '1', 'Broken during transit'],
+        ['ORD-0002', 'SKU-DEF-456', '5', '4', '1', '1 unit scratched']
+      ];
+      const rows = demoData.map(row => row.join(',')).join('\n');
+      const csvContent = headers.join(',') + '\n' + rows + '\n';
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);

@@ -165,7 +165,7 @@ class OrderReturnController extends Controller implements HasMiddleware
 
             $return = OrderReturn::create([
                 'order_id' => $order->id,
-                'return_no' => $returnNo,
+                'order_no' => $returnNo,
                 'status' => 'pending',
                 'reason' => $validated['reason'],
                 'notes' => $validated['notes'],
@@ -247,7 +247,7 @@ class OrderReturnController extends Controller implements HasMiddleware
 
                     $return = OrderReturn::create([
                         'order_id' => $order->id,
-                        'return_no' => $returnNo,
+                            'order_no' => $returnNo,
                         'status' => 'pending',
                         'reason' => $validated['reason'],
                         'notes' => $validated['notes'],
@@ -397,7 +397,7 @@ class OrderReturnController extends Controller implements HasMiddleware
         }
 
         $headers = array_map('trim', array_map('strtolower', $firstRow));
-        $required = ['return_no', 'sku', 'received_qty', 'restocked_qty', 'damaged_qty'];
+        $required = ['order_no', 'sku', 'received_qty', 'restocked_qty', 'damaged_qty'];
         foreach ($required as $req) {
             if (!in_array($req, $headers, true)) {
                 fclose($handle);
@@ -405,7 +405,7 @@ class OrderReturnController extends Controller implements HasMiddleware
             }
         }
 
-        $idxReturnNo = array_search('return_no', $headers, true);
+        $idxReturnNo = array_search('order_no', $headers, true);
         $idxSku = array_search('sku', $headers, true);
         $idxReceived = array_search('received_qty', $headers, true);
         $idxRestocked = array_search('restocked_qty', $headers, true);
@@ -444,7 +444,7 @@ class OrderReturnController extends Controller implements HasMiddleware
             DB::beginTransaction();
 
             foreach ($rowsByReturn as $returnNo => $itemsData) {
-                $return = OrderReturn::with(['items.product'])->where('return_no', $returnNo)->first();
+                $return = OrderReturn::with(['items.product', 'order'])->whereHas('order', function($q) use ($returnNo) { $q->where('order_no', $returnNo); })->whereIn('status', ['approved', 'received', 'qc_in_progress'])->first();
 
                 $isValidReturn = $return && in_array($return->status, ['approved', 'received', 'qc_in_progress'], true);
                 $returnError = null;
@@ -487,7 +487,7 @@ class OrderReturnController extends Controller implements HasMiddleware
 
                     if ($isPreview) {
                         $previewData[] = [
-                            'return_no' => $returnNo,
+                            'order_no' => $returnNo,
                             'sku' => $csvItem['sku'],
                             'requested_qty' => $matchedItem ? $matchedItem->requested_qty : 0,
                             'received_qty' => $csvItem['received_qty'],
