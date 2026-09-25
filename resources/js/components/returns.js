@@ -167,55 +167,72 @@ document.addEventListener('alpine:init', () => {
           },
         });
         const data = await res.json();
-        if (data.preview) {
-          this.qcImportRows = data.preview;
-          getModal('#bulkQcImportPreviewModal')?.show();
-        } else if (data.error || !res.ok) {
+        
+        if (data.error || !res.ok) {
           showToast(data.error || data.message || 'Error occurred during upload.', 'danger');
+          return;
+        }
+
+        if (data.preview && data.returns) {
+          const errors = data.preview.filter(r => !r.is_valid);
+          if (errors.length > 0) {
+              showToast("CSV Error on " + errors[0].order_no + " (" + errors[0].sku + "): " + errors[0].error, 'danger');
+              return;
+          }
+
+          this.selectedReturnsForBulk = data.returns;
+          
+          const aggregationMap = {};
+          for (const ret of this.selectedReturnsForBulk) {
+            if (!ret.items) continue;
+            for (const item of ret.items) {
+              const pid = item.product_id;
+              if (!aggregationMap[pid]) {
+                aggregationMap[pid] = {
+                  product_id: pid,
+                  product: item.product || { name: 'Unknown', sku: 'N/A', image_url: null },
+                  image_url: item.image_url || item.product?.image_url || null,
+                  requested_qty: 0,
+                  received_qty: 0,
+                  restocked_qty: 0,
+                  damaged_qty: 0,
+                  qc_notes: '',
+                  items: [],
+                };
+              }
+              aggregationMap[pid].requested_qty += parseFloat(item.requested_qty || 0);
+              aggregationMap[pid].items.push({
+                id: item.id,
+                return_id: ret.id,
+                requested_qty: parseFloat(item.requested_qty || 0),
+              });
+            }
+          }
+
+          this.bulkQcItems = Object.values(aggregationMap).map((p) => {
+            let csvRecv = 0; let csvRest = 0; let csvDmg = 0; let csvNotes = '';
+            for (const row of data.preview) {
+               if (row.sku === p.product.sku) {
+                  csvRecv += parseFloat(row.received_qty || 0);
+                  csvRest += parseFloat(row.restocked_qty || 0);
+                  csvDmg += parseFloat(row.damaged_qty || 0);
+                  if (row.qc_notes) csvNotes = row.qc_notes;
+               }
+            }
+            p.received_qty = csvRecv;
+            p.restocked_qty = csvRest;
+            p.damaged_qty = csvDmg;
+            p.qc_notes = csvNotes;
+            return p;
+          });
+
+          this.$nextTick(() => getModal('bulkQcModal')?.show());
         }
       } catch (err) {
         showToast(err.message || 'Error uploading QC CSV preview.', 'danger');
       } finally {
         this.importingQc = false;
         event.target.value = '';
-      }
-    },
-
-    cancelBulkQcImport() {
-      this.qcImportRows = [];
-      getModal('#bulkQcImportPreviewModal')?.hide();
-    },
-
-    async confirmBulkQcImport() {
-      const fileInput = this.$refs.importQcFile;
-      if (!fileInput || !fileInput.files.length) return;
-
-      this.importingQc = true;
-      const formData = new FormData();
-      formData.append('file', fileInput.files[0]);
-
-      try {
-        const res = await fetch('/returns/bulk-qc-import', {
-          method: 'POST',
-          body: formData,
-          headers: {
-            Accept: 'application/json',
-            'X-CSRF-TOKEN': getCsrfToken(),
-          },
-        });
-        const data = await res.json();
-        if (data.error || !res.ok) {
-          showToast(data.error || data.message || 'Error occurred.', 'danger');
-        } else {
-          showToast(data.message || 'Bulk QC completed successfully.', 'success');
-          this.cancelBulkQcImport();
-          this.loadReturns();
-        }
-      } catch (err) {
-        showToast(err.message || 'Error processing Bulk QC.', 'danger');
-      } finally {
-        this.importingQc = false;
-        if (fileInput) fileInput.value = '';
       }
     },
 

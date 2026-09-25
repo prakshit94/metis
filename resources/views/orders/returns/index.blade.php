@@ -734,57 +734,5 @@
     </div>{{-- /bulkQcModal --}}
 
 
-    {{-- bulkQcImportPreviewModal --}}
-    <div class="modal fade" id="bulkQcImportPreviewModal" tabindex="-1" aria-labelledby="bulkQcImportPreviewModalLabel" aria-hidden="true" data-bs-backdrop="static">
-        <div class="modal-dialog modal-xl modal-dialog-scrollable">
-            <div class="modal-content">
-                <div class="modal-header bg-light">
-                    <h5 class="modal-title fw-bold" id="bulkQcImportPreviewModalLabel"><i class="bi bi-file-earmark-check text-primary me-2"></i>Bulk QC Import Preview</h5>
-                    <button type="button" class="btn-close" @click="cancelBulkQcImport()"></button>
-                </div>
-                <div class="modal-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-hover table-bordered table-sm mb-0 align-middle">
-                            <thead class="table-light text-nowrap">
-                                <tr>
-                                    <th>Order No</th>
-                                    <th>SKU</th>
-                                    <th class="text-center">Expected Qty</th>
-                                    <th class="text-center">Received Qty</th>
-                                    <th class="text-center">Restocked</th>
-                                    <th class="text-center">Damaged</th>
-                                    <th>Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <template x-for="(row, index) in qcImportRows" :key="index">
-                                    <tr :class="{ 'table-danger': !row.is_valid }">
-                                        <td x-text="row.order_no"></td>
-                                        <td x-text="row.sku"></td>
-                                        <td class="text-center" x-text="parseFloat(row.requested_qty||0)"></td>
-                                        <td class="text-center fw-bold" x-text="parseFloat(row.received_qty||0)"></td>
-                                        <td class="text-center text-success" x-text="parseFloat(row.restocked_qty||0)"></td>
-                                        <td class="text-center text-danger" x-text="parseFloat(row.damaged_qty||0)"></td>
-                                        <td>
-                                            <span x-show="row.is_valid" class="badge bg-success-subtle text-success border border-success-subtle"><i class="bi bi-check-circle me-1"></i>Valid</span>
-                                            <span x-show="!row.is_valid" class="badge bg-danger-subtle text-danger border border-danger-subtle" x-text="row.error"></span>
-                                        </td>
-                                    </tr>
-                                </template>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                <div class="modal-footer bg-light">
-                    <button type="button" class="btn btn-outline-secondary" @click="cancelBulkQcImport()">Cancel</button>
-                    <button type="button" class="btn btn-primary" @click="confirmBulkQcImport()" :disabled="importingQc || qcImportRows.filter(r => !r.is_valid).length > 0">
-                        <span x-show="!importingQc"><i class="bi bi-check2-circle me-1"></i>Confirm Import</span>
-                        <span x-show="importingQc">Processing...</span>
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-</div>{{-- /returns-management --}}
+    </div>{{-- /returns-management --}}
 @endsection
