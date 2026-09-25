@@ -2223,7 +2223,7 @@ document.addEventListener('alpine:init', () => {
           this.importRows = data.preview;
           getModal('#importPreviewModal')?.show();
         } else if (data.error || !res.ok) {
-          showToast(data.error || 'Error occurred.', 'danger');
+          showToast(data.error || data.message || (data.errors data.error || 'Error occurred.'data.error || 'Error occurred.' data.errors.file ? data.errors.file[0] : null) || 'Error occurred.', 'danger');
         }
       } catch (err) {
         showToast(err.message || 'Error uploading CSV preview.', 'danger');
@@ -2257,7 +2257,7 @@ document.addEventListener('alpine:init', () => {
           this.importRows = data.preview;
           getModal('#importPreviewModal')?.show();
         } else if (data.error || !res.ok) {
-          showToast(data.error || 'Error occurred.', 'danger');
+          showToast(data.error || data.message || (data.errors data.error || 'Error occurred.'data.error || 'Error occurred.' data.errors.file ? data.errors.file[0] : null) || 'Error occurred.', 'danger');
         }
       } catch (err) {
         showToast(err.message || 'Error uploading CSV preview.', 'danger');
@@ -2297,7 +2297,7 @@ document.addEventListener('alpine:init', () => {
 
         const data = await res.json();
         if (data.error || !res.ok) {
-          showToast(data.error || 'Error occurred.', 'danger');
+          showToast(data.error || data.message || (data.errors data.error || 'Error occurred.'data.error || 'Error occurred.' data.errors.file ? data.errors.file[0] : null) || 'Error occurred.', 'danger');
         } else {
           showToast(data.message || 'Import successful.', 'success');
           this.cancelImport();

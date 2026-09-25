@@ -1977,7 +1977,7 @@ class OrderController extends Controller implements HasMiddleware
     public function importNewOrders(\Illuminate\Http\Request $request)
     {
         $request->validate([
-            'file' => 'required|file|mimes:csv,txt|max:10240',
+            'file' => 'required|file|max:10240',
         ]);
         
         if ($request->boolean('preview')) {
@@ -2021,8 +2021,9 @@ class OrderController extends Controller implements HasMiddleware
     }
     public function importBulkDeliver(Request $request, \App\Modules\Inventory\Services\InventoryService $inventoryService)
     {
-        $request->validate(['file' => 'required|file|mimes:csv,txt|max:10240']);
+        $request->validate(['file' => 'required|file|max:10240']);
 
+        ini_set('auto_detect_line_endings', true);
         $isPreview = $request->boolean('preview');
         $file = $request->file('file');
         $handle = fopen($file->getRealPath(), 'r');
@@ -2032,6 +2033,8 @@ class OrderController extends Controller implements HasMiddleware
         }
 
         $firstRow = fgetcsv($handle);
+        if (isset($firstRow[0])) { $firstRow[0] = preg_replace('/^\xEF\xBB\xBF/', '', $firstRow[0]); }
+        if (isset($firstRow[0])) { $firstRow[0] = preg_replace('/^\xEF\xBB\xBF/', '', $firstRow[0]); }
         if ($firstRow === false) {
             fclose($handle);
             return $isPreview ? response()->json(['error' => 'CSV file is empty.'], 400) : back()->with('error', 'CSV file is empty.');
@@ -2085,7 +2088,7 @@ class OrderController extends Controller implements HasMiddleware
                 }
                 $seenOrderNos[] = $orderNo;
 
-                $order = Order::with(['party'])->where('order_no', $orderNo)->orWhere('id', $orderNo)->first();
+                $order = Order::with(['party'])->where(function($q) use ($orderNo) { $q->where('order_no', $orderNo); if (is_numeric($orderNo)) { $q->orWhere('id', $orderNo); } })->first();
 
                 if ($isPreview) {
                     $isValid = $order && in_array($order->status, ['dispatched'], true);
@@ -2161,8 +2164,9 @@ class OrderController extends Controller implements HasMiddleware
 
     public function importBulkReturn(Request $request, \App\Modules\Inventory\Services\InventoryService $inventoryService)
     {
-        $request->validate(['file' => 'required|file|mimes:csv,txt|max:10240']);
+        $request->validate(['file' => 'required|file|max:10240']);
 
+        ini_set('auto_detect_line_endings', true);
         $isPreview = $request->boolean('preview');
         $file = $request->file('file');
         $handle = fopen($file->getRealPath(), 'r');
@@ -2172,6 +2176,8 @@ class OrderController extends Controller implements HasMiddleware
         }
 
         $firstRow = fgetcsv($handle);
+        if (isset($firstRow[0])) { $firstRow[0] = preg_replace('/^\xEF\xBB\xBF/', '', $firstRow[0]); }
+        if (isset($firstRow[0])) { $firstRow[0] = preg_replace('/^\xEF\xBB\xBF/', '', $firstRow[0]); }
         if ($firstRow === false) {
             fclose($handle);
             return $isPreview ? response()->json(['error' => 'CSV file is empty.'], 400) : back()->with('error', 'CSV file is empty.');
@@ -2225,7 +2231,7 @@ class OrderController extends Controller implements HasMiddleware
                 }
                 $seenOrderNos[] = $orderNo;
 
-                $order = Order::with(['party'])->where('order_no', $orderNo)->orWhere('id', $orderNo)->first();
+                $order = Order::with(['party'])->where(function($q) use ($orderNo) { $q->where('order_no', $orderNo); if (is_numeric($orderNo)) { $q->orWhere('id', $orderNo); } })->first();
 
                 if ($isPreview) {
                     $isValid = $order && in_array($order->status, ['delivered', 'dispatched'], true);
