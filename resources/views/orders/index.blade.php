@@ -56,6 +56,30 @@
                         <i class="bi bi-file-earmark-arrow-down me-2"></i>Download Orders Template
                     </a>
                 </li>
+                <li><hr class="dropdown-divider"></li>
+                <li><h6 class="dropdown-header">Bulk Deliver Orders</h6></li>
+                <li>
+                    <a class="dropdown-item" href="#" @click.prevent="document.getElementById('import-deliver-file').click()">
+                        <i class="bi bi-box-seam me-2"></i>Upload Deliver CSV
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item" href="{{ route('orders.import-deliver-template') }}">
+                        <i class="bi bi-file-earmark-arrow-down me-2"></i>Download Deliver Template
+                    </a>
+                </li>
+                <li><hr class="dropdown-divider"></li>
+                <li><h6 class="dropdown-header">Bulk Return Orders</h6></li>
+                <li>
+                    <a class="dropdown-item" href="#" @click.prevent="document.getElementById('import-return-file').click()">
+                        <i class="bi bi-arrow-return-left me-2"></i>Upload Return CSV
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item" href="{{ route('orders.import-return-template') }}">
+                        <i class="bi bi-file-earmark-arrow-down me-2"></i>Download Return Template
+                    </a>
+                </li>
             </ul>
         </div>
         @endcan
@@ -71,6 +95,16 @@
 <form id="import-new-orders-form" action="{{ route('orders.import-new') }}" method="POST" enctype="multipart/form-data" class="d-none">
     @csrf
     <input type="file" name="file" id="import-new-orders-file" accept=".csv,.txt" @change="handleImportNewOrdersSelect($event)">
+</form>
+
+<form id="import-deliver-form" action="{{ route('orders.import-deliver') }}" method="POST" enctype="multipart/form-data" class="d-none">
+    @csrf
+    <input type="file" name="file" id="import-deliver-file" accept=".csv,.txt" @change="handleImportDeliverSelect($event)">
+</form>
+
+<form id="import-return-form" action="{{ route('orders.import-return') }}" method="POST" enctype="multipart/form-data" class="d-none">
+    @csrf
+    <input type="file" name="file" id="import-return-file" accept=".csv,.txt" @change="handleImportReturnSelect($event)">
 </form>
 
 <!-- Order Stats Widgets & Analytics -->
@@ -1954,7 +1988,7 @@
 
 <!-- ═══════════════════════ CSV Import Preview Modal ═══════════════════════════ -->
 <div class="modal fade" id="importPreviewModal" tabindex="-1" aria-labelledby="importPreviewModalLabel" data-bs-backdrop="static" aria-hidden="true">
-    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header border-bottom-0 pb-0">
                 <h5 class="modal-title fw-bold" id="importPreviewModalLabel">
@@ -1964,7 +1998,7 @@
             </div>
             <div class="modal-body pt-3">
                 <div class="alert alert-info">
-                    <i class="bi bi-info-circle-fill me-2"></i>Please review the details below. Only valid orders (currently in "Processing" status) will be updated.
+                    <i class="bi bi-info-circle-fill me-2"></i>Please review the details below. Only valid orders will be updated.
                 </div>
                 <div class="table-responsive" style="max-height: 400px;">
                     <table class="table table-striped table-hover table-sm small align-middle mb-0">
@@ -1973,8 +2007,6 @@
                                 <th>Order No</th>
                                 <th>Customer</th>
                                 <th>Current Status</th>
-                                <th>Carrier (CSV)</th>
-                                <th>Tracking No (CSV)</th>
                                 <th>Validation</th>
                             </tr>
                         </thead>
@@ -1992,8 +2024,6 @@
                                             </span>
                                         </template>
                                     </td>
-                                    <td x-text="row.csv_carrier"></td>
-                                    <td class="font-monospace" x-text="row.csv_tracking"></td>
                                     <td>
                                         <template x-if="row.is_valid">
                                             <span class="text-success fw-medium"><i class="bi bi-check-circle me-1"></i>Valid (Will process)</span>

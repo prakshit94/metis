@@ -41,7 +41,7 @@ class OrderController extends Controller implements HasMiddleware
         return [
             new Middleware('permission:orders.view', only: ['index', 'show']),
             new Middleware('permission:orders.create', only: ['create', 'store']),
-            new Middleware('permission:orders.edit', only: ['edit', 'update']),
+            new Middleware('permission:orders.edit', only: ['edit', 'update', 'importBulkDeliver', 'importBulkReturn']),
             new Middleware('permission:orders.delete', only: ['destroy']),
             new Middleware('permission:orders.confirm', only: ['confirm']),
             new Middleware('permission:orders.ship', only: ['ship']),
@@ -2015,4 +2015,219 @@ class OrderController extends Controller implements HasMiddleware
         }
     }
 
+    public function importBulkDeliver(Request $request, \App\Modules\Inventory\Services\InventoryService $inventoryService)
+    {
+        $request->validate(['file' => 'required|file|mimes:csv,txt|max:10240']);
+
+        $isPreview = $request->boolean('preview');
+        $file = $request->file('file');
+        $handle = fopen($file->getRealPath(), 'r');
+
+        if ($handle === false) {
+            return $isPreview ? response()->json(['error' => 'Unable to read uploaded file.'], 400) : back()->with('error', 'Unable to read uploaded file.');
+        }
+
+        $firstRow = fgetcsv($handle);
+        if ($firstRow === false) {
+            fclose($handle);
+            return $isPreview ? response()->json(['error' => 'CSV file is empty.'], 400) : back()->with('error', 'CSV file is empty.');
+        }
+
+        $normalized = array_map(fn ($v) => strtolower(trim((string) $v)), $firstRow);
+        $hasHeader = in_array('order_no', $normalized, true) || in_array('order_id', $normalized, true);
+
+        $updated = 0;
+        $skipped = [];
+        $previewData = [];
+
+        $extractByHeader = function (array $row, array $header, array $keys): ?string {
+            foreach ($keys as $key) {
+                $index = array_search($key, $header, true);
+                if ($index !== false) {
+                    return isset($row[$index]) ? trim((string) $row[$index]) : null;
+                }
+            }
+            return null;
+        };
+
+        \DB::beginTransaction();
+        try {
+            while (($row = fgetcsv($handle)) !== false) {
+                if ($hasHeader) {
+                    $orderNo = $extractByHeader($row, $normalized, ['order_id', 'order_no']);
+                } else {
+                    $orderNo = trim((string) ($row[0] ?? ''));
+                }
+
+                if (! $orderNo) {
+                    continue;
+                }
+
+                $order = Order::with(['party'])->where('order_no', $orderNo)->orWhere('id', $orderNo)->first();
+
+                if ($isPreview) {
+                    $previewData[] = [
+                        'order_no' => $orderNo,
+                        'is_valid' => $order && in_array($order->status, ['dispatched', 'shipped'], true),
+                        'customer' => $order && $order->party ? trim($order->party->firstname.' '.$order->party->lastname) : 'N/A',
+                        'current_status' => $order ? $order->status : 'Not Found',
+                        'upcoming_status' => ($order && in_array($order->status, ['dispatched', 'shipped'], true)) ? 'delivered' : 'N/A',
+                    ];
+                    continue;
+                }
+
+                if (! $order || ! in_array($order->status, ['dispatched', 'shipped'], true)) {
+                    $skipped[] = $orderNo;
+                    continue;
+                }
+
+                $inventoryService->deliverOrder($order);
+                $order->statusLogs()->create([
+                    'status' => 'delivered',
+                    'notes' => 'Bulk CSV updated to delivered.',
+                    'changed_by' => auth()->id(),
+                ]);
+                $updated++;
+            }
+
+            if ($isPreview) {
+                \DB::rollBack();
+                fclose($handle);
+                return response()->json(['preview' => $previewData]);
+            }
+
+            \DB::commit();
+        } catch (\Exception $e) {
+            \DB::rollBack();
+            fclose($handle);
+            return $isPreview ? response()->json(['error' => 'Error processing CSV: '.$e->getMessage()], 400) : back()->with('error', 'Error processing CSV: '.$e->getMessage());
+        }
+
+        fclose($handle);
+
+        $message = "Deliver orders import completed. Updated {$updated} order(s).";
+        if (count($skipped) > 0) {
+            $message .= "\n\nSkipped " . count($skipped) . " invalid/non-dispatched order(s):\n- " . implode("\n- ", $skipped);
+        }
+
+        return ($request->wantsJson() || $request->ajax()) ? response()->json(['success' => true, 'message' => $message]) : back()->with('success', $message);
+    }
+
+    public function importBulkDeliverTemplate()
+    {
+        return response()->streamDownload(function () {
+            $out = fopen('php://output', 'w');
+            fputcsv($out, ['order_id']);
+            fputcsv($out, ['ORD-0001']);
+            fclose($out);
+        }, 'bulk-deliver-template.csv', ['Content-Type' => 'text/csv']);
+    }
+
+    public function importBulkReturn(Request $request, \App\Modules\Inventory\Services\InventoryService $inventoryService)
+    {
+        $request->validate(['file' => 'required|file|mimes:csv,txt|max:10240']);
+
+        $isPreview = $request->boolean('preview');
+        $file = $request->file('file');
+        $handle = fopen($file->getRealPath(), 'r');
+
+        if ($handle === false) {
+            return $isPreview ? response()->json(['error' => 'Unable to read uploaded file.'], 400) : back()->with('error', 'Unable to read uploaded file.');
+        }
+
+        $firstRow = fgetcsv($handle);
+        if ($firstRow === false) {
+            fclose($handle);
+            return $isPreview ? response()->json(['error' => 'CSV file is empty.'], 400) : back()->with('error', 'CSV file is empty.');
+        }
+
+        $normalized = array_map(fn ($v) => strtolower(trim((string) $v)), $firstRow);
+        $hasHeader = in_array('order_no', $normalized, true) || in_array('order_id', $normalized, true);
+
+        $updated = 0;
+        $skipped = [];
+        $previewData = [];
+
+        $extractByHeader = function (array $row, array $header, array $keys): ?string {
+            foreach ($keys as $key) {
+                $index = array_search($key, $header, true);
+                if ($index !== false) {
+                    return isset($row[$index]) ? trim((string) $row[$index]) : null;
+                }
+            }
+            return null;
+        };
+
+        \DB::beginTransaction();
+        try {
+            while (($row = fgetcsv($handle)) !== false) {
+                if ($hasHeader) {
+                    $orderNo = $extractByHeader($row, $normalized, ['order_id', 'order_no']);
+                } else {
+                    $orderNo = trim((string) ($row[0] ?? ''));
+                }
+
+                if (! $orderNo) {
+                    continue;
+                }
+
+                $order = Order::with(['party'])->where('order_no', $orderNo)->orWhere('id', $orderNo)->first();
+
+                if ($isPreview) {
+                    $previewData[] = [
+                        'order_no' => $orderNo,
+                        'is_valid' => $order && in_array($order->status, ['delivered', 'dispatched', 'shipped'], true),
+                        'customer' => $order && $order->party ? trim($order->party->firstname.' '.$order->party->lastname) : 'N/A',
+                        'current_status' => $order ? $order->status : 'Not Found',
+                        'upcoming_status' => ($order && in_array($order->status, ['delivered', 'dispatched', 'shipped'], true)) ? 'returned' : 'N/A',
+                    ];
+                    continue;
+                }
+
+                if (! $order || ! in_array($order->status, ['delivered', 'dispatched', 'shipped'], true)) {
+                    $skipped[] = $orderNo;
+                    continue;
+                }
+
+                $inventoryService->returnOrder($order);
+                $order->statusLogs()->create([
+                    'status' => 'returned',
+                    'notes' => 'Bulk CSV updated to returned.',
+                    'changed_by' => auth()->id(),
+                ]);
+                $updated++;
+            }
+
+            if ($isPreview) {
+                \DB::rollBack();
+                fclose($handle);
+                return response()->json(['preview' => $previewData]);
+            }
+
+            \DB::commit();
+        } catch (\Exception $e) {
+            \DB::rollBack();
+            fclose($handle);
+            return $isPreview ? response()->json(['error' => 'Error processing CSV: '.$e->getMessage()], 400) : back()->with('error', 'Error processing CSV: '.$e->getMessage());
+        }
+
+        fclose($handle);
+
+        $message = "Return orders import completed. Updated {$updated} order(s).";
+        if (count($skipped) > 0) {
+            $message .= "\n\nSkipped " . count($skipped) . " invalid order(s) (must be delivered/dispatched/shipped):\n- " . implode("\n- ", $skipped);
+        }
+
+        return ($request->wantsJson() || $request->ajax()) ? response()->json(['success' => true, 'message' => $message]) : back()->with('success', $message);
+    }
+
+    public function importBulkReturnTemplate()
+    {
+        return response()->streamDownload(function () {
+            $out = fopen('php://output', 'w');
+            fputcsv($out, ['order_id']);
+            fputcsv($out, ['ORD-0001']);
+            fclose($out);
+        }, 'bulk-return-template.csv', ['Content-Type' => 'text/csv']);
+    }
 }

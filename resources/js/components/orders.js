@@ -105,6 +105,7 @@ document.addEventListener('alpine:init', () => {
     totalPages: 1,
     totalOrders: 0,
     itemsPerPage: 15,
+    currentBulkImportType: null,
 
     // Filters state
     searchQuery: '',
@@ -2199,6 +2200,131 @@ document.addEventListener('alpine:init', () => {
       this.importNewRows = [];
       getModal('#importNewPreviewModal')?.hide();
     },
+    async handleImportDeliverSelect(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      this.importing = true;
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('preview', '1');
+      this.currentBulkImportType = 'deliver';
+
+      try {
+        const res = await fetch('/orders/import-deliver', {
+          method: 'POST',
+          body: formData,
+          headers: {
+            Accept: 'application/json',
+            'X-CSRF-TOKEN': getCsrfToken(),
+          },
+        });
+
+        const data = await res.json();
+        if (data.preview) {
+          this.importRows = data.preview;
+          getModal('#importPreviewModal')?.show();
+        } else if (data.error || !res.ok) {
+          showToast(data.error || 'Error occurred.', 'danger');
+        }
+      } catch (err) {
+        showToast(err.message || 'Error uploading CSV preview.', 'danger');
+      } finally {
+        this.importing = false;
+      }
+    },
+
+    async handleImportReturnSelect(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      this.importing = true;
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('preview', '1');
+      this.currentBulkImportType = 'return';
+
+      try {
+        const res = await fetch('/orders/import-return', {
+          method: 'POST',
+          body: formData,
+          headers: {
+            Accept: 'application/json',
+            'X-CSRF-TOKEN': getCsrfToken(),
+          },
+        });
+
+        const data = await res.json();
+        if (data.preview) {
+          this.importRows = data.preview;
+          getModal('#importPreviewModal')?.show();
+        } else if (data.error || !res.ok) {
+          showToast(data.error || 'Error occurred.', 'danger');
+        }
+      } catch (err) {
+        showToast(err.message || 'Error uploading CSV preview.', 'danger');
+      } finally {
+        this.importing = false;
+      }
+    },
+
+    async confirmImport() {
+      let fileInput;
+      let endpoint = '';
+      if (this.currentBulkImportType === 'deliver') {
+        fileInput = document.getElementById('import-deliver-file');
+        endpoint = '/orders/import-deliver';
+      } else if (this.currentBulkImportType === 'return') {
+        fileInput = document.getElementById('import-return-file');
+        endpoint = '/orders/import-return';
+      } else {
+        return;
+      }
+
+      if (!fileInput || !fileInput.files.length) return;
+
+      this.importing = true;
+      const formData = new FormData();
+      formData.append('file', fileInput.files[0]);
+
+      try {
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          body: formData,
+          headers: {
+            Accept: 'application/json',
+            'X-CSRF-TOKEN': getCsrfToken(),
+          },
+        });
+
+        const data = await res.json();
+        if (data.error || !res.ok) {
+          showToast(data.error || 'Error occurred.', 'danger');
+        } else {
+          showToast(data.message || 'Import successful.', 'success');
+          this.cancelImport();
+          this.loadOrders();
+        }
+      } catch (err) {
+        showToast(err.message || 'Error finalizing import.', 'danger');
+      } finally {
+        this.importing = false;
+      }
+    },
+
+    cancelImport() {
+      if (this.currentBulkImportType === 'deliver') {
+        const fileInput = document.getElementById('import-deliver-file');
+        if (fileInput) fileInput.value = '';
+      } else if (this.currentBulkImportType === 'return') {
+        const fileInput = document.getElementById('import-return-file');
+        if (fileInput) fileInput.value = '';
+      }
+      this.currentBulkImportType = null;
+      this.importRows = [];
+      getModal('#importPreviewModal')?.hide();
+    },
+
 
 
     initCharts() {

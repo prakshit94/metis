@@ -129,6 +129,12 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     // Route::get('orders/import-template', [OrderController::class, 'bulkImportTemplate'])->name('orders.import-template');    
     Route::post('orders/import-new', [OrderController::class, 'importNewOrders'])->name('orders.import-new');
     Route::get('orders/import-new-template', [OrderController::class, 'importNewTemplate'])->name('orders.import-new-template');
+
+    Route::post('orders/import-deliver', [OrderController::class, 'importBulkDeliver'])->name('orders.import-deliver');
+    Route::get('orders/import-deliver-template', [OrderController::class, 'importBulkDeliverTemplate'])->name('orders.import-deliver-template');
+    
+    Route::post('orders/import-return', [OrderController::class, 'importBulkReturn'])->name('orders.import-return');
+    Route::get('orders/import-return-template', [OrderController::class, 'importBulkReturnTemplate'])->name('orders.import-return-template');
     Route::get('orders/{order}/invoice-pdf', [OrderController::class, 'downloadInvoice'])->name('orders.invoice-pdf');
     Route::post('orders/{order}/generate-invoice', [OrderController::class, 'generateInvoice'])->name('orders.generate-invoice');
     Route::get('orders/{order}/shipping-label', [OrderController::class, 'downloadShippingLabel'])->name('orders.shipping-label');
