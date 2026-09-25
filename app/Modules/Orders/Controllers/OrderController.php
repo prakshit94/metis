@@ -150,7 +150,7 @@ class OrderController extends Controller implements HasMiddleware
                 if ($hasDispatched) {
                     $method = $first ? 'where' : 'orWhere';
                     $q->$method(function ($sq) {
-                        $sq->whereIn('status', ['dispatched', 'shipped'])
+                        $sq->whereIn('status', ['dispatched'])
                            ->whereDoesntHave('shipments', function ($ssq) {
                                $ssq->where('delivery_attempts', '>', 0);
                            });
@@ -161,7 +161,7 @@ class OrderController extends Controller implements HasMiddleware
                 if ($hasDeliveryAttempted) {
                     $method = $first ? 'where' : 'orWhere';
                     $q->$method(function ($sq) {
-                        $sq->whereIn('status', ['dispatched', 'shipped'])
+                        $sq->whereIn('status', ['dispatched'])
                            ->whereHas('shipments', function ($ssq) {
                                $ssq->where('delivery_attempts', '>', 0);
                            });
@@ -275,7 +275,7 @@ class OrderController extends Controller implements HasMiddleware
             })->select(DB::raw('COUNT(*) as total'), DB::raw('SUM(net_amount) as amount'))->toBase()->first();
 
             $deliveryAttempted = clone $statsQuery;
-            $deliveryAttempted = $deliveryAttempted->whereIn('status', ['dispatched', 'shipped'])
+            $deliveryAttempted = $deliveryAttempted->whereIn('status', ['dispatched'])
                 ->whereExists(function ($q) {
                     $q->select(DB::raw(1))
                       ->from('shipments')
@@ -316,8 +316,8 @@ class OrderController extends Controller implements HasMiddleware
                 'processing_amount' => (float) $grouped->where('status', 'processing')->sum('amount'),
                 'ready_to_ship' => (int) $grouped->where('status', 'ready_to_ship')->sum('total'),
                 'ready_to_ship_amount' => (float) $grouped->where('status', 'ready_to_ship')->sum('amount'),
-                'dispatched' => (int) $grouped->whereIn('status', ['dispatched', 'shipped'])->sum('total') - (int) ($deliveryAttempted->total ?? 0),
-                'dispatched_amount' => (float) $grouped->whereIn('status', ['dispatched', 'shipped'])->sum('amount') - (float) ($deliveryAttempted->amount ?? 0),
+                'dispatched' => (int) $grouped->whereIn('status', ['dispatched'])->sum('total') - (int) ($deliveryAttempted->total ?? 0),
+                'dispatched_amount' => (float) $grouped->whereIn('status', ['dispatched'])->sum('amount') - (float) ($deliveryAttempted->amount ?? 0),
                 'delivery_attempted' => (int) ($deliveryAttempted->total ?? 0),
                 'delivery_attempted_amount' => (float) ($deliveryAttempted->amount ?? 0),
                 'delivered' => (int) $grouped->where('status', 'delivered')->sum('total'),
@@ -375,8 +375,8 @@ class OrderController extends Controller implements HasMiddleware
                     'processing_amount' => (float) $whGroup->where('status', 'processing')->sum('amount'),
                     'ready_to_ship' => (int) $whGroup->where('status', 'ready_to_ship')->sum('total'),
                     'ready_to_ship_amount' => (float) $whGroup->where('status', 'ready_to_ship')->sum('amount'),
-                    'dispatched' => (int) $whGroup->whereIn('status', ['dispatched', 'shipped'])->sum('total'),
-                    'dispatched_amount' => (float) $whGroup->whereIn('status', ['dispatched', 'shipped'])->sum('amount'),
+                    'dispatched' => (int) $whGroup->whereIn('status', ['dispatched'])->sum('total'),
+                    'dispatched_amount' => (float) $whGroup->whereIn('status', ['dispatched'])->sum('amount'),
                     'delivered' => (int) $whGroup->where('status', 'delivered')->sum('total'),
                     'delivered_amount' => (float) $whGroup->where('status', 'delivered')->sum('amount'),
                     'cancelled' => (int) $whGroup->where('status', 'cancelled')->sum('total'),
@@ -760,7 +760,7 @@ class OrderController extends Controller implements HasMiddleware
 
     public function edit(Order $order)
     {
-        if (in_array($order->status, ['dispatched', 'shipped', 'cancelled', 'delivered', 'returned'])) {
+        if (in_array($order->status, ['dispatched', 'cancelled', 'delivered', 'returned'])) {
             return redirect()->route('orders')->with('error', 'Orders in this status cannot be edited.');
         }
 
@@ -984,7 +984,7 @@ class OrderController extends Controller implements HasMiddleware
     public function markDelivered(string $id, Request $request, InventoryService $inventoryService)
     {
         $order = Order::findOrFail($id);
-        if (! in_array($order->status, ['dispatched', 'shipped'], true)) {
+        if (! in_array($order->status, ['dispatched'], true)) {
             return response()->json(['error' => 'Only dispatched orders can be marked as delivered.'], 400);
         }
 
@@ -1065,7 +1065,7 @@ class OrderController extends Controller implements HasMiddleware
     public function markReturned(string $id, Request $request, InventoryService $inventoryService)
     {
         $order = Order::findOrFail($id);
-        if (! in_array($order->status, ['delivered', 'dispatched', 'shipped'], true)) {
+        if (! in_array($order->status, ['delivered', 'dispatched'], true)) {
             return response()->json(['error' => 'Only delivered or dispatched orders can be marked as returned.'], 400);
         }
 
@@ -1242,7 +1242,7 @@ class OrderController extends Controller implements HasMiddleware
                             $skipped++;
                         }
                     } elseif ($targetStatus === 'delivered') {
-                        if (in_array($order->status, ['dispatched', 'shipped'], true)) {
+                        if (in_array($order->status, ['dispatched'], true)) {
                             $inventoryService->deliverOrder($order);
                             $shipment = $order->shipments()->latest()->first();
                             if ($shipment) {
@@ -1438,7 +1438,7 @@ class OrderController extends Controller implements HasMiddleware
 
     public function update(UpdateOrderRequest $request, Order $order, OrderService $orderService)
     {
-        if (in_array($order->status, ['dispatched', 'shipped', 'cancelled', 'delivered', 'returned'])) {
+        if (in_array($order->status, ['dispatched', 'cancelled', 'delivered', 'returned'])) {
             if ($request->wantsJson() || $request->ajax()) {
                 return response()->json(['success' => false, 'message' => 'Orders in this status cannot be edited.'], 403);
             }
@@ -1535,7 +1535,7 @@ class OrderController extends Controller implements HasMiddleware
                 if ($hasDispatched) {
                     $method = $first ? 'where' : 'orWhere';
                     $q->$method(function ($sq) {
-                        $sq->whereIn('status', ['dispatched', 'shipped'])
+                        $sq->whereIn('status', ['dispatched'])
                            ->whereDoesntHave('shipments', function ($ssq) {
                                $ssq->where('delivery_attempts', '>', 0);
                            });
@@ -1546,7 +1546,7 @@ class OrderController extends Controller implements HasMiddleware
                 if ($hasDeliveryAttempted) {
                     $method = $first ? 'where' : 'orWhere';
                     $q->$method(function ($sq) {
-                        $sq->whereIn('status', ['dispatched', 'shipped'])
+                        $sq->whereIn('status', ['dispatched'])
                            ->whereHas('shipments', function ($ssq) {
                                $ssq->where('delivery_attempts', '>', 0);
                            });
@@ -2088,7 +2088,7 @@ class OrderController extends Controller implements HasMiddleware
                 $order = Order::with(['party'])->where('order_no', $orderNo)->orWhere('id', $orderNo)->first();
 
                 if ($isPreview) {
-                    $isValid = $order && in_array($order->status, ['dispatched', 'shipped'], true);
+                    $isValid = $order && in_array($order->status, ['dispatched'], true);
                     $errorMsg = null;
                     if (!$order) {
                         $errorMsg = 'Order not found';
@@ -2107,7 +2107,7 @@ class OrderController extends Controller implements HasMiddleware
                     continue;
                 }
 
-                if (! $order || ! in_array($order->status, ['dispatched', 'shipped'], true)) {
+                if (! $order || ! in_array($order->status, ['dispatched'], true)) {
                     $skipped[] = $orderNo . ($order ? " (Invalid status: {$order->status})" : ' (Not Found)');
                     continue;
                 }
@@ -2228,7 +2228,7 @@ class OrderController extends Controller implements HasMiddleware
                 $order = Order::with(['party'])->where('order_no', $orderNo)->orWhere('id', $orderNo)->first();
 
                 if ($isPreview) {
-                    $isValid = $order && in_array($order->status, ['delivered', 'dispatched', 'shipped'], true);
+                    $isValid = $order && in_array($order->status, ['delivered', 'dispatched'], true);
                     $errorMsg = null;
                     if (!$order) {
                         $errorMsg = 'Order not found';
@@ -2247,7 +2247,7 @@ class OrderController extends Controller implements HasMiddleware
                     continue;
                 }
 
-                if (! $order || ! in_array($order->status, ['delivered', 'dispatched', 'shipped'], true)) {
+                if (! $order || ! in_array($order->status, ['delivered', 'dispatched'], true)) {
                     $skipped[] = $orderNo . ($order ? " (Invalid status: {$order->status})" : ' (Not Found)');
                     continue;
                 }

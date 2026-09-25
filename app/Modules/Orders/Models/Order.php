@@ -77,7 +77,7 @@ class Order extends Model implements Auditable
     /** Statuses where stock has left the warehouse (in transit to customer). */
     public static function inTransitStatuses(): array
     {
-        return ['dispatched', 'shipped'];
+        return ['dispatched'];
 
     }
 
@@ -103,7 +103,7 @@ class Order extends Model implements Auditable
             }
         }
 
-        if (in_array($this->status, ['dispatched', 'shipped'])) {
+        if (in_array($this->status, ['dispatched'])) {
             $latestShipment = $this->relationLoaded('shipments') 
                 ? $this->shipments->sortByDesc('id')->first()
                 : $this->shipments()->latest('id')->first();
@@ -117,7 +117,7 @@ class Order extends Model implements Auditable
             return 'unfulfillable';
         }
 
-        return $this->status === 'shipped' ? 'dispatched' : $this->status;
+        return $this->status;
     }
 
     public function statusLabel(): string

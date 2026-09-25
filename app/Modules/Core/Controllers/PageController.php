@@ -246,7 +246,7 @@ class PageController extends Controller
         ];
 
         $orderStatusPercent = [];
-        $statusesToTrack = ['pending', 'confirmed', 'processing', 'ready_to_ship', 'dispatched', 'shipped', 'completed', 'cancelled'];
+        $statusesToTrack = ['pending', 'confirmed', 'processing', 'ready_to_ship', 'dispatched', 'completed', 'cancelled'];
         foreach ($statusesToTrack as $s) {
             $orderStatusPercent[$s] = $totalOrders > 0 ? round((($orderStatusRaw[$s] ?? 0) / $totalOrders) * 100) : 0;
         }
@@ -283,7 +283,7 @@ class PageController extends Controller
                 'unfulfillable', 'delivery_attempted', 'cancelled', 'returned' => 'bg-danger',
                 'pending_confirmation', 'return_requested' => 'bg-warning',
                 'confirmed', 'dispatched' => 'bg-info',
-                'processing', 'shipped' => 'bg-primary',
+                'processing' => 'bg-primary',
                 'ready_to_ship' => 'bg-dark',
                 'delivered', 'completed' => 'bg-success',
                 default => 'bg-secondary',
@@ -310,7 +310,7 @@ class PageController extends Controller
                 if ($order->scheduled_confirmation_date) $tooltip[] = 'Scheduled: ' . \Carbon\Carbon::parse($order->scheduled_confirmation_date)->format('d M, h:i A');
                 if ($order->confirmation_attempts > 0) $tooltip[] = 'Attempts: ' . $order->confirmation_attempts;
                 if ($tooltip) $statusTooltip = implode("\n", $tooltip);
-            } elseif (in_array($order->status, ['dispatched', 'shipped', 'delivery_attempted']) && $order->shipments->isNotEmpty()) {
+            } elseif (in_array($order->status, ['dispatched', 'delivery_attempted']) && $order->shipments->isNotEmpty()) {
                 $lastShipment = $order->shipments->last();
                 $tooltip = [];
                 if ($lastShipment->next_followup_date) $tooltip[] = 'Scheduled: ' . \Carbon\Carbon::parse($lastShipment->next_followup_date)->format('d M, h:i A');
@@ -371,7 +371,7 @@ class PageController extends Controller
                 if ($order->scheduled_confirmation_date) $tooltip[] = 'Scheduled: ' . \Carbon\Carbon::parse($order->scheduled_confirmation_date)->format('d M, h:i A');
                 if ($order->confirmation_attempts > 0) $tooltip[] = 'Attempts: ' . $order->confirmation_attempts;
                 if ($tooltip) $statusTooltip = implode("\n", $tooltip);
-            } elseif (in_array($order->status, ['dispatched', 'shipped', 'delivery_attempted']) && $order->shipments->isNotEmpty()) {
+            } elseif (in_array($order->status, ['dispatched', 'delivery_attempted']) && $order->shipments->isNotEmpty()) {
                 $lastShipment = $order->shipments->last();
                 $tooltip = [];
                 if ($lastShipment->next_followup_date) $tooltip[] = 'Scheduled: ' . \Carbon\Carbon::parse($lastShipment->next_followup_date)->format('d M, h:i A');

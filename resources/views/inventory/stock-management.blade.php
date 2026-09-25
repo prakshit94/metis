@@ -396,7 +396,7 @@
                                     </td>
                                     <td class="text-center">
                                         <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle"
-                                              x-text="parseFloat(item.shipped_qty || 0).toFixed(2)"></span>
+                                              x-text="parseFloat(item.dispatched_qty || 0).toFixed(2)"></span>
                                     </td>
                                     <td class="text-center">
                                         <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle"

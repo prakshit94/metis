@@ -49,7 +49,7 @@ class ShippingController extends Controller implements HasMiddleware
 
         if ($status = $request->query('status')) {
             if ($status === 'in_transit') {
-                $query->whereIn('status', ['in_transit', 'shipped']);
+                $query->whereIn('status', ['in_transit']);
             } else {
                 $query->where('status', $status);
             }
@@ -150,7 +150,7 @@ class ShippingController extends Controller implements HasMiddleware
     {
 
         $validated = $request->validate([
-            'status' => 'required|in:pending,shipped,in_transit,delivered,failed,returned',
+            'status' => 'required|in:pending,in_transit,delivered,failed,returned',
             'location' => 'nullable|string|max:255',
             'description' => 'nullable|string',
             'delivery_attempts' => 'nullable|integer|min:0',
@@ -161,7 +161,7 @@ class ShippingController extends Controller implements HasMiddleware
 
         DB::transaction(function () use ($shipment, $validated) {
             $oldStatus = $shipment->status;
-            $newStatus = $validated['status'] === 'shipped' ? 'in_transit' : $validated['status'];
+            $newStatus = $validated['status'];
 
             $updateData = ['status' => $newStatus];
 
@@ -206,7 +206,7 @@ class ShippingController extends Controller implements HasMiddleware
                 $inventoryService = app(InventoryService::class);
                 if ($newStatus === 'in_transit' && $order->status === 'ready_to_ship') {
                     $inventoryService->dispatchOrder($order);
-                } elseif ($newStatus === 'delivered' && in_array($order->status, ['dispatched', 'shipped'], true)) {
+                } elseif ($newStatus === 'delivered' && in_array($order->status, ['dispatched'], true)) {
                     $inventoryService->deliverOrder($order);
                     $order->statusLogs()->create([
                         'status' => 'delivered',
@@ -332,7 +332,7 @@ class ShippingController extends Controller implements HasMiddleware
 
             // Enterprise flow:
             // in_transit = carrier has taken custody and the parcel is moving
-            if ($shipment->status === 'shipped') {
+            if ($shipment->status === 'in_transit') {
                 $shipment->update(['status' => 'in_transit']);
             }
         });
@@ -400,7 +400,7 @@ class ShippingController extends Controller implements HasMiddleware
                     $inventoryService = app(InventoryService::class);
                     if ($newStatus === 'in_transit' && $order->status === 'ready_to_ship') {
                         $inventoryService->dispatchOrder($order);
-                    } elseif ($newStatus === 'delivered' && in_array($order->status, ['dispatched', 'shipped'], true)) {
+                    } elseif ($newStatus === 'delivered' && in_array($order->status, ['dispatched'], true)) {
                         $inventoryService->deliverOrder($order);
                     } elseif ($newStatus === 'returned' && ! in_array($order->status, ['returned', 'cancelled'], true) && ! request()->boolean('skip_order_sync')) {
                         $inventoryService->returnOrder($order);

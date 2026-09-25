@@ -232,7 +232,7 @@ class OrderReturnController extends Controller implements HasMiddleware
             $orders = Order::with('items')->whereIn('id', $validated['order_ids'])->get();
             
             foreach ($orders as $order) {
-                if (!in_array($order->status, ['delivered', 'dispatched', 'shipped'], true)) {
+                if (!in_array($order->status, ['delivered', 'dispatched'], true)) {
                     $skipped++;
                     continue;
                 }

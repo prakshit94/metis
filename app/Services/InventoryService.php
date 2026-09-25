@@ -367,7 +367,7 @@ class InventoryService
     }
 
     /**
-     * Deduct stock (e.g. sale shipped, transfer out).
+     * Deduct stock (e.g. sale dispatched, transfer out).
      */
     public function deductStock(
         int $productId,
@@ -913,7 +913,7 @@ class InventoryService
     }
 
     /**
-     * Revert a shipped order back to processing.
+     * Revert a dispatched order back to processing.
      */
     public function revertOrderToProcessing(Order $order): void
     {
@@ -1324,7 +1324,7 @@ class InventoryService
         DB::transaction(function () use ($order) {
             $order = Order::with(['items'])->lockForUpdate()->findOrFail($order->id);
 
-            if (! in_array($order->status, ['delivered', 'dispatched', 'shipped'], true)) {
+            if (! in_array($order->status, ['delivered', 'dispatched'], true)) {
                 throw ValidationException::withMessages([
                     'status' => 'Only delivered or dispatched orders can be marked as returned.',
                 ]);

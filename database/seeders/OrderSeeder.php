@@ -67,7 +67,7 @@ class OrderSeeder extends Seeder
         }
 
         // Create standard operational workflow statuses
-        $statuses = ['pending', 'confirmed', 'processing', 'ready_to_ship', 'dispatched', 'shipped', 'delivered', 'cancelled', 'returned'];
+        $statuses = ['pending', 'confirmed', 'processing', 'ready_to_ship', 'dispatched', 'delivered', 'cancelled', 'returned'];
         $carriers = ['FedEx', 'DHL', 'UPS', 'BlueDart', 'Delhivery'];
 
         $orderCounter = Order::max('id') ?? 0;
@@ -152,7 +152,7 @@ class OrderSeeder extends Seeder
                 ]);
 
                 // 3. Invoice Execution
-                if (in_array($status, ['confirmed', 'processing', 'ready_to_ship', 'dispatched', 'shipped', 'delivered', 'returned'])) {
+                if (in_array($status, ['confirmed', 'processing', 'ready_to_ship', 'dispatched', 'delivered', 'returned'])) {
                     $invoiceStatus = ($status === 'delivered' || $status === 'returned') ? 'paid' : (rand(0, 1) ? 'unpaid' : 'partially_paid');
 
                     $invoice = Invoice::create([
@@ -220,10 +220,10 @@ class OrderSeeder extends Seeder
                 }
 
                 // 5. Build Logistics & Shipping Events
-                if (in_array($status, ['ready_to_ship', 'dispatched', 'shipped', 'delivered'])) {
+                if (in_array($status, ['ready_to_ship', 'dispatched', 'delivered'])) {
                     $shipmentStatus = match ($status) {
                         'ready_to_ship' => 'pending',
-                        'dispatched', 'shipped' => 'in_transit',
+                        'dispatched' => 'in_transit',
                         'delivered' => 'delivered',
                         default => 'pending',
                     };
@@ -240,7 +240,7 @@ class OrderSeeder extends Seeder
                     ]);
 
                     // Tracking events
-                    if (in_array($status, ['dispatched', 'shipped', 'delivered'])) {
+                    if (in_array($status, ['dispatched', 'delivered'])) {
                         ShipmentTrackingEvent::create([
                             'shipment_id' => $shipment->id,
                             'event_name' => 'Manifest Created',
