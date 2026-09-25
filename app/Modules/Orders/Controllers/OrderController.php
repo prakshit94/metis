@@ -2156,8 +2156,10 @@ class OrderController extends Controller implements HasMiddleware
     {
         return response()->streamDownload(function () {
             $out = fopen('php://output', 'w');
-            fputcsv($out, ['order_id']);
+            fputs($out, chr(0xEF) . chr(0xBB) . chr(0xBF));
+            fputcsv($out, ['order_no']);
             fputcsv($out, ['ORD-0001']);
+            fputcsv($out, ['ORD-0002']);
             fclose($out);
         }, 'bulk-deliver-template.csv', ['Content-Type' => 'text/csv']);
     }
@@ -2336,8 +2338,11 @@ class OrderController extends Controller implements HasMiddleware
     {
         return response()->streamDownload(function () {
             $out = fopen('php://output', 'w');
-            fputcsv($out, ['order_id']);
+            fputs($out, chr(0xEF) . chr(0xBB) . chr(0xBF));
+            fputcsv($out, ['order_no']);
             fputcsv($out, ['ORD-0001']);
+            fputcsv($out, ['ORD-0002']);
+            fputcsv($out, ['ORD-0003']);
             fclose($out);
         }, 'bulk-return-template.csv', ['Content-Type' => 'text/csv']);
     }
