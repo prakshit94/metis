@@ -2124,13 +2124,28 @@
                                 
                                 <div class="d-flex justify-content-between mt-2 pt-2 border-top border-primary border-opacity-25 fs-5">
                                     <div>
-                                        <span class="fw-bold text-primary d-block">Net Total:</span>
+                                        <span class="fw-bold text-primary d-block">Grand Total:</span>
                                         <div class="text-body-secondary mt-1" style="font-size: 11px;" x-show="totalWeight > 0">
                                             <span>Est. Weight: <span class="fw-bold" :class="totalWeight > 35000 ? 'text-danger' : ''" x-text="(totalWeight / 1000).toFixed(2) + ' kg'"></span></span>
                                         </div>
                                     </div>
                                     <span class="fw-bold text-primary" x-text="'₹ ' + Number(grandTotal).toFixed(2)"></span>
                                 </div>
+                                <template x-if="useWalletBalance && customerDetails && Number(customerDetails.wallet_balance) > 0">
+                                    <div class="mt-2 pt-2 border-top border-primary border-opacity-25">
+                                        <div class="d-flex justify-content-between mb-1 small text-success">
+                                            <span>Wallet Applied:</span>
+                                            <span class="fw-bold" x-text="'- ₹ ' + Math.min(Number(grandTotal), Number(customerDetails.wallet_balance)).toFixed(2)"></span>
+                                        </div>
+                                        <div class="d-flex justify-content-between fs-5 mt-1">
+                                            <span class="fw-bold text-primary d-block">Net Payable:</span>
+                                            <span class="fw-bold text-primary" x-text="'₹ ' + Math.max(0, Number(grandTotal) - Number(customerDetails.wallet_balance)).toFixed(2)"></span>
+                                        </div>
+                                        <div class="small text-body-secondary mt-1" x-show="(Number(grandTotal) - Number(customerDetails.wallet_balance)) < 0">
+                                            * Remaining wallet: ₹ <span x-text="Math.abs(Number(grandTotal) - Number(customerDetails.wallet_balance)).toFixed(2)"></span>
+                                        </div>
+                                    </div>
+                                </template>
                             </div>
                         </div>
                     </div>
