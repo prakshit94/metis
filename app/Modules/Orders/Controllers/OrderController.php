@@ -2019,7 +2019,7 @@ class OrderController extends Controller implements HasMiddleware
             return response()->json(['error' => 'Import Failed: ' . $e->getMessage()], 400);
         }
     }
-    public function importBulkDeliver(Request $request, \App\Modules\Inventory\Services\InventoryService $inventoryService)
+    public function importBulkDeliver(Request $request, \App\Services\InventoryService $inventoryService)
     {
         $request->validate(['file' => 'required|file|max:10240']);
 
@@ -2162,7 +2162,7 @@ class OrderController extends Controller implements HasMiddleware
         }, 'bulk-deliver-template.csv', ['Content-Type' => 'text/csv']);
     }
 
-    public function importBulkReturn(Request $request, \App\Modules\Inventory\Services\InventoryService $inventoryService)
+    public function importBulkReturn(Request $request, \App\Services\InventoryService $inventoryService)
     {
         $request->validate(['file' => 'required|file|max:10240']);
 
