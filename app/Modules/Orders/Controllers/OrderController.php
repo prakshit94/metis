@@ -2014,15 +2014,6 @@ class OrderController extends Controller implements HasMiddleware
             return response()->json(['error' => 'Import Failed: ' . $e->getMessage()], 400);
         }
     }
-
-    {
-        return response()->streamDownload(function () {
-            $out = fopen('php://output', 'w');
-            fputcsv($out, ['order_id']);
-            fputcsv($out, ['ORD-0001']);
-            fclose($out);
-        }, 'bulk-return-template.csv', ['Content-Type' => 'text/csv']);
-    }
     public function importBulkDeliver(Request $request, \App\Modules\Inventory\Services\InventoryService $inventoryService)
     {
         $request->validate(['file' => 'required|file|mimes:csv,txt|max:10240']);
