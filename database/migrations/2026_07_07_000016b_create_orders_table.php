@@ -22,7 +22,7 @@ return new class extends Migration
             $table->decimal('net_amount', 15, 2)->default(0);
             $table->decimal('wallet_amount_used', 15, 2)->default(0);
             $table->decimal('cashback_earned', 15, 2)->default(0);
-            $table->enum('status', ['future_order', 'pending', 'pending_confirmation', 'confirmed', 'processing', 'ready_to_ship', 'dispatched', 'shipped', 'delivered', 'cancelled', 'returned', 'return_requested'])->default('pending')->index();
+            $table->enum('status', ['future_order', 'pending', 'pending_confirmation', 'confirmed', 'processing', 'ready_to_ship', 'dispatched', 'delivered', 'cancelled', 'returned', 'return_requested'])->default('pending')->index();
             $table->date('future_order_date')->nullable();
             $table->dateTime('scheduled_confirmation_date')->nullable();
             $table->integer('confirmation_attempts')->default(0);

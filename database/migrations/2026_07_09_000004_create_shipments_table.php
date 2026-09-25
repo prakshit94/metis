@@ -15,7 +15,7 @@ return new class extends Migration
             $table->string('carrier_name')->nullable()->index();
             $table->foreignId('service_provider_id')->nullable()->constrained('users')->nullOnDelete();
             $table->string('tracking_no')->nullable()->index();
-            $table->enum('status', ['pending', 'shipped', 'in_transit', 'delivered', 'failed', 'returned', 'cancelled'])->default('pending')->index();
+            $table->enum('status', ['pending', 'in_transit', 'delivered', 'failed', 'returned', 'cancelled'])->default('pending')->index();
             $table->dateTime('shipped_at')->nullable();
             $table->dateTime('delivered_at')->nullable();
             $table->string('delivered_by')->nullable();
