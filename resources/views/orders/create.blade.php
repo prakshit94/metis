@@ -2038,7 +2038,7 @@
                         <div class="col-md-6">
                             <div class="p-3 bg-body-tertiary rounded h-100 border shadow-sm">
                                 <h6 class="fw-bold text-body-secondary mb-2" style="font-size:11px; text-transform:uppercase; letter-spacing:1px;"><i class="bi bi-info-circle me-1"></i> Order Info</h6>
-                                <div x-data="{ wh: warehouses.find(w => w.id == warehouseId) || {} }">
+                                <div x-data="{ get wh() { return warehouses.find(w => w.id == warehouseId) || {} } }">
                                     <div class="fw-bold fs-6 mb-1" x-text="wh.name"></div>
                                     <div class="small text-body-secondary mb-1" x-show="wh.company_name"><i class="bi bi-building me-1 text-primary"></i><span x-text="wh.company_name"></span></div>
                                     <div class="small text-body-secondary mb-1" x-show="wh.phone"><i class="bi bi-telephone me-1 text-primary"></i><span x-text="wh.phone"></span></div>
