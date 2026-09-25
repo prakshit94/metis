@@ -2015,6 +2015,14 @@ class OrderController extends Controller implements HasMiddleware
         }
     }
 
+    {
+        return response()->streamDownload(function () {
+            $out = fopen('php://output', 'w');
+            fputcsv($out, ['order_id']);
+            fputcsv($out, ['ORD-0001']);
+            fclose($out);
+        }, 'bulk-return-template.csv', ['Content-Type' => 'text/csv']);
+    }
     public function importBulkDeliver(Request $request, \App\Modules\Inventory\Services\InventoryService $inventoryService)
     {
         $request->validate(['file' => 'required|file|mimes:csv,txt|max:10240']);
@@ -2039,6 +2047,7 @@ class OrderController extends Controller implements HasMiddleware
         $updated = 0;
         $skipped = [];
         $previewData = [];
+        $seenOrderNos = [];
 
         $extractByHeader = function (array $row, array $header, array $keys): ?string {
             foreach ($keys as $key) {
@@ -2063,21 +2072,47 @@ class OrderController extends Controller implements HasMiddleware
                     continue;
                 }
 
+                if (in_array($orderNo, $seenOrderNos, true)) {
+                    if ($isPreview) {
+                        $previewData[] = [
+                            'order_no' => $orderNo,
+                            'is_valid' => false,
+                            'customer' => 'N/A',
+                            'current_status' => 'Duplicate in CSV',
+                            'upcoming_status' => 'N/A',
+                            'error' => 'Duplicate order in CSV',
+                        ];
+                    } else {
+                        $skipped[] = $orderNo . ' (Duplicate in CSV)';
+                    }
+                    continue;
+                }
+                $seenOrderNos[] = $orderNo;
+
                 $order = Order::with(['party'])->where('order_no', $orderNo)->orWhere('id', $orderNo)->first();
 
                 if ($isPreview) {
+                    $isValid = $order && in_array($order->status, ['dispatched', 'shipped'], true);
+                    $errorMsg = null;
+                    if (!$order) {
+                        $errorMsg = 'Order not found';
+                    } elseif (!$isValid) {
+                        $errorMsg = 'Invalid status (currently: ' . $order->status . ')';
+                    }
+
                     $previewData[] = [
                         'order_no' => $orderNo,
-                        'is_valid' => $order && in_array($order->status, ['dispatched', 'shipped'], true),
+                        'is_valid' => $isValid,
                         'customer' => $order && $order->party ? trim($order->party->firstname.' '.$order->party->lastname) : 'N/A',
                         'current_status' => $order ? $order->status : 'Not Found',
-                        'upcoming_status' => ($order && in_array($order->status, ['dispatched', 'shipped'], true)) ? 'delivered' : 'N/A',
+                        'upcoming_status' => $isValid ? 'delivered' : 'N/A',
+                        'error' => $errorMsg,
                     ];
                     continue;
                 }
 
                 if (! $order || ! in_array($order->status, ['dispatched', 'shipped'], true)) {
-                    $skipped[] = $orderNo;
+                    $skipped[] = $orderNo . ($order ? " (Invalid status: {$order->status})" : ' (Not Found)');
                     continue;
                 }
 
@@ -2107,7 +2142,7 @@ class OrderController extends Controller implements HasMiddleware
 
         $message = "Deliver orders import completed. Updated {$updated} order(s).";
         if (count($skipped) > 0) {
-            $message .= "\n\nSkipped " . count($skipped) . " invalid/non-dispatched order(s):\n- " . implode("\n- ", $skipped);
+            $message .= "\n\nSkipped " . count($skipped) . " invalid/duplicate order(s):\n- " . implode("\n- ", $skipped);
         }
 
         return ($request->wantsJson() || $request->ajax()) ? response()->json(['success' => true, 'message' => $message]) : back()->with('success', $message);
@@ -2147,6 +2182,7 @@ class OrderController extends Controller implements HasMiddleware
         $updated = 0;
         $skipped = [];
         $previewData = [];
+        $seenOrderNos = [];
 
         $extractByHeader = function (array $row, array $header, array $keys): ?string {
             foreach ($keys as $key) {
@@ -2171,21 +2207,47 @@ class OrderController extends Controller implements HasMiddleware
                     continue;
                 }
 
+                if (in_array($orderNo, $seenOrderNos, true)) {
+                    if ($isPreview) {
+                        $previewData[] = [
+                            'order_no' => $orderNo,
+                            'is_valid' => false,
+                            'customer' => 'N/A',
+                            'current_status' => 'Duplicate in CSV',
+                            'upcoming_status' => 'N/A',
+                            'error' => 'Duplicate order in CSV',
+                        ];
+                    } else {
+                        $skipped[] = $orderNo . ' (Duplicate in CSV)';
+                    }
+                    continue;
+                }
+                $seenOrderNos[] = $orderNo;
+
                 $order = Order::with(['party'])->where('order_no', $orderNo)->orWhere('id', $orderNo)->first();
 
                 if ($isPreview) {
+                    $isValid = $order && in_array($order->status, ['delivered', 'dispatched', 'shipped'], true);
+                    $errorMsg = null;
+                    if (!$order) {
+                        $errorMsg = 'Order not found';
+                    } elseif (!$isValid) {
+                        $errorMsg = 'Invalid status (currently: ' . $order->status . ')';
+                    }
+
                     $previewData[] = [
                         'order_no' => $orderNo,
-                        'is_valid' => $order && in_array($order->status, ['delivered', 'dispatched', 'shipped'], true),
+                        'is_valid' => $isValid,
                         'customer' => $order && $order->party ? trim($order->party->firstname.' '.$order->party->lastname) : 'N/A',
                         'current_status' => $order ? $order->status : 'Not Found',
-                        'upcoming_status' => ($order && in_array($order->status, ['delivered', 'dispatched', 'shipped'], true)) ? 'returned' : 'N/A',
+                        'upcoming_status' => $isValid ? 'returned' : 'N/A',
+                        'error' => $errorMsg,
                     ];
                     continue;
                 }
 
                 if (! $order || ! in_array($order->status, ['delivered', 'dispatched', 'shipped'], true)) {
-                    $skipped[] = $orderNo;
+                    $skipped[] = $orderNo . ($order ? " (Invalid status: {$order->status})" : ' (Not Found)');
                     continue;
                 }
 
@@ -2215,7 +2277,7 @@ class OrderController extends Controller implements HasMiddleware
 
         $message = "Return orders import completed. Updated {$updated} order(s).";
         if (count($skipped) > 0) {
-            $message .= "\n\nSkipped " . count($skipped) . " invalid order(s) (must be delivered/dispatched/shipped):\n- " . implode("\n- ", $skipped);
+            $message .= "\n\nSkipped " . count($skipped) . " invalid/duplicate order(s):\n- " . implode("\n- ", $skipped);
         }
 
         return ($request->wantsJson() || $request->ajax()) ? response()->json(['success' => true, 'message' => $message]) : back()->with('success', $message);

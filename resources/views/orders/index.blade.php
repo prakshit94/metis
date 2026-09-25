@@ -2031,7 +2031,7 @@
                                         <template x-if="!row.is_valid">
                                             <span class="text-danger fw-medium">
                                                 <i class="bi bi-x-circle me-1"></i>
-                                                <span x-text="row.current_status === 'Not Found' ? 'Order not found' : (currentBulkImportType === 'deliver' ? 'Must be Dispatched or Shipped' : 'Must be Delivered, Dispatched, or Shipped')"></span>
+                                                <span x-text="row.error || (row.current_status === 'Not Found' ? 'Order not found' : (currentBulkImportType === 'deliver' ? 'Must be Dispatched or Shipped' : 'Must be Delivered, Dispatched, or Shipped'))"></span>
                                             </span>
                                         </template>
                                     </td>
