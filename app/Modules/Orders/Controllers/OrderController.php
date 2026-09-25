@@ -2088,7 +2088,7 @@ class OrderController extends Controller implements HasMiddleware
                 }
                 $seenOrderNos[] = $orderNo;
 
-                $order = Order::with(['party'])->where(function($q) use ($orderNo) { $q->where('order_no', $orderNo); if (is_numeric($orderNo)) { $q->orWhere('id', $orderNo); } })->first();
+                $order = Order::with(['party', 'items'])->where(function($q) use ($orderNo) { $q->where('order_no', $orderNo); if (is_numeric($orderNo)) { $q->orWhere('id', $orderNo); } })->first();
 
                 if ($isPreview) {
                     $isValid = $order && in_array($order->status, ['dispatched'], true);
@@ -2231,7 +2231,7 @@ class OrderController extends Controller implements HasMiddleware
                 }
                 $seenOrderNos[] = $orderNo;
 
-                $order = Order::with(['party'])->where(function($q) use ($orderNo) { $q->where('order_no', $orderNo); if (is_numeric($orderNo)) { $q->orWhere('id', $orderNo); } })->first();
+                $order = Order::with(['party', 'items'])->where(function($q) use ($orderNo) { $q->where('order_no', $orderNo); if (is_numeric($orderNo)) { $q->orWhere('id', $orderNo); } })->first();
 
                 if ($isPreview) {
                     $isValid = $order && in_array($order->status, ['delivered', 'dispatched'], true);
