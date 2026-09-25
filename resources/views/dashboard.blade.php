@@ -219,13 +219,6 @@
                                         <span class="badge bg-info bg-opacity-25 text-info-emphasis border border-info border-opacity-50" style="font-size: 9px;">{{ $orderStatusPercent['dispatched'] ?? 0 }}%</span>
                                     </div>
                                 </div>
-                                <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <span class="text-muted small fw-semibold">Dispatched</span>
-                                    <div class="d-flex align-items-center gap-2">
-                                        <span class="fw-bold text-body-emphasis fs-6">{{ $orderStatusRaw['dispatched'] ?? 0 }}</span>
-                                        <span class="badge bg-primary bg-opacity-25 text-primary-emphasis border border-primary border-opacity-50" style="font-size: 9px;">{{ $orderStatusPercent['dispatched'] ?? 0 }}%</span>
-                                    </div>
-                                </div>
                             </div>
                         </div>
                     </div>
