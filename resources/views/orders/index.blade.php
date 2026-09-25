@@ -40,12 +40,13 @@
             <i class="bi bi-download me-2"></i>Export
         </button>
         @endcan
-        @can('orders.import')
+        @canany(['orders.import', 'orders.deliver', 'orders.return'])
         <div class="dropdown">
             <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" title="Import New Orders">
                 <i class="bi bi-upload me-2"></i>Import Orders
             </button>
             <ul class="dropdown-menu">
+                @can('orders.import')
                 <li>
                     <a class="dropdown-item" href="#" @click.prevent="document.getElementById('import-new-orders-file').click()">
                         <i class="bi bi-file-earmark-plus me-2"></i>Upload Orders CSV
@@ -56,6 +57,8 @@
                         <i class="bi bi-file-earmark-arrow-down me-2"></i>Download Orders Template
                     </a>
                 </li>
+                @endcan
+                @can('orders.deliver')
                 <li><hr class="dropdown-divider"></li>
                 <li><h6 class="dropdown-header">Bulk Deliver Orders</h6></li>
                 <li>
@@ -68,6 +71,8 @@
                         <i class="bi bi-file-earmark-arrow-down me-2"></i>Download Deliver Template
                     </a>
                 </li>
+                @endcan
+                @can('orders.return')
                 <li><hr class="dropdown-divider"></li>
                 <li><h6 class="dropdown-header">Bulk Return Orders</h6></li>
                 <li>

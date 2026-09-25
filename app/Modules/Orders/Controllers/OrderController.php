@@ -41,15 +41,15 @@ class OrderController extends Controller implements HasMiddleware
         return [
             new Middleware('permission:orders.view', only: ['index', 'show']),
             new Middleware('permission:orders.create', only: ['create', 'store']),
-            new Middleware('permission:orders.edit', only: ['edit', 'update', 'importBulkDeliver', 'importBulkReturn']),
+            new Middleware('permission:orders.edit', only: ['edit', 'update']),
             new Middleware('permission:orders.delete', only: ['destroy']),
             new Middleware('permission:orders.confirm', only: ['confirm']),
             new Middleware('permission:orders.ship', only: ['ship']),
             new Middleware('permission:orders.dispatch', only: ['dispatch']),
             new Middleware('permission:orders.processing', only: ['markProcessing']),
-            new Middleware('permission:orders.deliver', only: ['markDelivered']),
+            new Middleware('permission:orders.deliver', only: ['markDelivered', 'importBulkDeliver']),
             new Middleware('permission:orders.cancel', only: ['cancel']),
-            new Middleware('permission:orders.return', only: ['markReturned']),
+            new Middleware('permission:orders.return', only: ['markReturned', 'importBulkReturn']),
             new Middleware('permission:orders.invoice_pdf', only: ['downloadInvoice']),
             new Middleware('permission:orders.generate_invoice', only: ['generateInvoice', 'generateBulkInvoices']),
             new Middleware('permission:orders.cod', only: ['downloadReceipt']),
@@ -1244,6 +1244,11 @@ class OrderController extends Controller implements HasMiddleware
                     } elseif ($targetStatus === 'delivered') {
                         if (in_array($order->status, ['dispatched', 'shipped'], true)) {
                             $inventoryService->deliverOrder($order);
+                            $shipment = $order->shipments()->latest()->first();
+                            if ($shipment) {
+                                $shipment->delivered_by = auth()->user()->name;
+                                $shipment->save();
+                            }
                             $order->statusLogs()->create([
                                 'status' => 'delivered',
                                 'notes' => 'Bulk status updated to delivered.',
@@ -2108,6 +2113,11 @@ class OrderController extends Controller implements HasMiddleware
                 }
 
                 $inventoryService->deliverOrder($order);
+                $shipment = $order->shipments()->latest()->first();
+                if ($shipment) {
+                    $shipment->delivered_by = auth()->user()->name;
+                    $shipment->save();
+                }
                 $order->statusLogs()->create([
                     'status' => 'delivered',
                     'notes' => 'Bulk CSV updated to delivered.',
