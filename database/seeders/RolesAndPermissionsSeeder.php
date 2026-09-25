@@ -659,6 +659,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'chat-view',
             'chat-create',
             'chat-delete',
+            'audit-log-view',
         ],
         'Operations' => [
             'sidebar-view',
@@ -722,6 +723,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'chat-view',
             'chat-create',
             'chat-delete',
+            'audit-log-view',
         ],
         'Team Leader' => [
             'sidebar-view',
@@ -835,6 +837,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'chat-view',
             'chat-create',
             'chat-delete',
+            'audit-log-view',
         ],
     ];
 
