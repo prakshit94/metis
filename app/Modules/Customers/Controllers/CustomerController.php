@@ -343,6 +343,7 @@ class CustomerController extends Controller implements HasMiddleware
                 'complaints as active_complaints' => function ($q) {
                     $q->whereNotIn('status', ['resolved', 'closed']);
                 },
+                'orders',
             ])
             ->with([
                 'addresses.village.services',
@@ -375,8 +376,24 @@ class CustomerController extends Controller implements HasMiddleware
                 'callLogs' => function ($q) {
                     $q->latest()->limit(15)->with(['agent', 'tagL1', 'tagL2', 'tagL3', 'metas']);
                 },
+                'walletTransactions' => function ($q) {
+                    $q->latest()->limit(50)->with('creator:id,first_name,last_name,name');
+                },
             ])
             ->findOrFail($customer);
+
+        if (class_exists(\App\Modules\Orders\Models\Invoice::class)) {
+            $invoices = \App\Modules\Orders\Models\Invoice::join('orders', 'invoices.order_id', '=', 'orders.id')
+                ->where('orders.party_id', $customer->id)
+                ->whereIn('invoices.status', ['unpaid', 'partially_paid'])
+                ->get();
+            
+            $due = 0;
+            foreach ($invoices as $invoice) {
+                $due += $invoice->due_amount;
+            }
+            $customer->setAttribute('calculated_outstanding', (float) $due);
+        }
 
         if ($request->wantsJson() || $request->ajax()) {
             return response()->json([

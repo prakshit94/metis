@@ -623,6 +623,9 @@ class OrderController extends Controller implements HasMiddleware
                         'shipments',
                     ]);
                 },
+                'walletTransactions' => function ($q) {
+                    $q->latest()->limit(50)->with('creator:id,first_name,last_name,name');
+                },
             ])->withCount([
                 'referrals as total_farmers_referred',
                 'referredOrders as total_referred_orders_placed',
@@ -682,6 +685,9 @@ class OrderController extends Controller implements HasMiddleware
                             'statusLogs',
                             'shipments',
                         ]);
+                    },
+                    'walletTransactions' => function ($q) {
+                        $q->latest()->limit(50)->with('creator:id,first_name,last_name,name');
                     },
                 ])->withCount([
                     'referrals as total_farmers_referred',

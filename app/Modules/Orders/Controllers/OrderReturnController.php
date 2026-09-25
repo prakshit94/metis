@@ -445,24 +445,60 @@ class OrderReturnController extends Controller implements HasMiddleware
             $return->update(['status' => 'completed']);
             $return->load('order.invoice');
 
-            if ($refundAmount > 0 && $return->order->invoice && $return->order->invoice->paid_amount > 0) {
-                $refundable = min($refundAmount, $return->order->invoice->paid_amount);
+            $remainingRefund = $refundAmount;
 
-                $baseNo = str_replace('ORD-', 'REF-', $return->order->order_no);
-                if ($baseNo === $return->order->order_no) {
-                    $baseNo = 'REF-'.$return->order->order_no;
+            if ($remainingRefund > 0 && $return->order->invoice && $return->order->invoice->paid_amount > 0) {
+                $alreadyRefundedCash = Refund::where('order_id', $return->order_id)->sum('amount');
+                $availableCash = max(0, $return->order->invoice->paid_amount - $alreadyRefundedCash);
+                $refundable = min($remainingRefund, $availableCash);
+
+                if ($refundable > 0) {
+                    $baseNo = str_replace('ORD-', 'REF-', $return->order->order_no);
+                    if ($baseNo === $return->order->order_no) {
+                        $baseNo = 'REF-'.$return->order->order_no;
+                    }
+                    $count = Refund::where('order_id', $return->order_id)->count();
+                    $refundNo = $count > 0 ? $baseNo.'-'.($count + 1) : $baseNo;
+
+                    Refund::create([
+                        'refund_no' => $refundNo,
+                        'order_id' => $return->order_id,
+                        'invoice_id' => $return->order->invoice->id,
+                        'order_return_id' => $return->id,
+                        'amount' => $refundable,
+                        'status' => 'pending',
+                    ]);
+
+                    $remainingRefund -= $refundable;
                 }
-                $count = Refund::where('order_id', $return->order_id)->count();
-                $refundNo = $count > 0 ? $baseNo.'-'.($count + 1) : $baseNo;
+            }
 
-                Refund::create([
-                    'refund_no' => $refundNo,
-                    'order_id' => $return->order_id,
-                    'invoice_id' => $return->order->invoice->id,
-                    'order_return_id' => $return->id,
-                    'amount' => $refundable,
-                    'status' => 'pending',
-                ]);
+            if ($remainingRefund > 0 && $return->order->wallet_amount_used > 0 && $return->order->party_id) {
+                $walletRefundable = min($remainingRefund, (float) $return->order->wallet_amount_used);
+                
+                if ($walletRefundable > 0) {
+                    $party = \App\Modules\Customers\Models\Party::find($return->order->party_id);
+                    if ($party) {
+                        $balanceBefore = (float) $party->wallet_balance;
+                        $balanceAfter = $balanceBefore + $walletRefundable;
+                        $party->increment('wallet_balance', $walletRefundable);
+
+                        \App\Modules\Customers\Models\WalletTransaction::create([
+                            'party_id' => $party->id,
+                            'amount' => $walletRefundable,
+                            'type' => 'credit',
+                            'reference_type' => 'order_return',
+                            'reference_id' => $return->order->id,
+                            'description' => 'Wallet balance refunded due to order #'.$return->order->order_no.' return',
+                            'created_by' => auth()->id() ?? $return->order->created_by,
+                            'balance_before' => $balanceBefore,
+                            'balance_after' => $balanceAfter,
+                        ]);
+
+                        $return->order->wallet_amount_used -= $walletRefundable;
+                        $return->order->saveQuietly();
+                    }
+                }
             }
 
             // Update main order status to returned and log it

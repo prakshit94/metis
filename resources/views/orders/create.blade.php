@@ -344,7 +344,10 @@
                                             </div>
                                             <div class="d-flex justify-content-between align-items-center mb-1"><span class="text-body-secondary small">Limit</span><span class="fw-bold text-body-emphasis" style="font-size: 11px;">₹ <span x-text="Number(customerDetails.credit_limit || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})"></span></span></div>
                                             <div class="d-flex justify-content-between align-items-center mb-1"><span class="text-body-secondary small">Outstanding</span><span class="fw-bold" style="font-size: 11px;" :class="Number(customerDetails.calculated_outstanding) > 0 ? 'text-danger' : 'text-success'">₹ <span x-text="Number(customerDetails.calculated_outstanding || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})"></span></span></div>
-                                            <div class="d-flex justify-content-between align-items-center mb-1"><span class="text-body-secondary small">Wallet</span><span class="fw-bold text-success" style="font-size: 11px;">₹ <span x-text="Number(customerDetails.wallet_balance || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})"></span></span></div>
+                                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                                <span class="text-primary small cursor-pointer text-decoration-underline" @click="showWalletModal = true" title="View Wallet History">Wallet</span>
+                                                <span class="fw-bold text-success" style="font-size: 11px;">₹ <span x-text="Number(customerDetails.wallet_balance || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})"></span></span>
+                                            </div>
                                             
                                             <div class="d-flex justify-content-between align-items-center mb-1">
                                                 <span class="text-body-secondary small">Cr. Days</span><span class="fw-medium text-body-emphasis" style="font-size: 11px;" x-text="(customerDetails.credit_days || '0') + ' Days'"></span>
@@ -1072,12 +1075,14 @@
                                         </div>
                                         <div>
                                             <p class="mb-0 fw-bold text-success-emphasis fs-6" x-text="bestOrderOffer.name"></p>
-                                            <p class="mb-0 fw-semibold text-success opacity-75 small" x-text="'Saving ₹ ' + Number(orderOfferDiscountAmount).toFixed(2)"></p>
+                                            <p class="mb-0 fw-semibold text-success opacity-75 small">
+                                                <span x-show="orderOfferDiscountAmount > 0" x-text="'Saving ₹ ' + Number(orderOfferDiscountAmount).toFixed(2)"></span>
+                                                <template x-if="bestOrderOffer.cashback_percent > 0 || bestOrderOffer.cashback_fixed > 0">
+                                                    <span :class="{'ms-1 border-start border-success ps-1': orderOfferDiscountAmount > 0}" x-text="'Cashback: ₹ ' + Number((bestOrderOffer.cashback_fixed > 0 ? parseFloat(bestOrderOffer.cashback_fixed) : (subtotal * parseFloat(bestOrderOffer.cashback_percent) / 100))).toFixed(2)"></span>
+                                                </template>
+                                            </p>
                                         </div>
                                     </div>
-                                    <button type="button" @click.prevent="appliedOfferId = 'none'" class="btn btn-sm btn-outline-secondary text-body-secondary hover-danger rounded-circle p-0 d-flex align-items-center justify-content-center shadow-sm" style="width: 28px; height: 28px;">
-                                        <i class="bi bi-x-lg"></i>
-                                    </button>
                                 </div>
                             </template>
 
@@ -1086,7 +1091,7 @@
                                 <div class="d-flex align-items-center justify-content-between gap-3 px-3 py-2 rounded-4 bg-success bg-opacity-10 border border-success border-opacity-25 shadow-sm transition-all hover-shadow">
                                     <div class="d-flex align-items-center gap-3">
                                         <div class="text-bg-success-subtle text-success-emphasis-emphasis rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 32px; height: 32px;">
-                                            <i class="bi bi-check-lg fs-5"></i>
+                                            <i class="bi bi-ticket-perforated fs-5"></i>
                                         </div>
                                         <div>
                                             <p class="mb-0 fw-bold text-success-emphasis fs-6" x-text="'Coupon: ' + couponCode"></p>
@@ -1100,12 +1105,12 @@
                                                 <template x-if="appliedCouponObj && appliedCouponObj.type !== 'free_shipping' && appliedCouponObj.type !== 'free_product'">
                                                     <span x-text="'Saving ₹ ' + Number(couponDiscount).toFixed(2)"></span>
                                                 </template>
+                                                <template x-if="appliedCouponObj && (appliedCouponObj.cashback_percent > 0 || appliedCouponObj.cashback_fixed > 0)">
+                                                    <span class="ms-1 border-start border-success ps-1" x-text="'Cashback: ₹ ' + Number((appliedCouponObj.cashback_fixed > 0 ? parseFloat(appliedCouponObj.cashback_fixed) : (subtotal * parseFloat(appliedCouponObj.cashback_percent) / 100))).toFixed(2)"></span>
+                                                </template>
                                             </p>
                                         </div>
                                     </div>
-                                    <button type="button" @click.prevent="removeCoupon()" class="btn btn-sm btn-outline-secondary text-body-secondary hover-danger rounded-circle p-0 d-flex align-items-center justify-content-center shadow-sm" style="width: 28px; height: 28px;">
-                                        <i class="bi bi-x-lg"></i>
-                                    </button>
                                 </div>
                             </template>
 
@@ -1536,7 +1541,7 @@
                                 <template x-for="offer in sortedActiveOffers" :key="offer.id">
                                     <div class="card border-2 rounded-4 transition-all hover-shadow" 
                                          :class="['bogo', 'free_product'].includes(offer.type) ? 'border-info border-opacity-25 bg-info bg-opacity-10' : ((bestOrderOffer && bestOrderOffer.id === offer.id) ? 'border-success bg-success bg-opacity-10' : (orderOfferDiscount(offer) > 0 ? 'border-secondary border-opacity-10 bg-body-tertiary cursor-pointer' : 'border-secondary border-opacity-10 bg-body-secondary opacity-75'))" 
-                                         @click="if(['order_discount', 'category_discount'].includes(offer.type) && orderOfferDiscount(offer) > 0) appliedOfferId = ((bestOrderOffer && bestOrderOffer.id === offer.id) ? 'none' : offer.id)">
+                                         @click="if(['order_discount', 'category_discount'].includes(offer.type) && orderOfferDiscount(offer) > 0) appliedOfferId = offer.id">
                                         <div class="card-body p-3 d-flex align-items-center justify-content-between gap-3">
                                             <div class="d-flex align-items-center gap-3">
                                                 <div class="border border-dashed border-2 rounded-3 p-2 bg-body text-center d-flex flex-column justify-content-center align-items-center" style="min-width: 90px; height: 90px;">
@@ -1995,7 +2000,7 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <template x-for="item in cart" :key="item.id">
+                                    <template x-for="(item, idx) in cart" :key="item.id + '_' + (item.is_gift ? item.gift_source : 'paid')">
                                         <tr>
                                             <td class="text-start ps-3 py-2">
                                                 <div class="d-flex align-items-center gap-2">
@@ -2110,7 +2115,10 @@
                                 </div>
 
                                 <div class="d-flex justify-content-between mb-1 small text-info" x-show="cashbackEarned > 0" x-cloak>
-                                    <span class="text-info">Cashback Earned:</span>
+                                    <div>
+                                        <span class="text-info">Cashback Earned:</span>
+                                        <div style="font-size: 9px; opacity: 0.8;" x-text="cashbackSources"></div>
+                                    </div>
                                     <span class="fw-bold" x-text="'+ ₹ ' + Number(cashbackEarned).toFixed(2)"></span>
                                 </div>
                                 
@@ -2689,6 +2697,64 @@
         </div>
     </div>
 </div>
+
+<!-- Wallet History Modal -->
+<div x-show="showWalletModal" style="display: none; z-index: 1060;" class="position-fixed inset-0" x-cloak>
+    <div class="modal d-block align-items-center justify-content-center" tabindex="-1" style="background: rgba(0,0,0,0.5); z-index: 1060;">
+        <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable" @click.away="showWalletModal = false">
+            <div class="modal-content shadow-lg border-0 rounded-4">
+                <div class="modal-header bg-success bg-opacity-10 border-bottom-0 pb-3">
+                    <h5 class="modal-title fw-bold text-success"><i class="bi bi-wallet2 me-2"></i>Wallet History</h5>
+                    <button type="button" class="btn-close" @click="showWalletModal = false"></button>
+                </div>
+                <div class="modal-body p-4 pt-0" style="max-height: 70vh; overflow-y: auto;">
+                    <template x-if="!customerDetails?.wallet_transactions || customerDetails.wallet_transactions.length === 0">
+                        <div class="text-center p-4 text-secondary">
+                            <i class="bi bi-inbox fs-2 mb-2"></i>
+                            <p>No wallet transactions found.</p>
+                        </div>
+                    </template>
+                    <template x-if="customerDetails?.wallet_transactions?.length > 0">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light sticky-top">
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Description</th>
+                                        <th>Type</th>
+                                        <th>Bal. Before</th>
+                                        <th>Amount</th>
+                                        <th>Bal. After</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <template x-for="tx in customerDetails.wallet_transactions" :key="tx.id">
+                                        <tr>
+                                            <td style="font-size: 11px;" x-text="new Date(tx.created_at).toLocaleString('en-IN', { day: '2-digit', month: 'short', year:'numeric', hour: '2-digit', minute:'2-digit', hour12: true })"></td>
+                                            <td style="font-size: 11px;">
+                                                <span x-text="tx.description"></span>
+                                                <div class="text-secondary opacity-75" style="font-size: 9px;" x-show="tx.reference_type" x-text="(tx.reference_type || '').replace(/_/g, ' ').toUpperCase() + (tx.reference_id ? ' #' + tx.reference_id : '')"></div>
+                                            </td>
+                                            <td>
+                                                <span class="badge" style="font-size: 9px;" :class="tx.type === 'credit' ? 'bg-success' : 'bg-danger'" x-text="tx.type.toUpperCase()"></span>
+                                            </td>
+                                            <td class="text-secondary" style="font-size: 11px;">₹<span x-text="Number(tx.balance_before || 0).toFixed(2)"></span></td>
+                                            <td class="fw-bold" style="font-size: 11px;" :class="tx.type === 'credit' ? 'text-success' : 'text-danger'">
+                                                <span x-text="tx.type === 'credit' ? '+' : '-'"></span>₹<span x-text="Number(tx.amount).toFixed(2)"></span>
+                                            </td>
+                                            <td class="fw-medium text-primary" style="font-size: 11px;">₹<span x-text="Number(tx.balance_after || 0).toFixed(2)"></span></td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </table>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 </div>
     </div>
 
@@ -2747,6 +2813,7 @@ function createOrderApp(initialCustomer = null, initialOrder = null) {
     return {
         activeTab: 'customer',
         selectedOrder: null,
+        showWalletModal: false,
         formatMoney(value) {
             const amount = Number.parseFloat(value ?? 0);
             return Number.isFinite(amount) ? amount : 0;
@@ -4683,8 +4750,21 @@ mapOrder(o) {
                 this.cart = [];
                 const successMsg = this.editingOrderId ? 'Order Updated!' : 'Order Placed!';
                 window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'success', message: successMsg } }));
-                this.loadAddresses(); // Refresh the customer's recent orders list
+                
+                // Clear the form fields to fully "refresh" the internal state natively
+                this.orderStatus = 'pending';
+                this.futureOrderDate = '';
+                this.couponCode = '';
+                this.couponApplied = false;
+                this.appliedCouponObj = null;
+                this.appliedOfferId = null;
+                this.useWalletBalance = false;
+                this.formErrors = [];
+                
+                await this.loadAddresses(); // Refresh the customer's recent orders list and wallet balance
                 this.searchProducts(); // Refresh the products list to update inventory stock
+                this.activeTab = 'customer'; // Revert back to the customer profile natively
+                
                 if (this.editingOrderId) {
                     this.editingOrderId = null;
                     this.editingOrderNo = null;

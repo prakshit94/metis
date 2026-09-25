@@ -20,10 +20,14 @@ class WalletTransaction extends Model
         'reference_id',
         'description',
         'created_by',
+        'balance_before',
+        'balance_after',
     ];
 
     protected $casts = [
         'amount' => 'decimal:2',
+        'balance_before' => 'decimal:2',
+        'balance_after' => 'decimal:2',
     ];
 
     public function party(): BelongsTo

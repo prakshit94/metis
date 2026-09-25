@@ -1206,7 +1206,9 @@ class InventoryService
                                     ]);
 
                                     if ($milestone->reward_type === 'wallet') {
-                                        $referrer->wallet_balance += $rewardAmount;
+                                        $balanceBefore = (float) $referrer->wallet_balance;
+                                        $balanceAfter = $balanceBefore + $rewardAmount;
+                                        $referrer->wallet_balance = $balanceAfter;
                                         $referrer->save();
 
                                         WalletTransaction::create([
@@ -1217,6 +1219,8 @@ class InventoryService
                                             'reference_id' => $rewardId,
                                             'description' => 'Referral reward for referring customer '.trim($party->firstname.' '.$party->lastname),
                                             'created_by' => auth()->id() ?? $order->created_by,
+                                            'balance_before' => $balanceBefore,
+                                            'balance_after' => $balanceAfter,
                                         ]);
                                     } elseif ($milestone->reward_type === 'coupon') {
                                         $couponCode = 'REF-'.strtoupper(Str::random(8));
@@ -1424,7 +1428,9 @@ class InventoryService
             if ($reward->reward_type === 'wallet') {
                 $referrer = Party::find($reward->referrer_id);
                 if ($referrer) {
-                    $referrer->wallet_balance = max(0, $referrer->wallet_balance - $reward->reward_amount);
+                    $balanceBefore = (float) $referrer->wallet_balance;
+                    $balanceAfter = max(0, $balanceBefore - $reward->reward_amount);
+                    $referrer->wallet_balance = $balanceAfter;
                     $referrer->save();
 
                     WalletTransaction::create([
@@ -1435,6 +1441,8 @@ class InventoryService
                         'reference_id' => $reward->id,
                         'description' => 'Referral reward revoked due to order return/revert',
                         'created_by' => auth()->id() ?? $order->created_by,
+                        'balance_before' => $balanceBefore,
+                        'balance_after' => $balanceAfter,
                     ]);
                 }
             } elseif (in_array($reward->reward_type, ['coupon', 'product'])) {
@@ -1466,6 +1474,8 @@ class InventoryService
         if ($order->wallet_amount_used > 0 && $order->party_id) {
             $party = Party::find($order->party_id);
             if ($party) {
+                $balanceBefore = (float) $party->wallet_balance;
+                $balanceAfter = $balanceBefore + (float) $order->wallet_amount_used;
                 $party->increment('wallet_balance', (float) $order->wallet_amount_used);
 
                 WalletTransaction::create([
@@ -1476,6 +1486,8 @@ class InventoryService
                     'reference_id' => $order->id,
                     'description' => 'Wallet balance refunded due to order #'.$order->order_no.' cancellation',
                     'created_by' => auth()->id() ?? $order->created_by,
+                    'balance_before' => $balanceBefore,
+                    'balance_after' => $balanceAfter,
                 ]);
 
                 $order->wallet_amount_used = 0;
@@ -1506,7 +1518,9 @@ class InventoryService
             if ($amountToCredit > 0) {
                 $party = Party::find($order->party_id);
                 if ($party) {
-                    $party->wallet_balance += $amountToCredit;
+                    $balanceBefore = (float) $party->wallet_balance;
+                    $balanceAfter = $balanceBefore + $amountToCredit;
+                    $party->wallet_balance = $balanceAfter;
                     $party->save();
 
                     WalletTransaction::create([
@@ -1517,6 +1531,8 @@ class InventoryService
                         'reference_id' => $order->id,
                         'description' => 'Cashback earned from delivered order #'.$order->order_no,
                         'created_by' => auth()->id() ?? $order->created_by,
+                        'balance_before' => $balanceBefore,
+                        'balance_after' => $balanceAfter,
                     ]);
                 }
             }
@@ -1547,7 +1563,9 @@ class InventoryService
                     // Prevent negative balance, cap at 0
                     $clawbackAmount = min((float) $party->wallet_balance, (float) $netCredited);
 
-                    $party->wallet_balance = max(0, $party->wallet_balance - $netCredited);
+                    $balanceBefore = (float) $party->wallet_balance;
+                    $balanceAfter = max(0, $balanceBefore - $netCredited);
+                    $party->wallet_balance = $balanceAfter;
                     $party->save();
 
                     if ($clawbackAmount > 0) {
@@ -1559,6 +1577,8 @@ class InventoryService
                             'reference_id' => $order->id,
                             'description' => 'Cashback revoked due to order #'.$order->order_no.' return/revert',
                             'created_by' => auth()->id() ?? $order->created_by,
+                            'balance_before' => $balanceBefore,
+                            'balance_after' => $balanceAfter,
                         ]);
                     }
 

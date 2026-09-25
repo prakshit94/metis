@@ -20,6 +20,8 @@ return new class extends Migration
             $table->unsignedBigInteger('reference_id')->nullable();
             $table->string('description')->nullable();
             $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->decimal('balance_before', 15, 2)->default(0);
+            $table->decimal('balance_after', 15, 2)->default(0);
             $table->timestamps();
 
             $table->index(['reference_type', 'reference_id'], 'idx_wallet_reference');

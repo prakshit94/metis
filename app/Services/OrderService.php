@@ -200,6 +200,8 @@ class OrderService
                         $usedAmount = $party->wallet_balance;
                         $order->update(['net_amount' => $netPayable, 'wallet_amount_used' => $usedAmount]);
                     }
+                    $balanceBefore = (float) $party->wallet_balance;
+                    $balanceAfter = $balanceBefore - (float) $usedAmount;
                     $party->decrement('wallet_balance', (float) $usedAmount);
 
                     WalletTransaction::create([
@@ -210,6 +212,8 @@ class OrderService
                         'reference_id' => $order->id,
                         'description' => 'Wallet balance redeemed on order #'.$order->order_no,
                         'created_by' => auth()->id() ?? $order->created_by,
+                        'balance_before' => $balanceBefore,
+                        'balance_after' => $balanceAfter,
                     ]);
                 }
             }
@@ -1044,8 +1048,12 @@ class OrderService
         }
         // Dispatch Notification (fail-safe: never break core flow)
         try {
-            $admins = User::role(['Admin', 'Super Admin', 'Support'])->get();
-            Notification::send($admins, new OrderStatusChangedNotification($order->order_no, $status));
+            $usersToNotify = User::role(['Admin', 'Super Admin', 'Support'])->get();
+            $order->loadMissing('creator');
+            if ($order->creator && !$usersToNotify->contains('id', $order->creator->id)) {
+                $usersToNotify->push($order->creator);
+            }
+            Notification::send($usersToNotify, new OrderStatusChangedNotification($order->order_no, $status));
         } catch (\Throwable) {
             // Silently fail — notification delivery is non-critical
         }
