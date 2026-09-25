@@ -335,13 +335,11 @@
                                                       'low-stock':    parseFloat(item.quantity || 0) - parseFloat(item.reserved_qty || 0) > 0 && parseFloat(item.quantity || 0) - parseFloat(item.reserved_qty || 0) <= (item.product?.min_stock_level ?? 5),
                                                       'out-of-stock': parseFloat(item.quantity || 0) - parseFloat(item.reserved_qty || 0) <= 0
                                                   }"
-                                                  x-text="parseFloat(item.quantity || 0)">
-                                            </span>
+                                                  ><i class="bi bi-inboxes me-1"></i><span x-text="parseFloat(item.quantity || 0)"></span></span>
                                         </div>
                                     </td>
                                     <td class="text-center">
-                                        <span class="badge bg-warning-subtle text-warning border border-warning-subtle"
-                                              x-text="parseFloat(item.reserved_qty || 0).toFixed(2)"></span>
+                                        <span class="badge bg-warning-subtle text-warning border border-warning-subtle"><i class="bi bi-bookmark-dash me-1"></i><span x-text="parseFloat(item.reserved_qty || 0).toFixed(2)"></span></span>
                                     </td>
                                     <td class="text-center">
                                         <div class="d-flex align-items-center justify-content-center gap-1">
@@ -351,85 +349,66 @@
                                                       'low-stock':    (parseFloat(item.quantity||0) - parseFloat(item.reserved_qty||0) - parseFloat(item.pending_qty||0)) > 0 && (parseFloat(item.quantity||0) - parseFloat(item.reserved_qty||0) - parseFloat(item.pending_qty||0)) <= 5,
                                                       'out-of-stock': (parseFloat(item.quantity||0) - parseFloat(item.reserved_qty||0) - parseFloat(item.pending_qty||0)) <= 0
                                                   }"
-                                                  x-text="parseFloat(Math.max(0, parseFloat(item.quantity||0) - parseFloat(item.reserved_qty||0) - parseFloat(item.pending_qty||0))).toFixed(2)">
-                                            </span>
+                                                  ><i class="bi bi-check-circle me-1"></i><span x-text="parseFloat(Math.max(0, parseFloat(item.quantity||0) - parseFloat(item.reserved_qty||0) - parseFloat(item.pending_qty||0))).toFixed(2)"></span></span>
                                         </div>
                                     </td>
                                     <td class="text-center border-end">
-                                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle"
-                                              x-text="parseFloat(item.damaged_qty || 0).toFixed(2)"></span>
+                                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle"><i class="bi bi-exclamation-octagon me-1"></i><span x-text="parseFloat(item.damaged_qty || 0).toFixed(2)"></span></span>
                                     </td>
 
                                     <!-- Order Statuses Pipeline -->
                                     <td class="text-center">
-                                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle"
-                                              x-text="parseFloat(item.future_order_qty || 0).toFixed(2)"></span>
+                                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle"><i class="bi bi-calendar-event me-1"></i><span x-text="parseFloat(item.future_order_qty || 0).toFixed(2)"></span></span>
                                     </td>
                                     <td class="text-center">
-                                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle"
-                                              x-text="parseFloat(Math.min(parseFloat(item.pending_qty||0), Math.max(0, parseFloat(item.quantity||0) - parseFloat(item.reserved_qty||0)))).toFixed(2)"></span>
+                                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle"><i class="bi bi-hourglass-split me-1"></i><span x-text="parseFloat(Math.min(parseFloat(item.pending_qty||0), Math.max(0, parseFloat(item.quantity||0) - parseFloat(item.reserved_qty||0)))).toFixed(2)"></span></span>
                                     </td>
                                     <td class="text-center">
-                                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle"
-                                              x-text="parseFloat(Math.max(0, parseFloat(item.pending_qty||0) - Math.max(0, parseFloat(item.quantity||0) - parseFloat(item.reserved_qty||0)))).toFixed(2)"></span>
+                                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle"><i class="bi bi-x-octagon me-1"></i><span x-text="parseFloat(Math.max(0, parseFloat(item.pending_qty||0) - Math.max(0, parseFloat(item.quantity||0) - parseFloat(item.reserved_qty||0)))).toFixed(2)"></span></span>
                                     </td>
                                     <td class="text-center">
-                                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle"
-                                              x-text="parseFloat(item.pending_confirmation_qty || 0).toFixed(2)"></span>
+                                        <span class="badge bg-warning-subtle text-warning border border-warning-subtle"><i class="bi bi-clock-history me-1"></i><span x-text="parseFloat(item.pending_confirmation_qty || 0).toFixed(2)"></span></span>
                                     </td>
                                     <td class="text-center">
-                                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle"
-                                              x-text="parseFloat(item.confirmed_qty || 0).toFixed(2)"></span>
+                                        <span class="badge bg-info-subtle text-info border border-info-subtle"><i class="bi bi-check2-circle me-1"></i><span x-text="parseFloat(item.confirmed_qty || 0).toFixed(2)"></span></span>
                                     </td>
                                     <td class="text-center">
-                                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle"
-                                              x-text="parseFloat(item.processing_qty || 0).toFixed(2)"></span>
+                                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle"><i class="bi bi-gear me-1"></i><span x-text="parseFloat(item.processing_qty || 0).toFixed(2)"></span></span>
                                     </td>
                                     <td class="text-center">
-                                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle"
-                                              x-text="parseFloat(item.ready_to_ship_qty || 0).toFixed(2)"></span>
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle"><i class="bi bi-box-seam-fill me-1"></i><span x-text="parseFloat(item.ready_to_ship_qty || 0).toFixed(2)"></span></span>
                                     </td>
                                     <td class="text-center">
-                                        <span class="badge bg-info-subtle text-info border border-info-subtle"
-                                              x-text="parseFloat((parseFloat(item.dispatched_qty || 0) + parseFloat(item.in_transit_qty || 0)).toFixed(2))"></span>
+                                        <span class="badge bg-info-subtle text-info border border-info-subtle"><i class="bi bi-send-check me-1"></i><span x-text="parseFloat((parseFloat(item.dispatched_qty || 0) + parseFloat(item.in_transit_qty || 0)).toFixed(2))"></span></span>
                                     </td>
                                     <td class="text-center">
-                                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle"
-                                              x-text="parseFloat(item.delivery_attempted_qty || 0).toFixed(2)"></span>
+                                        <span class="badge bg-warning-subtle text-warning border border-warning-subtle"><i class="bi bi-exclamation-triangle me-1"></i><span x-text="parseFloat(item.delivery_attempted_qty || 0).toFixed(2)"></span></span>
                                     </td>
                                     <td class="text-center">
-                                        <span class="badge bg-success-subtle text-success border border-success-subtle"
-                                              x-text="parseFloat(item.delivered_qty || 0).toFixed(2)"></span>
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle"><i class="bi bi-box2-heart me-1"></i><span x-text="parseFloat(item.delivered_qty || 0).toFixed(2)"></span></span>
                                     </td>
                                     <td class="text-center border-end">
-                                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle"
-                                              x-text="parseFloat(item.cancelled_qty || 0).toFixed(2)"></span>
+                                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle"><i class="bi bi-x-circle me-1"></i><span x-text="parseFloat(item.cancelled_qty || 0).toFixed(2)"></span></span>
                                     </td>
 
                                     <!-- Return Statuses Pipeline -->
                                     <td class="text-center">
-                                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle"
-                                              x-text="parseFloat(item.return_requested_qty || 0).toFixed(2)"></span>
+                                        <span class="badge bg-warning-subtle text-warning border border-warning-subtle"><i class="bi bi-arrow-return-left me-1"></i><span x-text="parseFloat(item.return_requested_qty || 0).toFixed(2)"></span></span>
                                     </td>
                                     <td class="text-center">
-                                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle"
-                                              x-text="parseFloat(item.return_pending_qty || 0).toFixed(2)"></span>
+                                        <span class="badge bg-warning-subtle text-warning border border-warning-subtle"><i class="bi bi-clock me-1"></i><span x-text="parseFloat(item.return_pending_qty || 0).toFixed(2)"></span></span>
                                     </td>
                                     <td class="text-center">
-                                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle"
-                                              x-text="parseFloat(item.return_approved_qty || 0).toFixed(2)"></span>
+                                        <span class="badge bg-info-subtle text-info border border-info-subtle"><i class="bi bi-hand-thumbs-up me-1"></i><span x-text="parseFloat(item.return_approved_qty || 0).toFixed(2)"></span></span>
                                     </td>
                                     <td class="text-center">
-                                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle"
-                                              x-text="parseFloat(item.return_received_qty || 0).toFixed(2)"></span>
+                                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle"><i class="bi bi-box-arrow-in-down me-1"></i><span x-text="parseFloat(item.return_received_qty || 0).toFixed(2)"></span></span>
                                     </td>
                                     <td class="text-center">
-                                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle"
-                                              x-text="parseFloat(item.return_qc_qty || 0).toFixed(2)"></span>
+                                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle"><i class="bi bi-search me-1"></i><span x-text="parseFloat(item.return_qc_qty || 0).toFixed(2)"></span></span>
                                     </td>
                                     <td class="text-center border-end">
-                                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle"
-                                              x-text="parseFloat(item.return_rejected_qty || 0).toFixed(2)"></span>
+                                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle"><i class="bi bi-x-square me-1"></i><span x-text="parseFloat(item.return_rejected_qty || 0).toFixed(2)"></span></span>
                                     </td>
                                     @canany(['stockmanagement-edit', 'stocktransfer-create'])
                                     <td class="text-end pe-4">
