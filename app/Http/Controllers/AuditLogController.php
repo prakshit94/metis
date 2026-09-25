@@ -265,7 +265,13 @@ class AuditLogController extends Controller implements HasMiddleware
         // Preserve the existing visibility rule: only Super Admins see the
         // system-wide feed; other authorised users see their own actions.
         if (! $user->hasRole('Super Admin')) {
-            $query->where('causer_id', $user->id);
+            $query->where(function ($q) use ($user) {
+                $q->where('causer_id', $user->id)
+                  ->orWhere(function ($subQ) use ($user) {
+                      $subQ->where('subject_type', \App\Modules\Orders\Models\Order::class)
+                           ->whereIn('subject_id', \App\Modules\Orders\Models\Order::where('created_by', $user->id)->select('id'));
+                  });
+            });
         }
 
         return $query;

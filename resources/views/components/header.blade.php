@@ -463,7 +463,13 @@
     if ($canViewActivities) {
         $activityQuery = \Spatie\Activitylog\Models\Activity::with(['causer', 'subject'])->latest();
         if (! $notificationUser->hasRole('Super Admin')) {
-            $activityQuery->where('causer_id', $notificationUser->id);
+            $activityQuery->where(function ($q) use ($notificationUser) {
+                $q->where('causer_id', $notificationUser->id)
+                  ->orWhere(function ($subQ) use ($notificationUser) {
+                      $subQ->where('subject_type', \App\Modules\Orders\Models\Order::class)
+                           ->whereIn('subject_id', \App\Modules\Orders\Models\Order::where('created_by', $notificationUser->id)->select('id'));
+                  });
+            });
         }
         $activityRecords = $activityQuery->limit(50)->get();
         $initialReadIds = $notificationUser->readActivities()
@@ -485,7 +491,13 @@
         });
         $recentQuery = \Spatie\Activitylog\Models\Activity::latest('id');
         if (! $notificationUser->hasRole('Super Admin')) {
-            $recentQuery->where('causer_id', $notificationUser->id);
+            $recentQuery->where(function ($q) use ($notificationUser) {
+                $q->where('causer_id', $notificationUser->id)
+                  ->orWhere(function ($subQ) use ($notificationUser) {
+                      $subQ->where('subject_type', \App\Modules\Orders\Models\Order::class)
+                           ->whereIn('subject_id', \App\Modules\Orders\Models\Order::where('created_by', $notificationUser->id)->select('id'));
+                  });
+            });
         }
         $recentIds = $recentQuery->limit(500)->pluck('id');
         $readIdsForCount = $notificationUser->readActivities()->whereIn('activity_id', $recentIds)->pluck('activity_id');

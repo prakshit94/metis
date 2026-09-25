@@ -236,7 +236,9 @@ class OrderService
 
             // Dispatch Notification (fail-safe: never break core flow)
             try {
-                $admins = User::role(['Admin', 'Super Admin', 'Sales Admin'])->get();
+                $admins = User::whereHas('roles', function ($q) {
+                    $q->whereIn('name', ['Admin', 'Super Admin', 'Sales Admin']);
+                })->get();
                 Notification::send($admins, new OrderCreatedNotification($order->order_no, (float) $order->net_amount, clone $order->party ? clone $order->party->name : 'Unknown'));
             } catch (\Throwable) {
                 // Silently fail — notification delivery is non-critical
@@ -1048,7 +1050,9 @@ class OrderService
         }
         // Dispatch Notification (fail-safe: never break core flow)
         try {
-            $usersToNotify = User::role(['Admin', 'Super Admin', 'Support'])->get();
+            $usersToNotify = User::whereHas('roles', function ($q) {
+                $q->whereIn('name', ['Admin', 'Super Admin', 'Support']);
+            })->get();
             $order->loadMissing('creator');
             if ($order->creator && !$usersToNotify->contains('id', $order->creator->id)) {
                 $usersToNotify->push($order->creator);
