@@ -1180,7 +1180,7 @@
                                         </template>
                                     </div>
                                 </template>
-                                <template x-if="(order.shipment?.next_followup_date || order.shipment?.delivery_attempts > 0) && (order.status === 'dispatched' || order.status === 'shipped' || order.status === 'delivery_attempted')">
+                                <template x-if="(order.shipment?.next_followup_date || order.shipment?.delivery_attempts > 0) && (order.status === 'dispatched' || order.status === 'delivery_attempted')">
                                     <div class="d-inline-block ms-2" style="font-size: 0.75rem;">
                                         <template x-if="order.shipment?.delivery_attempts > 0">
                                             <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 rounded-pill me-1" title="Delivery Attempts">
@@ -1244,7 +1244,7 @@
                                         <i class="bi bi-three-dots"></i>
                                     </button>
                                     <ul class="dropdown-menu dropdown-menu-end">
-                                        <template x-if="!['cancelled', 'delivered', 'returned', 'return_requested', 'dispatched', 'shipped', 'delivery_attempted'].includes(order.status)">
+                                        <template x-if="!['cancelled', 'delivered', 'returned', 'return_requested', 'dispatched', 'delivery_attempted'].includes(order.status)">
                                             @can('orders.edit')
                                             <li><a class="dropdown-item" href="#" @click.prevent="editOrder(order)">
                                                 <i class="bi bi-pencil-square me-2"></i>Edit Order
@@ -1281,14 +1281,14 @@
                                             </a></li>
                                             @endcan
                                         </template>
-                                        <template x-if="order.status === 'dispatched' || order.status === 'shipped' || order.status === 'delivery_attempted'">
+                                        <template x-if="order.status === 'dispatched' || order.status === 'delivery_attempted'">
                                             @can('orders.deliver')
                                             <li><a class="dropdown-item" href="#" @click.prevent="deliverOrder(order)">
                                                 <i class="bi bi-check2-all me-2"></i>Deliver
                                             </a></li>
                                             @endcan
                                         </template>
-                                        <template x-if="['dispatched', 'shipped', 'delivery_attempted'].includes(order.status)">
+                                        <template x-if="['dispatched', 'delivery_attempted'].includes(order.status)">
                                             @can('orders.return')
                                             <li><a class="dropdown-item text-warning" href="#" @click.prevent="returnOrder(order)">
                                                 <i class="bi bi-arrow-return-left me-2"></i>Return Order
@@ -1309,12 +1309,12 @@
                                         @endcan
                                         <li><hr class="dropdown-divider"></li>
                                         @can('orders.invoice_pdf')
-                                        <li x-show="['processing', 'ready_to_ship', 'dispatched', 'shipped', 'delivered', 'delivery_attempted'].includes(order.lifecycle_status || order.status)"><a class="dropdown-item" href="#" @click.prevent="printInvoice(order)">
+                                        <li x-show="['processing', 'ready_to_ship', 'dispatched', 'delivered', 'delivery_attempted'].includes(order.lifecycle_status || order.status)"><a class="dropdown-item" href="#" @click.prevent="printInvoice(order)">
                                             <i class="bi bi-file-pdf me-2"></i>Print Invoice
                                         </a></li>
                                         @endcan
                                         @can('orders.cod')
-                                        <li x-show="['processing', 'ready_to_ship', 'dispatched', 'shipped', 'delivered', 'delivery_attempted'].includes(order.lifecycle_status || order.status)"><a class="dropdown-item" href="#" @click.prevent="printCOD(order)">
+                                        <li x-show="['processing', 'ready_to_ship', 'dispatched', 'delivered', 'delivery_attempted'].includes(order.lifecycle_status || order.status)"><a class="dropdown-item" href="#" @click.prevent="printCOD(order)">
                                             <i class="bi bi-file-earmark-pdf me-2"></i>Print COD Receipt
                                         </a></li>
                                         @endcan
@@ -1616,7 +1616,7 @@
                                 <!-- Document Actions -->
                                 <div class="d-flex flex-wrap gap-2 mb-4 w-100">
                                     <template x-if="selectedOrder.invoice">
-                                        <div class="d-flex flex-wrap gap-2 w-100" x-show="['processing', 'ready_to_ship', 'dispatched', 'shipped', 'delivered', 'delivery_attempted'].includes(selectedOrder.lifecycle_status || selectedOrder.status)">
+                                        <div class="d-flex flex-wrap gap-2 w-100" x-show="['processing', 'ready_to_ship', 'dispatched', 'delivered', 'delivery_attempted'].includes(selectedOrder.lifecycle_status || selectedOrder.status)">
                                             @can('orders.invoice_pdf')
                                             <button class="btn btn-primary flex-grow-1 shadow-sm rounded-pill fw-semibold py-2 transition-all hover-shadow" @click="printInvoice(selectedOrder)">
                                                 <i class="bi bi-file-earmark-pdf me-2"></i>Print Invoice
@@ -1635,7 +1635,7 @@
                                         </div>
                                     </template>
                                     <template x-if="!selectedOrder.invoice">
-                                        <template x-if="['processing', 'ready_to_ship', 'dispatched', 'shipped', 'delivered', 'delivery_attempted'].includes(selectedOrder.lifecycle_status || selectedOrder.status)">
+                                        <template x-if="['processing', 'ready_to_ship', 'dispatched', 'delivered', 'delivery_attempted'].includes(selectedOrder.lifecycle_status || selectedOrder.status)">
                                             @can('orders.generate_invoice')
                                             <button class="btn btn-primary flex-grow-1 shadow-sm rounded-pill fw-semibold py-2 transition-all hover-shadow" @click="generateAndPrintInvoice(selectedOrder)">
                                                 <i class="bi bi-receipt-cutoff me-2"></i>Generate Invoice & Print
@@ -1653,7 +1653,7 @@
                                             <i class="bi bi-lightning-charge me-1"></i> Order Actions
                                         </h6>
                                         <div class="d-flex flex-wrap gap-2">
-                                            <template x-if="!['cancelled', 'delivered', 'returned', 'return_requested', 'dispatched', 'shipped', 'delivery_attempted'].includes(selectedOrder.status)">
+                                            <template x-if="!['cancelled', 'delivered', 'returned', 'return_requested', 'dispatched', 'delivery_attempted'].includes(selectedOrder.status)">
                                                 <button class="btn btn-sm btn-outline-secondary flex-grow-1 shadow-sm fw-semibold border-secondary border-opacity-25" @click="editOrder(selectedOrder)">
                                                     <i class="bi bi-pencil-square me-1"></i>Edit
                                                 </button>
@@ -1686,14 +1686,14 @@
                                                 </button>
                                                 @endcan
                                             </template>
-                                            <template x-if="selectedOrder.status === 'dispatched' || selectedOrder.status === 'shipped' || selectedOrder.status === 'delivery_attempted'">
+                                            <template x-if="selectedOrder.status === 'dispatched' || selectedOrder.status === 'delivery_attempted'">
                                                 @can('orders.deliver')
                                                 <button class="btn btn-sm btn-success flex-grow-1 shadow-sm fw-semibold" @click="deliverOrder(selectedOrder)">
                                                     <i class="bi bi-check2-all me-1"></i>Deliver
                                                 </button>
                                                 @endcan
                                             </template>
-                                            <template x-if="['dispatched', 'shipped', 'delivery_attempted'].includes(selectedOrder.status)">
+                                            <template x-if="['dispatched', 'delivery_attempted'].includes(selectedOrder.status)">
                                                 @can('orders.return')
                                                 <button class="btn btn-sm btn-outline-warning flex-grow-1 shadow-sm fw-semibold" @click="returnOrder(selectedOrder)">
                                                     <i class="bi bi-arrow-return-left me-1"></i>Return

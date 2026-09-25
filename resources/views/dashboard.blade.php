@@ -222,8 +222,8 @@
                                 <div class="d-flex justify-content-between align-items-center mb-2">
                                     <span class="text-muted small fw-semibold">Shipped</span>
                                     <div class="d-flex align-items-center gap-2">
-                                        <span class="fw-bold text-body-emphasis fs-6">{{ $orderStatusRaw['shipped'] ?? 0 }}</span>
-                                        <span class="badge bg-primary bg-opacity-25 text-primary-emphasis border border-primary border-opacity-50" style="font-size: 9px;">{{ $orderStatusPercent['shipped'] ?? 0 }}%</span>
+                                        <span class="fw-bold text-body-emphasis fs-6">{{ $orderStatusRaw['dispatched'] ?? 0 }}</span>
+                                        <span class="badge bg-primary bg-opacity-25 text-primary-emphasis border border-primary border-opacity-50" style="font-size: 9px;">{{ $orderStatusPercent['dispatched'] ?? 0 }}%</span>
                                     </div>
                                 </div>
                             </div>

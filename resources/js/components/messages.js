@@ -103,7 +103,7 @@ document.addEventListener('alpine:init', () => {
             },
             {
               id: 6,
-              text: 'Perfect! I can see your order here. It was shipped yesterday and the tracking number is TR123456789. You should receive an email with the details shortly.',
+              text: 'Perfect! I can see your order here. It was dispatched yesterday and the tracking number is TR123456789. You should receive an email with the details shortly.',
               time: '10:38 AM',
               sent: true,
             },

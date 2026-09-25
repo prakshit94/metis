@@ -860,7 +860,7 @@
                 }[priority] || 'bg-secondary bg-opacity-25 text-body';
             },
             getStatusTheme(status) {
-                return { pending:'warning', pending_confirmation:'info', confirmed:'primary', processing:'secondary', ready_to_ship:'dark', dispatched:'info', shipped:'info', delivered:'success', cancelled:'danger', returned:'danger' }[status] || 'secondary';
+                return { pending:'warning', pending_confirmation:'info', confirmed:'primary', processing:'secondary', ready_to_ship:'dark', dispatched:'info', delivered:'success', cancelled:'danger', returned:'danger' }[status] || 'secondary';
             },
 
             // ── Modal ──────────────────────────────────────────────────────────

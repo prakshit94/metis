@@ -197,7 +197,7 @@ export default () => {
         }
 
         providerMap[c].total++;
-        if (item.status === 'pending' || item.status === 'shipped') providerMap[c].pending++;
+        if (item.status === 'pending') providerMap[c].pending++;
         if (item.status === 'in_transit') providerMap[c].in_transit++;
         if (item.status === 'delivered') providerMap[c].delivered++;
         if (item.status === 'returned') providerMap[c].returned++;
@@ -285,7 +285,7 @@ export default () => {
     apiBase: '/api/shipping/shipments',
 
     normalizeStatus(status) {
-      return status === 'shipped' ? 'in_transit' : status;
+      return status;
     },
 
     init() {

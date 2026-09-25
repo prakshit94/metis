@@ -2690,18 +2690,18 @@
                     </div>
                     <div class="modal-footer bg-body-tertiary">
                         @can('complaints.create')
-                        <button type="button" x-show="['dispatched', 'shipped', 'delivered', 'returned', 'return_requested', 'delivery_attempted'].includes(selectedOrder.original.status || selectedOrder.original.lifecycle_status)" @click="$dispatch('open-complaint-modal', { order_no: selectedOrder.original.order_no || selectedOrder.original.order_number || '', customer_id: selectedOrder.original.party_id || '' }); bootstrap.Modal.getInstance(document.getElementById('orderDetailModal')).hide()" class="btn btn-outline-warning rounded-pill px-4 fw-bold">
+                        <button type="button" x-show="['dispatched', 'delivered', 'returned', 'return_requested', 'delivery_attempted'].includes(selectedOrder.original.status || selectedOrder.original.lifecycle_status)" @click="$dispatch('open-complaint-modal', { order_no: selectedOrder.original.order_no || selectedOrder.original.order_number || '', customer_id: selectedOrder.original.party_id || '' }); bootstrap.Modal.getInstance(document.getElementById('orderDetailModal')).hide()" class="btn btn-outline-warning rounded-pill px-4 fw-bold">
                             <i class="bi bi-headset me-1"></i> Raise Complaint
                             <span x-show="selectedOrder.original.complaints_count > 0" x-cloak class="badge bg-warning text-dark border border-warning border-opacity-75 ms-1" x-text="selectedOrder.original.complaints_count"></span>
                         </button>
                         @endcan
                         @can('orders.edit')
-                        <button type="button" class="btn btn-outline-primary rounded-pill px-4 fw-bold" @click="editOrder(selectedOrder.original.id); bootstrap.Modal.getInstance(document.getElementById('orderDetailModal')).hide()" x-show="!['delivered', 'cancelled', 'returned', 'return_requested', 'shipped', 'dispatched', 'delivery_attempted'].includes(selectedOrder.original.status || selectedOrder.original.lifecycle_status)">
+                        <button type="button" class="btn btn-outline-primary rounded-pill px-4 fw-bold" @click="editOrder(selectedOrder.original.id); bootstrap.Modal.getInstance(document.getElementById('orderDetailModal')).hide()" x-show="!['delivered', 'cancelled', 'returned', 'return_requested', 'dispatched', 'delivery_attempted'].includes(selectedOrder.original.status || selectedOrder.original.lifecycle_status)">
                             <i class="bi bi-pencil-square me-1"></i> Edit Order
                         </button>
                         @endcan
                         @can('orders.cancel')
-                        <button type="button" class="btn btn-outline-danger rounded-pill px-4 fw-bold" @click="cancelOrder(selectedOrder.original.id, selectedOrder.original.order_no || selectedOrder.original.order_number); bootstrap.Modal.getInstance(document.getElementById('orderDetailModal')).hide()" x-show="!['delivered', 'cancelled', 'returned', 'return_requested', 'shipped', 'dispatched', 'delivery_attempted'].includes(selectedOrder.original.status || selectedOrder.original.lifecycle_status)">
+                        <button type="button" class="btn btn-outline-danger rounded-pill px-4 fw-bold" @click="cancelOrder(selectedOrder.original.id, selectedOrder.original.order_no || selectedOrder.original.order_number); bootstrap.Modal.getInstance(document.getElementById('orderDetailModal')).hide()" x-show="!['delivered', 'cancelled', 'returned', 'return_requested', 'dispatched', 'delivery_attempted'].includes(selectedOrder.original.status || selectedOrder.original.lifecycle_status)">
                             <i class="bi bi-x-circle me-1"></i> Cancel Order
                         </button>
                         @endcan
@@ -2850,7 +2850,6 @@ getStatusTheme(status) {
         ready_to_ship: 'dark',
         dispatched: 'info',
         delivery_attempted: 'danger',
-        shipped: 'primary',
         delivered: 'success',
         cancelled: 'danger',
         return_requested: 'warning',
@@ -4808,7 +4807,6 @@ mapOrder(o) {
                 ready_to_ship: 'dark',
                 dispatched: 'info',
                 delivery_attempted: 'danger',
-                shipped: 'primary',
                 delivered: 'success',
                 cancelled: 'danger',
                 return_requested: 'warning',

@@ -1118,7 +1118,6 @@ document.addEventListener('alpine:init', () => {
         ready_to_ship: 'dark',
         dispatched: 'info',
         delivery_attempted: 'danger',
-        shipped: 'primary',
         delivered: 'success',
         cancelled: 'danger',
         return_requested: 'warning',
@@ -1230,9 +1229,9 @@ document.addEventListener('alpine:init', () => {
         // Ready to Ship → Dispatched
         canDispatch: statuses.has('ready_to_ship'),
         // Dispatched/Shipped → Delivered
-        canDeliver: statuses.has('dispatched') || statuses.has('shipped'),
-        // Return (delivered, dispatched, shipped)
-        canReturn: statuses.has('delivered') || statuses.has('dispatched') || statuses.has('shipped'),
+        canDeliver: statuses.has('dispatched'),
+        // Return (delivered, dispatched)
+        canReturn: statuses.has('delivered') || statuses.has('dispatched'),
         // Cancel (any order that is still active)
         canCancel: [...statuses].some((s) => cancellableStatuses.includes(s)),
       };
@@ -1243,7 +1242,7 @@ document.addEventListener('alpine:init', () => {
         this.selectedOrders.includes(String(o.id))
       );
 
-      const allowedStatuses = ['processing', 'ready_to_ship', 'dispatched', 'shipped', 'delivered'];
+      const allowedStatuses = ['processing', 'ready_to_ship', 'dispatched', 'delivered'];
       const canPrint =
         selectedOrderObjs.length > 0 &&
         selectedOrderObjs.some((o) => {
@@ -1683,7 +1682,6 @@ document.addEventListener('alpine:init', () => {
           options = { processing: 'Processing' };
           break;
         case 'dispatched':
-        case 'shipped':
           options = { ready_to_ship: 'Ready to Ship' };
           break;
         case 'delivered':
@@ -1973,7 +1971,7 @@ document.addEventListener('alpine:init', () => {
 
     async bulkPrint(type) {
       if (this.selectedOrders.length === 0) return;
-      const allowedStatuses = ['processing', 'ready_to_ship', 'dispatched', 'shipped', 'delivered'];
+      const allowedStatuses = ['processing', 'ready_to_ship', 'dispatched', 'delivered'];
       const validIds = this.orders
         .filter((o) => this.selectedOrders.includes(String(o.id)))
         .filter((o) => {
