@@ -2247,7 +2247,7 @@ class OrderController extends Controller implements HasMiddleware
                         'is_valid' => $isValid,
                         'customer' => $order && $order->party ? trim($order->party->firstname.' '.$order->party->lastname) : 'N/A',
                         'current_status' => $order ? $order->status : 'Not Found',
-                        'upcoming_status' => $isValid ? 'returned' : 'N/A',
+                        'upcoming_status' => $isValid ? 'return_requested' : 'N/A',
                         'error' => $errorMsg,
                     ];
                     continue;
@@ -2258,10 +2258,52 @@ class OrderController extends Controller implements HasMiddleware
                     continue;
                 }
 
-                $inventoryService->returnOrder($order);
+                // Replicate OrderReturnController logic for returns
+                $baseNo = str_replace('ORD-', 'RET-', $order->order_no);
+                if ($baseNo === $order->order_no) {
+                    $baseNo = 'RET-' . $order->order_no;
+                }
+                $returnCount = \App\Modules\Orders\Models\OrderReturn::where('order_id', $order->id)->count();
+                $returnNo = $returnCount > 0 ? $baseNo . '-' . ($returnCount + 1) : $baseNo;
+
+                $return = \App\Modules\Orders\Models\OrderReturn::create([
+                    'order_id' => $order->id,
+                    'return_no' => $returnNo,
+                    'status' => 'pending',
+                    'reason' => 'Bulk CSV Import',
+                    'notes' => 'Return requested via CSV import.',
+                ]);
+
+                $wasInTransit = in_array($order->status, \App\Modules\Orders\Models\Order::inTransitStatuses(), true);
+
+                foreach ($order->items as $item) {
+                    \App\Modules\Orders\Models\OrderReturnItem::create([
+                        'order_return_id' => $return->id,
+                        'product_id' => $item->product_id,
+                        'requested_qty' => $item->quantity,
+                    ]);
+
+                    if ($wasInTransit && $order->warehouse_id) {
+                        $stock = \App\Modules\Inventory\Models\Stock::where('product_id', $item->product_id)
+                            ->where('warehouse_id', $order->warehouse_id)
+                            ->lockForUpdate()
+                            ->first();
+
+                        if ($stock) {
+                            $stock->dispatched_qty = max(0.0, (float) $stock->dispatched_qty - (float) $item->quantity);
+                            $stock->save();
+                        }
+                    }
+                }
+
+                $order->update([
+                    'status' => 'return_requested',
+                    'updated_by' => auth()->id(),
+                ]);
+
                 $order->statusLogs()->create([
-                    'status' => 'returned',
-                    'notes' => 'Bulk CSV updated to returned.',
+                    'status' => 'return_requested',
+                    'notes' => 'Bulk CSV updated to return_requested.',
                     'changed_by' => auth()->id(),
                 ]);
                 $updated++;
