@@ -165,7 +165,7 @@ class OrderReturnController extends Controller implements HasMiddleware
 
             $return = OrderReturn::create([
                 'order_id' => $order->id,
-                'order_no' => $returnNo,
+                'return_no' => $returnNo,
                 'status' => 'pending',
                 'reason' => $validated['reason'],
                 'notes' => $validated['notes'],
@@ -437,6 +437,7 @@ class OrderReturnController extends Controller implements HasMiddleware
         fclose($handle);
 
         $previewData = [];
+        $previewReturns = [];
         $updated = 0;
         $skipped = [];
 
@@ -458,6 +459,7 @@ class OrderReturnController extends Controller implements HasMiddleware
                     $itemError = $returnError;
                     $matchedItem = null;
 
+                    if ($return && !isset($previewReturns[$return->id])) { $previewReturns[$return->id] = $return; }
                     if ($return) {
                         $matchedItem = $return->items->first(function($i) use ($csvItem) {
                             return $i->product && $i->product->sku === $csvItem['sku'];
@@ -521,7 +523,7 @@ class OrderReturnController extends Controller implements HasMiddleware
 
             if ($isPreview) {
                 DB::rollBack();
-                return response()->json(['preview' => $previewData]);
+                return response()->json(['preview' => $previewData, 'returns' => array_values($previewReturns)]);
             }
 
             DB::commit();

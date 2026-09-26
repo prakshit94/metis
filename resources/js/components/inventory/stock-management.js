@@ -27,13 +27,13 @@ export default () => ({
   warehouses: [],
   productOptions: [],
   isLoading: false,
-  searchQuery: '',
-  warehouseFilter: '',
-  stockLevelFilter: '',
-  sortField: 'id',
-  sortDirection: 'desc',
-  currentPage: 1,
-  itemsPerPage: 25,
+  searchQuery: new URLSearchParams(window.location.search).get('search') || '',
+  warehouseFilter: new URLSearchParams(window.location.search).get('warehouse_id') ? parseInt(new URLSearchParams(window.location.search).get('warehouse_id')) : '',
+  stockLevelFilter: new URLSearchParams(window.location.search).get('stock_level') || '',
+  sortField: new URLSearchParams(window.location.search).get('sort_by') || 'id',
+  sortDirection: new URLSearchParams(window.location.search).get('sort_dir') || 'desc',
+  currentPage: parseInt(new URLSearchParams(window.location.search).get('page')) || 1,
+  itemsPerPage: parseInt(new URLSearchParams(window.location.search).get('per_page')) || 25,
   totalItems: 0,
   totalPages: 1,
 
@@ -70,15 +70,21 @@ export default () => ({
 
   async loadOptions() {
     try {
+      const urlParam = new URLSearchParams(window.location.search).get('warehouse_id');
+      const initialWarehouse = urlParam ? parseInt(urlParam) : '';
       const data = await this.apiRequest('/api/inventory/transfers/options');
       this.warehouses = data.warehouses || [];
       this.productOptions = data.products || [];
 
-      // Automatically select default warehouse if not already filtered
-      if (!this.warehouseFilter) {
+      // Wait for DOM to render options
+      await new Promise(resolve => this.$nextTick(resolve));
+
+      if (initialWarehouse !== '') {
+        this.warehouseFilter = initialWarehouse;
+      } else if (this.warehouseFilter === '') {
         const defaultWh = this.warehouses.find((w) => w.is_default);
         if (defaultWh) {
-          this.warehouseFilter = defaultWh.id.toString();
+          this.warehouseFilter = defaultWh.id;
         }
       }
     } catch (e) {
@@ -98,6 +104,11 @@ export default () => ({
       if (this.searchQuery) params.set('search', this.searchQuery);
       if (this.warehouseFilter) params.set('warehouse_id', this.warehouseFilter);
       if (this.stockLevelFilter) params.set('stock_level', this.stockLevelFilter);
+      
+      const currentUrl = new URL(window.location.href);
+      currentUrl.search = params.toString();
+      window.history.pushState({}, '', currentUrl);
+
       const data = await this.apiRequest(`/api/inventory/stocks?${params}`);
       this.items = data.data || [];
       this.stats = data.stats || this.stats;
@@ -137,6 +148,21 @@ export default () => ({
 
   get paginatedItems() {
     return this.items;
+  },
+
+  getAvailableForSell(item) {
+    const rawAvailable = parseFloat(item.quantity || 0) - parseFloat(item.reserved_qty || 0) - parseFloat(item.pending_qty || 0);
+    const netAvailable = Math.max(0, rawAvailable);
+    
+    // Check if overselling is allowed (warehouse override takes precedence, fallback to product)
+    const allowOverselling = item.allow_overselling !== null ? item.allow_overselling : (item.product?.allow_overselling ?? false);
+    
+    if (allowOverselling) {
+      const limit = item.overselling_qty !== null ? parseInt(item.overselling_qty || 999) : parseInt(item.product?.overselling_qty || 999);
+      return Math.max(0, rawAvailable + limit);
+    }
+    
+    return netAvailable;
   },
 
   onSearch() {
@@ -272,7 +298,7 @@ export default () => ({
         const retRejected = parseFloat(item.return_rejected_qty || 0);
         
         const damaged = parseFloat(item.damaged_qty || 0);
-        const available = Math.max(0, parseFloat((qty - reserved - pending).toFixed(4)));
+        const available = this.getAvailableForSell(item);
         const alert = parseFloat(item.product?.min_stock_level || item.product?.alert_quantity || 5);
         
         let status = 'In Stock';

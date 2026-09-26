@@ -579,11 +579,13 @@ class OrderController extends Controller implements HasMiddleware
 
     public function create()
     {
-        $warehouses = Warehouse::orderBy('name')
+        $warehouses = Warehouse::where('status', 'active')
+            ->orderBy('name')
             ->when(auth()->user()?->lob_state_name, function ($query, $state) {
                 $query->where('state', $state);
             })
             ->get();
+
         
         $activeOffers = Offer::with('product')->active()->orderByDesc('priority')->orderBy('id')->get();
         $activeCoupons = Coupon::where('is_active', true)->get();
@@ -651,7 +653,8 @@ class OrderController extends Controller implements HasMiddleware
             $initialOrder = Order::with([
                 'party.addresses.village.services',
                 'warehouse',
-                'items.product:id,name,sku,image_path,tax_rate_id',
+                'items.product:id,name,sku,image_path,tax_rate_id,allow_overselling',
+                'items.product.stocks',
                 'items.product.taxRate',
                 'shippingAddress.village.services',
                 'billingAddress.village.services',
@@ -659,6 +662,40 @@ class OrderController extends Controller implements HasMiddleware
                 'creator:id,first_name,last_name,name',
                 'statusLogs' => fn ($q) => $q->with('user')->latest(),
             ])->find(request()->integer('order_id'));
+
+            if ($initialOrder) {
+                $initialOrder->items->each(function ($item) {
+                    if ($item->product) {
+                        $totalQty = (float) $item->product->stocks->sum('quantity');
+                        $reservedQty = (float) $item->product->stocks->sum('reserved_qty');
+                        
+                        $item->product->setAttribute('stock_qty', $totalQty);
+                        $item->product->setAttribute('reserved_qty', $reservedQty);
+                        $item->product->setAttribute('allow_overselling', $item->product->allow_overselling);
+                        
+                        $item->product->setAttribute('warehouse_stocks', $item->product->stocks->map(function ($s) use ($item) {
+                            $pendingQty = \DB::table('order_items')
+                                ->join('orders', 'orders.id', '=', 'order_items.order_id')
+                                ->where('orders.status', 'pending')
+                                ->where('orders.warehouse_id', $s->warehouse_id)
+                                ->where('order_items.product_id', $item->product_id)
+                                ->sum('order_items.quantity');
+
+                            return [
+                                'warehouse_id' => $s->warehouse_id,
+                                'warehouse_name' => $s->warehouse?->name ?? 'Unknown',
+                                'quantity' => $s->quantity,
+                                'reserved_qty' => (float) $s->reserved_qty,
+                                'pending_qty' => (float) $pendingQty,
+                                'available' => $s->quantity - $s->reserved_qty - (float) $pendingQty,
+                                'allow_overselling' => $s->allow_overselling !== null ? (bool) $s->allow_overselling : null,
+                                'overselling_qty' => $s->overselling_qty !== null ? (int) $s->overselling_qty : null,
+                                'is_sku_enabled' => $s->is_sku_enabled !== null ? (bool) $s->is_sku_enabled : null,
+                            ];
+                        })->values()->toArray());
+                    }
+                });
+            }
 
             if ($initialOrder && ! $initialCustomer) {
                 $initialCustomer = Party::with([
@@ -764,7 +801,40 @@ class OrderController extends Controller implements HasMiddleware
             return redirect()->route('orders')->with('error', 'Orders in this status cannot be edited.');
         }
 
-        $order->load(['party', 'warehouse', 'items.product', 'shippingAddress', 'billingAddress', 'appliedOffer']);
+        $order->load(['party', 'warehouse', 'items.product.stocks', 'shippingAddress', 'billingAddress', 'appliedOffer']);
+
+        // Format product stocks to match searchApi structure
+        $order->items->each(function ($item) {
+            if ($item->product) {
+                $totalQty = (float) $item->product->stocks->sum('quantity');
+                $reservedQty = (float) $item->product->stocks->sum('reserved_qty');
+                
+                $item->product->setAttribute('stock_qty', $totalQty);
+                $item->product->setAttribute('reserved_qty', $reservedQty);
+                $item->product->setAttribute('allow_overselling', $item->product->allow_overselling);
+                
+                $item->product->setAttribute('warehouse_stocks', $item->product->stocks->map(function ($s) use ($item) {
+                        $pendingQty = \DB::table('order_items')
+                            ->join('orders', 'orders.id', '=', 'order_items.order_id')
+                            ->where('orders.status', 'pending')
+                            ->where('orders.warehouse_id', $s->warehouse_id)
+                            ->where('order_items.product_id', $item->product_id)
+                            ->sum('order_items.quantity');
+
+                        return [
+                            'warehouse_id' => $s->warehouse_id,
+                            'warehouse_name' => $s->warehouse?->name ?? 'Unknown',
+                            'quantity' => $s->quantity,
+                            'reserved_qty' => (float) $s->reserved_qty,
+                            'pending_qty' => (float) $pendingQty,
+                            'available' => $s->quantity - $s->reserved_qty - (float) $pendingQty,
+                            'allow_overselling' => $s->allow_overselling !== null ? (bool) $s->allow_overselling : null,
+                        'overselling_qty' => $s->overselling_qty !== null ? (int) $s->overselling_qty : null,
+                        'is_sku_enabled' => $s->is_sku_enabled !== null ? (bool) $s->is_sku_enabled : null,
+                    ];
+                })->values()->toArray());
+            }
+        });
 
         $order->party->loadCount([
             'complaints as total_complaints',
@@ -773,11 +843,13 @@ class OrderController extends Controller implements HasMiddleware
             },
         ]);
 
-        $warehouses = Warehouse::orderBy('name')
+        $warehouses = Warehouse::where('status', 'active')
+            ->orderBy('name')
             ->when(auth()->user()?->lob_state_name, function ($query, $state) {
                 $query->where('state', $state);
             })
             ->get();
+
         
         $categories = Category::where('is_active', true)->orderBy('name')->get();
 

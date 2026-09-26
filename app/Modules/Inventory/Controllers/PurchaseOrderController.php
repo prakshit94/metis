@@ -79,7 +79,7 @@ class PurchaseOrderController extends Controller implements HasMiddleware
 
         $suppliers = Supplier::select('id', 'company_name', 'firstname', 'lastname')->get();
         $warehouses = Warehouse::select('id', 'name')
-            ->where('is_active', true)
+            ->where('status', 'active')
             ->when($request->user()?->lob_state_name, function ($query, $state) {
                 $query->where('state', $state);
             })

@@ -6,25 +6,73 @@
 @section('content')
 <div class="warehouses-management" x-data="warehousesTable" x-cloak>
 
-    <!-- ═══════════════════════ Page Header ════════════════════════════════ -->
-    <div class="d-flex justify-content-between align-items-center mb-4 mb-lg-5">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4 mb-lg-5 mb-xl-6">
         <div>
-            <h1 class="h3 mb-0">Warehouses Management</h1>
+            <h1 class="h3 mb-0"><i class="bi bi-buildings-fill text-primary me-2"></i>Warehouses Directory</h1>
             <p class="text-muted mb-0">Manage fulfillment centres, addresses, and operational details</p>
         </div>
         <div class="d-flex gap-2">
             <button type="button" class="btn btn-outline-secondary" @click="exportData()">
                 <i class="bi bi-download me-2"></i>Export
             </button>
-            <button type="button" class="btn btn-primary" @click.prevent="openCreateModal()">
+            <button class="btn btn-primary" @click.prevent="openCreateModal()">
                 <i class="bi bi-plus-lg me-2"></i>Add Warehouse
             </button>
         </div>
     </div>
 
+    <!-- Stats Row -->
+    <div class="row g-4 g-lg-5 g-xl-6 mb-5 mb-lg-5 mb-xl-6">
+        <div class="col-xl-4 col-lg-4">
+            <div class="card stats-card h-100 border-start border-4 border-primary">
+                <div class="card-body p-3 p-lg-4">
+                    <div class="d-flex align-items-center">
+                        <div class="stats-icon bg-primary bg-opacity-10 text-primary me-3">
+                            <i class="bi bi-buildings-fill"></i>
+                        </div>
+                        <div>
+                            <p class="h6 mb-0 text-muted">Total Warehouses</p>
+                            <div class="h3 mb-0" aria-live="polite"><span x-text="stats.total"></span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-4 col-lg-4">
+            <div class="card stats-card h-100 border-start border-4 border-success">
+                <div class="card-body p-3 p-lg-4">
+                    <div class="d-flex align-items-center">
+                        <div class="stats-icon bg-success bg-opacity-10 text-success me-3">
+                            <i class="bi bi-check-circle-fill"></i>
+                        </div>
+                        <div>
+                            <p class="h6 mb-0 text-muted">Active</p>
+                            <div class="h3 mb-0" aria-live="polite"><span x-text="stats.active"></span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-4 col-lg-4">
+            <div class="card stats-card h-100 border-start border-4 border-warning">
+                <div class="card-body p-3 p-lg-4">
+                    <div class="d-flex align-items-center">
+                        <div class="stats-icon bg-secondary bg-opacity-10 text-secondary me-3">
+                            <i class="bi bi-dash-circle-fill"></i>
+                        </div>
+                        <div>
+                            <p class="h6 mb-0 text-muted">Inactive</p>
+                            <div class="h3 mb-0" aria-live="polite"><span x-text="stats.inactive"></span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Analytics Dashboard Container -->
     <div class="row g-4 mb-4" x-show="items.length > 0" style="display: none;">
-        <!-- Chart 1: Physical Stock Distribution -->
         <div class="col-lg-7">
             <div class="card h-100 border-start border-4 border-primary">
                 <div class="card-header border-bottom-0 pt-4 pb-0">
@@ -35,7 +83,6 @@
                 </div>
             </div>
         </div>
-        <!-- Chart 2: SKU Spread -->
         <div class="col-lg-5">
             <div class="card h-100 border-start border-4 border-success">
                 <div class="card-header border-bottom-0 pt-4 pb-0">
@@ -48,79 +95,20 @@
         </div>
     </div>
 
-    <!-- ═══════════════════════ Stats Widgets ══════════════════════════════ -->
-    <div class="row g-4 g-lg-5 mb-5">
-        <div class="col-xl-4 col-lg-4 col-md-4">
-            <div class="card stats-card border-start border-4 border-primary" style="cursor: default;">
-                <div class="card-body p-3 p-lg-4">
-                    <div class="d-flex align-items-center">
-                        <div class="stats-icon bg-primary bg-opacity-10 text-primary me-3">
-                            <i class="bi bi-buildings-fill"></i>
-                        </div>
-                        <div>
-                            <p class="h6 mb-0 text-muted">Total Warehouses</p>
-                            <div class="h3 mb-0" aria-live="polite"><span x-text="stats.total"></span></div>
-                            <small class="text-muted">All registered centres</small>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-xl-4 col-lg-4 col-md-4">
-            <div class="card stats-card border-start border-4 border-success" style="cursor: default;">
-                <div class="card-body p-3 p-lg-4">
-                    <div class="d-flex align-items-center">
-                        <div class="stats-icon bg-success bg-opacity-10 text-success me-3">
-                            <i class="bi bi-check-circle-fill"></i>
-                        </div>
-                        <div>
-                            <p class="h6 mb-0 text-muted">Active</p>
-                            <div class="h3 mb-0" aria-live="polite"><span x-text="stats.active"></span></div>
-                            <small class="text-success">
-                                <i class="bi bi-arrow-up-right me-1"></i>Operational
-                            </small>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-xl-4 col-lg-4 col-md-4">
-            <div class="card stats-card border-start border-4 border-warning" style="cursor: default;">
-                <div class="card-body p-3 p-lg-4">
-                    <div class="d-flex align-items-center">
-                        <div class="stats-icon bg-secondary bg-opacity-10 text-secondary me-3">
-                            <i class="bi bi-dash-circle-fill"></i>
-                        </div>
-                        <div>
-                            <p class="h6 mb-0 text-muted">Inactive</p>
-                            <div class="h3 mb-0" aria-live="polite"><span x-text="stats.inactive"></span></div>
-                            <small class="text-muted">Temporarily offline</small>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- ═══════════════════════ Main Table Card ═════════════════════════════ -->
-    <div class="card mb-5">
+    <!-- Table -->
+    <div class="card">
         <div class="card-header">
             <div class="row align-items-center">
                 <div class="col">
-                    <h2 class="h5 card-title mb-0">Warehouses Directory</h2>
+                    <h2 class="h5 card-title mb-0">Warehouses List</h2>
                 </div>
-                <div class="col-auto mt-3 mt-md-0">
-                    <div class="d-flex gap-2 flex-wrap justify-content-end">
+                <div class="col-auto">
+                    <div class="d-flex flex-wrap gap-2 justify-content-end">
                         <div class="position-relative">
-                            <input type="search"
-                                   class="form-control form-control-sm"
-                                   placeholder="Search name, code, city, GSTIN…"
-                                   x-model.debounce.300ms="searchQuery"
-                                   @input="filterData()"
-                                   style="width:250px;">
+                            <input type="search" class="form-control form-control-sm" placeholder="Search warehouses..." x-model.debounce.300ms="searchQuery" @input="filterData()" style="width: 200px;">
                             <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-2 text-muted"></i>
                         </div>
-                        <select class="form-select form-select-sm" x-model="statusFilter" @change="filterData()" style="width:150px;">
+                        <select class="form-select form-select-sm" x-model="statusFilter" @change="filterData()" style="width: 150px;">
                             <option value="">All Statuses</option>
                             <option value="active">Active</option>
                             <option value="inactive">Inactive</option>
@@ -128,82 +116,72 @@
                     </div>
                 </div>
             </div>
+            
         </div>
-
         <div class="card-body p-0">
             <!-- Bulk Actions Bar -->
-            <div class="bulk-actions-bar p-3 bg-primary bg-opacity-10 border-bottom border-primary border-opacity-25" x-show="selectedItems.length > 0" x-transition>
+            <div class="bulk-actions-bar p-3 bg-primary bg-opacity-10 border-bottom border-primary border-opacity-25" x-show="selectedItems.length > 0" x-cloak>
                 <div class="d-flex justify-content-between align-items-center">
-                    <span class="text-primary fw-medium">
-                        <i class="bi bi-check-circle-fill me-2"></i>
-                        <strong><span x-text="selectedItems.length"></span></strong> item(s) selected
-                    </span>
+                    <div class="d-flex align-items-center">
+                        <span class="badge bg-primary rounded-pill px-3 py-2 fs-6">
+                            <span x-text="selectedItems.length"></span> Selected
+                        </span>
+                    </div>
                     <div class="d-flex gap-2">
-                        <button class="btn btn-sm btn-success" @click="bulkAction('active')">
-                            <i class="bi bi-check-circle me-1"></i>Mark Active
-                        </button>
-                        <button class="btn btn-sm btn-secondary" @click="bulkAction('inactive')">
-                            <i class="bi bi-x-circle me-1"></i>Mark Inactive
-                        </button>
-                        <button class="btn btn-sm btn-danger" @click="bulkAction('delete')">
-                            <i class="bi bi-trash me-1"></i>Delete
+                        <button class="btn btn-sm btn-success" x-show="items.filter(i => selectedItems.includes(i.id)).some(i => i.status !== 'active')" @click="bulkAction('active')"><i class="bi bi-check-circle me-1"></i>Activate</button>
+                        <button class="btn btn-sm btn-warning" x-show="items.filter(i => selectedItems.includes(i.id)).some(i => i.status === 'active')" @click="bulkAction('inactive')"><i class="bi bi-pause-circle me-1"></i>Deactivate</button>
+                        <button class="btn btn-sm btn-danger" @click="bulkAction('delete')"><i class="bi bi-trash me-1"></i>Delete</button>
+                        <button class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center justify-content-center px-2" @click="selectedItems = []" title="Clear selection">
+                            <i class="bi bi-x-lg" style="margin-left: 7px"></i>
                         </button>
                     </div>
                 </div>
             </div>
-
-            <!-- Table -->
+            
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0 text-nowrap">
-                    <thead>
+                <thead class="table-light">
+                    <tr>
+                        <th style="width: 44px;" class="ps-3">
+                            <input type="checkbox" class="user-select-checkbox" @change="$event.isTrusted && toggleAll($event.target.checked)" :checked="selectedItems.length === paginatedItems.length && paginatedItems.length > 0">
+                        </th>
+                        <th @click="sortBy('id')" class="sortable" style="width:90px; cursor: pointer;">
+                            ID
+                            <i class="bi ms-1" :class="sortField === 'id' ? (sortDirection === 'asc' ? 'bi-chevron-up text-primary' : 'bi-chevron-down text-primary') : 'bi-arrow-down-up opacity-25'"></i>
+                        </th>
+                        <th @click="sortBy('name')" class="sortable" style="cursor: pointer;">
+                            Warehouse
+                            <i class="bi ms-1" :class="sortField === 'name' ? (sortDirection === 'asc' ? 'bi-chevron-up text-primary' : 'bi-chevron-down text-primary') : 'bi-arrow-down-up opacity-25'"></i>
+                        </th>
+                        <th>Contact Info</th>
+                        <th>Address</th>
+                        <th>Inventory & Orders</th>
+                        <th @click="sortBy('status')" class="sortable" style="width:110px; cursor: pointer;">
+                            Status
+                            <i class="bi ms-1" :class="sortField === 'status' ? (sortDirection === 'asc' ? 'bi-chevron-up text-primary' : 'bi-chevron-down text-primary') : 'bi-arrow-down-up opacity-25'"></i>
+                        </th>
+                        <th class="text-end pe-4" style="width:110px;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <template x-if="isLoading">
                         <tr>
-                            <th style="width:44px" class="ps-3">
-                                <input type="checkbox" class="user-select-checkbox"
-                                       @change="$event.isTrusted && toggleAll($event.target.checked)"
-                                       :checked="selectedItems.length === paginatedItems.length && paginatedItems.length > 0">
-                            </th>
-                            <th @click="sortBy('id')" class="sortable" style="width:90px; cursor: pointer;">
-                                ID
-                                <i class="bi ms-1" :class="sortField === 'id' ? (sortDirection === 'asc' ? 'bi-chevron-up text-primary' : 'bi-chevron-down text-primary') : 'bi-arrow-down-up opacity-25'"></i>
-                            </th>
-                            <th @click="sortBy('name')" class="sortable" style="cursor: pointer;">
-                                Warehouse
-                                <i class="bi ms-1" :class="sortField === 'name' ? (sortDirection === 'asc' ? 'bi-chevron-up text-primary' : 'bi-chevron-down text-primary') : 'bi-arrow-down-up opacity-25'"></i>
-                            </th>
-                            <th>Contact Info</th>
-                            <th>Address</th>
-                            <th>Inventory & Orders</th>
-                            <th @click="sortBy('status')" class="sortable" style="width:110px; cursor: pointer;">
-                                Status
-                                <i class="bi ms-1" :class="sortField === 'status' ? (sortDirection === 'asc' ? 'bi-chevron-up text-primary' : 'bi-chevron-down text-primary') : 'bi-arrow-down-up opacity-25'"></i>
-                            </th>
-                            <th style="width:110px" class="text-end pe-4">Actions</th>
+                            <td colspan="8" class="text-center py-5">
+                                <div class="spinner-border text-primary" role="status"></div>
+                                <p class="text-muted small mt-2 mb-0 fw-medium">Loading warehouses…</p>
+                            </td>
                         </tr>
-                    </thead>
-                    <tbody>
-                        <!-- Loading State -->
-                        <template x-if="isLoading">
-                            <tr>
-                                <td colspan="8" class="text-center py-5">
-                                    <div class="spinner-border text-primary" role="status"></div>
-                                    <p class="text-muted small mt-2 mb-0 fw-medium">Loading warehouses…</p>
-                                </td>
-                            </tr>
-                        </template>
-
-                        <!-- Empty State -->
-                        <template x-if="!isLoading && paginatedItems.length === 0">
-                            <tr>
-                                <td colspan="8" class="text-center py-5 text-muted">
-                                    <i class="bi bi-buildings fs-2 d-block mb-2"></i>
-                                    No warehouses found matching your criteria.
-                                </td>
-                            </tr>
-                        </template>
-
-                        <!-- Data Rows -->
-                        <template x-for="item in paginatedItems" :key="item.id">
-                            <tr :class="{ 'selected': selectedItems.includes(item.id) }">
+                    </template>
+                    <template x-if="!isLoading && paginatedItems.length === 0">
+                        <tr>
+                            <td colspan="8" class="text-center py-5 text-muted">
+                                <i class="bi bi-buildings fs-2 d-block mb-2 text-opacity-50"></i>
+                                No warehouses found matching your criteria.
+                            </td>
+                        </tr>
+                    </template>
+                    <template x-for="item in paginatedItems" :key="item.id">
+                        <tr :class="{ 'selected': selectedItems.includes(item.id), 'warehouse-row-active': item.status === 'active' }">
                                 <td class="ps-3">
                                     <input type="checkbox" class="user-select-checkbox"
                                            :value="item.id"
@@ -309,9 +287,13 @@
                                     </div>
                                 </td>
                                 <td>
-                                    <span class="badge"
-                                          :class="item.status === 'active' ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-secondary-subtle text-secondary border border-secondary-subtle'">
-                                          <span x-text="item.status.toUpperCase()"></span>
+                                    <span class="badge rounded-pill px-3 py-2 fw-medium border cursor-pointer"
+                                          :class="item.status === 'active' ? 'bg-success-subtle text-success-emphasis border-success-subtle' : 'bg-secondary-subtle text-secondary-emphasis border-secondary-subtle'"
+                                          @click="toggleStatus(item)">
+                                        <span class="d-inline-block rounded-circle me-1" 
+                                              :class="item.status === 'active' ? 'bg-success' : 'bg-secondary'" 
+                                              style="width: 6px; height: 6px; vertical-align: middle;"></span>
+                                        <span x-text="item.status === 'active' ? 'Active' : 'Inactive'"></span>
                                     </span>
                                 </td>
                                 <td class="text-end pe-4">
@@ -328,6 +310,16 @@
                                             <li>
                                                 <a class="dropdown-item" href="#" @click.prevent="editItem(item)">
                                                     <i class="bi bi-pencil me-2"></i> Edit Details
+                                                </a>
+                                            </li>
+                                            <li x-show="item.status !== 'active'">
+                                                <a class="dropdown-item" href="#" @click.prevent="toggleStatus(item)">
+                                                    <i class="bi bi-check-circle text-success me-2"></i> Mark Active
+                                                </a>
+                                            </li>
+                                            <li x-show="item.status === 'active'">
+                                                <a class="dropdown-item" href="#" @click.prevent="toggleStatus(item)">
+                                                    <i class="bi bi-pause-circle text-warning me-2"></i> Mark Inactive
                                                 </a>
                                             </li>
                                             <li><hr class="dropdown-divider"></li>
@@ -661,9 +653,12 @@
                                         <tr>
                                             <td class="text-muted">Status</td>
                                             <td>
-                                                <span class="badge"
-                                                      :class="viewData.status === 'active' ? 'bg-success-subtle text-success' : 'bg-secondary-subtle text-secondary'"
-                                                      x-text="(viewData.status || '').toUpperCase()">
+                                                <span class="badge rounded-pill px-3 py-2 fw-medium border"
+                                                      :class="viewData.status === 'active' ? 'bg-success-subtle text-success-emphasis border-success-subtle' : 'bg-secondary-subtle text-secondary-emphasis border-secondary-subtle'">
+                                                    <span class="d-inline-block rounded-circle me-1" 
+                                                          :class="viewData.status === 'active' ? 'bg-success' : 'bg-secondary'" 
+                                                          style="width: 6px; height: 6px; vertical-align: middle;"></span>
+                                                    <span x-text="viewData.status === 'active' ? 'Active' : 'Inactive'"></span>
                                                 </span>
                                             </td>
                                         </tr>
@@ -773,6 +768,27 @@
 
 </div>{{-- end x-data --}}
 @endsection
+
+@push('head')
+<style>
+/* Active warehouse row highlight */
+.warehouse-row-active {
+    --bs-table-bg-state: rgba(var(--bs-success-rgb), 0.10);
+    --bs-table-color-state: inherit;
+}
+.warehouse-row-active > td {
+    background-color: rgba(var(--bs-success-rgb), 0.10) !important;
+    transition: background-color 0.2s ease;
+}
+.warehouse-row-active:hover > td {
+    background-color: rgba(var(--bs-success-rgb), 0.18) !important;
+}
+/* Left-border accent on the first cell only */
+.warehouse-row-active > td:first-child {
+    box-shadow: inset 3px 0 0 0 rgba(var(--bs-success-rgb), 0.75);
+}
+</style>
+@endpush
 
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>

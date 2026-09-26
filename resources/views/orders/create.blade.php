@@ -3333,14 +3333,11 @@ mapOrder(o) {
             if (initialOrder) {
                 this.applyOrderForEdit(initialOrder);
                 localStorage.removeItem(`ecommerce_create_order_cart_${this.partyId}`);
+                localStorage.removeItem(`ecommerce_create_order_cart_total_${this.partyId}`);
                 this.isCartSidebarOpen = true;
             } else {
-                const saved = localStorage.getItem(`ecommerce_create_order_cart_${this.partyId}`);
-                if (saved) {
-                    try {
-                        this.cart = JSON.parse(saved);
-                    } catch (e) {}
-                }
+                // User requested fresh cart when opening new order
+                this.clearCartCache();
             }
 
             this.$watch('cart', async (v) => {
@@ -3662,7 +3659,7 @@ mapOrder(o) {
         async loadAddresses() {
             if (!this.partyId) { this.addresses = []; this.recentOrders = []; this.customerDetails = null; return; }
             try {
-                const res = await fetch(`/customers/${this.partyId}`, { headers: {'Accept':'application/json','X-Requested-With':'XMLHttpRequest'} });
+                const res = await fetch(`/customers/${this.partyId}?_t=${Date.now()}`, { headers: {'Accept':'application/json','X-Requested-With':'XMLHttpRequest'} });
                 const json = await res.json();
                 this.customerDetails = this.sanitizeCustomerData(json.data);
                 this.addresses = json.data?.addresses || [];
@@ -3702,7 +3699,7 @@ mapOrder(o) {
             
             this.productModalLoading = true;
             try {
-                const res = await fetch(`/api/products/${p.id}`, { headers: {'Accept':'application/json'} });
+                const res = await fetch(`/api/products/${p.id}?_t=${Date.now()}`, { headers: {'Accept':'application/json'} });
                 const json = await res.json();
                 if (json && json.data) {
                     this.selectedProductForModal = { ...p, ...json.data };
@@ -3747,6 +3744,7 @@ mapOrder(o) {
 
                 return {
                     id: item.product_id || item.id,
+                    _product: item.product,
                     name: item.product?.name || item.product_name || 'Product',
                     sku: item.product?.sku || item.sku || '',
                     price: price,
@@ -3793,11 +3791,22 @@ mapOrder(o) {
 
         getTotalWarehouseStock(p) {
             if (!p) return 0;
+            let available = 0;
             if (!this.warehouseId || !p.warehouse_stocks || p.warehouse_stocks.length === 0) {
-                return parseFloat(p.stock_qty || 0) - parseFloat(p.reserved_qty || 0) - parseFloat(p.pending_qty || 0);
+                available = parseFloat(p.stock_qty || 0) - parseFloat(p.reserved_qty || 0) - parseFloat(p.pending_qty || 0);
+            } else {
+                const match = p.warehouse_stocks.find(w => String(w.warehouse_id) === String(this.warehouseId));
+                available = match ? parseFloat(match.available || 0) : 0;
             }
-            const match = p.warehouse_stocks.find(w => String(w.warehouse_id) === String(this.warehouseId));
-            return match ? parseFloat(match.available || 0) : 0;
+            
+            let currentOrderQty = 0;
+            if (window.__INITIAL_ORDER_TO_EDIT__ && window.__INITIAL_ORDER_TO_EDIT__.items) {
+                const initItem = window.__INITIAL_ORDER_TO_EDIT__.items.find(i => String(i.product_id) === String(p.id) && !i.is_gift);
+                if (initItem) {
+                    currentOrderQty = parseFloat(initItem.quantity) || 0;
+                }
+            }
+            return available + currentOrderQty;
         },
 
         getWarehouseStock(p) {
@@ -3987,7 +3996,7 @@ mapOrder(o) {
             if (reset) this.productPage = 1;
             this.searching = true;
             try {
-                const p = new URLSearchParams({ q: this.productQuery, category: this.categoryFilter, perPage: this.perPage, page: this.productPage });
+                const p = new URLSearchParams({ q: this.productQuery, category: this.categoryFilter, perPage: this.perPage, page: this.productPage, _t: Date.now() });
                 const res = await fetch(`/products-search-api?${p}`, { headers: {'Accept':'application/json','X-Requested-With':'XMLHttpRequest'} });
                 const json = await res.json();
                 this.products = (json.data || []).map(p => ({...p, _qty: 0, _disc: parseFloat(p.default_discount)||0}));
@@ -4080,7 +4089,7 @@ mapOrder(o) {
         },
         async fetchProductDetails(id) {
             try {
-                const res = await fetch(`/api/products/${id}`, { headers: {'Accept':'application/json'} });
+                const res = await fetch(`/api/products/${id}?_t=${Date.now()}`, { headers: {'Accept':'application/json'} });
                 const json = await res.json();
                 return json.data;
             } catch(e) { return null; }
@@ -4189,7 +4198,16 @@ mapOrder(o) {
                         }
                     }
                 }
-                if (item.available !== null && item.available !== undefined && newQty > item.available) {
+                let p = item._product;
+                if (!p) p = this.products.find(prod => String(prod.id) === String(item.id));
+                if (p) {
+                    const maxAllowed = this.getMaxAllowedStock(p);
+                    if (maxAllowed !== null && maxAllowed !== undefined && newQty > maxAllowed) {
+                        window.dispatchEvent(new CustomEvent('notify',{detail:{type:'warning',message:'Cannot exceed available stock ('+maxAllowed+')'}}));
+                        return;
+                    }
+                    item.available = maxAllowed;
+                } else if (item.available !== null && item.available !== undefined && newQty > item.available) {
                     window.dispatchEvent(new CustomEvent('notify',{detail:{type:'warning',message:'Cannot exceed available stock ('+item.available+')'}}));
                     return;
                 }
@@ -4765,6 +4783,10 @@ mapOrder(o) {
                 this.cart = [];
                 const successMsg = this.editingOrderId ? 'Order Updated!' : 'Order Placed!';
                 window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'success', message: successMsg } }));
+                
+                // Clear the global order cache so old item quantities aren't artificially added to stock
+                window.__INITIAL_ORDER_TO_EDIT__ = null;
+                this.originalOrder = null;
                 
                 // Clear the form fields to fully "refresh" the internal state natively
                 this.orderStatus = 'pending';

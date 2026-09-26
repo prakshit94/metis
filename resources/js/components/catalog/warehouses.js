@@ -632,6 +632,21 @@ export default () => {
       a.click();
       URL.revokeObjectURL(url);
     },
+
+    async toggleStatus(item) {
+      const newStatus = item.status === 'active' ? 'inactive' : 'active';
+      try {
+        await this.apiRequest(`${this.apiBase}/${item.id}`, {
+          method: 'PUT',
+          body: JSON.stringify({ status: newStatus }),
+        });
+        item.status = newStatus;
+        showToast(`Warehouse status updated to ${newStatus}.`, 'success');
+        this.calculateStats();
+      } catch (error) {
+        showToast(error.message || 'Failed to update status.', 'error');
+      }
+    },
   };
 
   window.Alpine.store('warehousesTable', instance);

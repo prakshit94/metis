@@ -1013,7 +1013,7 @@ class ProductController extends Controller
             'uoms' => UnitOfMeasure::query()->where('status', 'active')->orderBy('name')->get(['id', 'name', 'short_name'])->values(),
             'taxRates' => TaxRate::query()->where('status', 'active')->orderBy('rate')->get(['id', 'name', 'rate'])->values(),
             'hsnCodes' => HsnCode::query()->where('status', 'active')->orderBy('code')->get(['id', 'code', 'description'])->values(),
-            'warehouses' => Warehouse::query()
+            'warehouses' => Warehouse::query()->where('status', 'active')
                 ->when($request?->user()?->lob_state_name, function ($query, $state) {
                     $query->where('state', $state);
                 })
@@ -1048,7 +1048,7 @@ class ProductController extends Controller
         $warehouseId = $product->default_warehouse_id;
 
         if (! $warehouseId) {
-            $warehouseId = Warehouse::query()
+            $warehouseId = Warehouse::query()->where('status', 'active')
                 ->when(request()?->user()?->lob_state_name, function ($query, $state) {
                     $query->where('state', $state);
                 })
@@ -1115,7 +1115,7 @@ class ProductController extends Controller
 
         // If no warehouse is assigned, try to use the first available warehouse
         if (! $warehouseId) {
-            $warehouseId = Warehouse::query()
+            $warehouseId = Warehouse::query()->where('status', 'active')
                 ->when(request()?->user()?->lob_state_name, function ($query, $state) {
                     $query->where('state', $state);
                 })

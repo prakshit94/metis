@@ -156,8 +156,8 @@
                             </div>
                             {{-- Warehouse Filter --}}
                             <select class="form-select form-select-sm"
-                                    x-model="warehouseFilter"
-                                    @change="loadData()"
+                                    :value="warehouseFilter"
+                                    @change="warehouseFilter = $event.target.value ? parseInt($event.target.value) : ''; loadData()"
                                     style="width: 170px;">
                                 <option value="">All Warehouses</option>
                                 <template x-for="wh in warehouses" :key="wh.id">
@@ -345,11 +345,11 @@
                                         <div class="d-flex align-items-center justify-content-center gap-1">
                                             <span class="badge stock-badge"
                                                   :class="{
-                                                      'in-stock':     (parseFloat(item.quantity||0) - parseFloat(item.reserved_qty||0) - parseFloat(item.pending_qty||0)) > 5,
-                                                      'low-stock':    (parseFloat(item.quantity||0) - parseFloat(item.reserved_qty||0) - parseFloat(item.pending_qty||0)) > 0 && (parseFloat(item.quantity||0) - parseFloat(item.reserved_qty||0) - parseFloat(item.pending_qty||0)) <= 5,
-                                                      'out-of-stock': (parseFloat(item.quantity||0) - parseFloat(item.reserved_qty||0) - parseFloat(item.pending_qty||0)) <= 0
+                                                      'in-stock':     getAvailableForSell(item) > 5,
+                                                      'low-stock':    getAvailableForSell(item) > 0 && getAvailableForSell(item) <= 5,
+                                                      'out-of-stock': getAvailableForSell(item) <= 0
                                                   }"
-                                                  ><i class="bi bi-check-circle me-1"></i><span x-text="parseFloat(Math.max(0, parseFloat(item.quantity||0) - parseFloat(item.reserved_qty||0) - parseFloat(item.pending_qty||0))).toFixed(2)"></span></span>
+                                                  ><i class="bi bi-check-circle me-1"></i><span x-text="parseFloat(getAvailableForSell(item)).toFixed(2)"></span></span>
                                         </div>
                                     </td>
                                     <td class="text-center border-end">
@@ -361,7 +361,7 @@
                                         <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle"><i class="bi bi-calendar-event me-1"></i><span x-text="parseFloat(item.future_order_qty || 0).toFixed(2)"></span></span>
                                     </td>
                                     <td class="text-center">
-                                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle"><i class="bi bi-hourglass-split me-1"></i><span x-text="parseFloat(Math.min(parseFloat(item.pending_qty||0), Math.max(0, parseFloat(item.quantity||0) - parseFloat(item.reserved_qty||0)))).toFixed(2)"></span></span>
+                                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle"><i class="bi bi-hourglass-split me-1"></i><span x-text="parseFloat(item.pending_qty||0).toFixed(2)"></span></span>
                                     </td>
                                     <td class="text-center">
                                         <span class="badge bg-danger-subtle text-danger border border-danger-subtle"><i class="bi bi-x-octagon me-1"></i><span x-text="parseFloat(Math.max(0, parseFloat(item.pending_qty||0) - Math.max(0, parseFloat(item.quantity||0) - parseFloat(item.reserved_qty||0)))).toFixed(2)"></span></span>

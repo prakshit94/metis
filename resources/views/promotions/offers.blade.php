@@ -396,22 +396,6 @@
                                                 <input type="number" class="form-control fw-semibold border-0 bg-transparent shadow-none px-2" x-model="form.value" min="0" step="0.01" style="font-size: 14px;">
                                             </div>
                                         </div>
-                                        <div class="col-md-6">
-                                            <label class="form-label mb-2 fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.1em;">Min Spend</label>
-                                            <div class="input-group input-group-lg bg-body border border-secondary border-opacity-25 rounded-3 overflow-hidden">
-                                                <span class="input-group-text border-0 bg-transparent text-muted fw-bold">Rs</span>
-                                                <input type="number" class="form-control fw-semibold border-0 bg-transparent shadow-none px-2" x-model="form.min_spend" min="0" step="0.01" placeholder="0" style="font-size: 14px;">
-                                            </div>
-                                            <small class="text-muted d-block mt-2" style="font-size: 11px;">Minimum purchase requirement to unlock offer.</small>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label class="form-label mb-2 fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.1em;">Max Discount</label>
-                                            <div class="input-group input-group-lg bg-body border border-secondary border-opacity-25 rounded-3 overflow-hidden">
-                                                <span class="input-group-text border-0 bg-transparent text-muted fw-bold">Rs</span>
-                                                <input type="number" class="form-control fw-semibold border-0 bg-transparent shadow-none px-2" x-model="form.max_discount" min="0" step="0.01" placeholder="Unlimited" style="font-size: 14px;">
-                                            </div>
-                                            <small class="text-muted d-block mt-2" style="font-size: 11px;">Maximum cap. Leave empty/0 for unlimited.</small>
-                                        </div>
                                     </div>
 
                                     {{-- BOGO Config --}}
@@ -443,6 +427,24 @@
                                                 <input type="number" class="form-control fw-semibold border-0 bg-transparent shadow-none px-2" x-model="form.cashback_val" min="0" step="0.01" style="font-size: 14px;">
                                             </div>
                                             <small class="text-muted d-block mt-2" style="font-size: 11px;" x-text="form.cashback_type === 'percentage' ? 'Percent of net amount to credit.' : 'Fixed amount to credit.'"></small>
+                                        </div>
+                                        
+                                        <!-- Moved Min Spend and Max Discount to be global -->
+                                        <div class="col-md-6">
+                                            <label class="form-label mb-2 fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.1em;">Min Spend</label>
+                                            <div class="input-group input-group-lg bg-body border border-secondary border-opacity-25 rounded-3 overflow-hidden">
+                                                <span class="input-group-text border-0 bg-transparent text-muted fw-bold">Rs</span>
+                                                <input type="number" class="form-control fw-semibold border-0 bg-transparent shadow-none px-2" x-model="form.min_spend" min="0" step="0.01" placeholder="0" style="font-size: 14px;">
+                                            </div>
+                                            <small class="text-muted d-block mt-2" style="font-size: 11px;">Minimum purchase requirement to unlock offer.</small>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label mb-2 fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.1em;">Max Discount</label>
+                                            <div class="input-group input-group-lg bg-body border border-secondary border-opacity-25 rounded-3 overflow-hidden">
+                                                <span class="input-group-text border-0 bg-transparent text-muted fw-bold">Rs</span>
+                                                <input type="number" class="form-control fw-semibold border-0 bg-transparent shadow-none px-2" x-model="form.max_discount" min="0" step="0.01" placeholder="Unlimited" style="font-size: 14px;">
+                                            </div>
+                                            <small class="text-muted d-block mt-2" style="font-size: 11px;">Maximum cap. Leave empty/0 for unlimited.</small>
                                         </div>
                                     </div>
                                 </div>
