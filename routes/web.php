@@ -313,3 +313,10 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::delete('/targets/{target}', [\App\Http\Controllers\TargetController::class, 'destroy'])->name('targets.destroy');
 });
 
+Route::get('/images/{path}', function ($path) {
+    $absolutePath = storage_path('app/public/' . $path);
+    if (!file_exists($absolutePath)) abort(404);
+    return response()->file($absolutePath, [
+        'Access-Control-Allow-Origin' => '*'
+    ]);
+})->where('path', '.*');

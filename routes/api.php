@@ -245,6 +245,17 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::get('/{order}', [OrderController::class, 'show'])->name('show');
         Route::patch('/{order}', [OrderController::class, 'update'])->name('update');
         Route::delete('/{order}', [OrderController::class, 'destroy'])->name('destroy');
+        
+        // Order Actions
+        Route::post('/{order}/confirm', [OrderController::class, 'confirm'])->name('confirm');
+        Route::post('/{order}/ship', [OrderController::class, 'ship'])->name('ship');
+        Route::post('/{order}/dispatch', [OrderController::class, 'dispatch'])->name('dispatch');
+        Route::post('/{order}/processing', [OrderController::class, 'markProcessing'])->name('processing');
+        Route::post('/{order}/deliver', [OrderController::class, 'markDelivered'])->name('deliver');
+        Route::post('/{order}/cancel', [OrderController::class, 'cancel'])->name('cancel');
+        Route::post('/{order}/return', [OrderController::class, 'markReturned'])->name('return');
+        Route::post('/{order}/revert-status', [OrderController::class, 'revertStatus'])->name('revert-status');
+
         // Bulk Actions & Helpers
         Route::post('/bulk-status', [OrderController::class, 'bulkStatus'])->name('bulk-status');
         Route::post('/bulk-return', [\App\Modules\Orders\Controllers\OrderReturnController::class, 'bulkStore'])->name('bulk-return');

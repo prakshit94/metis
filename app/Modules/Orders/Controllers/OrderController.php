@@ -928,7 +928,9 @@ class OrderController extends Controller implements HasMiddleware
                 'changed_by' => auth()->id(),
             ]);
 
-            session()->flash('success', 'Order scheduled for confirmation.');
+            if ($request->hasSession()) {
+                session()->flash('success', 'Order scheduled for confirmation.');
+            }
 
             return response()->json(['success' => true, 'message' => 'Order scheduled for confirmation.']);
         }
@@ -947,7 +949,9 @@ class OrderController extends Controller implements HasMiddleware
             return response()->json(['error' => $e->getMessage()], 400);
         }
 
-        session()->flash('success', 'Order successfully confirmed!');
+        if ($request->hasSession()) {
+            session()->flash('success', 'Order successfully confirmed!');
+        }
 
         return response()->json(['success' => true, 'message' => 'Order confirmed and stock reserved.']);
     }
