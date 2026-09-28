@@ -444,7 +444,9 @@ class OrderController extends Controller implements HasMiddleware
         }
 
         $statusesList = $this->allowedOrderFilterStatuses($user);
-        $productsList = Product::where('status', '!=', 'draft')->orderBy('name')->get(['id', 'name', 'sku']);
+        $productsList = Cache::remember('products_list_filter', 3600, function () {
+            return Product::where('status', '!=', 'draft')->orderBy('name')->get(['id', 'name', 'sku']);
+        });
 
         // For LOB-scoped users, limit the state filter dropdown to their own state only
         $lobStateName = $user?->lob_state_name;
@@ -483,7 +485,9 @@ class OrderController extends Controller implements HasMiddleware
                 ->distinct()->pluck('village_name')->filter()->sort()->values();
         }) : [];
 
-        $services = Service::active()->with('providers')->get();
+        $services = Cache::remember('services_with_providers', 3600, function() {
+            return Service::active()->with('providers')->get();
+        });
         $carriersList = $services->pluck('name')
             ->filter()
             ->unique()
@@ -501,10 +505,10 @@ class OrderController extends Controller implements HasMiddleware
             return [$service->name => $providers];
         });
 
-        $returnReasons = ReturnReason::where('is_active', true)->orderBy('id')->get();
-        $rescheduleReasons = RescheduleReason::where('is_active', true)->orderBy('id')->get();
-        $deliveryFailureReasons = DeliveryFailureReason::where('is_active', true)->orderBy('id')->get();
-        $cancelReasons = CancelReason::where('is_active', true)->orderBy('id')->get();
+        $returnReasons = Cache::remember('return_reasons', 3600, fn() => ReturnReason::where('is_active', true)->orderBy('id')->get());
+        $rescheduleReasons = Cache::remember('reschedule_reasons', 3600, fn() => RescheduleReason::where('is_active', true)->orderBy('id')->get());
+        $deliveryFailureReasons = Cache::remember('delivery_failure_reasons', 3600, fn() => DeliveryFailureReason::where('is_active', true)->orderBy('id')->get());
+        $cancelReasons = Cache::remember('cancel_reasons', 3600, fn() => CancelReason::where('is_active', true)->orderBy('id')->get());
 
         // 7 Day Trends Data (scoped by LOB state for non-global users)
         $lobStateForTrends = $user?->lob_state_name;

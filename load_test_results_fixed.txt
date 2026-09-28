@@ -1,0 +1,311 @@
+
+          /\      |‾‾| /‾‾/   /‾‾/   
+     /\  /  \     |  |/  /   /  /    
+    /  \/    \    |     (   /   ‾‾\  
+   /          \   |  |\  \ |  (‾)  | 
+  / __________ \  |__| \__\ \_____/ .io
+
+     execution: local
+        script: comprehensive_load_test.js
+        output: -
+
+     scenarios: (100.00%) 1 scenario, 255 max VUs, 1m0s max duration (incl. graceful stop):
+              * default: 255 looping VUs for 30s (gracefulStop: 30s)
+
+
+running (0m00.9s), 255/255 VUs, 0 complete and 0 interrupted iterations
+default   [   3% ] 255 VUs  00.9s/30s
+
+running (0m01.9s), 255/255 VUs, 0 complete and 0 interrupted iterations
+default   [   6% ] 255 VUs  01.9s/30s
+
+running (0m02.9s), 255/255 VUs, 0 complete and 0 interrupted iterations
+default   [  10% ] 255 VUs  02.9s/30s
+
+running (0m03.9s), 255/255 VUs, 0 complete and 0 interrupted iterations
+default   [  13% ] 255 VUs  03.9s/30s
+
+running (0m04.9s), 255/255 VUs, 0 complete and 0 interrupted iterations
+default   [  16% ] 255 VUs  04.9s/30s
+
+running (0m05.9s), 255/255 VUs, 0 complete and 0 interrupted iterations
+default   [  20% ] 255 VUs  05.9s/30s
+
+running (0m06.9s), 255/255 VUs, 0 complete and 0 interrupted iterations
+default   [  23% ] 255 VUs  06.9s/30s
+
+running (0m07.9s), 255/255 VUs, 0 complete and 0 interrupted iterations
+default   [  26% ] 255 VUs  07.9s/30s
+
+running (0m08.9s), 255/255 VUs, 0 complete and 0 interrupted iterations
+default   [  30% ] 255 VUs  08.9s/30s
+
+running (0m09.9s), 255/255 VUs, 0 complete and 0 interrupted iterations
+default   [  33% ] 255 VUs  09.9s/30s
+
+running (0m10.9s), 255/255 VUs, 0 complete and 0 interrupted iterations
+default   [  36% ] 255 VUs  10.9s/30s
+
+running (0m11.9s), 255/255 VUs, 0 complete and 0 interrupted iterations
+default   [  40% ] 255 VUs  11.9s/30s
+
+running (0m12.9s), 255/255 VUs, 0 complete and 0 interrupted iterations
+default   [  43% ] 255 VUs  12.9s/30s
+
+running (0m13.9s), 255/255 VUs, 0 complete and 0 interrupted iterations
+default   [  46% ] 255 VUs  13.9s/30s
+
+running (0m14.9s), 255/255 VUs, 0 complete and 0 interrupted iterations
+default   [  50% ] 255 VUs  14.9s/30s
+
+running (0m15.9s), 255/255 VUs, 0 complete and 0 interrupted iterations
+default   [  53% ] 255 VUs  15.9s/30s
+
+running (0m16.9s), 255/255 VUs, 0 complete and 0 interrupted iterations
+default   [  56% ] 255 VUs  16.9s/30s
+
+running (0m17.9s), 255/255 VUs, 0 complete and 0 interrupted iterations
+default   [  60% ] 255 VUs  17.9s/30s
+
+running (0m18.9s), 255/255 VUs, 0 complete and 0 interrupted iterations
+default   [  63% ] 255 VUs  18.9s/30s
+
+running (0m19.9s), 255/255 VUs, 0 complete and 0 interrupted iterations
+default   [  66% ] 255 VUs  19.9s/30s
+
+running (0m20.9s), 255/255 VUs, 0 complete and 0 interrupted iterations
+default   [  70% ] 255 VUs  20.9s/30s
+
+running (0m21.9s), 255/255 VUs, 0 complete and 0 interrupted iterations
+default   [  73% ] 255 VUs  21.9s/30s
+
+running (0m22.9s), 255/255 VUs, 0 complete and 0 interrupted iterations
+default   [  76% ] 255 VUs  22.9s/30s
+
+running (0m23.9s), 255/255 VUs, 0 complete and 0 interrupted iterations
+default   [  80% ] 255 VUs  23.9s/30s
+
+running (0m24.9s), 255/255 VUs, 0 complete and 0 interrupted iterations
+default   [  83% ] 255 VUs  24.9s/30s
+
+running (0m25.9s), 255/255 VUs, 0 complete and 0 interrupted iterations
+default   [  86% ] 255 VUs  25.9s/30s
+
+running (0m26.9s), 255/255 VUs, 0 complete and 0 interrupted iterations
+default   [  90% ] 255 VUs  26.9s/30s
+
+running (0m27.9s), 255/255 VUs, 0 complete and 0 interrupted iterations
+default   [  93% ] 255 VUs  27.9s/30s
+
+running (0m28.9s), 255/255 VUs, 0 complete and 0 interrupted iterations
+default   [  96% ] 255 VUs  28.9s/30s
+
+running (0m29.9s), 255/255 VUs, 0 complete and 0 interrupted iterations
+default   [ 100% ] 255 VUs  29.9s/30s
+
+running (0m30.9s), 255/255 VUs, 0 complete and 0 interrupted iterations
+default ↓ [ 100% ] 255 VUs  30s
+
+running (0m31.9s), 255/255 VUs, 0 complete and 0 interrupted iterations
+default ↓ [ 100% ] 255 VUs  30s
+
+running (0m32.9s), 255/255 VUs, 0 complete and 0 interrupted iterations
+default ↓ [ 100% ] 255 VUs  30s
+
+running (0m33.9s), 255/255 VUs, 0 complete and 0 interrupted iterations
+default ↓ [ 100% ] 255 VUs  30s
+
+running (0m34.9s), 255/255 VUs, 0 complete and 0 interrupted iterations
+default ↓ [ 100% ] 255 VUs  30s
+
+running (0m35.9s), 255/255 VUs, 0 complete and 0 interrupted iterations
+default ↓ [ 100% ] 255 VUs  30s
+
+running (0m36.9s), 255/255 VUs, 0 complete and 0 interrupted iterations
+default ↓ [ 100% ] 255 VUs  30s
+
+running (0m37.9s), 255/255 VUs, 0 complete and 0 interrupted iterations
+default ↓ [ 100% ] 255 VUs  30s
+
+running (0m38.9s), 255/255 VUs, 0 complete and 0 interrupted iterations
+default ↓ [ 100% ] 255 VUs  30s
+
+running (0m39.9s), 255/255 VUs, 0 complete and 0 interrupted iterations
+default ↓ [ 100% ] 255 VUs  30s
+
+running (0m40.9s), 255/255 VUs, 0 complete and 0 interrupted iterations
+default ↓ [ 100% ] 255 VUs  30s
+
+running (0m41.9s), 255/255 VUs, 0 complete and 0 interrupted iterations
+default ↓ [ 100% ] 255 VUs  30s
+
+running (0m42.9s), 255/255 VUs, 0 complete and 0 interrupted iterations
+default ↓ [ 100% ] 255 VUs  30s
+
+running (0m43.9s), 255/255 VUs, 0 complete and 0 interrupted iterations
+default ↓ [ 100% ] 255 VUs  30s
+
+running (0m44.9s), 255/255 VUs, 0 complete and 0 interrupted iterations
+default ↓ [ 100% ] 255 VUs  30s
+
+running (0m45.9s), 255/255 VUs, 0 complete and 0 interrupted iterations
+default ↓ [ 100% ] 255 VUs  30s
+
+running (0m46.9s), 255/255 VUs, 0 complete and 0 interrupted iterations
+default ↓ [ 100% ] 255 VUs  30s
+
+running (0m47.9s), 255/255 VUs, 0 complete and 0 interrupted iterations
+default ↓ [ 100% ] 255 VUs  30s
+
+running (0m48.9s), 255/255 VUs, 0 complete and 0 interrupted iterations
+default ↓ [ 100% ] 255 VUs  30s
+
+running (0m49.9s), 255/255 VUs, 0 complete and 0 interrupted iterations
+default ↓ [ 100% ] 255 VUs  30s
+
+running (0m50.9s), 255/255 VUs, 0 complete and 0 interrupted iterations
+default ↓ [ 100% ] 255 VUs  30s
+
+running (0m51.9s), 255/255 VUs, 0 complete and 0 interrupted iterations
+default ↓ [ 100% ] 255 VUs  30s
+
+running (0m52.9s), 255/255 VUs, 0 complete and 0 interrupted iterations
+default ↓ [ 100% ] 255 VUs  30s
+
+running (0m53.9s), 255/255 VUs, 0 complete and 0 interrupted iterations
+default ↓ [ 100% ] 255 VUs  30s
+
+running (0m54.9s), 255/255 VUs, 0 complete and 0 interrupted iterations
+default ↓ [ 100% ] 255 VUs  30s
+
+running (0m55.9s), 255/255 VUs, 0 complete and 0 interrupted iterations
+default ↓ [ 100% ] 255 VUs  30s
+
+running (0m56.9s), 255/255 VUs, 0 complete and 0 interrupted iterations
+default ↓ [ 100% ] 255 VUs  30s
+
+running (0m57.9s), 255/255 VUs, 0 complete and 0 interrupted iterations
+default ↓ [ 100% ] 255 VUs  30s
+
+running (0m58.9s), 255/255 VUs, 0 complete and 0 interrupted iterations
+default ↓ [ 100% ] 255 VUs  30s
+
+running (0m59.9s), 255/255 VUs, 0 complete and 0 interrupted iterations
+default ↓ [ 100% ] 255 VUs  30s
+time="2026-09-28T20:49:57+05:30" level=warning msg="No script iterations fully finished, consider making the test duration longer"
+
+     ✓ status is 200 or 4xx for dashboard
+     ✓ status is 200 or 4xx for scramble.dev-tools.asset
+     ✓ status is 200 or 4xx for admin.audit-logs.index
+     ✓ status is 200 or 4xx for analytics
+     ✓ status is 200 or 4xx for analytics.data
+     ✓ status is 200 or 4xx for api.activities.recent
+     ✓ status is 200 or 4xx for api.audit-logs.index
+     ✓ status is 200 or 4xx for attendances.index
+     ✓ status is 200 or 4xx for api/attendances/export/detailed
+     ✓ status is 200 or 4xx for api/attendances/export/summary
+     ✓ status is 200 or 4xx for attendances.show
+     ✓ status is 200 or 4xx for attributes.index
+     ✓ status is 200 or 4xx for attributes.show
+     ✓ status is 200 or 4xx for brands.index
+     ✓ status is 200 or 4xx for brands.show
+     ✓ status is 200 or 4xx for api/call-tags
+     ✓ status is 200 or 4xx for api.call-tags.index
+     ✓ status is 200 or 4xx for api/call-tags/1/form
+     ✓ status is 200 or 4xx for categories.index
+     ✓ status is 200 or 4xx for categories.show
+     ✓ status is 200 or 4xx for api/chat/active-status
+     ✓ status is 200 or 4xx for api/chat/conversations
+     ✓ status is 200 or 4xx for api/chat/conversations/1
+     ✓ status is 200 or 4xx for api/chat/conversations/1/messages
+     ✓ status is 200 or 4xx for api/chat/search
+     ✓ status is 200 or 4xx for api/chat/unread-count
+     ✓ status is 200 or 4xx for api/chat/users
+     ✓ status is 200 or 4xx for api.complaints.index
+     ✓ status is 200 or 4xx for api.complaints.export
+     ✓ status is 200 or 4xx for api.complaints.stats
+     ✓ status is 200 or 4xx for api.complaints.show
+     ✓ status is 200 or 4xx for api.credit-notes.index
+     ✓ status is 200 or 4xx for api/customer-settings/1
+     ✓ status is 200 or 4xx for api.customers.index
+     ✓ status is 200 or 4xx for api.customers.check-referral
+     ✓ status is 200 or 4xx for api.customers.show
+     ✓ status is 200 or 4xx for api.dashboard
+     ✓ status is 200 or 4xx for api/departments
+     ✓ status is 200 or 4xx for api/departments/1
+     ✓ status is 200 or 4xx for api/files
+     ✓ status is 200 or 4xx for holidays.index
+     ✓ status is 200 or 4xx for holidays.show
+     ✓ status is 200 or 4xx for api/hr-settings/1
+     ✓ status is 200 or 4xx for hsn-codes.index
+     ✓ status is 200 or 4xx for hsn-codes.show
+     ✓ status is 200 or 4xx for api.inventory.adjustments.index
+     ✓ status is 200 or 4xx for api.inventory.adjustments.options
+     ✓ status is 200 or 4xx for api.inventory.adjustments.show
+     ✓ status is 200 or 4xx for api.inventory.stocks.index
+     ✓ status is 200 or 4xx for api.inventory.stocks.show
+     ✓ status is 200 or 4xx for api.inventory.stocks.warehouse-options
+     ✓ status is 200 or 4xx for api.inventory.transfers.index
+     ✓ status is 200 or 4xx for api.inventory.transfers.options
+     ✓ status is 200 or 4xx for api.inventory.transfers.show
+     ✓ status is 200 or 4xx for api.invoices.index
+     ✓ status is 200 or 4xx for api.invoices.show
+     ✓ status is 200 or 4xx for api.invoices.pdf
+     ✓ status is 200 or 4xx for leave-balances.index
+     ✓ status is 200 or 4xx for leave-balances.show
+     ✓ status is 200 or 4xx for api/leaves
+     ✓ status is 200 or 4xx for api/leaves/1
+     ✓ status is 200 or 4xx for api.order-reasons.list
+     ✓ status is 200 or 4xx for api.orders.index
+     ✓ status is 200 or 4xx for api.orders.bulk-print
+     ✓ status is 200 or 4xx for api.orders.export
+     ✓ status is 200 or 4xx for api.orders.show
+     ✓ status is 200 or 4xx for api/org-chart
+     ✓ status is 200 or 4xx for api.payments.index
+     ✓ status is 200 or 4xx for api.payments.show
+     ✓ status is 200 or 4xx for api.permissions.index
+     ✓ status is 200 or 4xx for api.permissions.options
+     ✓ status is 200 or 4xx for api.permissions.show
+     ✓ status is 200 or 4xx for api.procurement.goods-receipts.index
+     ✓ status is 200 or 4xx for api.procurement.goods-receipts.pdf
+     ✓ status is 200 or 4xx for api.procurement.purchase-orders.index
+     ✓ status is 200 or 4xx for api.procurement.purchase-orders.pdf
+     ✓ status is 200 or 4xx for api.procurement.suppliers.index
+     ✓ status is 200 or 4xx for api.procurement.suppliers.show
+     ✓ status is 200 or 4xx for api.products.index
+     ✓ status is 200 or 4xx for api.products.search.api
+     ✓ status is 200 or 4xx for api.products.export
+     ✓ status is 200 or 4xx for api.products.show
+     ✓ status is 200 or 4xx for api.promotions.coupons.index
+     ✓ status is 200 or 4xx for api.promotions.offers.index
+     ✓ status is 200 or 4xx for api.promotions.referrals.programs.index
+     ✓ status is 200 or 4xx for api.refunds.index
+     ✓ status is 200 or 4xx for api.refunds.show
+     ✓ status is 200 or 4xx for api.reports
+     ✓ status is 200 or 4xx for api.returns.index
+     ✓ status is 200 or 4xx for api.returns.show
+     ✓ status is 200 or 4xx for api.roles.index
+     ✓ status is 200 or 4xx for api.roles.options
+     ✓ status is 200 or 4xx for api.roles.show
+     ✓ status is 200 or 4xx for api/security/activity
+     ✓ status is 200 or 4xx for api/security/sessions
+
+     checks.........................: 100.00% ✓ 1441      ✗ 0    
+     data_received..................: 63 MB   1.0 MB/s
+     data_sent......................: 1.4 MB  24 kB/s
+     http_req_blocked...............: avg=3.19ms min=25.6µs   med=405.4µs  max=71.98ms p(90)=4.8ms  p(95)=25ms   
+     http_req_connecting............: avg=2.84ms min=14.02µs  med=266.56µs max=55.52ms p(90)=3.44ms p(95)=21.28ms
+     http_req_duration..............: avg=9.05s  min=89.65ms  med=9.55s    max=15.16s  p(90)=11.3s  p(95)=12.25s 
+       { expected_response:true }...: avg=10.6s  min=8.31s    med=10.3s    max=15.16s  p(90)=13.43s p(95)=14.21s 
+     http_req_failed................: 70.78%  ✓ 1020      ✗ 421  
+     http_req_receiving.............: avg=1.47ms min=105.57µs med=1.09ms   max=14.03ms p(90)=2.99ms p(95)=4.13ms 
+     http_req_sending...............: avg=1.96ms min=7.2µs    med=45.5µs   max=33.02ms p(90)=1.16ms p(95)=23.78ms
+     http_req_tls_handshaking.......: avg=0s     min=0s       med=0s       max=0s      p(90)=0s     p(95)=0s     
+     http_req_waiting...............: avg=9.04s  min=85.12ms  med=9.55s    max=15.16s  p(90)=11.3s  p(95)=12.25s 
+     http_reqs......................: 1441    24.010482/s
+     vus............................: 255     min=255     max=255
+     vus_max........................: 255     min=255     max=255
+
+
+running (1m00.0s), 000/255 VUs, 0 complete and 255 interrupted iterations
+default ✓ [ 100% ] 255 VUs  30s
