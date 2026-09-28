@@ -723,6 +723,7 @@ document.addEventListener('alpine:init', () => {
       let abortController = new AbortController();
       this._syncAbort = abortController;
       let batchCount = 0;
+      let retryDelay = 800; // Start with standard 800ms pause
 
       try {
         while (true) {
@@ -782,11 +783,32 @@ document.addEventListener('alpine:init', () => {
             break;
           }
 
-          // finished:false — batch done but more pincodes remain, loop again
-          showToast(`Batch ${batchCount}: ${res.message}`, 'info');
+          // Check for timeout to apply exponential backoff
+          if (res.message && res.message.includes('Auth/Network timeout')) {
+            if (retryDelay >= 15000) {
+              showToast('Sync aborted: India Post API is persistently unreachable. Please verify network or API status.', 'danger');
+              try {
+                await apiFetch('/api/villages/sync-indiapost', {
+                  method: 'POST',
+                  body: JSON.stringify({ action: 'stop' }),
+                });
+              } catch (_) {}
+              break;
+            }
+            
+            showToast(`Batch ${batchCount}: Network timeout. Retrying in ${retryDelay / 1000}s...`, 'warning');
+            await new Promise((r) => setTimeout(r, retryDelay));
+            retryDelay *= 2; // Exponential backoff
+            continue; // Skip the standard pause below
+          } else {
+            // Reset delay on success
+            retryDelay = 800;
+            // finished:false — batch done but more pincodes remain, loop again
+            showToast(`Batch ${batchCount}: ${res.message}`, 'info');
+          }
 
           // Brief pause between batches to avoid hammering the server
-          await new Promise((r) => setTimeout(r, 800));
+          await new Promise((r) => setTimeout(r, retryDelay));
         }
       } catch (err) {
         showToast(err.message || 'Failed to sync pincodes.', 'danger');
