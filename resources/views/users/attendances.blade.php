@@ -374,20 +374,20 @@
             </div>
             
             <!-- Calendar View -->
-            <div class="calendar-page pb-4" x-show="currentView === 'calendar'" style="display: none; min-height: 900px; height: auto;">
-                <div class="calendar-container" style="padding: 0;">
-                    <div class="calendar-layout" style="padding: 0; background: transparent;">
-                        <div class="calendar-main" style="padding: 0; background: transparent;">
-                            <div class="calendar-content">
+            <div class="calendar-page pb-0" x-show="currentView === 'calendar'" style="display: none; min-height: 800px; height: auto;">
+                <div class="calendar-container m-0 border-0 shadow-none rounded-0">
+                    <div class="calendar-layout bg-transparent">
+                        <div class="calendar-main bg-transparent">
+                            <div class="calendar-content p-0">
                                 <div class="month-view border-0 shadow-none">
-                    <div class="month-header bg-body-tertiary">
-                        <div class="month-header-day text-muted fw-bold">Sun</div>
-                        <div class="month-header-day text-muted fw-bold">Mon</div>
-                        <div class="month-header-day text-muted fw-bold">Tue</div>
-                        <div class="month-header-day text-muted fw-bold">Wed</div>
-                        <div class="month-header-day text-muted fw-bold">Thu</div>
-                        <div class="month-header-day text-muted fw-bold">Fri</div>
-                        <div class="month-header-day text-muted fw-bold">Sat</div>
+                    <div class="month-header">
+                        <div class="month-header-day">Sunday</div>
+                        <div class="month-header-day">Monday</div>
+                        <div class="month-header-day">Tuesday</div>
+                        <div class="month-header-day">Wednesday</div>
+                        <div class="month-header-day">Thursday</div>
+                        <div class="month-header-day">Friday</div>
+                        <div class="month-header-day">Saturday</div>
                     </div>
                     
                     <div class="month-grid" style="grid-template-rows: repeat(6, minmax(140px, 1fr));">
