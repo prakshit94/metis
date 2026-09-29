@@ -48,6 +48,6 @@ class SupplierSeeder extends Seeder
             ];
         }
 
-        DB::table('suppliers')->insert($suppliers);
+        DB::table('suppliers')->insertOrIgnore($suppliers);
     }
 }

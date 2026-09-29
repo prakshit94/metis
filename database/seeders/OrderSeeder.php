@@ -89,7 +89,6 @@ class OrderSeeder extends Seeder
                     'party_id' => $party->id,
                     'order_date' => $orderDate,
                     'status' => $status,
-                    'is_draft' => false,
                     'warehouse_id' => $warehouse->id,
                     'shipping_address_id' => $address?->id,
                     'billing_address_id' => $address?->id,

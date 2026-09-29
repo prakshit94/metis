@@ -22,12 +22,13 @@ class StockTransferSeeder extends Seeder
             return;
         }
 
+        $runSuffix = strtoupper(\Illuminate\Support\Str::random(4));
         for ($i = 1; $i <= 5; $i++) {
             $from = $faker->randomElement($warehouses);
             $to = $faker->randomElement(array_filter($warehouses, fn ($w) => $w !== $from));
 
             $transferId = DB::table('stock_transfers')->insertGetId([
-                'transfer_no' => 'TRN-'.date('Ym').'-'.str_pad((string) $i, 4, '0', STR_PAD_LEFT),
+                'transfer_no' => 'TRN-'.date('Ym').'-'.$runSuffix.'-'.str_pad((string) $i, 4, '0', STR_PAD_LEFT),
                 'from_warehouse_id' => $from,
                 'to_warehouse_id' => $to,
                 'status' => 'received',

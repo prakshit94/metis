@@ -27,9 +27,10 @@ class PurchaseOrderSeeder extends Seeder
 
         $adminUserId = $users[0] ?? null;
 
+        $runSuffix = strtoupper(Str::random(4));
         for ($i = 1; $i <= 10; $i++) {
             $poId = DB::table('purchase_orders')->insertGetId([
-                'po_number' => 'PO-'.date('Ym').'-'.str_pad((string) $i, 4, '0', STR_PAD_LEFT),
+                'po_number' => 'PO-'.date('Ym').'-'.$runSuffix.'-'.str_pad((string) $i, 4, '0', STR_PAD_LEFT),
                 'supplier_id' => $faker->randomElement($suppliers),
                 'warehouse_id' => $faker->randomElement($warehouses),
                 'status' => 'received',
@@ -80,7 +81,7 @@ class PurchaseOrderSeeder extends Seeder
 
             // Create Goods Receipt
             $grnId = DB::table('goods_receipts')->insertGetId([
-                'grn_number' => 'GRN-'.date('Ym').'-'.str_pad((string) $i, 4, '0', STR_PAD_LEFT),
+                'grn_number' => 'GRN-'.date('Ym').'-'.$runSuffix.'-'.str_pad((string) $i, 4, '0', STR_PAD_LEFT),
                 'purchase_order_id' => $poId,
                 'warehouse_id' => $faker->randomElement($warehouses),
                 'received_date' => Carbon::now()->subDays(rand(1, 3)),
