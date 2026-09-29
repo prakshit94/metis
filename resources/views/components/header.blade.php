@@ -1080,25 +1080,19 @@
                             </li>
                         @endif
                         <li>
-                            <a class="dropdown-item px-4 py-2 d-flex align-items-center gap-3 text-body fw-semibold hover-bg-secondary" href="#">
+                            <a class="dropdown-item px-4 py-2 d-flex align-items-center gap-3 text-body fw-semibold hover-bg-secondary"
+                               href="#"
+                               onclick="event.preventDefault(); window.dispatchEvent(new CustomEvent('open-profile-modal', { detail: {{ auth()->id() }} }));">
                                 <i class="bi bi-person text-muted fs-5"></i> Profile
                             </a>
                         </li>
-                        <li>
-                            <a class="dropdown-item px-4 py-2 d-flex align-items-center gap-3 text-body fw-semibold hover-bg-secondary" href="{{ route('security') }}">
-                                <i class="bi bi-gear text-muted fs-5"></i> Settings
-                            </a>
-                        </li>
+
                         <li>
                             <a class="dropdown-item px-4 py-2 d-flex align-items-center gap-3 text-body fw-semibold hover-bg-secondary" href="#" data-bs-toggle="modal" data-bs-target="#changePasswordModal">
                                 <i class="bi bi-key text-muted fs-5"></i> Change Password
                             </a>
                         </li>
-                        <li>
-                            <a class="dropdown-item px-4 py-2 d-flex align-items-center gap-3 text-body fw-semibold hover-bg-secondary" href="{{ route('help') }}">
-                                <i class="bi bi-life-preserver text-muted fs-5"></i> Help Center
-                            </a>
-                        </li>
+
                         
                         <li><hr class="dropdown-divider opacity-10 my-2"></li>
                         
@@ -1120,6 +1114,7 @@
 
 <x-add-customer-modal />
 <x-change-password-modal />
+<x-profile-modal />
 
 <style>
 .hover-bg-secondary:hover { background-color: var(--bs-secondary-bg) !important; }
