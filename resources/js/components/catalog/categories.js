@@ -384,25 +384,39 @@ export default () => {
           });
           if (!confirmed) return;
 
+          const errors = [];
           for (const id of this.selectedItems) {
-            await this.apiRequest(`${this.apiBase}/${id}`, { method: 'DELETE' });
+            try {
+              await this.apiRequest(`${this.apiBase}/${id}`, { method: 'DELETE' });
+            } catch (err) {
+              const item = this.items.find((i) => i.id === id);
+              errors.push(`"${item?.name ?? id}": ${err.message}`);
+            }
+          }
+
+          if (errors.length > 0) {
+            showToast(`${errors.length} category(s) could not be deleted: ${errors[0]}`, 'warning');
+          } else {
+            showToast('Selected categories deleted successfully.', 'success');
           }
         } else {
           const status = action;
+          const isActive = status === 'active' ? '1' : '0';
           for (const id of this.selectedItems) {
             const formData = new FormData();
             formData.append('_method', 'PUT');
             formData.append('status', status);
+            formData.append('is_active', isActive);
 
             await this.apiRequest(`${this.apiBase}/${id}`, {
               method: 'POST',
               body: formData,
             });
           }
+          showToast('Bulk action completed successfully.', 'success');
         }
 
         this.selectedItems = [];
-        showToast('Bulk action completed successfully.', 'success');
         await this.loadData();
       } catch (error) {
         showToast(error.message || 'Bulk action failed.', 'error');

@@ -107,7 +107,10 @@ class CategoryController extends Controller implements HasMiddleware
             $validated['slug'] = Str::slug($validated['name']);
         }
 
-        if ($request->has('is_active')) {
+        // Auto-sync is_active with status when status is explicitly set
+        if ($request->has('status') && ! $request->has('is_active')) {
+            $validated['is_active'] = $validated['status'] === 'active';
+        } elseif ($request->has('is_active')) {
             $validated['is_active'] = filter_var($request->input('is_active'), FILTER_VALIDATE_BOOLEAN);
         }
 
@@ -144,6 +147,20 @@ class CategoryController extends Controller implements HasMiddleware
     {
 
         $model = Category::findOrFail($id);
+
+        // Prevent deleting categories that have sub-categories
+        if ($model->children()->exists()) {
+            return response()->json([
+                'message' => 'Cannot delete this category because it has sub-categories. Please remove or reassign them first.',
+            ], 422);
+        }
+
+        // Prevent deleting categories that have products
+        if ($model->products()->exists()) {
+            return response()->json([
+                'message' => 'Cannot delete this category because it has products assigned. Please reassign the products first.',
+            ], 422);
+        }
 
         // Delete image if exists
         if ($model->image) {

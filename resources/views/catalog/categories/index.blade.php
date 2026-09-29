@@ -80,14 +80,14 @@
                 <div class="col-auto">
                     <div class="d-flex gap-2">
                         <!-- Search -->
-                        <div class="position-relative">
+                        <div class="search-wrapper">
                             <input type="search" 
                                    class="form-control form-control-sm" 
-                                   placeholder="Search..."
-                                   x-model.debounce.300ms="searchQuery"
-                                   @input="filterData()"
+                                   placeholder="Search categories…"
+                                   x-model="searchQuery"
+                                   @input.debounce.300ms="filterData()"
                                    style="width: 250px;">
-                            <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-2 text-muted"></i>
+                            <i class="bi bi-search search-icon"></i>
                         </div>
                         
                         <!-- Status Filter -->
@@ -135,22 +135,36 @@
                                        @change="$event.isTrusted && toggleAll($event.target.checked)"
                                        :checked="selectedItems.length === paginatedItems.length && paginatedItems.length > 0">
                             </th>
-                            <th @click="sortBy('id')" class="sortable" style="width: 80px;">ID</th>
-                            <th @click="sortBy('name')" class="sortable">Category Name</th>
+                            <th @click="sortBy('id')" class="sortable" style="width: 80px;"
+                                :data-sort-active="sortField === 'id' ? sortDirection : null">ID</th>
+                            <th @click="sortBy('name')" class="sortable"
+                                :data-sort-active="sortField === 'name' ? sortDirection : null">Category Name</th>
                             <th>Parent Category</th>
                             <th class="text-center">Products</th>
-                            <th @click="sortBy('status')" class="sortable">Status</th>
+                            <th @click="sortBy('status')" class="sortable"
+                                :data-sort-active="sortField === 'status' ? sortDirection : null">Status</th>
                             <th style="width: 120px;" class="text-end pe-4">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         <template x-if="paginatedItems.length === 0">
                             <tr>
-                                <td colspan="7" class="text-center py-5 text-muted">
-                                    <div x-show="isLoading" class="spinner-border text-primary" role="status"></div>
-                                    <div x-show="!isLoading">
-                                        <i class="bi bi-inbox fs-2 d-block mb-2"></i>
-                                        No categories found.
+                                <td colspan="7">
+                                    <div class="catalog-empty-state">
+                                        <template x-if="isLoading">
+                                            <div class="d-flex justify-content-center">
+                                                <div class="spinner-border text-primary" role="status">
+                                                    <span class="visually-hidden">Loading…</span>
+                                                </div>
+                                            </div>
+                                        </template>
+                                        <template x-if="!isLoading">
+                                            <div>
+                                                <i class="bi bi-inbox empty-icon"></i>
+                                                <p class="empty-title">No categories found</p>
+                                                <p class="mb-0 small">Try adjusting your search or filter, or add a new category.</p>
+                                            </div>
+                                        </template>
                                     </div>
                                 </td>
                             </tr>
@@ -168,10 +182,10 @@
                                 <td>
                                     <div class="d-flex align-items-center gap-3">
                                         <template x-if="item.image">
-                                            <img :src="`/storage/${item.image}`" class="rounded object-cover border" style="width: 32px; height: 32px;" x-on:error="$el.src='{{ asset('assets/images/product-placeholder.svg') }}'">
+                                            <img :src="`/storage/${item.image}`" class="catalog-thumb" x-on:error="$el.src='{{ asset('assets/images/product-placeholder.svg') }}'">
                                         </template>
                                         <template x-if="!item.image">
-                                            <img src="{{ asset('assets/images/product-placeholder.svg') }}" class="rounded object-cover border" style="width: 32px; height: 32px;" alt="No image">
+                                            <img src="{{ asset('assets/images/product-placeholder.svg') }}" class="catalog-thumb opacity-50" alt="No image">
                                         </template>
                                         <div class="fw-semibold text-body-emphasis" x-text="item.name"></div>
                                     </div>
@@ -190,9 +204,9 @@
                                           }"
                                           x-text="item.status"></span>
                                 </td>
-                                <td class="text-end pe-4">
+                                <td class="text-end pe-4 actions-cell">
                                     <div class="dropdown">
-                                        <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="dropdown">
+                                        <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="dropdown" aria-label="Actions">
                                             <i class="bi bi-three-dots-vertical"></i>
                                         </button>
                                         <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">

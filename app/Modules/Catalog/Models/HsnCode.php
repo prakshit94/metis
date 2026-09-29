@@ -21,6 +21,7 @@ class HsnCode extends Model implements Auditable
         'code',
         'description',
         'status',
+        'rate',
     ];
 
     public function getActivitylogOptions(): LogOptions
