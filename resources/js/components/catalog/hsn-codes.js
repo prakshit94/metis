@@ -51,6 +51,7 @@ async function confirmDelete({ title, text, confirmButtonText = 'Yes, delete it'
 export default () => {
   const instance = {
     items: [],
+    taxRates: [],
     filteredItems: [],
     selectedItems: [],
     stats: { total: 0, active: 0, inactive: 0 },
@@ -81,6 +82,7 @@ export default () => {
 
     init() {
       this.loadData();
+      this.loadTaxRates();
 
       const modalEl = document.getElementById('hsnCodesModal');
       if (modalEl) {
@@ -126,6 +128,15 @@ export default () => {
         showToast(error.message, 'error');
       } finally {
         this.isLoading = false;
+      }
+    },
+
+    async loadTaxRates() {
+      try {
+        const payload = await this.apiRequest('/api/tax-rates?per_page=1000');
+        this.taxRates = Array.isArray(payload.data) ? payload.data.filter(t => t.status === 'active') : [];
+      } catch (error) {
+        console.error('Failed to load tax rates:', error);
       }
     },
 

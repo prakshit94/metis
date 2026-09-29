@@ -137,7 +137,7 @@
                             </th>
                             <th @click="sortBy('id')" class="sortable" style="width: 80px;">ID</th>
                             <th @click="sortBy('name')" class="sortable">Name / Code</th>
-                            
+                            <th @click="sortBy('rate')" class="sortable">Rate</th>
                             <th @click="sortBy('status')" class="sortable">Status</th>
                             <th style="width: 120px;" class="text-end pe-4">Actions</th>
                         </tr>
@@ -168,7 +168,9 @@
                                     <div class="fw-medium text-body-emphasis" x-text="item.name || item.code"></div>
                                     <div class="small text-muted" x-text="item.description"></div>
                                 </td>
-                                
+                                <td>
+                                    <span x-text="item.rate + '%'"></span>
+                                </td>
                                 <td>
                                     <span class="badge rounded-pill" 
                                           :class="{
@@ -259,6 +261,16 @@
                                     <div class="col-12">
                                         <label class="form-label fw-medium text-muted small">Description</label>
                                         <input type="text" class="form-control" x-model="form.description" placeholder="e.g. Personal computer/Laptop">
+                                    </div>
+
+                                    <div class="col-12">
+                                        <label class="form-label fw-medium text-muted small">Tax Rate (%)</label>
+                                        <select class="form-select" x-model.number="form.rate">
+                                            <option value="0">Select Tax Rate</option>
+                                            <template x-for="tax in taxRates" :key="tax.id">
+                                                <option :value="tax.rate" x-text="`${tax.name} (${tax.rate}%)`"></option>
+                                            </template>
+                                        </select>
                                     </div>
                     
                                     <div class="col-12">

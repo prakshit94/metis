@@ -12,6 +12,7 @@ return new class extends Migration
             $table->id();
             $table->string('code')->unique();
             $table->string('description')->nullable();
+            $table->decimal('rate', 8, 2)->default(0);
             $table->string('status')->default('active')->index();
             $table->timestamps();
             $table->softDeletes();
