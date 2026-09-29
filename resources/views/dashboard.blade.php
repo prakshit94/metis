@@ -490,6 +490,9 @@
 @endsection
 
 @push('modals')
+<div x-data="orderTable" @fetch-order.window="fetchAndShowOrder($event.detail)">
+    @include('orders.partials.modals')
+</div>
 <div class="modal fade" id="iconDemoModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">

@@ -140,6 +140,7 @@ class AdminApp {
     switch (currentPage) {
       case 'dashboard':
         this.components.set('dashboard', new DashboardManager());
+        await this.initOrdersPage();
         break;
       case 'users':
         await this.initUsersPage();

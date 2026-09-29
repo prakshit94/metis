@@ -326,7 +326,8 @@ class PageController extends Controller
             }
 
             return [
-                'id'       => $order->order_no,
+                'id'       => $order->id,
+                'order_no' => $order->order_no,
                 'customer' => $order->party ? $order->party->name : 'Unknown',
                 'phone'    => $order->party ? $order->party->phone : null,
                 'items'    => $itemsList,
@@ -387,7 +388,8 @@ class PageController extends Controller
             }
 
             return [
-                'id'            => $order->order_no,
+                'id'            => $order->id,
+                'order_no'      => $order->order_no,
                 'customer'      => $order->party ? $order->party->name : 'Unknown',
                 'phone'         => $order->party ? $order->party->phone : null,
                 'items'         => $itemsList,

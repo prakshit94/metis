@@ -301,9 +301,15 @@ export class DashboardManager {
       numSpan.textContent = index + '.';
       idCell.appendChild(numSpan);
       
-      const strong = document.createElement('strong');
-      strong.textContent = order.id;
-      idCell.appendChild(strong);
+      const orderLink = document.createElement('a');
+      orderLink.href = '#';
+      orderLink.className = 'fw-bold text-decoration-none text-primary';
+      orderLink.textContent = order.order_no || order.id;
+      orderLink.addEventListener('click', (e) => {
+          e.preventDefault();
+          window.dispatchEvent(new CustomEvent('fetch-order', { detail: order.id }));
+      });
+      idCell.appendChild(orderLink);
 
       const customerCell = document.createElement('td');
       customerCell.textContent = order.customer;
@@ -372,9 +378,15 @@ export class DashboardManager {
       numSpan.textContent = index + '.';
       idCell.appendChild(numSpan);
       
-      const strong = document.createElement('strong');
-      strong.textContent = order.id;
-      idCell.appendChild(strong);
+      const orderLink = document.createElement('a');
+      orderLink.href = '#';
+      orderLink.className = 'fw-bold text-decoration-none text-primary';
+      orderLink.textContent = order.order_no || order.id;
+      orderLink.addEventListener('click', (e) => {
+          e.preventDefault();
+          window.dispatchEvent(new CustomEvent('fetch-order', { detail: order.id }));
+      });
+      idCell.appendChild(orderLink);
 
       const customerCell = document.createElement('td');
       customerCell.textContent = order.customer;

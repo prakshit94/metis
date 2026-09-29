@@ -422,7 +422,9 @@ document.addEventListener('alpine:init', () => {
         if (urlWarehouse.length) this.warehouseFilter = urlWarehouse;
       }, 500);
 
-      this.loadOrders();
+      if (window.location.pathname.startsWith('/orders')) {
+        this.loadOrders();
+      }
 
       this.$watch('visibleWarehouseStat', (value) => {
         let whId = '';
@@ -457,12 +459,26 @@ document.addEventListener('alpine:init', () => {
 
       // Delay chart initialization to ensure DOM is fully ready
       setTimeout(() => {
-        this.initCharts();
-        this.initResizeHandler();
+        if (window.location.pathname.startsWith('/orders')) {
+          this.initCharts();
+          this.initResizeHandler();
+        }
       }, 500);
 
       const onHide = () => this.destroy();
       window.addEventListener('pagehide', onHide, { once: true });
+    },
+
+    async fetchAndShowOrder(orderId) {
+      try {
+        const details = await apiFetch(`/orders/${orderId}`);
+        if (details && details.order) {
+          this.selectedOrder = this.mapOrder(details.order);
+          getModal('#orderDetailModal')?.show();
+        }
+      } catch (err) {
+        showToast(err.message || 'Failed to load order details', 'danger');
+      }
     },
 
     destroy() {

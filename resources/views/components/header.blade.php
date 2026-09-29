@@ -328,13 +328,59 @@
                 </button>
 
 @php
-                    $webApps = [
-                        ['route' => 'orders', 'icon' => 'bi-bag-check-fill', 'color' => 'primary', 'name' => 'Orders', 'permission' => 'orders.view'],
-                        ['route' => 'customers', 'icon' => 'bi-person-lines-fill', 'color' => 'success', 'name' => 'Customers', 'permission' => 'customer-view', 'super_admin_only' => true],
-                        ['route' => 'catalog.products', 'icon' => 'bi-box-seam-fill', 'color' => 'info', 'name' => 'Products', 'permission' => 'product-view'],
-                        ['route' => 'reports', 'icon' => 'bi-file-earmark-bar-graph-fill', 'color' => 'warning', 'name' => 'Reports', 'permission' => 'reports-view'],
-                        ['route' => 'chat.index', 'icon' => 'bi-chat-dots-fill', 'color' => 'danger', 'name' => 'Team Chat', 'permission' => 'chat-view'],
-                        ['route' => 'calendar', 'icon' => 'bi-calendar-week-fill', 'color' => 'secondary', 'name' => 'Calendar', 'permission' => 'calendar-view'],
+                                        $webApps = [
+['route' => 'dashboard', 'icon' => 'bi-grid-1x2-fill', 'color' => 'primary', 'name' => 'Dashboard', 'permission' => 'dashboard-view'],
+    ['route' => 'inventory.dashboard', 'icon' => 'bi-buildings', 'color' => 'success', 'name' => 'Command Center', 'permission' => 'warehouse-dashboard-view'],
+    ['route' => 'analytics', 'icon' => 'bi-bar-chart-line-fill', 'color' => 'info', 'name' => 'Analytics', 'permission' => 'analytics-view'],
+    ['route' => 'reports', 'icon' => 'bi-file-earmark-bar-graph-fill', 'color' => 'warning', 'name' => 'Reports', 'permission' => 'reports-view'],
+    ['route' => 'targets.index', 'icon' => 'bi-award-fill', 'color' => 'danger', 'name' => 'Targets & Achv.'],
+    ['route' => 'orders', 'icon' => 'bi-bag-check-fill', 'color' => 'secondary', 'name' => 'Orders', 'permission' => 'orders.view'],
+    ['route' => 'complaints.index', 'icon' => 'bi-headset', 'color' => 'dark', 'name' => 'Complaints', 'permission' => 'complaints.view'],
+    ['route' => 'promotions.coupons', 'icon' => 'bi-ticket-perforated-fill', 'color' => 'primary', 'name' => 'Coupon Codes', 'permission' => 'coupon-view'],
+    ['route' => 'promotions.offers', 'icon' => 'bi-star-fill', 'color' => 'success', 'name' => 'Offers & Deals', 'permission' => 'promotions-view'],
+    ['route' => 'referrals.programs.index', 'icon' => 'bi-diagram-3-fill', 'color' => 'info', 'name' => 'Referral Programs', 'permission' => 'promotions-view'],
+    ['route' => 'invoices.index', 'icon' => 'bi-receipt', 'color' => 'warning', 'name' => 'Invoices', 'permission' => 'invoices.view'],
+    ['route' => 'payments.index', 'icon' => 'bi-credit-card', 'color' => 'danger', 'name' => 'Payments', 'permission' => 'payments.view'],
+    ['route' => 'refunds.index', 'icon' => 'bi-cash-coin', 'color' => 'secondary', 'name' => 'Refunds', 'permission' => 'refunds.view'],
+    ['route' => 'returns.index', 'icon' => 'bi-arrow-return-left', 'color' => 'dark', 'name' => 'Returns', 'permission' => 'returns.view'],
+    ['route' => 'credit-notes.index', 'icon' => 'bi-receipt-cutoff', 'color' => 'primary', 'name' => 'Credit Notes', 'permission' => 'credit-notes.view'],
+    ['route' => 'shipping.shipments', 'icon' => 'bi-geo-alt-fill', 'color' => 'success', 'name' => 'Shipments & Tracking', 'permission' => 'shipping-view'],
+    ['route' => 'shipping.services', 'icon' => 'bi-gear-wide-connected', 'color' => 'info', 'name' => 'Shipping Services', 'permission' => 'shipping-view'],
+    ['route' => 'shipping.settings', 'icon' => 'bi-sliders', 'color' => 'warning', 'name' => 'Shipping Settings', 'permission' => 'shipping-view'],
+    ['route' => 'catalog.warehouses', 'icon' => 'bi-buildings-fill', 'color' => 'danger', 'name' => 'Warehouses', 'permission' => 'warehouse-view'],
+    ['route' => 'inventory.stock-management', 'icon' => 'bi-box-seam-fill', 'color' => 'secondary', 'name' => 'Stock Levels', 'permission' => 'stockmanagement-view'],
+    ['route' => 'inventory.stock-transfers', 'icon' => 'bi-arrow-left-right', 'color' => 'dark', 'name' => 'Stock Transfers', 'permission' => 'stocktransfer-view'],
+    ['route' => 'inventory.adjustments', 'icon' => 'bi-sliders2', 'color' => 'primary', 'name' => 'Adjustments', 'permission' => 'inventoryadjustment-view'],
+    ['route' => 'procurement.suppliers.index', 'icon' => 'bi-truck-flatbed', 'color' => 'success', 'name' => 'Suppliers', 'permission' => 'supplier-view'],
+    ['route' => 'procurement.purchase-orders.index', 'icon' => 'bi-receipt', 'color' => 'info', 'name' => 'Purchase Orders', 'permission' => 'purchaseorder-view'],
+    ['route' => 'procurement.goods-receipts.index', 'icon' => 'bi-clipboard-check', 'color' => 'warning', 'name' => 'Goods Receipts', 'permission' => 'goodsreceipt-view'],
+    ['route' => 'catalog.products', 'icon' => 'bi-box-seam-fill', 'color' => 'danger', 'name' => 'Products', 'permission' => 'product-view'],
+    ['route' => 'catalog.categories', 'icon' => 'bi-diagram-3-fill', 'color' => 'secondary', 'name' => 'Categories', 'permission' => 'category-view'],
+    ['route' => 'catalog.brands', 'icon' => 'bi-patch-check-fill', 'color' => 'dark', 'name' => 'Brands', 'permission' => 'brand-view'],
+    ['route' => 'catalog.attributes', 'icon' => 'bi-sliders2', 'color' => 'primary', 'name' => 'Attributes', 'permission' => 'productattribute-view'],
+    ['route' => 'catalog.uom', 'icon' => 'bi-rulers', 'color' => 'success', 'name' => 'Units of Measure', 'permission' => 'unitofmeasure-view'],
+    ['route' => 'catalog.tax-rates', 'icon' => 'bi-percent', 'color' => 'info', 'name' => 'Tax Rates', 'permission' => 'taxrate-view'],
+    ['route' => 'catalog.hsn-codes', 'icon' => 'bi-upc-scan', 'color' => 'warning', 'name' => 'HSN Codes', 'permission' => 'hsncode-view'],
+    ['route' => 'users', 'icon' => 'bi-person-fill-gear', 'color' => 'danger', 'name' => 'Users', 'permission' => 'user-view'],
+    ['route' => 'roles-permissions', 'icon' => 'bi-shield-lock-fill', 'color' => 'secondary', 'name' => 'Roles & Permissions', 'permission' => 'role-view'],
+    ['route' => 'teams', 'icon' => 'bi-buildings-fill', 'color' => 'dark', 'name' => 'Teams (State/LOB)', 'permission' => 'team-view'],
+    ['route' => 'customers', 'icon' => 'bi-person-lines-fill', 'color' => 'primary', 'name' => 'Customers', 'super_admin_only' => true],
+    ['route' => 'customer-settings.index', 'icon' => 'bi-gear-wide-connected', 'color' => 'success', 'name' => 'Customer Settings', 'super_admin_only' => true],
+    ['route' => 'departments', 'icon' => 'bi-diagram-3-fill', 'color' => 'info', 'name' => 'Departments', 'permission' => 'department-view'],
+    ['route' => 'attendances', 'icon' => 'bi-calendar-check-fill', 'color' => 'warning', 'name' => 'Attendances', 'permission' => 'attendance-view'],
+    ['route' => 'leaves', 'icon' => 'bi-calendar-minus-fill', 'color' => 'danger', 'name' => 'Leave Management', 'permission' => 'leave-view'],
+    ['route' => 'villages', 'icon' => 'bi-geo-alt-fill', 'color' => 'secondary', 'name' => 'Villages', 'permission' => 'village-view'],
+    ['route' => 'order.reasons', 'icon' => 'bi-list-task', 'color' => 'dark', 'name' => 'Order Reasons', 'permission' => 'orderreason-view'],
+    ['route' => 'call-tags.index', 'icon' => 'bi-tags', 'color' => 'primary', 'name' => 'Call Tags', 'permission' => 'settings-view'],
+    ['route' => 'chat.index', 'icon' => 'bi-chat-text-fill', 'color' => 'success', 'name' => 'Team Chat', 'permission' => 'chat-view'],
+    ['route' => 'messages', 'icon' => 'bi-chat-dots-fill', 'color' => 'info', 'name' => 'Messages', 'super_admin_only' => true],
+    ['route' => 'calendar', 'icon' => 'bi-calendar-week-fill', 'color' => 'warning', 'name' => 'Calendar', 'super_admin_only' => true],
+    ['route' => 'files', 'icon' => 'bi-folder2-open', 'color' => 'danger', 'name' => 'Files', 'permission' => 'settings-view'],
+    ['route' => 'forms', 'icon' => 'bi-ui-checks-grid', 'color' => 'secondary', 'name' => 'Forms', 'super_admin_only' => true],
+    ['route' => 'elements', 'icon' => 'bi-puzzle-fill', 'color' => 'dark', 'name' => 'UI Elements', 'permission' => 'settings-view'],
+    ['route' => 'security', 'icon' => 'bi-shield-fill-check', 'color' => 'primary', 'name' => 'Security', 'super_admin_only' => true],
+    ['route' => 'admin.audit-logs.index', 'icon' => 'bi-journal-medical', 'color' => 'success', 'name' => 'Audit Logs', 'super_admin_only' => true],
+    ['route' => 'help', 'icon' => 'bi-question-circle-fill', 'color' => 'info', 'name' => 'Help & Support', 'super_admin_only' => true],
                     ];
                     $availableWebApps = [];
                     if (auth()->check()) {
@@ -343,7 +389,7 @@
                             $isSuperAdminOnly = $app['super_admin_only'] ?? false;
                             if ($isSuperAdmin) {
                                 $availableWebApps[] = $app;
-                            } elseif (!$isSuperAdminOnly && auth()->user()->can($app['permission'])) {
+                            } elseif (!$isSuperAdminOnly && (!isset($app['permission']) || auth()->user()->can($app['permission']))) {
                                 $availableWebApps[] = $app;
                             }
                         }
@@ -368,7 +414,7 @@
                         </div>
 
                         <div class="p-3">
-                            <div class="row g-3 text-center">
+                            <div class="row g-3 text-center custom-scrollbar" style="max-height: 400px; overflow-y: auto; overflow-x: hidden;">
                                 @foreach($availableWebApps as $app)
                                 <div class="col-4">
                                     <a class="dropdown-item p-2 rounded-3 d-flex flex-column align-items-center gap-2 hover-bg-secondary" href="{{ route($app['route']) }}">
