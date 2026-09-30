@@ -497,7 +497,7 @@
                                                 <label class="form-label fw-medium text-muted small">Phone Number <span class="text-danger">*</span></label>
                                                 <div class="input-group input-group-sm">
                                                     <span class="input-group-text bg-body-secondary"><i class="bi bi-telephone"></i></span>
-                                                    <input type="tel" class="form-control form-control-sm" x-model="form.phone" required placeholder="10-digit number">
+                                                    <input type="tel" class="form-control form-control-sm" x-model="form.phone" required pattern="[0-9]{10}" minlength="10" maxlength="10" @input="form.phone = $event.target.value.replace(/[^0-9]/g, '').substring(0, 10)" placeholder="10-digit number" title="Please enter exactly 10 digits">
                                                 </div>
                                             </div>
                                             
@@ -866,6 +866,12 @@
             },
 
             async submitForm() {
+                const formEl = document.getElementById('supplierForm');
+                if (!formEl.checkValidity()) {
+                    formEl.reportValidity();
+                    return;
+                }
+                
                 this.submitting = true;
                 const isUpdate = this.isEditing && this.form.id;
                 const url = isUpdate ? `/procurement/suppliers/${this.form.id}` : '/procurement/suppliers';

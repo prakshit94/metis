@@ -25,6 +25,8 @@ return new class extends Migration
             $table->decimal('tax_amount', 15, 2)->default(0);
             $table->decimal('discount_amount', 15, 2)->default(0);
             $table->decimal('net_amount', 15, 2)->default(0);
+            $table->decimal('paid_amount', 15, 2)->default(0);
+            $table->enum('payment_status', ['unpaid', 'advanced', 'partial', 'paid'])->default('unpaid')->index();
             $table->text('notes')->nullable();
             $table->string('invoice_path')->nullable();
             $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();

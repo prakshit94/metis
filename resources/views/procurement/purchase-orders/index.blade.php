@@ -170,7 +170,7 @@
                             <th>Warehouse</th>
                             <th style="width:150px;">Created At</th>
                             <th>Expected Date</th>
-                            <th>Amount</th>
+                            <th>Amount & Payment</th>
                             <th style="width:140px;">Status</th>
                             <th>Attachment</th>
                             <th style="width:90px;" class="text-end pe-4">Actions</th>
@@ -234,19 +234,38 @@
                                     <span class="small text-muted" x-text="item.expected_delivery_date ? new Date(item.expected_delivery_date).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute:'2-digit', hour12: true }).replace(',', '') : '—'"></span>
                                 </td>
                                 <td>
-                                    <span class="fw-medium">₹<span x-text="item.net_amount || item.total_amount || '0.00'"></span></span>
+                                    <div class="d-flex flex-column">
+                                        <span class="fw-bold">₹<span x-text="item.net_amount || item.total_amount || '0.00'"></span></span>
+                                        <template x-if="(item.paid_amount || 0) > 0">
+                                            <span class="small text-success fw-medium">Paid: ₹<span x-text="item.paid_amount"></span></span>
+                                        </template>
+                                        <template x-if="((item.net_amount || 0) - (item.paid_amount || 0)) > 0">
+                                            <span class="small text-danger fw-medium">Due: ₹<span x-text="((item.net_amount || 0) - (item.paid_amount || 0)).toFixed(2)"></span></span>
+                                        </template>
+                                    </div>
                                 </td>
                                 <td>
-                                    <span class="badge"
-                                          :class="{
-                                            'bg-warning-subtle text-warning': item.status === 'pending',
-                                            'bg-primary-subtle text-primary': item.status === 'approved',
-                                            'bg-info-subtle text-info': item.status === 'partially_received',
-                                            'bg-success-subtle text-success': item.status === 'received',
-                                            'bg-danger-subtle text-danger': item.status === 'rejected'
-                                          }">
-                                          <span x-text="(item.status || 'pending').toUpperCase().replace('_', ' ')"></span>
-                                    </span>
+                                    <div class="d-flex flex-column gap-1 align-items-start">
+                                        <span class="badge"
+                                              :class="{
+                                                'bg-warning-subtle text-warning': item.status === 'pending',
+                                                'bg-primary-subtle text-primary': item.status === 'approved',
+                                                'bg-info-subtle text-info': item.status === 'partially_received',
+                                                'bg-success-subtle text-success': item.status === 'received',
+                                                'bg-danger-subtle text-danger': item.status === 'rejected'
+                                              }">
+                                              <span x-text="(item.status || 'pending').toUpperCase().replace('_', ' ')"></span>
+                                        </span>
+                                        <span class="badge"
+                                              :class="{
+                                                'bg-secondary-subtle text-secondary': !item.payment_status || item.payment_status === 'unpaid',
+                                                'bg-info-subtle text-info': item.payment_status === 'advanced',
+                                                'bg-warning-subtle text-warning': item.payment_status === 'partial',
+                                                'bg-success-subtle text-success': item.payment_status === 'paid'
+                                              }">
+                                              <i class="bi bi-cash me-1"></i><span x-text="(item.payment_status || 'unpaid').toUpperCase()"></span>
+                                        </span>
+                                    </div>
                                 </td>
                                 <td>
                                     <template x-if="item.invoice_path">
@@ -287,6 +306,12 @@
                                                     </template>
                                                     @endcan
                                                     @can('purchaseorder-create')
+                                                    <template x-if="item.status !== 'rejected'">
+                                                        <li><a class="dropdown-item text-success fw-medium" href="#" @click.prevent="openPaymentModal(item)"><i class="bi bi-cash me-2"></i> Log Payment</a></li>
+                                                    </template>
+                                                    <template x-if="item.paid_amount > 0">
+                                                        <li><a class="dropdown-item text-info fw-medium" href="#" @click.prevent="openPaymentHistoryModal(item)"><i class="bi bi-clock-history me-2"></i> Payment History</a></li>
+                                                    </template>
                                                     <li><a class="dropdown-item text-secondary fw-medium" href="#" @click.prevent="openInvoiceModal(item)"><i class="bi bi-file-earmark-arrow-up me-2"></i> Upload Invoice</a></li>
                                                     @endcan
                                                     @can('goodsreceipt-create')
@@ -1078,6 +1103,126 @@
         </div>
     </div>
 
+    <!-- Log Payment Modal -->
+    <div class="modal fade" id="paymentPoModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header border-bottom-0 pb-0">
+                    <h5 class="modal-title fw-bold">Log Payment</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body pt-3">
+                    <form @submit.prevent="submitPaymentForm" id="paymentForm">
+                        <div class="alert alert-info mb-4" style="font-size: 13px;">
+                            <strong>PO Number:</strong> <span x-text="paymentForm.po_number"></span><br>
+                            <strong>Total Amount:</strong> ₹<span x-text="paymentForm.net_amount"></span><br>
+                            <strong>Due Amount:</strong> ₹<span x-text="paymentForm.due_amount" class="text-danger fw-bold"></span>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-medium text-muted small">Payment Amount (₹) <span class="text-danger">*</span></label>
+                            <input type="number" step="0.01" class="form-control" x-model="paymentForm.amount" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-medium text-muted small">Payment Date <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" x-model="paymentForm.payment_date" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-medium text-muted small">Payment Method <span class="text-danger">*</span></label>
+                            <select class="form-select" x-model="paymentForm.payment_method" required>
+                                <option value="">Select Method</option>
+                                <option value="Bank Transfer">Bank Transfer</option>
+                                <option value="UPI">UPI</option>
+                                <option value="Cash">Cash</option>
+                                <option value="Cheque">Cheque</option>
+                                <option value="Credit Card">Credit Card</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-medium text-muted small">Transaction / Reference ID</label>
+                            <input type="text" class="form-control" x-model="paymentForm.payment_reference" placeholder="e.g. UTR Number">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-medium text-muted small">Notes</label>
+                            <textarea class="form-control" x-model="paymentForm.notes" rows="2" placeholder="Optional details..."></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer border-top-0 pt-0">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" form="paymentForm" class="btn btn-success fw-medium" :disabled="isPaying">
+                        <span x-show="!isPaying"><i class="bi bi-check-circle me-1"></i> Save Payment</span>
+                        <span x-show="isPaying"><span class="spinner-border spinner-border-sm me-2"></span>Saving...</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment History Modal -->
+    <div class="modal fade" id="paymentHistoryModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header border-bottom-0 pb-0">
+                    <h5 class="modal-title fw-bold">Payment History</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body pt-3">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="fw-medium text-muted">Purchase Order: <strong class="text-dark" x-text="currentPoNumber"></strong></span>
+                    </div>
+
+                    <template x-if="isLoadingHistory">
+                        <div class="text-center py-4">
+                            <div class="spinner-border text-primary spinner-border-sm" role="status"></div>
+                            <span class="text-muted ms-2 small">Loading history...</span>
+                        </div>
+                    </template>
+
+                    <template x-if="!isLoadingHistory && paymentHistory.length === 0">
+                        <div class="text-center py-4 text-muted small">
+                            <i class="bi bi-info-circle me-1"></i> No payments found.
+                        </div>
+                    </template>
+
+                    <template x-if="!isLoadingHistory && paymentHistory.length > 0">
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover align-middle">
+                                <thead class="table-light text-muted" style="font-size: 12px;">
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Amount</th>
+                                        <th>Method</th>
+                                        <th>Reference</th>
+                                        <th>Recorded By</th>
+                                    </tr>
+                                </thead>
+                                <tbody style="font-size: 13px;">
+                                    <template x-for="payment in paymentHistory" :key="payment.id">
+                                        <tr>
+                                            <td class="text-muted" x-text="new Date(payment.payment_date).toLocaleDateString()"></td>
+                                            <td class="fw-bold text-success">₹<span x-text="payment.amount"></span></td>
+                                            <td><span class="badge bg-secondary-subtle text-secondary" x-text="payment.payment_method"></span></td>
+                                            <td class="text-muted font-monospace" x-text="payment.payment_reference || '-'"></td>
+                                            <td x-text="payment.recorder ? payment.recorder.name : '-'"></td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </table>
+                        </div>
+                    </template>
+                </div>
+                <div class="modal-footer border-top-0 pt-0">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <style>
         .custom-hover-bg:hover { background-color: rgba(var(--bs-primary-rgb), 0.1); }
         .cursor-pointer { cursor: pointer; }
@@ -1691,6 +1836,110 @@ document.addEventListener('alpine:init', () => {
             } catch (err) {
                 console.error(err);
                 this.showNotification('An error occurred.', "error");
+            }
+        },
+
+        isPaying: false,
+        paymentHistory: [],
+        isLoadingHistory: false,
+        currentPoNumber: '',
+        paymentForm: {
+            po_id: '',
+            po_number: '',
+            net_amount: 0,
+            due_amount: 0,
+            amount: '',
+            payment_date: new Date().toISOString().split('T')[0],
+            payment_method: '',
+            payment_reference: '',
+            notes: ''
+        },
+
+        openPaymentModal(po) {
+            this.paymentForm.po_id = po.id;
+            this.paymentForm.po_number = po.po_number;
+            
+            const netAmount = parseFloat(po.net_amount || po.total_amount || 0);
+            const paidAmount = parseFloat(po.paid_amount || 0);
+            const dueAmount = Math.max(0, netAmount - paidAmount);
+
+            this.paymentForm.net_amount = netAmount.toFixed(2);
+            this.paymentForm.due_amount = dueAmount.toFixed(2);
+            
+            this.paymentForm.amount = dueAmount > 0 ? dueAmount.toFixed(2) : '';
+            this.paymentForm.payment_date = new Date().toISOString().split('T')[0];
+            this.paymentForm.payment_method = '';
+            this.paymentForm.payment_reference = '';
+            this.paymentForm.notes = '';
+
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('paymentPoModal')).show();
+        },
+
+        async submitPaymentForm() {
+            const formEl = document.getElementById('paymentForm');
+            if (!formEl.checkValidity()) {
+                formEl.reportValidity();
+                return;
+            }
+
+            if (this.isPaying) return;
+            this.isPaying = true;
+
+            try {
+                const response = await fetch(`/procurement/purchase-orders/${this.paymentForm.po_id}/payments`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json', 
+                        'Accept': 'application/json', 
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') 
+                    },
+                    body: JSON.stringify({
+                        amount: this.paymentForm.amount,
+                        payment_date: this.paymentForm.payment_date,
+                        payment_method: this.paymentForm.payment_method,
+                        payment_reference: this.paymentForm.payment_reference,
+                        notes: this.paymentForm.notes
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    bootstrap.Modal.getInstance(document.getElementById('paymentPoModal')).hide();
+                    this.fetchData();
+                    this.showNotification(data.message || 'Payment recorded successfully.', "success");
+                } else {
+                    this.showNotification(data.message || 'Failed to record payment.', "error");
+                }
+            } catch (err) {
+                console.error(err);
+                this.showNotification('An error occurred.', "error");
+            } finally {
+                this.isPaying = false;
+            }
+        },
+
+        async openPaymentHistoryModal(po) {
+            this.currentPoNumber = po.po_number;
+            this.paymentHistory = [];
+            this.isLoadingHistory = true;
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('paymentHistoryModal')).show();
+
+            try {
+                const response = await fetch(`/procurement/purchase-orders/${po.id}/payments`, {
+                    headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                const res = await response.json();
+                if (response.ok) {
+                    this.paymentHistory = res.data || [];
+                } else {
+                    this.showNotification(res.message || 'Failed to load history.', "error");
+                }
+            } catch (err) {
+                console.error(err);
+                this.showNotification('An error occurred.', "error");
+            } finally {
+                this.isLoadingHistory = false;
             }
         }
     }));

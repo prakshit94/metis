@@ -482,6 +482,8 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::post('/purchase-orders/{order}/approve', [PurchaseOrderController::class, 'approve'])->name('purchase-orders.approve');
         Route::post('/purchase-orders/{order}/reject', [PurchaseOrderController::class, 'reject'])->name('purchase-orders.reject');
         Route::post('/purchase-orders/{order}/receive', [GoodsReceiptController::class, 'store'])->name('purchase-orders.receive');
+        Route::get('/purchase-orders/{order}/payments', [PurchaseOrderController::class, 'getPayments'])->name('purchase-orders.payments.index');
+        Route::post('/purchase-orders/{order}/payments', [PurchaseOrderController::class, 'addPayment'])->name('purchase-orders.payments.store');
 
         Route::get('/goods-receipts', [GoodsReceiptController::class, 'index'])->name('goods-receipts.index');
         Route::get('/goods-receipts/{receipt}/pdf', [GoodsReceiptController::class, 'downloadPdf'])->name('goods-receipts.pdf');

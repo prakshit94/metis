@@ -347,4 +347,53 @@ class PurchaseOrderController extends Controller implements HasMiddleware
 
         return response()->json(['message' => 'No file was uploaded.'], 400);
     }
+
+    public function getPayments(PurchaseOrder $order): JsonResponse
+    {
+        $payments = $order->payments()->with('recorder:id,name')->latest()->get();
+        return response()->json(['data' => $payments]);
+    }
+
+    public function addPayment(Request $request, PurchaseOrder $order): JsonResponse
+    {
+        $validated = $request->validate([
+            'amount' => 'required|numeric|min:0.01',
+            'payment_date' => 'required|date',
+            'payment_method' => 'required|string|max:255',
+            'payment_reference' => 'nullable|string|max:255',
+            'notes' => 'nullable|string',
+        ]);
+
+        \DB::beginTransaction();
+        try {
+            $payment = $order->payments()->create([
+                'amount' => $validated['amount'],
+                'payment_date' => $validated['payment_date'],
+                'payment_method' => $validated['payment_method'],
+                'payment_reference' => $validated['payment_reference'],
+                'notes' => $validated['notes'],
+                'recorded_by' => auth()->id(),
+            ]);
+
+            $totalPaid = $order->payments()->sum('amount');
+            $status = 'partial';
+            if ($totalPaid >= $order->net_amount) {
+                $status = 'paid';
+            } elseif ($order->status === 'pending') {
+                $status = 'advanced'; // Advanced payment before receipt
+            }
+
+            $order->update([
+                'paid_amount' => $totalPaid,
+                'payment_status' => $status,
+            ]);
+
+            \DB::commit();
+
+            return response()->json(['message' => 'Payment recorded successfully', 'data' => $payment], 201);
+        } catch (\Exception $e) {
+            \DB::rollBack();
+            return response()->json(['message' => 'Failed to record payment: '.$e->getMessage()], 500);
+        }
+    }
 }

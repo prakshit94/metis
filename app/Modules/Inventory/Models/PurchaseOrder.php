@@ -40,6 +40,8 @@ class PurchaseOrder extends Model
         'approved_at',
         'rejection_reason',
         'invoice_path',
+        'paid_amount',
+        'payment_status',
     ];
 
     protected $casts = [
@@ -48,10 +50,21 @@ class PurchaseOrder extends Model
         'tax_amount' => 'decimal:2',
         'discount_amount' => 'decimal:2',
         'net_amount' => 'decimal:2',
+        'paid_amount' => 'decimal:2',
         'approved_at' => 'datetime',
     ];
 
-    protected $appends = ['invoice_url'];
+    protected $appends = ['invoice_url', 'due_amount'];
+
+    public function getDueAmountAttribute(): float
+    {
+        return max(0, (float)$this->net_amount - (float)$this->paid_amount);
+    }
+
+    public function payments(): HasMany
+    {
+        return $this->hasMany(PurchaseOrderPayment::class);
+    }
 
     public function supplier(): BelongsTo
     {

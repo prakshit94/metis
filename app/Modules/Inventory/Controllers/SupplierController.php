@@ -85,6 +85,9 @@ class SupplierController extends Controller implements HasMiddleware
 
         ]);
 
+        $validated['credit_limit'] = $validated['credit_limit'] ?? 0;
+        $validated['credit_days'] = $validated['credit_days'] ?? 0;
+
         $supplier = Supplier::create($validated);
 
         return response()->json([
@@ -118,8 +121,10 @@ class SupplierController extends Controller implements HasMiddleware
             'city' => 'nullable|string|max:255',
             'state' => 'nullable|string|max:255',
             'pincode' => 'nullable|string|max:20',
-
         ]);
+
+        $validated['credit_limit'] = $validated['credit_limit'] ?? 0;
+        $validated['credit_days'] = $validated['credit_days'] ?? 0;
 
         $supplier->update($validated);
 
