@@ -82,8 +82,9 @@
         <i class="bi bi-exclamation-triangle me-2"></i> <span x-text="error"></span>
     </div>
 
-    <!-- KPI Section: Core Financials -->
-    <div class="row g-3 g-lg-4 mb-4">
+    <!-- KPI Section: Sales & Revenue -->
+    <h3 class="h5 mb-3 text-body-secondary"><i class="bi bi-graph-up-arrow text-primary me-2"></i> Sales & Revenue Performance</h3>
+    <div class="row g-3 g-lg-4 mb-5">
         
         <!-- Total Sales -->
         <div class="col-sm-6 col-xl-3">
@@ -105,29 +106,9 @@
             </div>
         </div>
 
-        <!-- Total Purchases -->
-        <div class="col-sm-6 col-xl-3">
-            <div class="card stats-card h-100 border-start border-4 border-success">
-                <div class="card-body">
-                    <div class="d-flex align-items-center">
-                        <div class="flex-shrink-0">
-                            <div class="stats-icon bg-warning bg-opacity-10 text-warning">
-                                <i class="bi bi-bag"></i>
-                            </div>
-                        </div>
-                        <div class="flex-grow-1 ms-3">
-                            <p class="h6 mb-0 text-body-secondary">Total Purchase</p>
-                            <div class="h3 mb-0" x-text="formatCurrency(data.kpis.totalPurchase)"></div>
-                            <small class="text-body-secondary"><span x-text="data.kpis.totalPurchaseCount"></span> Orders</small>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
         <!-- Inward Payments (Income) -->
         <div class="col-sm-6 col-xl-3">
-            <div class="card stats-card h-100 border-start border-4 border-warning">
+            <div class="card stats-card h-100 border-start border-4 border-success">
                 <div class="card-body">
                     <div class="d-flex align-items-center">
                         <div class="flex-shrink-0">
@@ -144,29 +125,6 @@
             </div>
         </div>
 
-        <!-- Outward Payments (Expense) -->
-        <div class="col-sm-6 col-xl-3">
-            <div class="card stats-card h-100 border-start border-4 border-info">
-                <div class="card-body">
-                    <div class="d-flex align-items-center">
-                        <div class="flex-shrink-0">
-                            <div class="stats-icon bg-danger bg-opacity-10 text-danger">
-                                <i class="bi bi-cash-stack"></i>
-                            </div>
-                        </div>
-                        <div class="flex-grow-1 ms-3">
-                            <p class="h6 mb-0 text-body-secondary">Expense (Outward)</p>
-                            <div class="h3 mb-0" x-text="formatCurrency(data.kpis.outwardPayments)"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- KPI Section: Outstanding & Inventory -->
-    <div class="row g-3 g-lg-4 mb-4">
-        
         <!-- Sales Outstanding -->
         <div class="col-sm-6 col-xl-3">
             <div class="card stats-card h-100 border-start border-4 border-warning">
@@ -187,29 +145,9 @@
             </div>
         </div>
 
-        <!-- Purchase Outstanding -->
-        <div class="col-sm-6 col-xl-3">
-            <div class="card stats-card h-100 border-start border-4 border-danger">
-                <div class="card-body">
-                    <div class="d-flex align-items-center">
-                        <div class="flex-shrink-0">
-                            <div class="stats-icon bg-danger bg-opacity-10 text-danger">
-                                <i class="bi bi-clock-history"></i>
-                            </div>
-                        </div>
-                        <div class="flex-grow-1 ms-3">
-                            <p class="h6 mb-0 text-body-secondary">Purchase Outstanding</p>
-                            <div class="h3 mb-0 text-danger" x-text="formatCurrency(data.kpis.purchaseOutstanding)"></div>
-                            <small class="text-body-secondary">Payables Due</small>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
         <!-- Customers -->
         <div class="col-sm-6 col-xl-3">
-            <div class="card stats-card h-100 border-start border-4 border-danger">
+            <div class="card stats-card h-100 border-start border-4 border-info">
                 <div class="card-body">
                     <div class="d-flex align-items-center">
                         <div class="flex-shrink-0">
@@ -222,6 +160,70 @@
                             <div class="h3 mb-0" x-text="data.kpis.newCustomers"></div>
                             <small class="text-success">New</small>
                             <small class="text-body-secondary ms-2">/ <span x-text="data.kpis.existingCustomers"></span> Existing</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- KPI Section: Procurement & Inventory -->
+    <h3 class="h5 mb-3 text-body-secondary"><i class="bi bi-box-seam text-danger me-2"></i> Procurement & Inventory Health</h3>
+    <div class="row g-3 g-lg-4 mb-4">
+
+        <!-- Total Purchases -->
+        <div class="col-sm-6 col-xl-3">
+            <div class="card stats-card h-100 border-start border-4 border-primary">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="stats-icon bg-warning bg-opacity-10 text-warning">
+                                <i class="bi bi-bag"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <p class="h6 mb-0 text-body-secondary">Total Purchase</p>
+                            <div class="h3 mb-0" x-text="formatCurrency(data.kpis.totalPurchase)"></div>
+                            <small class="text-body-secondary"><span x-text="data.kpis.totalPurchaseCount"></span> Orders</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Outward Payments (Expense) -->
+        <div class="col-sm-6 col-xl-3">
+            <div class="card stats-card h-100 border-start border-4 border-danger">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="stats-icon bg-danger bg-opacity-10 text-danger">
+                                <i class="bi bi-cash-stack"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <p class="h6 mb-0 text-body-secondary">Expense (Outward)</p>
+                            <div class="h3 mb-0" x-text="formatCurrency(data.kpis.outwardPayments)"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Purchase Outstanding -->
+        <div class="col-sm-6 col-xl-3">
+            <div class="card stats-card h-100 border-start border-4 border-warning">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="stats-icon bg-danger bg-opacity-10 text-danger">
+                                <i class="bi bi-clock-history"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <p class="h6 mb-0 text-body-secondary">Purchase Outstanding</p>
+                            <div class="h3 mb-0 text-danger" x-text="formatCurrency(data.kpis.purchaseOutstanding)"></div>
+                            <small class="text-body-secondary">Payables Due</small>
                         </div>
                     </div>
                 </div>
@@ -473,7 +475,7 @@
                                             </td>
                                             <td><span class="text-body-secondary" x-text="item.customer_name"></span></td>
                                             <td class="text-end text-danger" x-text="item.due_date ? new Date(item.due_date).toLocaleDateString() : 'N/A'"></td>
-                                            <td class="text-end fw-semibold text-danger" x-text="formatCurrency(item.net_amount)"></td>
+                                            <td class="text-end fw-semibold text-danger" x-text="formatCurrency(item.due_amount !== undefined ? item.due_amount : item.net_amount)"></td>
                                         </tr>
                                     </template>
                                 </template>
@@ -490,7 +492,7 @@
                                             </td>
                                             <td><span class="text-body-secondary" x-text="item.supplier_name"></span></td>
                                             <td class="text-end text-danger" x-text="item.expected_delivery_date ? new Date(item.expected_delivery_date).toLocaleDateString() : 'N/A'"></td>
-                                            <td class="text-end fw-semibold text-danger" x-text="formatCurrency(item.net_amount)"></td>
+                                            <td class="text-end fw-semibold text-danger" x-text="formatCurrency(item.due_amount !== undefined ? item.due_amount : item.net_amount)"></td>
                                         </tr>
                                     </template>
                                 </template>

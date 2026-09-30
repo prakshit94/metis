@@ -528,7 +528,13 @@ class PageController extends Controller
 
             // ── KPI: Inward Payments & Outward Payments ───────────────────────
             $inwardPayments = $inwardTotals->where('status', 'completed')->sum('amount');
-            $outwardPayments = $outwardTotals->where('status', 'completed')->sum('amount');
+            
+            $legacyOutward = $outwardTotals->where('status', 'completed')->sum('amount');
+            $newOutward = DB::table('purchase_order_payments')
+                ->whereBetween('payment_date', [$startStr, $endStr])
+                ->sum('amount');
+                
+            $outwardPayments = $legacyOutward + $newOutward;
 
             // ── KPI: Sales Outstanding (unpaid/partial invoices on sale orders) ─
             $salesOutstandingData = DB::table('invoices')
@@ -536,16 +542,32 @@ class PageController extends Controller
                 ->where('orders.type', 'sale')
                 ->whereIn('invoices.status', ['unpaid', 'partially_paid'])
                 ->whereNull('invoices.deleted_at')
-                ->selectRaw('SUM(invoices.net_amount) as total_amount, COUNT(invoices.id) as count')
+                ->selectRaw('
+                    SUM(invoices.net_amount) as total_amount, 
+                    COUNT(invoices.id) as count,
+                    SUM((
+                        SELECT COALESCE(SUM(amount), 0) 
+                        FROM payments 
+                        WHERE payments.invoice_id = invoices.id 
+                        AND payments.status = "completed" 
+                        AND payments.deleted_at IS NULL
+                    )) as total_paid
+                ')
                 ->first();
-            $salesOutstanding = $salesOutstandingData->total_amount ?? 0;
+            
+            $salesOutstanding = max(0, ($salesOutstandingData->total_amount ?? 0) - ($salesOutstandingData->total_paid ?? 0));
             $salesOutstandingCount = $salesOutstandingData->count ?? 0;
 
             // ── KPI: Purchase Outstanding ─────────────────────────────────────
-            $purchaseOutstanding = DB::table('parties')
-                ->where('type', 'supplier')
-                ->where('is_active', true)
-                ->sum('outstanding_balance');
+            $purchaseOutstanding = DB::table('purchase_orders')
+                ->whereNotIn('status', ['rejected'])
+                ->where(function($q) {
+                    $q->whereNull('payment_status')
+                      ->orWhere('payment_status', '!=', 'paid');
+                })
+                ->whereNull('deleted_at')
+                ->selectRaw('SUM(net_amount - COALESCE(paid_amount, 0)) as amount')
+                ->value('amount') ?? 0;
 
             // ── KPI: New Customers (created in period) ────────────────────────
             $newCustomers = DB::table('parties')
@@ -562,9 +584,9 @@ class PageController extends Controller
                 ->count();
 
             // ── Chart: Sales vs Purchase Trend (daily) ────────────────────────
-            $analyticsLobState = $analyticsLobState ?? auth()->user()?->lob_state_name;
+            $analyticsLobState = auth()->user()?->lob_state_name;
             $salesTrend = DB::table('orders')
-                ->select(DB::raw('DATE(order_date) as day'), DB::raw('SUM(net_amount) as total'))
+                ->select(DB::raw('DATE(order_date) as day'), DB::raw('SUM(net_amount) as revenue'))
                 ->where('type', 'sale')
                 ->whereNotIn('status', ['cancelled'])
                 ->whereBetween('order_date', [$startStr, $endStr])
@@ -575,7 +597,7 @@ class PageController extends Controller
                 ->get();
 
             $purchaseTrend = DB::table('purchase_orders')
-                ->select(DB::raw('DATE(created_at) as day'), DB::raw('SUM(net_amount) as total'))
+                ->select(DB::raw('DATE(created_at) as day'), DB::raw('SUM(net_amount) as expense'))
                 ->whereNotIn('status', ['rejected'])
                 ->whereBetween('created_at', [$startStr, $endStr])
                 ->whereNull('deleted_at')
@@ -594,7 +616,7 @@ class PageController extends Controller
             // For LOB users, only show their own state; global users see all 10.
             $analyticsLobState = auth()->user()?->lob_state_name;
             $stateWiseSales = DB::table('orders')
-                ->select('shipping_state', DB::raw('SUM(net_amount) as total'), DB::raw('COUNT(id) as order_count'))
+                ->select(DB::raw('shipping_state as state'), DB::raw('SUM(net_amount) as revenue'), DB::raw('COUNT(id) as order_count'))
                 ->where('type', 'sale')
                 ->whereNotIn('status', ['cancelled'])
                 ->whereBetween('order_date', [$startStr, $endStr])
@@ -602,7 +624,7 @@ class PageController extends Controller
                 ->whereNull('deleted_at')
                 ->when($analyticsLobState, fn ($q) => $q->where('shipping_state', $analyticsLobState))
                 ->groupBy('shipping_state')
-                ->orderByDesc('total')
+                ->orderByDesc('revenue')
                 ->limit(10)
                 ->get();
 
@@ -688,15 +710,18 @@ class PageController extends Controller
             // ── Low Stock Products ────────────────────────────────────────────
             $lowStockProducts = DB::table('stocks')
                 ->join('products', 'stocks.product_id', '=', 'products.id')
+                ->leftJoin('warehouses', 'stocks.warehouse_id', '=', 'warehouses.id')
                 ->whereNull('stocks.deleted_at')
                 ->where('stocks.quantity', '>', 0)
                 ->whereColumn('stocks.quantity', '<=', 'products.min_stock_level')
                 ->select(
                     'products.id',
-                    'products.name',
+                    DB::raw('products.name as product_name'),
                     'products.sku',
                     'products.min_stock_level',
-                    'stocks.quantity'
+                    'stocks.quantity',
+                    DB::raw('warehouses.name as warehouse_name'),
+                    'stocks.warehouse_id'
                 )
                 ->orderBy('stocks.quantity')
                 ->limit($limit)
@@ -722,13 +747,18 @@ class PageController extends Controller
             // ── Purchase Invoice Due (POs pending/approved not yet received) ───
             $purchaseDue = DB::table('purchase_orders')
                 ->join('suppliers', 'purchase_orders.supplier_id', '=', 'suppliers.id')
-                ->whereIn('purchase_orders.status', ['pending', 'approved'])
+                ->whereNotIn('purchase_orders.status', ['rejected', 'cancelled'])
+                ->where(function($q) {
+                    $q->whereNull('purchase_orders.payment_status')
+                      ->orWhere('purchase_orders.payment_status', '!=', 'paid');
+                })
                 ->whereNull('purchase_orders.deleted_at')
                 ->select(
                     'purchase_orders.id',
                     'purchase_orders.po_number',
                     DB::raw("COALESCE(suppliers.company_name, CONCAT(COALESCE(suppliers.firstname,''), ' ', COALESCE(suppliers.lastname,''))) as supplier_name"),
                     'purchase_orders.net_amount',
+                    DB::raw('(purchase_orders.net_amount - COALESCE(purchase_orders.paid_amount, 0)) as due_amount'),
                     'purchase_orders.status',
                     'purchase_orders.expected_delivery_date',
                     'purchase_orders.created_at'
@@ -748,6 +778,7 @@ class PageController extends Controller
                     'invoices.id',
                     'invoices.invoice_no',
                     'invoices.net_amount',
+                    DB::raw('(invoices.net_amount - (SELECT COALESCE(SUM(amount), 0) FROM payments WHERE payments.invoice_id = invoices.id AND payments.status = \'completed\' AND payments.deleted_at IS NULL)) as due_amount'),
                     'invoices.status',
                     'invoices.due_date',
                     'orders.order_no',
