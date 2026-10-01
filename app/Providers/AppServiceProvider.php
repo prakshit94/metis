@@ -100,6 +100,15 @@ class AppServiceProvider extends ServiceProvider
             $view->with(compact('dynamicCrops', 'dynamicLeadSources', 'dynamicIrrigationTypes', 'dynamicLandUnits'));
         });
 
+        \Illuminate\Database\Eloquent\Relations\Relation::morphMap([
+            'Order' => \App\Modules\Orders\Models\Order::class,
+            'return' => \App\Modules\Orders\Models\OrderReturn::class,
+            'adjustment' => \App\Modules\Inventory\Models\InventoryAdjustment::class,
+            'receipt' => \App\Modules\Inventory\Models\GoodsReceipt::class,
+            'purchase_order' => \App\Modules\Inventory\Models\PurchaseOrder::class,
+            'transfer' => \App\Modules\Inventory\Models\StockTransfer::class,
+            'opening' => \App\Modules\Inventory\Models\StockMovement::class,
+        ]);
     }
 
     // ─── Private ──────────────────────────────────────────────────────────────
