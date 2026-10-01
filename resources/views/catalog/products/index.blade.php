@@ -100,7 +100,7 @@
                     <div>
                         <!-- Product Stats Widgets -->
                         <div class="row g-4 g-lg-5 mb-5">
-                            <div class="col-xl-3 col-lg-6" style="cursor: pointer;" @click="stockFilter = ''; filterProducts()">
+                            <div class="col-xl-3 col-lg-6">
                                 <div class="card stats-card border-start border-4 border-primary">
                                     <div class="card-body p-3 p-lg-4">
                                         <div class="d-flex align-items-center">
@@ -229,7 +229,6 @@
                                                     x-model="stockFilter" 
                                                     @change="filterProducts()"
                                                     style="width: 150px;">
-                                                <option value="">All Stock</option>
                                                 <option value="in-stock">In Stock</option>
                                                 <option value="low-stock">Low Stock</option>
                                                 <option value="out-of-stock">Out of Stock</option>

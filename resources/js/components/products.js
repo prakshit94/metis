@@ -192,7 +192,7 @@ document.addEventListener('alpine:init', () => {
     itemsPerPage: 10,
     searchQuery: '',
     categoryFilter: '',
-    stockFilter: '',
+    stockFilter: 'in-stock',
     warehouseFilter: window.userContext?.isMasterAdmin
       ? ''
       : window.userContext?.warehouseId
