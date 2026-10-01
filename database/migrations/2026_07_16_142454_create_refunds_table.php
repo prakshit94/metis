@@ -22,6 +22,10 @@ return new class extends Migration
             $table->foreignId('processed_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamp('processed_at')->nullable();
             $table->timestamps();
+
+            // Performance indexes
+            $table->index('created_at');                    // ORDER BY created_at sorting
+            $table->index(['status', 'amount']);             // Covering index for SUM(amount) WHERE status stats queries
         });
     }
 

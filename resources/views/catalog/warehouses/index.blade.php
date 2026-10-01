@@ -670,13 +670,13 @@
                             <div class="p-3 bg-body-tertiary rounded-3 h-100">
                                 <h6 class="fw-bold mb-3 text-info"><i class="bi bi-telephone me-2"></i>Contact Info</h6>
                                 <table class="table table-sm table-borderless mb-0">
-                                    <tbody>
                                         <tr><td class="text-muted w-50">Phone</td><td x-text="viewData.phone || '—'"></td></tr>
                                         <tr><td class="text-muted">Email</td><td x-text="viewData.email || '—'"></td></tr>
                                         <tr><td class="text-muted">Reference No.</td><td class="font-monospace" x-text="viewData.reference_no || '—'"></td></tr>
                                         <tr><td class="text-muted">GSTIN</td><td class="font-monospace" x-text="viewData.gstin || '—'"></td></tr>
                                         <tr><td class="text-muted">Seed Lic No.</td><td class="font-monospace" x-text="viewData.seed_lic_no || '—'"></td></tr>
                                         <tr><td class="text-muted">Pesti Lic No.</td><td class="font-monospace" x-text="viewData.pesti_lic_no || '—'"></td></tr>
+                                        <tr><td class="text-muted">E-Biller ID</td><td class="font-monospace" x-text="viewData.ebiller_id || '—'"></td></tr>
                                     </tbody>
                                 </table>
                             </div>

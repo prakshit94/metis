@@ -17,6 +17,9 @@ return new class extends Migration
             $table->decimal('balance_remaining', 15, 2);
             $table->string('status')->default('active')->index();
             $table->timestamps();
+
+            // Performance indexes
+            $table->index('created_at'); // ORDER BY created_at DESC used in paginate/latest()
         });
     }
 

@@ -20,7 +20,7 @@ class RefundController extends Controller implements HasMiddleware
 
     public function index(Request $request)
     {
-        $query = Refund::with(['order.party', 'invoice', 'orderReturn', 'processedBy']);
+        $query = Refund::with(['order.party', 'invoice.payments', 'invoice.refunds', 'orderReturn', 'processedBy']);
 
         if ($request->filled('search')) {
             $s = trim($request->search);
@@ -67,10 +67,15 @@ class RefundController extends Controller implements HasMiddleware
         });
 
         if ($request->wantsJson() || $request->ajax()) {
+            // 2 queries instead of 4: one grouped count, one targeted sum
+            $statusCounts = Refund::selectRaw('status, count(*) as total')
+                ->groupBy('status')
+                ->pluck('total', 'status');
+
             $stats = [
-                'total_refunded' => (float) Refund::where('status', 'completed')->sum('amount'),
-                'pending' => Refund::where('status', 'pending')->count(),
-                'failed' => Refund::where('status', 'failed')->count(),
+                'total_refunded'  => (float) Refund::where('status', 'completed')->sum('amount'),
+                'pending'         => $statusCounts->get('pending', 0),
+                'failed'          => $statusCounts->get('failed', 0),
                 'processed_today' => Refund::where('status', 'completed')->whereDate('updated_at', today())->count(),
             ];
 

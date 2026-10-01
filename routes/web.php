@@ -170,6 +170,10 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
 
     // Billing & Financials
     Route::get('credit-notes', [CreditNoteController::class, 'index'])->name('credit-notes.index');
+    Route::get('credit-notes/customers/search', [CreditNoteController::class, 'searchCustomers'])->name('credit-notes.customers.search');
+    Route::post('credit-notes', [CreditNoteController::class, 'store'])->name('credit-notes.store');
+    Route::put('credit-notes/{creditNote}', [CreditNoteController::class, 'update'])->name('credit-notes.update');
+    Route::delete('credit-notes/{creditNote}', [CreditNoteController::class, 'destroy'])->name('credit-notes.destroy');
     Route::get('refunds', [RefundController::class, 'index'])->name('refunds.index');
     Route::post('refunds/bulk-status', [RefundController::class, 'bulkStatus'])->name('refunds.bulk-status');
     Route::get('payments', [PaymentController::class, 'index'])->name('payments.index');

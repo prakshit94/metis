@@ -19,6 +19,9 @@ return new class extends Migration
             $table->decimal('refund_amount', 15, 2)->default(0);
             $table->decimal('credit_note_amount', 15, 2)->default(0);
             $table->timestamps();
+
+            // Performance indexes
+            $table->index('created_at'); // ORDER BY created_at DESC used in dropdown/list queries
         });
     }
 

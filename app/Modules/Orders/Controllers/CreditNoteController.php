@@ -19,7 +19,7 @@ class CreditNoteController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:orders.view', only: ['index']),
+            new Middleware('permission:orders.view', only: ['index', 'searchCustomers']),
             new Middleware('permission:orders.receipt', only: ['store', 'update', 'destroy']),
         ];
     }
@@ -27,7 +27,7 @@ class CreditNoteController extends Controller implements HasMiddleware
     public function index(Request $request)
     {
         if ($request->wantsJson()) {
-            $query = CreditNote::with(['customer', 'invoice', 'orderReturn'])->latest();
+            $query = CreditNote::with(['customer', 'invoice.payments', 'invoice.refunds', 'orderReturn'])->latest();
 
             if ($request->has('search') && ! empty($request->query('search'))) {
                 $search = $request->query('search');
@@ -48,17 +48,50 @@ class CreditNoteController extends Controller implements HasMiddleware
             return response()->json($query->paginate(15));
         }
 
+        // Single grouped query instead of 3 separate COUNT queries
+        $statusCounts = CreditNote::selectRaw('status, count(*) as total')
+            ->groupBy('status')
+            ->pluck('total', 'status');
         $stats = [
-            'total' => CreditNote::count(),
-            'active' => CreditNote::where('status', 'active')->count(),
-            'used' => CreditNote::where('status', 'used')->count(),
+            'total'  => $statusCounts->sum(),
+            'active' => $statusCounts->get('active', 0),
+            'used'   => $statusCounts->get('used', 0),
         ];
 
-        $customers = Party::select('id', 'company_name', 'firstname', 'lastname')->where('type', 'customer')->get();
-        $invoices = Invoice::select('id', 'invoice_no', 'net_amount')->latest()->limit(100)->get();
-        $returns = OrderReturn::select('id', 'return_no')->latest()->limit(100)->get();
+        // No customers preloaded — dropdown uses live search via searchCustomers()
+        $invoices = Invoice::select('id', 'invoice_no', 'net_amount')->latest()->limit(100)->toBase()->get();
+        $returns = OrderReturn::select('id', 'return_no')->latest()->limit(100)->toBase()->get();
 
-        return view('orders.credit-notes.index', compact('stats', 'customers', 'invoices', 'returns'));
+        return view('orders.credit-notes.index', compact('stats', 'invoices', 'returns'));
+    }
+
+    /**
+     * Live-search endpoint for the customer dropdown.
+     * Returns up to 30 matching customers — used by the Alpine component
+     * instead of embedding all 78K+ customers in the initial page HTML.
+     */
+    public function searchCustomers(Request $request): JsonResponse
+    {
+        $search = trim((string) $request->input('q', ''));
+
+        $query = Party::select('id', 'company_name', 'firstname', 'lastname')
+            ->where('type', 'customer')
+            ->toBase();
+
+        if ($search !== '') {
+            $query->where(function ($q) use ($search) {
+                $q->where('firstname', 'LIKE', "%{$search}%")
+                  ->orWhere('lastname',    'LIKE', "%{$search}%")
+                  ->orWhere('company_name','LIKE', "%{$search}%");
+            });
+        }
+
+        $customers = $query->limit(30)->get()->map(fn ($c) => [
+            'id'   => $c->id,
+            'name' => $c->company_name ?: trim($c->firstname . ' ' . $c->lastname),
+        ]);
+
+        return response()->json($customers);
     }
 
     public function store(Request $request): JsonResponse

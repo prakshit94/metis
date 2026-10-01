@@ -294,7 +294,7 @@
                                                             <input type="text" class="form-control form-control-sm" x-model="customerSearch" placeholder="Search...">
                                                         </div>
                                                         <template x-for="cust in filteredCustomers" :key="cust.id">
-                                                            <div class="px-3 py-2 cursor-pointer custom-hover-bg d-flex align-items-center" @click="form.customer_id = cust.id; showCustomerDropdown = false">
+                                                            <div class="px-3 py-2 cursor-pointer custom-hover-bg d-flex align-items-center" @click="form.customer_id = cust.id; _selectedCustomer = cust; showCustomerDropdown = false">
                                                                 <span style="font-size: 12px;" x-text="cust.name"></span>
                                                             </div>
                                                         </template>
@@ -431,7 +431,7 @@ document.addEventListener('alpine:init', () => {
         total: 0, from: 0, to: 0,
         selected: [],
         stats: {!! json_encode($stats ?? ['total' => 0, 'active' => 0, 'used' => 0, 'cancelled' => 0]) !!},
-        customers: {!! isset($customers) ? $customers->map(function($c) { return ['id' => $c->id, 'name' => $c->company_name ?: $c->firstname . ' ' . $c->lastname]; })->toJson() : '[]' !!},
+        customers: [],          // populated on-demand via live search
         invoices: {!! json_encode($invoices ?? []) !!},
         returns: {!! json_encode($returns ?? []) !!},
         
@@ -451,14 +451,15 @@ document.addEventListener('alpine:init', () => {
         
         customerSearch: '',
         showCustomerDropdown: false,
+        _selectedCustomer: null,   // tracks the chosen customer object
+        _customerSearchTimer: null,
         
         get filteredCustomers() {
-            if (!this.customerSearch) return this.customers;
-            return this.customers.filter(c => c.name.toLowerCase().includes(this.customerSearch.toLowerCase()));
+            // Customers are loaded via searchCustomers() — just return the fetched list
+            return this.customers;
         },
         get selectedCustomerName() {
-            const c = this.customers.find(c => c.id === this.form.customer_id);
-            return c ? c.name : '';
+            return this._selectedCustomer ? this._selectedCustomer.name : '';
         },
         get allSelected() { 
             return this.items.length > 0 && this.selected.length === this.items.length; 
@@ -468,6 +469,20 @@ document.addEventListener('alpine:init', () => {
             this.modal = new bootstrap.Modal(document.getElementById('creditNoteModal'));
             this.fetchData();
             this.$watch('searchQuery', () => { this.currentPage = 1; this.fetchData(); });
+            // Debounced live-search for the customer dropdown
+            this.$watch('customerSearch', (val) => {
+                clearTimeout(this._customerSearchTimer);
+                this._customerSearchTimer = setTimeout(() => this.searchCustomers(val), 300);
+            });
+        },
+
+        searchCustomers(q) {
+            fetch(`/credit-notes/customers/search?q=${encodeURIComponent(q)}`, {
+                headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content }
+            })
+                .then(r => r.json())
+                .then(data => { this.customers = data; })
+                .catch(() => {});
         },
         
         fetchData() {
@@ -495,6 +510,8 @@ document.addEventListener('alpine:init', () => {
             this.isEditing = false;
             this.form = { id: null, customer_id: '', invoice_id: '', order_return_id: '', amount: '', balance_remaining: '', status: 'active' };
             this.customerSearch = '';
+            this.customers = [];
+            this._selectedCustomer = null;
             this.modal.show();
         },
         

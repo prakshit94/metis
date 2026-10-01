@@ -425,6 +425,7 @@ export default () => {
         reference_no: item.reference_no || '',
         seed_lic_no: item.seed_lic_no || '',
         pesti_lic_no: item.pesti_lic_no || '',
+        ebiller_id: item.ebiller_id || '',   // Bug fix: was missing — caused blank field in edit mode
         address_line_1: item.address_line_1 || '',
         address_line_2: item.address_line_2 || '',
         village_id: item.village_id || '',
@@ -592,6 +593,7 @@ export default () => {
         'Reference No',
         'Seed Lic No',
         'Pesti Lic No',
+        'E-Biller ID',   // Bug fix: was missing from export
         'Address',
         'City',
         'State',
@@ -614,6 +616,7 @@ export default () => {
           `"${(item.reference_no || '').replace(/"/g, '""')}"`,
           `"${(item.seed_lic_no || '').replace(/"/g, '""')}"`,
           `"${(item.pesti_lic_no || '').replace(/"/g, '""')}"`,
+          `"${(item.ebiller_id || '').replace(/"/g, '""')}"`,   // Bug fix: was missing from export
           `"${addr.replace(/"/g, '""')}"`,
           item.city || '',
           item.state || '',
@@ -640,9 +643,12 @@ export default () => {
           method: 'PUT',
           body: JSON.stringify({ status: newStatus }),
         });
+        // Bug fix: update status in the source items array so filteredItems stays in sync
+        const src = this.items.find((i) => i.id === item.id);
+        if (src) src.status = newStatus;
         item.status = newStatus;
         showToast(`Warehouse status updated to ${newStatus}.`, 'success');
-        this.calculateStats();
+        this.filterData(); // recalculate stats + filteredItems to reflect the new status
       } catch (error) {
         showToast(error.message || 'Failed to update status.', 'error');
       }
