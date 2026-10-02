@@ -14,23 +14,31 @@ class FileManagerController extends Controller
     {
         $disk = Storage::disk('public');
         if (config('filesystems.disks.public.driver') === 'local') {
-            return '/api/files/preview/' . $fileRecord->id;
+            return '/api/files/preview?f=' . $fileRecord->filename;
         }
         return $disk->url($fileRecord->path);
     }
 
-    public function preview($id)
+    public function preview(Request $request)
     {
-        $fileRecord = SystemFile::find($id);
-        if (!$fileRecord) {
+        $filename = $request->query('f');
+        if (!$filename || str_contains($filename, '/') || str_contains($filename, '\\')) {
             abort(404);
         }
-        $absolutePath = storage_path('app/public/' . $fileRecord->path);
+
+        $absolutePath = storage_path('app/public/uploads/' . $filename);
         if (!file_exists($absolutePath)) {
             abort(404);
         }
+
+        // Close the session early so streaming large files doesn't block the user's other requests
+        if (session()->isStarted()) {
+            session()->save();
+        }
+
         return response()->file($absolutePath, [
-            'Access-Control-Allow-Origin' => '*'
+            'Access-Control-Allow-Origin' => '*',
+            'Cache-Control' => 'public, max-age=31536000'
         ]);
     }
 

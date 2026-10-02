@@ -216,9 +216,9 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('/messages', [PageController::class, 'messages'])->name('messages');
     Route::get('/calendar', [PageController::class, 'calendar'])->name('calendar');
     Route::get('/files', [PageController::class, 'files'])->name('files')->middleware('permission:settings-view');
+    Route::get('/api/files/preview', [FileManagerController::class, 'preview'])->name('files.preview');
     Route::prefix('api/files')->middleware('permission:settings-view')->group(function () {
         Route::get('/', [FileManagerController::class, 'index']);
-        Route::get('/preview/{id}', [FileManagerController::class, 'preview']);
         Route::post('/upload', [FileManagerController::class, 'upload']);
         Route::delete('/', [FileManagerController::class, 'delete']);
         Route::post('/rename', [FileManagerController::class, 'rename']);
