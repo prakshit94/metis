@@ -1,191 +1,220 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <title>COD Receipt - {{ $order->order_no }}</title>
     <style>
-        @page {
-            margin: 10px;
-            size: a5;
+        @page { 
+            size: 100mm 150mm; 
+            margin: 0; 
+        }
+        
+        * { 
+            box-sizing: border-box; 
         }
 
-        body {
-            font-family: Arial, sans-serif;
-            font-size: 10px;
-            color: #334155;
-            line-height: 1.3;
+        html, body { 
+            width: 100mm;
+            height: 150mm;
+            margin: 0 !important; 
+            padding: 4mm 0 0 0 !important; 
+            font-family: Arial, sans-serif; 
+            color: #000; 
+            background: #fff;
+            overflow: hidden;
         }
 
-        .label-container {
-            border: 2px solid #166534;
-            border-radius: 6px;
-            padding: 8px;
-            max-width: 500px;
+        .wrapper {
+            border: 2px solid #000;
+            padding: 4pt;
+            width: 90mm;
             margin: 0 auto;
-            background-color: #f0fdf4;
         }
 
-        .row {
-            display: table;
-            width: 100%;
+        table.full-table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            table-layout: fixed;
         }
 
-        .col {
-            display: table-cell;
-            vertical-align: top;
-        }
-
-        .box {
-            border: 1px solid #86efac;
-            background-color: #ffffff;
-            border-radius: 4px;
-            padding: 6px;
-            margin-top: 6px;
-        }
-
-        .title {
-            font-size: 12px;
-            font-weight: bold;
+        /* Brand Banner Styling */
+        .brand-header {
             text-align: center;
-            letter-spacing: 0.5px;
+            border-bottom: 2px solid #000;
+            padding-bottom: 3pt;
+            margin-bottom: 4pt;
+        }
+
+        .brand-name {
+            font-size: 14pt;
+            font-weight: 900;
+            letter-spacing: 0.5pt;
             text-transform: uppercase;
-            color: #166534;
+            line-height: 1.1;
         }
 
-        .big {
-            font-size: 13px;
+        .brand-subtitle {
+            font-size: 7.5pt;
             font-weight: bold;
-            color: #15803d;
-        }
-
-        .center {
-            text-align: center;
-        }
-
-        .right {
-            text-align: right;
-        }
-
-        .muted {
-            font-size: 10px;
             color: #333;
         }
 
-        .divider {
-            border-top: 1px dashed #166534;
-            margin: 8px 0;
+        .pincode-badge { 
+            font-size: 11pt; 
+            font-weight: bold; 
+            border: 2px solid #000; 
+            padding: 3pt 1pt; 
+            text-align: center;
+            line-height: 1.1;
         }
 
-        .items-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 5px;
+        .cod-banner { 
+            background-color: #000; 
+            color: #fff; 
+            padding: 3pt 1pt; 
+            text-align: center; 
+            font-weight: bold; 
+            font-size: 10.5pt; 
+            border: 2px solid #000;
+            line-height: 1.1;
         }
 
-        .items-table th,
-        .items-table td {
-            border: 1px solid #86efac;
-            padding: 4px;
-            text-align: left;
+        .meta-table td { 
+            font-size: 7.5pt; 
+            padding: 1pt 0; 
+            vertical-align: top; 
         }
 
-        .items-table th {
-            background: #dcfce7;
-            color: #166534;
+        .section-box { 
+            border: 1px solid #000; 
+            padding: 4pt; 
+            margin-bottom: 4pt; 
+            font-size: 8pt; 
+            line-height: 1.25; 
+        }
+
+        .customer-box {
+            border: 2px solid #000;
+            padding: 4pt;
+            margin-bottom: 4pt;
+        }
+
+        .section-title { 
+            font-weight: bold; 
+            text-transform: uppercase; 
+            border-bottom: 1px solid #000; 
+            margin-bottom: 3pt; 
+            padding-bottom: 1pt; 
+            font-size: 8pt; 
+        }
+
+        .footer { 
+            text-align: center; 
+            font-size: 6.5pt; 
+            border-top: 1px dashed #000; 
+            padding-top: 2pt; 
+            margin-top: 4pt;
+            line-height: 1.1;
         }
     </style>
 </head>
-
 <body>
+    @php
+        $address = $order->shippingAddress ?? $order->billingAddress;
+        $shipment = $order->shipments()->latest()->first();
+        $pincode = $address ? $address->pincode : '-';
+    @endphp
 
-    <div class="label-container">
-
-        <div class="box">
-            <div class="row">
-                <div class="col big">
-                    Pincode: {{ optional($order->shippingAddress ?? $order->billingAddress)->pincode ?? '-' }}
-                </div>
-                <div class="col right big">
-                    COD Amount: Rs. {{ number_format($order->net_amount, 2) }}
-                </div>
-            </div>
+    <div class="wrapper">
+        <!-- Prominent Brand Header -->
+        <div class="brand-header">
+            <div class="brand-name">KRUSHIFY AGRO</div>
+            <div class="brand-subtitle">Krushify Agro Pvt. Ltd.</div>
         </div>
 
-        <div class="center title" style="margin-top:8px;">
-            BUSINESS PARCEL<br>
-            CASH ON DELIVERY (COD)
+        <!-- COD & Pincode Header -->
+        <table class="full-table" style="margin-bottom: 4pt;">
+            <tr>
+                <td style="width: 48%; padding-right: 2pt;">
+                    <div class="pincode-badge">PIN: {{ $pincode }}</div>
+                </td>
+                <td style="width: 52%; padding-left: 2pt;">
+                    <div class="cod-banner">
+                        COD: Rs. {{ number_format($order->net_amount, 0) }}
+                    </div>
+                </td>
+            </tr>
+        </table>
+
+        <!-- Order Meta Header -->
+        <div class="section-box" style="text-align: center; background-color: #f9f9f9;">
+            <div style="font-weight: bold; font-size: 8pt;">BUSINESS PARCEL (COD)</div>
+            <table class="full-table meta-table" style="margin-top: 2pt;">
+                <tr>
+                    <td style="text-align: left; width: 50%;"><strong>Order:</strong> {{ $order->order_no }}</td>
+                    <td style="text-align: right; width: 50%;"><strong>Date:</strong> {{ $order->created_at ? $order->created_at->format('d-m-Y') : '' }}</td>
+                </tr>
+                <tr>
+                    <td style="text-align: left; width: 50%;"><strong>Office:</strong> Rajkot H.O.</td>
+                    <td style="text-align: right; width: 50%;"><strong>E-Biller:</strong> {{ $order->warehouse?->ebiller_id ?: '1211658094' }}</td>
+                </tr>
+            </table>
         </div>
-
-        <div class="center muted" style="margin-top:4px;">
-            <strong>Order No: {{ $order->order_no }}</strong><br>
-            Payment Office : Rajkot H.O. <br>
-            Register No / E-Biller ID : {{ $order->warehouse?->ebiller_id ?: '1211658094' }}<br>
-            Order Date: {{ $order->created_at ? $order->created_at->format('d-m-Y H:i') : 'N/A' }}
-        </div>
-
-        <div class="divider"></div>
-
-        @php
-            $address = $order->shippingAddress ?? $order->billingAddress;
-            $shipment = $order->shipments()->latest()->first();
-        @endphp
 
         @if($shipment)
-        <div class="box center">
-            <div class="muted">
+        <div class="section-box" style="text-align: center; background-color: #f9f9f9;">
+            <div style="font-size: 7.5pt;">
                 <strong>Weight:</strong> {{ $shipment->actual_weight_g ?? '-' }} g | 
                 <strong>Dimensions:</strong> {{ $shipment->length_cm ?? '-' }}x{{ $shipment->width_cm ?? '-' }}x{{ $shipment->height_cm ?? '-' }} cm | 
                 <strong>Tariff:</strong> Rs. {{ $shipment->shipping_cost ?? '-' }}
             </div>
         </div>
-        <div class="divider"></div>
         @endif
 
-        <div class="box">
-            <div style="font-weight: bold; text-decoration: underline; margin-bottom: 4px;">To,</div>
-            <strong>Name:</strong> {{ $order->party->name ?? 'N/A' }}<br>
+        <!-- Deliver To Box (Customer) -->
+        <div class="section-box customer-box">
+            <div class="section-title">DELIVER TO (CUSTOMER)</div>
+            <div style="font-size: 9.5pt; font-weight: bold; margin-bottom: 2pt;">{{ $order->party->name ?? 'N/A' }}</div>
             @if($address)
-                <strong>Address:</strong> {{ $address->address_line_1 }}<br>
-                @if($address->address_line_2) 
-                    {{ $address->address_line_2 }}<br>
+                <div>{{ $address->address_line_1 }}</div>
+                @if($address->address_line_2)
+                    <div>{{ $address->address_line_2 }}</div>
                 @endif
-                <strong>Village:</strong> {{ $address->village->village_name ?? $address->village_name ?? $address->city ?? '-' }},
-                <strong>Taluka:</strong> {{ $address->village->taluka_name ?? $address->taluka ?? '-' }}, 
-                <strong>District:</strong> {{ $address->village->district_name ?? $address->district ?? '-' }}<br>
-                <strong>Post Office:</strong> {{ $address->village->post_so_name ?? $address->post_office ?? '-' }}<br>
-                <strong>State:</strong> {{ $address->state }} - {{ $address->pincode }}<br>
+                <div>
+                    <strong>Village:</strong> {{ $address->village->village_name ?? $address->village_name ?? $address->city ?? '-' }} | 
+                    <strong>Taluka:</strong> {{ $address->village->taluka_name ?? $address->taluka ?? '-' }}
+                </div>
+                <div><strong>Dist:</strong> {{ $address->village->district_name ?? $address->district ?? '-' }} | <strong>PO:</strong> {{ $address->village->post_so_name ?? $address->post_office ?? '-' }}</div>
+                <div><strong>State:</strong> {{ $address->state }} - <strong>{{ $pincode }}</strong></div>
             @else
-                <strong>Address:</strong> N/A (No Address details available)<br>
+                <div>N/A (No Address details available)</div>
             @endif
+            <div style="margin-top: 4pt; font-weight: bold; font-size: 8pt; background: #f0f0f0; padding: 2pt 4pt; display: inline-block; border: 1px solid #000;">
+                Mobile: {{ $order->party->mobile ?? $order->party->phone ?? 'N/A' }}
+            </div>
         </div>
 
-        <div class="box">
-            <div style="font-weight: bold; text-decoration: underline; margin-bottom: 4px;">From (Sender),</div>
-            <strong>{{ $order->warehouse?->company_name ?: 'Krushify Agro Pvt. Ltd.' }}</strong><br>
+        <!-- Sender Box -->
+        <div class="section-box" style="margin-bottom: 0;">
+            <div class="section-title">RETURN ADDRESS (SENDER)</div>
+            <div style="font-weight: bold; font-size: 8.5pt;">{{ $order->warehouse?->company_name ?: 'Krushify Agro Pvt. Ltd.' }}</div>
             @if($order->warehouse && $order->warehouse->address_line_1)
-                {{ $order->warehouse->address_line_1 }}<br>
-                @if($order->warehouse->address_line_2){{ $order->warehouse->address_line_2 }}<br>@endif
-                {{ $order->warehouse->city ?? 'Rajkot' }}, {{ $order->warehouse->state ?? 'Gujarat' }} - {{ $order->warehouse->pincode ?? '360003' }}.
+                <div>{{ $order->warehouse->address_line_1 }}</div>
+                @if($order->warehouse->address_line_2)<div>{{ $order->warehouse->address_line_2 }}</div>@endif
+                <div>{{ $order->warehouse->city ?? 'Rajkot' }}, {{ $order->warehouse->state ?? 'Gujarat' }} - {{ $order->warehouse->pincode ?? '360003' }} | <strong>Ph:</strong> {{ $order->warehouse?->phone ?: '9199125925' }}</div>
+                <div><strong>GSTIN:</strong> {{ $order->warehouse?->gstin ?: '24AAMCK0386L1Z6' }}</div>
             @else
-                Plot No 19, Raj Ind Amul Cross Road,<br>
-                Ruda Transport Nagar,<br>
-                360003 Rajkot, Gujarat.
+                <div>Plot No 19, Raj Ind Amul Cross Road, Ruda Transport Nagar</div>
+                <div>360003 Rajkot, Gujarat. | <strong>Ph:</strong> 9199125925</div>
+                <div><strong>GSTIN:</strong> 24AAMCK0386L1Z6</div>
             @endif
-            | <strong>Mobile:</strong> {{ $order->warehouse?->phone ?: '9199125925' }}<br>
-            <strong>GST:</strong> {{ $order->warehouse?->gstin ?: '24AAMCK0386L1Z6' }}
         </div>
 
-        <div class="divider"></div>
-
-        <div class="muted center">
-            If article undelivered, please arrange return to <strong>Rajkot H.O.</strong><br>
-            <em>“I hereby certify that this article does not contain any dangerous or prohibited goods according to
-                Indian Post rules.”</em>
+        <!-- Footer -->
+        <div class="footer">
+            <div>If undelivered, please return to <strong>Rajkot H.O.</strong></div>
+            <div><i>Does not contain dangerous or prohibited goods per Indian Post rules.</i></div>
         </div>
-
     </div>
-
 </body>
-
 </html>
