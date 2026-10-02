@@ -583,7 +583,7 @@ class PageController extends Controller
                         SELECT COALESCE(SUM(amount), 0) 
                         FROM payments 
                         WHERE payments.invoice_id = invoices.id 
-                        AND payments.status = "completed" 
+                        AND payments.status = \'completed\' 
                         AND payments.deleted_at IS NULL
                     )) as total_paid
                 ')

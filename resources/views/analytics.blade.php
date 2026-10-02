@@ -31,13 +31,13 @@
             <select class="form-select form-select-sm" x-model="period" @change="handlePeriodChange()" style="min-width: 150px;">
                 <option value="today">Today</option>
                 <option value="yesterday">Yesterday</option>
-                <option value="7d">Last 7 Days</option>
-                <option value="30d">Last 30 Days</option>
-                <option value="this_month">This Month</option>
+                <option value="last7">Last 7 Days</option>
+                <option value="last30">Last 30 Days</option>
+                <option value="current_month">This Month</option>
                 <option value="last_month">Last Month</option>
-                <option value="3m">Last 3 Months</option>
-                <option value="6m">Last 6 Months</option>
-                <option value="this_year">This Year</option>
+                <option value="last3m">Last 3 Months</option>
+                <option value="last6m">Last 6 Months</option>
+                <option value="current_year">This Year</option>
                 <option value="custom">Custom Range</option>
             </select>
             <!-- Limit Dropdown -->
@@ -342,14 +342,14 @@
 
         <!-- Low Stock Alerts -->
         <div class="col-lg-6">
-            <div class="card h-100 border-top border-4 border-warning">
-                <div class="card-header">
-                    <h2 class="h5 card-title mb-0 text-warning"><i class="bi bi-exclamation-triangle me-2"></i> Low Stock Alerts</h2>
+            <div class="card h-100 border-start border-4 border-warning">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h2 class="h5 card-title mb-0">Low Stock Alerts</h2>
                 </div>
                 <div class="card-body p-0">
-                    <div class="table-responsive" style="max-height: 350px; overflow-y: auto;">
+                    <div class="table-responsive">
                         <table class="table table-hover mb-0">
-                            <thead class="table-light sticky-top">
+                            <thead class="table-light">
                                 <tr>
                                     <th>Product</th>
                                     <th>Warehouse</th>
@@ -446,18 +446,18 @@
 
         <!-- Unpaid / Due Invoices -->
         <div class="col-lg-6">
-            <div class="card h-100 border-top border-4 border-danger">
+            <div class="card h-100 border-start border-4 border-danger">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <h2 class="h5 card-title mb-0 text-danger"><i class="bi bi-receipt me-2"></i> Unpaid / Due</h2>
+                    <h2 class="h5 card-title mb-0">Unpaid / Due</h2>
                     <div class="btn-group btn-group-sm" role="group">
-                        <button type="button" class="btn btn-outline-danger" :class="{'active': showSalesDue}" @click="showSalesDue = true">Sales Due</button>
-                        <button type="button" class="btn btn-outline-danger" :class="{'active': !showSalesDue}" @click="showSalesDue = false">Purchase Due</button>
+                        <button type="button" class="btn btn-outline-primary" :class="{'active': showSalesDue}" @click="showSalesDue = true">Sales Due</button>
+                        <button type="button" class="btn btn-outline-primary" :class="{'active': !showSalesDue}" @click="showSalesDue = false">Purchase Due</button>
                     </div>
                 </div>
                 <div class="card-body p-0">
-                    <div class="table-responsive" style="max-height: 350px; overflow-y: auto;">
+                    <div class="table-responsive">
                         <table class="table table-hover mb-0">
-                            <thead class="table-light sticky-top">
+                            <thead class="table-light">
                                 <tr>
                                     <th>Document No</th>
                                     <th>Party</th>
@@ -471,7 +471,7 @@
                                         <tr>
                                             <td>
                                                 <span class="fw-medium text-body-emphasis" x-text="item.invoice_no"></span><br>
-                                                <small class="badge bg-warning-subtle text-warning" x-text="item.status.toUpperCase()"></small>
+                                                <small class="badge bg-warning-subtle text-warning" x-text="(item.status || '').toUpperCase()"></small>
                                             </td>
                                             <td><span class="text-body-secondary" x-text="item.customer_name"></span></td>
                                             <td class="text-end text-danger" x-text="item.due_date ? new Date(item.due_date).toLocaleDateString() : 'N/A'"></td>
@@ -488,7 +488,7 @@
                                         <tr>
                                             <td>
                                                 <span class="fw-medium text-body-emphasis" x-text="item.po_number"></span><br>
-                                                <small class="badge bg-warning-subtle text-warning" x-text="item.status.toUpperCase()"></small>
+                                                <small class="badge bg-warning-subtle text-warning" x-text="(item.status || '').toUpperCase()"></small>
                                             </td>
                                             <td><span class="text-body-secondary" x-text="item.supplier_name"></span></td>
                                             <td class="text-end text-danger" x-text="item.expected_delivery_date ? new Date(item.expected_delivery_date).toLocaleDateString() : 'N/A'"></td>
