@@ -679,10 +679,10 @@ class PageController extends Controller
                     'parties.phone',
                     'parties.outstanding_balance',
                     DB::raw('COUNT(orders.id) as order_count'),
-                    DB::raw('SUM(orders.net_amount) as lifetime_value')
+                    DB::raw('SUM(orders.net_amount) as total_value')
                 )
                 ->groupBy('parties.id', 'parties.firstname', 'parties.lastname', 'parties.phone', 'parties.outstanding_balance')
-                ->orderByDesc('lifetime_value')
+                ->orderByDesc('total_value')
                 ->limit($limit)
                 ->get();
 
