@@ -129,6 +129,10 @@
         $address = $order->shippingAddress ?? $order->billingAddress;
         $shipment = $order->shipments()->latest()->first();
         $pincode = $address ? $address->pincode : '-';
+        
+        $barcodeGenerator = new \Picqer\Barcode\BarcodeGeneratorPNG();
+        $barcodeString = $shipment->tracking_no ?? $order->order_no;
+        $barcodeBase64 = base64_encode($barcodeGenerator->getBarcode($barcodeString, $barcodeGenerator::TYPE_CODE_128, 2, 40));
     @endphp
 
     <div class="{{ !$loop->last ? 'page-break' : '' }}">
@@ -155,7 +159,13 @@
 
             <!-- Order Meta Header -->
             <div class="section-box" style="text-align: center; background-color: #f9f9f9;">
-                <div style="font-weight: bold; font-size: 8pt;">BUSINESS PARCEL (COD)</div>
+                <div style="font-weight: bold; font-size: 8pt; margin-bottom: 4pt;">BUSINESS PARCEL (COD)</div>
+
+                <div style="text-align: center; margin-bottom: 4pt;">
+                    <img src="data:image/png;base64,{{ $barcodeBase64 }}" alt="Barcode" style="height: 35px; width: auto;" />
+                    <div style="font-size: 8pt; font-weight: bold; letter-spacing: 1px; margin-top: 2pt;">{{ $barcodeString }}</div>
+                </div>
+
                 <table class="full-table meta-table" style="margin-top: 2pt;">
                     <tr>
                         <td style="text-align: left; width: 50%;"><strong>Order:</strong> {{ $order->order_no }}</td>
