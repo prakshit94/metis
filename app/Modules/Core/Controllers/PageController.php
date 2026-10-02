@@ -271,10 +271,9 @@ class PageController extends Controller
         })->toArray();
 
         // Recent Orders
-        $recentOrdersRaw = (clone $baseOrderQuery)->with(['party', 'items.product', 'statusLogs', 'shipments', 'orderReturns'])
+        $recentOrdersRaw = (clone $orderQuery)->with(['party', 'items.product', 'statusLogs', 'shipments', 'orderReturns', 'creator'])
             ->whereNotIn('status', ['future_order'])
             ->latest('order_date')
-            ->take(5)
             ->get();
 
         $recentOrders = $recentOrdersRaw->map(function ($order) {
@@ -298,8 +297,11 @@ class PageController extends Controller
                         $variantStr = ' (' . $variantName . ')';
                     }
                 }
-                return $name . $variantStr . ' - Qty: ' . (float)$item->quantity;
-            })->implode(', ');
+                return [
+                    'name' => $name . $variantStr,
+                    'qty'  => (float)$item->quantity,
+                ];
+            })->toArray();
 
                         $statusTooltip = null;
             if (in_array($order->status, ['cancelled', 'confirmed', 'processing', 'ready_to_ship', 'delivered', 'returned'])) {
@@ -325,6 +327,16 @@ class PageController extends Controller
                 if ($tooltip) $statusTooltip = implode("\n", $tooltip);
             }
 
+            $paymentStatusText = 'Unpaid';
+            $paymentStatusClass = 'bg-danger';
+            if ($order->total_paid >= $order->net_amount && $order->net_amount > 0) {
+                $paymentStatusText = 'Paid';
+                $paymentStatusClass = 'bg-success';
+            } elseif ($order->total_paid > 0) {
+                $paymentStatusText = 'Partial';
+                $paymentStatusClass = 'bg-warning';
+            }
+
             return [
                 'id'       => $order->id,
                 'order_no' => $order->order_no,
@@ -332,6 +344,11 @@ class PageController extends Controller
                 'phone'    => $order->party ? $order->party->phone : null,
                 'items'    => $itemsList,
                 'amount'   => 'Rs '.number_format($order->net_amount, 2),
+                'creator'  => $order->creator ? $order->creator->name : 'System',
+                'payment'  => [
+                    'text'  => $paymentStatusText,
+                    'class' => $paymentStatusClass,
+                ],
                 'status'   => [
                     'text'  => $order->statusLabel(),
                     'class' => $statusClass,
@@ -342,10 +359,9 @@ class PageController extends Controller
         })->toArray();
 
         // Future Orders
-        $futureOrdersRaw = (clone $baseOrderQuery)->with(['party', 'items.product', 'statusLogs', 'shipments', 'orderReturns'])
+        $futureOrdersRaw = (clone $orderQuery)->with(['party', 'items.product', 'statusLogs', 'shipments', 'orderReturns', 'creator'])
             ->where('status', 'future_order')
             ->orderBy('future_order_date', 'asc')
-            ->take(5)
             ->get();
 
         $futureOrders = $futureOrdersRaw->map(function ($order) {
@@ -360,8 +376,11 @@ class PageController extends Controller
                         $variantStr = ' (' . $variantName . ')';
                     }
                 }
-                return $name . $variantStr . ' - Qty: ' . (float)$item->quantity;
-            })->implode(', ');
+                return [
+                    'name' => $name . $variantStr,
+                    'qty'  => (float)$item->quantity,
+                ];
+            })->toArray();
 
                         $statusTooltip = null;
             if (in_array($order->status, ['cancelled', 'confirmed', 'processing', 'ready_to_ship', 'delivered', 'returned'])) {
@@ -387,6 +406,16 @@ class PageController extends Controller
                 if ($tooltip) $statusTooltip = implode("\n", $tooltip);
             }
 
+            $paymentStatusText = 'Unpaid';
+            $paymentStatusClass = 'bg-danger';
+            if ($order->total_paid >= $order->net_amount && $order->net_amount > 0) {
+                $paymentStatusText = 'Paid';
+                $paymentStatusClass = 'bg-success';
+            } elseif ($order->total_paid > 0) {
+                $paymentStatusText = 'Partial';
+                $paymentStatusClass = 'bg-warning';
+            }
+
             return [
                 'id'            => $order->id,
                 'order_no'      => $order->order_no,
@@ -394,6 +423,11 @@ class PageController extends Controller
                 'phone'         => $order->party ? $order->party->phone : null,
                 'items'         => $itemsList,
                 'amount'        => 'Rs '.number_format($order->net_amount, 2),
+                'creator'       => $order->creator ? $order->creator->name : 'System',
+                'payment'       => [
+                    'text'  => $paymentStatusText,
+                    'class' => $paymentStatusClass,
+                ],
                 'status'        => [
                     'text'  => 'Future Order',
                     'class' => $statusClass,

@@ -348,39 +348,153 @@
                 <!-- Data Tables -->
                 <div class="row g-4 g-lg-5 g-xl-6 mb-5 mb-lg-5 mb-xl-6">
                     <div class="col-lg-12">
-                        <div class="card" x-data="{ tableTab: 'recent' }">
-                            <div class="card-header d-flex justify-content-between align-items-center">
+                        <div class="card" x-data="dashboardTableApp()">
+                            <div class="card-header d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
                                 <h2 class="h5 card-title mb-0">Orders</h2>
-                                <ul class="nav nav-pills card-header-pills" style="margin: -0.5rem 0;">
-                                    <li class="nav-item">
-                                        <button class="nav-link btn-sm py-1 px-3 rounded-pill" :class="tableTab === 'recent' ? 'active shadow-sm' : 'text-muted'" @click="tableTab = 'recent'">Recent</button>
-                                    </li>
-                                    <li class="nav-item ms-2">
-                                        <button class="nav-link btn-sm py-1 px-3 rounded-pill" :class="tableTab === 'future' ? 'active shadow-sm' : 'text-muted'" @click="tableTab = 'future'">Future</button>
-                                    </li>
-                                </ul>
+                                <div class="d-flex flex-wrap align-items-center gap-3">
+                                    <div class="position-relative">
+                                        <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-2 text-muted z-1" style="font-size: 0.85rem;"></i>
+                                        <input type="search" class="form-control form-control-sm ps-4" placeholder="Search orders..." x-model="searchQuery" style="width: 200px;">
+                                    </div>
+                                    <select class="form-select form-select-sm" x-model.number="itemsPerPage" style="width: auto;">
+                                        <option value="5">5 / page</option>
+                                        <option value="10">10 / page</option>
+                                        <option value="20">20 / page</option>
+                                    </select>
+                                    <ul class="nav nav-pills card-header-pills m-0">
+                                        <li class="nav-item">
+                                            <button class="nav-link btn-sm py-1 px-3 rounded-pill" :class="tableTab === 'recent' ? 'active shadow-sm' : 'text-muted'" @click="tableTab = 'recent'">Recent</button>
+                                        </li>
+                                        <li class="nav-item ms-2">
+                                            <button class="nav-link btn-sm py-1 px-3 rounded-pill" :class="tableTab === 'future' ? 'active shadow-sm' : 'text-muted'" @click="tableTab = 'future'">Future</button>
+                                        </li>
+                                    </ul>
+                                </div>
                             </div>
                             <div class="card-body p-0">
-                                <div class="table-responsive">
+                                <div class="table-responsive" style="overflow: visible;">
                                     <table class="table table-hover mb-0">
                                         <thead class="table-light">
                                             <tr>
                                                 <th>Order ID</th>
                                                 <th>Customer</th>
-                                                <th>Mobile</th>
                                                 <th>Items</th>
                                                 <th>Amount</th>
                                                 <th>Status</th>
                                                 <th>Order Placed</th>
+                                                <th>Created By</th>
                                             </tr>
                                         </thead>
-                                        <tbody id="recent-orders-table" x-show="tableTab === 'recent'">
-                                            <!-- Orders will be injected here by dashboard.js -->
-                                        </tbody>
-                                        <tbody id="future-orders-table" x-show="tableTab === 'future'" style="display: none;">
-                                            <!-- Future Orders will be injected here by dashboard.js -->
+                                        <tbody>
+                                            <template x-for="(order, index) in paginatedRecords" :key="order.id">
+                                                <tr>
+                                                    <td class="text-nowrap">
+                                                        <span class="text-secondary opacity-75 me-2" x-text="((currentPage - 1) * itemsPerPage) + index + 1 + '.'"></span>
+                                                        <a href="#" class="fw-bold text-decoration-none text-primary align-middle" @click.prevent="$dispatch('fetch-order', order.id)" x-text="order.order_no || order.id"></a>
+                                                        <button type="button" class="btn btn-sm btn-link text-muted p-0 ms-2 align-middle" 
+                                                                title="Copy Order ID" 
+                                                                @click.prevent="navigator.clipboard.writeText(order.order_no || order.id); $el.innerHTML = '<i class=\'bi bi-check2 text-success\'></i>'; setTimeout(() => $el.innerHTML = '<i class=\'bi bi-clipboard\'></i>', 1500)">
+                                                            <i class="bi bi-clipboard"></i>
+                                                        </button>
+                                                    </td>
+                                                    <td>
+                                                        <div class="fw-medium text-body-emphasis" x-text="order.customer"></div>
+                                                        <div class="text-muted small" x-text="order.phone || '—'"></div>
+                                                    </td>
+                                                    <td class="position-relative" x-data="{ showTooltip: false }" @mouseenter="showTooltip = true" @mouseleave="showTooltip = false">
+                                                        <div class="text-truncate text-muted small cursor-pointer" style="max-width: 200px;">
+                                                             <span x-text="order.items && order.items.length > 0 ? order.items[0].name + (order.items.length > 1 ? ' (+' + (order.items.length - 1) + ' more)' : '') : '—'"></span>
+                                                        </div>
+                                                        <div x-show="showTooltip" 
+                                                             x-transition.opacity
+                                                             class="position-absolute bg-body border rounded shadow-lg z-3 p-2" 
+                                                             style="bottom: 100%; left: 0; min-width: 250px; margin-bottom: 5px;"
+                                                             x-cloak>
+                                                             <table class="table table-sm table-bordered mb-0 text-start" style="font-size: 0.75rem;">
+                                                                 <thead class="table-light">
+                                                                     <tr><th>Product</th><th class="text-center" style="width: 50px;">Qty</th></tr>
+                                                                 </thead>
+                                                                 <tbody>
+                                                                     <template x-for="item in order.items">
+                                                                         <tr>
+                                                                             <td class="text-wrap" x-text="item.name"></td>
+                                                                             <td class="text-center" x-text="item.qty"></td>
+                                                                         </tr>
+                                                                     </template>
+                                                                 </tbody>
+                                                             </table>
+                                                        </div>
+                                                    </td>
+                                                    <td>
+                                                        <div x-text="order.amount" class="fw-medium"></div>
+                                                        <span :class="'badge bg-opacity-10 mt-1 ' + order.payment.class.replace('bg-', 'text-') + ' border border-' + order.payment.class.replace('bg-', '') + ' border-opacity-25'" x-text="order.payment.text" style="font-size: 0.7rem;"></span>
+                                                    </td>
+                                                    <td>
+                                                        <span :class="'badge ' + order.status.class" x-text="order.status.text"></span>
+                                                        <template x-if="order.status.tooltip">
+                                                            <i class="bi bi-info-circle-fill text-muted fs-6 cursor-pointer ms-2 d-inline-block align-middle" :title="order.status.tooltip" data-bs-toggle="tooltip"></i>
+                                                        </template>
+                                                    </td>
+                                                    <td>
+                                                        <template x-if="tableTab === 'recent'">
+                                                            <span x-text="order.date"></span>
+                                                        </template>
+                                                        <template x-if="tableTab === 'future'">
+                                                            <div>
+                                                                <div x-text="order.placed_date"></div>
+                                                                <div class="mt-1">
+                                                                    <span class="badge bg-primary-subtle text-primary-emphasis border border-primary border-opacity-25" style="font-size:0.7rem;">
+                                                                        <i class="bi bi-calendar-event me-1"></i>Scheduled: <span x-text="order.scheduled_for"></span>
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                        </template>
+                                                    </td>
+                                                    <td>
+                                                        <span class="text-muted small fw-medium" x-text="order.creator"></span>
+                                                    </td>
+                                                </tr>
+                                            </template>
+                                            <template x-if="paginatedRecords.length === 0">
+                                                <tr>
+                                                    <td colspan="7" class="text-center text-muted py-4 small">
+                                                        <i class="bi bi-inbox me-2"></i>No orders found.
+                                                    </td>
+                                                </tr>
+                                            </template>
                                         </tbody>
                                     </table>
+                                </div>
+                            </div>
+                            <!-- Pagination -->
+                            <div class="card-footer bg-body-tertiary border-0 py-3" x-show="totalPages > 1" x-cloak>
+                                <div class="d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
+                                    <div class="text-muted small fw-medium">
+                                        Showing <span class="text-body-emphasis fw-bold" x-text="filteredRecords.length > 0 ? ((currentPage - 1) * itemsPerPage) + 1 : 0"></span> 
+                                        to <span class="text-body-emphasis fw-bold" x-text="Math.min(currentPage * itemsPerPage, filteredRecords.length)"></span> 
+                                        of <span class="text-body-emphasis fw-bold" x-text="filteredRecords.length"></span> orders
+                                    </div>
+                                    <nav aria-label="Orders pagination">
+                                        <ul class="pagination pagination-sm mb-0">
+                                            <li class="page-item" :class="{'disabled': currentPage === 1}">
+                                                <button class="page-link" @click="changePage(currentPage - 1)" :disabled="currentPage === 1">
+                                                    <i class="bi bi-chevron-left"></i>
+                                                </button>
+                                            </li>
+                                            
+                                            <template x-for="page in totalPages" :key="page">
+                                                <li class="page-item" :class="{'active': currentPage === page}" x-show="Math.abs(currentPage - page) < 3 || page === 1 || page === totalPages">
+                                                    <button class="page-link" @click="changePage(page)" x-text="page"></button>
+                                                </li>
+                                            </template>
+                                            
+                                            <li class="page-item" :class="{'disabled': currentPage === totalPages}">
+                                                <button class="page-link" @click="changePage(currentPage + 1)" :disabled="currentPage === totalPages">
+                                                    <i class="bi bi-chevron-right"></i>
+                                                </button>
+                                            </li>
+                                        </ul>
+                                    </nav>
                                 </div>
                             </div>
                         </div>
@@ -403,6 +517,52 @@
 
                 <script>
                     window.dashboardData = @json($dashboardData);
+
+                    window.dashboardTableApp = function() {
+                        return {
+                            tableTab: 'recent',
+                            itemsPerPage: 10,
+                            currentPage: 1,
+                            searchQuery: '',
+                            
+                            get allRecords() {
+                                return this.tableTab === 'recent' 
+                                    ? window.dashboardData.recentOrders 
+                                    : window.dashboardData.futureOrders;
+                            },
+                            
+                            get filteredRecords() {
+                                if (!this.searchQuery) return this.allRecords;
+                                const q = this.searchQuery.toLowerCase();
+                                return this.allRecords.filter(o => 
+                                    (o.order_no || o.id || '').toString().toLowerCase().includes(q) ||
+                                    (o.customer || '').toLowerCase().includes(q) ||
+                                    (o.phone || '').toLowerCase().includes(q)
+                                );
+                            },
+                            
+                            get totalPages() {
+                                return Math.ceil(this.filteredRecords.length / this.itemsPerPage) || 1;
+                            },
+                            
+                            get paginatedRecords() {
+                                const start = (this.currentPage - 1) * this.itemsPerPage;
+                                return this.filteredRecords.slice(start, start + this.itemsPerPage);
+                            },
+                            
+                            changePage(page) {
+                                if (page >= 1 && page <= this.totalPages) {
+                                    this.currentPage = page;
+                                }
+                            },
+                            
+                            init() {
+                                this.$watch('tableTab', () => { this.currentPage = 1; this.searchQuery = ''; });
+                                this.$watch('searchQuery', () => { this.currentPage = 1; });
+                                this.$watch('itemsPerPage', () => { this.currentPage = 1; });
+                            }
+                        }
+                    };
 
                     window.customerSearchApp = function() {
                         return {

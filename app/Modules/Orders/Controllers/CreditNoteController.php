@@ -58,11 +58,43 @@ class CreditNoteController extends Controller implements HasMiddleware
             'used'   => $statusCounts->get('used', 0),
         ];
 
-        // No customers preloaded — dropdown uses live search via searchCustomers()
-        $invoices = Invoice::select('id', 'invoice_no', 'net_amount')->latest()->limit(100)->toBase()->get();
-        $returns = OrderReturn::select('id', 'return_no')->latest()->limit(100)->toBase()->get();
 
-        return view('orders.credit-notes.index', compact('stats', 'invoices', 'returns'));
+
+        $refundCustomers = Party::select('parties.id', 'parties.company_name', 'parties.firstname', 'parties.lastname', 'parties.phone', \Illuminate\Support\Facades\DB::raw('MAX(refunds.amount) as refund_amount'), \Illuminate\Support\Facades\DB::raw('MAX(refunds.invoice_id) as invoice_id'), \Illuminate\Support\Facades\DB::raw('MAX(refunds.order_return_id) as order_return_id'))
+            ->where('parties.type', 'customer')
+            ->whereNotExists(function ($q) {
+                $q->select(\Illuminate\Support\Facades\DB::raw(1))
+                  ->from('credit_notes')
+                  ->whereColumn('credit_notes.customer_id', 'parties.id');
+            })
+            ->join('orders', 'orders.party_id', '=', 'parties.id')
+            ->join('refunds', function($join) {
+                $join->on('refunds.order_id', '=', 'orders.id')
+                     ->where('refunds.status', '!=', 'completed');
+            })
+            ->groupBy('parties.id', 'parties.company_name', 'parties.firstname', 'parties.lastname', 'parties.phone')
+            ->get()
+            ->map(fn ($c) => [
+                'id' => $c->id,
+                'name' => trim(($c->company_name ?: trim($c->firstname . ' ' . $c->lastname)) . ' ' . ($c->phone ? '('.$c->phone.')' : '')),
+                'amount' => $c->refund_amount,
+                'invoice_id' => $c->invoice_id,
+                'order_return_id' => $c->order_return_id
+            ]);
+
+        $customerIds = $refundCustomers->pluck('id');
+        
+        $invoices = Invoice::select('invoices.id', 'invoices.invoice_no', 'invoices.net_amount', 'orders.party_id as customer_id')
+            ->join('orders', 'orders.id', '=', 'invoices.order_id')
+            ->whereIn('orders.party_id', $customerIds)
+            ->toBase()->get();
+            
+        $returns = OrderReturn::select('order_returns.id', 'order_returns.return_no', 'orders.party_id as customer_id')
+            ->join('orders', 'orders.id', '=', 'order_returns.order_id')
+            ->whereIn('orders.party_id', $customerIds)
+            ->toBase()->get();
+
+        return view('orders.credit-notes.index', compact('stats', 'invoices', 'returns', 'refundCustomers'));
     }
 
     /**
@@ -74,8 +106,14 @@ class CreditNoteController extends Controller implements HasMiddleware
     {
         $search = trim((string) $request->input('q', ''));
 
-        $query = Party::select('id', 'company_name', 'firstname', 'lastname')
-            ->where('type', 'customer')
+        $query = Party::select('parties.id', 'parties.company_name', 'parties.firstname', 'parties.lastname')
+            ->where('parties.type', 'customer')
+            ->whereExists(function ($q) {
+                $q->select(\Illuminate\Support\Facades\DB::raw(1))
+                  ->from('orders')
+                  ->join('refunds', 'refunds.order_id', '=', 'orders.id')
+                  ->whereColumn('orders.party_id', 'parties.id');
+            })
             ->toBase();
 
         if ($search !== '') {
@@ -97,21 +135,66 @@ class CreditNoteController extends Controller implements HasMiddleware
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'customer_id' => 'required|exists:parties,id',
+            'customer_id' => 'required|exists:parties,id|unique:credit_notes,customer_id',
             'invoice_id' => 'nullable|exists:invoices,id',
             'order_return_id' => 'nullable|exists:order_returns,id',
             'amount' => 'required|numeric|min:0.01',
-            'status' => 'required|in:active,used,cancelled',
+            'refund_method' => 'required|in:wallet,direct',
+            'status' => 'nullable|in:active,used,cancelled',
         ]);
 
-        // Balance remaining should be zero for any non-active status
-        $validated['balance_remaining'] = ($validated['status'] === 'active')
-            ? $validated['amount']
-            : 0;
+        $creditNote = null;
+        
+        \Illuminate\Support\Facades\DB::transaction(function () use ($validated, &$creditNote) {
+            $validated['status'] = 'used';
+            $validated['balance_remaining'] = 0;
+            
+            $refundMethod = $validated['refund_method'];
+            unset($validated['refund_method']);
+            
+            $creditNote = CreditNote::create($validated);
+            
+            if ($refundMethod === 'wallet') {
+                $party = \App\Modules\Customers\Models\Party::findOrFail($validated['customer_id']);
+                $balanceBefore = $party->wallet_balance;
+                $balanceAfter = $balanceBefore + $validated['amount'];
+                
+                \App\Modules\Customers\Models\WalletTransaction::create([
+                    'party_id' => $party->id,
+                    'amount' => $validated['amount'],
+                    'type' => 'credit',
+                    'reference_type' => 'credit_note',
+                    'reference_id' => $creditNote->id,
+                    'description' => 'Refund added to wallet',
+                    'created_by' => auth()->id(),
+                    'balance_before' => $balanceBefore,
+                    'balance_after' => $balanceAfter,
+                ]);
+                
+                $party->update(['wallet_balance' => $balanceAfter]);
+            }
+            
+            $refund = null;
+            if (!empty($validated['order_return_id'])) {
+                $refund = \App\Modules\Orders\Models\Refund::where('order_return_id', $validated['order_return_id'])->first();
+            } elseif (!empty($validated['invoice_id'])) {
+                $refund = \App\Modules\Orders\Models\Refund::where('invoice_id', $validated['invoice_id'])->first();
+            } else {
+                $refund = \App\Modules\Orders\Models\Refund::whereHas('order', function($q) use ($validated) {
+                    $q->where('party_id', $validated['customer_id']);
+                })->where('status', '!=', 'completed')->first();
+            }
+            
+            if ($refund) {
+                $refund->update([
+                    'status' => 'completed',
+                    'processed_by' => auth()->id(),
+                    'processed_at' => now(),
+                ]);
+            }
+        });
 
-        $creditNote = CreditNote::create($validated);
-
-        return response()->json(['message' => 'Credit Note created successfully', 'data' => $creditNote], 201);
+        return response()->json(['message' => 'Credit Note processed successfully', 'data' => $creditNote], 201);
     }
 
     public function update(Request $request, CreditNote $creditNote): JsonResponse

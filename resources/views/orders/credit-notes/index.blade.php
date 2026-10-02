@@ -167,12 +167,12 @@
                                     <div class="d-flex flex-column gap-1">
                                         <template x-if="item.invoice">
                                             <span class="badge rounded-pill px-3 py-2 fw-medium border bg-info-subtle text-info-emphasis border-info-subtle align-self-start">
-                                                <i class="bi bi-file-earmark-text me-1"></i> Inv: <span x-text="item.invoice.invoice_number"></span>
+                                                <i class="bi bi-file-earmark-text me-1"></i> Inv: <span x-text="item.invoice.invoice_no"></span>
                                             </span>
                                         </template>
                                         <template x-if="item.order_return">
                                             <span class="badge rounded-pill px-3 py-2 fw-medium border bg-warning-subtle text-warning-emphasis border-warning-subtle align-self-start">
-                                                <i class="bi bi-arrow-return-left me-1"></i> Ret: <span x-text="item.order_return.return_number"></span>
+                                                <i class="bi bi-arrow-return-left me-1"></i> Ret: <span x-text="item.order_return.return_no"></span>
                                             </span>
                                         </template>
                                         <template x-if="!item.invoice && !item.order_return">
@@ -272,7 +272,7 @@
                             <div class="col-12">
                                 <template x-if="!isEditing">
                                     <div>
-                                        <div class="card mb-3 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary">
+                                        <div class="card mb-3 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary" style="z-index: 10;">
                                             <div class="card-body p-3">
                                                 <div class="d-flex align-items-center gap-2 pb-2 mb-3 border-bottom">
                                                     <div class="bg-primary bg-opacity-10 text-primary rounded-2 d-flex align-items-center justify-content-center" style="width: 24px; height: 24px;">
@@ -280,24 +280,16 @@
                                                     </div>
                                                     <h6 class="mb-0 fw-bold text-uppercase text-body" style="font-size: 11px; letter-spacing: 1px;">Customer Information</h6>
                                                 </div>
-                                                <div class="mb-3 position-relative" @click.away="showCustomerDropdown = false">
+                                                <div class="mb-3">
                                                     <label class="form-label fw-bold text-muted text-uppercase" style="font-size: 10px;">Customer *</label>
                                                     <div class="input-group input-group-sm">
                                                         <span class="input-group-text bg-body text-muted border-end-0"><i class="bi bi-person"></i></span>
-                                                        <div class="form-control border-start-0 ps-0 fw-semibold bg-body cursor-pointer d-flex align-items-center" @click="showCustomerDropdown = !showCustomerDropdown" style="font-size: 12px; min-height: 31px;">
-                                                            <span class="flex-grow-1" x-text="selectedCustomerName || 'Select Customer'"></span>
-                                                            <i class="bi bi-chevron-down text-muted"></i>
-                                                        </div>
-                                                    </div>
-                                                    <div x-show="showCustomerDropdown" class="position-absolute w-100 bg-body border rounded shadow-lg mt-1" style="max-height: 200px; overflow-y: auto; z-index: 1050;">
-                                                        <div class="p-2 border-bottom position-sticky top-0 bg-body">
-                                                            <input type="text" class="form-control form-control-sm" x-model="customerSearch" placeholder="Search...">
-                                                        </div>
-                                                        <template x-for="cust in filteredCustomers" :key="cust.id">
-                                                            <div class="px-3 py-2 cursor-pointer custom-hover-bg d-flex align-items-center" @click="form.customer_id = cust.id; _selectedCustomer = cust; showCustomerDropdown = false">
-                                                                <span style="font-size: 12px;" x-text="cust.name"></span>
-                                                            </div>
-                                                        </template>
+                                                        <select class="form-select border-start-0 fw-semibold bg-body cursor-pointer" x-model="form.customer_id" style="font-size: 12px; min-height: 31px;" required>
+                                                            <option value="">Select Customer</option>
+                                                            <template x-for="cust in refundCustomers" :key="cust.id">
+                                                                <option :value="cust.id" x-text="cust.name"></option>
+                                                            </template>
+                                                        </select>
                                                     </div>
                                                 </div>
                                             </div>
@@ -320,11 +312,10 @@
                                                         </div>
                                                     </div>
                                                     <div class="col-md-6">
-                                                        <label class="form-label fw-bold text-muted text-uppercase" style="font-size: 10px;">Status</label>
-                                                        <select class="form-select form-select-sm fw-semibold" x-model="form.status">
-                                                            <option value="active">Active</option>
-                                                            <option value="used">Used</option>
-                                                            <option value="cancelled">Cancelled</option>
+                                                        <label class="form-label fw-bold text-muted text-uppercase" style="font-size: 10px;">Refund Method</label>
+                                                        <select class="form-select form-select-sm fw-semibold" x-model="form.refund_method" required>
+                                                            <option value="wallet">Add to Wallet Balance</option>
+                                                            <option value="direct">Direct Refund (Bank/Card)</option>
                                                         </select>
                                                     </div>
                                                 </div>
@@ -333,8 +324,8 @@
                                                         <label class="form-label fw-bold text-muted text-uppercase" style="font-size: 10px;">Related Invoice (Opt)</label>
                                                         <select class="form-select form-select-sm fw-semibold" x-model="form.invoice_id">
                                                             <option value="">None</option>
-                                                            <template x-for="inv in invoices" :key="inv.id">
-                                                                <option :value="inv.id" x-text="inv.invoice_number"></option>
+                                                            <template x-for="inv in invoices.filter(i => i.customer_id == form.customer_id)" :key="inv.id">
+                                                                <option :value="inv.id" x-text="inv.invoice_no"></option>
                                                             </template>
                                                         </select>
                                                     </div>
@@ -342,8 +333,8 @@
                                                         <label class="form-label fw-bold text-muted text-uppercase" style="font-size: 10px;">Related Return (Opt)</label>
                                                         <select class="form-select form-select-sm fw-semibold" x-model="form.order_return_id">
                                                             <option value="">None</option>
-                                                            <template x-for="ret in returns" :key="ret.id">
-                                                                <option :value="ret.id" x-text="ret.return_number"></option>
+                                                            <template x-for="ret in returns.filter(r => r.customer_id == form.customer_id)" :key="ret.id">
+                                                                <option :value="ret.id" x-text="ret.return_no"></option>
                                                             </template>
                                                         </select>
                                                     </div>
@@ -369,6 +360,14 @@
                                                         <span class="input-group-text">₹</span>
                                                         <input type="text" class="form-control fw-semibold" :value="form.amount" disabled>
                                                     </div>
+                                                </div>
+                                                <div class="col-md-6" x-show="form.invoice_id">
+                                                    <label class="form-label fw-bold text-muted text-uppercase" style="font-size: 10px;">Invoice Ref</label>
+                                                    <input type="text" class="form-control form-control-sm fw-semibold bg-light" :value="form.invoice ? form.invoice.invoice_no : 'N/A'" disabled>
+                                                </div>
+                                                <div class="col-md-6" x-show="form.order_return_id">
+                                                    <label class="form-label fw-bold text-muted text-uppercase" style="font-size: 10px;">Return Ref</label>
+                                                    <input type="text" class="form-control form-control-sm fw-semibold bg-light" :value="form.order_return ? form.order_return.return_no : 'N/A'" disabled>
                                                 </div>
                                                 <div class="col-md-6">
                                                     <label class="form-label fw-bold text-muted text-uppercase" style="font-size: 10px;">Balance Remaining *</label>
@@ -432,6 +431,7 @@ document.addEventListener('alpine:init', () => {
         selected: [],
         stats: {!! json_encode($stats ?? ['total' => 0, 'active' => 0, 'used' => 0, 'cancelled' => 0]) !!},
         customers: [],          // populated on-demand via live search
+        refundCustomers: {!! json_encode($refundCustomers ?? []) !!},
         invoices: {!! json_encode($invoices ?? []) !!},
         returns: {!! json_encode($returns ?? []) !!},
         
@@ -446,7 +446,8 @@ document.addEventListener('alpine:init', () => {
             order_return_id: '',
             amount: '',
             balance_remaining: '',
-            status: 'active'
+            status: 'active',
+            refund_method: 'wallet'
         },
         
         customerSearch: '',
@@ -469,10 +470,16 @@ document.addEventListener('alpine:init', () => {
             this.modal = new bootstrap.Modal(document.getElementById('creditNoteModal'));
             this.fetchData();
             this.$watch('searchQuery', () => { this.currentPage = 1; this.fetchData(); });
-            // Debounced live-search for the customer dropdown
-            this.$watch('customerSearch', (val) => {
-                clearTimeout(this._customerSearchTimer);
-                this._customerSearchTimer = setTimeout(() => this.searchCustomers(val), 300);
+            
+            this.$watch('form.customer_id', (val) => {
+                if (val && !this.isEditing) {
+                    const cust = this.refundCustomers.find(c => String(c.id) === String(val));
+                    if (cust) {
+                        this.form.amount = cust.amount || '';
+                        this.form.invoice_id = cust.invoice_id || '';
+                        this.form.order_return_id = cust.order_return_id || '';
+                    }
+                }
             });
         },
 
@@ -508,7 +515,7 @@ document.addEventListener('alpine:init', () => {
         
         openCreateModal() {
             this.isEditing = false;
-            this.form = { id: null, customer_id: '', invoice_id: '', order_return_id: '', amount: '', balance_remaining: '', status: 'active' };
+            this.form = { id: null, customer_id: '', invoice_id: '', order_return_id: '', amount: '', balance_remaining: '', status: 'active', refund_method: 'wallet' };
             this.customerSearch = '';
             this.customers = [];
             this._selectedCustomer = null;

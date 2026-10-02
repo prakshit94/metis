@@ -379,8 +379,10 @@
                                                                           x-text="getEffectiveStock(product)"></span>
                                                                 </div>
                                                                 <div class="d-flex justify-content-between align-items-center" style="font-size: 10px;">
-                                                                    <span class="text-muted">Physical: <span class="fw-bold text-body-emphasis" x-text="getPhysicalStock(product)"></span></span>
-                                                                    <span x-show="isOversellingAllowed(product) && getRemainingOversell(product) > 0" class="text-warning fw-bold" title="Overselling Allowed" x-text="'+' + getRemainingOversell(product) + ' (OS)'"></span>
+                                                                    @if($isMasterAdmin)
+                                                                        <span class="text-muted">Physical: <span class="fw-bold text-body-emphasis" x-text="getPhysicalStock(product)"></span></span>
+                                                                        <span x-show="isOversellingAllowed(product) && getRemainingOversell(product) > 0" class="text-warning fw-bold" title="Overselling Allowed" x-text="'+' + getRemainingOversell(product) + ' (OS)'"></span>
+                                                                    @endif
                                                                 </div>
                                                             </div>
                                                         </div>
