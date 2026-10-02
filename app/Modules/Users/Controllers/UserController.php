@@ -371,8 +371,14 @@ class UserController extends Controller implements HasMiddleware
             if ($request->has('team_id')) {
                 // To cleanly move a user between teams (or to Global), we first strip existing roles
                 // across any team context so they do not stack.
-                $user->roles()->detach();
-                $user->permissions()->detach();
+                \Illuminate\Support\Facades\DB::table(config('permission.table_names.model_has_roles'))
+                    ->where('model_id', $user->id)
+                    ->where('model_type', get_class($user))
+                    ->delete();
+                \Illuminate\Support\Facades\DB::table(config('permission.table_names.model_has_permissions'))
+                    ->where('model_id', $user->id)
+                    ->where('model_type', get_class($user))
+                    ->delete();
                 setPermissionsTeamId($request->team_id ?: null);
             }
             $user->syncRoles($validated['roles']);
