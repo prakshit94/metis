@@ -216,7 +216,6 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('/messages', [PageController::class, 'messages'])->name('messages');
     Route::get('/calendar', [PageController::class, 'calendar'])->name('calendar');
     Route::get('/files', [PageController::class, 'files'])->name('files')->middleware('permission:settings-view');
-    Route::get('/api/files/preview', [FileManagerController::class, 'preview'])->name('files.preview');
     Route::prefix('api/files')->middleware('permission:settings-view')->group(function () {
         Route::get('/', [FileManagerController::class, 'index']);
         Route::post('/upload', [FileManagerController::class, 'upload']);
@@ -319,6 +318,8 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::put('/targets/{target}', [\App\Http\Controllers\TargetController::class, 'update'])->name('targets.update');
     Route::delete('/targets/{target}', [\App\Http\Controllers\TargetController::class, 'destroy'])->name('targets.destroy');
 });
+
+Route::get('/api/files/preview', [\App\Modules\Core\Controllers\FileManagerController::class, 'preview'])->name('files.preview');
 
 Route::get('/images/{path}', function ($path) {
     $absolutePath = storage_path('app/public/' . $path);
