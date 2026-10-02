@@ -14,7 +14,7 @@ class FileManagerController extends Controller
     {
         $disk = Storage::disk('public');
         if (config('filesystems.disks.public.driver') === 'local') {
-            return url('/images/' . ltrim($path, '/'));
+            return '/images/' . ltrim($path, '/');
         }
         return $disk->url($path);
     }
