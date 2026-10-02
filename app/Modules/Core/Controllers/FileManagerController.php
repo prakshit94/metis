@@ -10,11 +10,20 @@ use Illuminate\Support\Str;
 
 class FileManagerController extends Controller
 {
+    private function getFileUrl($path)
+    {
+        $disk = Storage::disk('public');
+        if (config('filesystems.disks.public.driver') === 'local') {
+            return asset('storage/' . $path);
+        }
+        return $disk->url($path);
+    }
+
     public function index()
     {
         $files = SystemFile::latest()->get()->map(function ($fileRecord) {
             $disk = Storage::disk('public');
-            $url = $disk->url($fileRecord->path);
+            $url = $this->getFileUrl($fileRecord->path);
 
             $typeCategory = 'other';
             $icon = 'bi-file-earmark';
@@ -116,7 +125,7 @@ class FileManagerController extends Controller
 
         return response()->json([
             'message' => 'File uploaded successfully',
-            'path' => Storage::disk('public')->url($path),
+            'path' => $this->getFileUrl($path),
         ]);
     }
 
@@ -134,7 +143,7 @@ class FileManagerController extends Controller
                 Storage::disk('public')->delete($fileRecord->path);
 
                 // If it was the login background, clear it
-                $url = Storage::disk('public')->url($fileRecord->path);
+                $url = $this->getFileUrl($fileRecord->path);
                 $pathOnly = parse_url($url, PHP_URL_PATH) ?: $url;
                 SystemSetting::where('key', 'login_background_image')
                     ->where(function ($query) use ($url, $pathOnly) {
@@ -172,7 +181,7 @@ class FileManagerController extends Controller
         $fileRecord->save();
 
         $disk = Storage::disk('public');
-        $newUrl = $disk->url($fileRecord->path);
+        $newUrl = $this->getFileUrl($fileRecord->path);
 
         return response()->json(['message' => 'File renamed successfully', 'url' => $newUrl]);
     }
@@ -244,7 +253,7 @@ class FileManagerController extends Controller
             $url = '/assets/images/' . $filename;
         } else {
             $fileRecord = SystemFile::find($fileId);
-            $url = Storage::disk('public')->url($fileRecord->path);
+            $url = $this->getFileUrl($fileRecord->path);
             $url = parse_url($url, PHP_URL_PATH) ?: $url;
         }
 

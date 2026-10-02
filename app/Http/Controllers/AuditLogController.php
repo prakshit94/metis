@@ -340,6 +340,9 @@ class AuditLogController extends Controller implements HasMiddleware
             $label = $subject?->label ?? $attrs['label'] ?? $old['label'] ?? '';
             $subjectName = $label ? "({$label}) Address" : 'Address';
             $detail = " for {$customerName}";
+        } elseif ($subjectName === 'SystemFile') {
+            $name = $subject->original_name ?? $attrs['original_name'] ?? null;
+            if ($name) $detail = ' ' . $name;
         } else {
             $name = $subject->name ?? $subject->title ?? $attrs['name'] ?? $attrs['title'] ?? null;
             if ($name) $detail = ' ' . $name;
@@ -479,6 +482,9 @@ class AuditLogController extends Controller implements HasMiddleware
                 $label = $subject?->label ?? $attrs['label'] ?? $old['label'] ?? '';
                 $subjectName = $label ? "({$label}) Address" : 'Address';
                 $detail = " for {$customerName}";
+            } elseif ($subjectName === 'SystemFile') {
+                $name = $subject?->original_name ?? $attrs['original_name'] ?? null;
+                if ($name) $detail = ' ' . $name;
             } else {
                 $name = $subject?->name ?? $subject?->title ?? $attrs['name'] ?? $attrs['title'] ?? null;
                 if ($name) $detail = ' ' . $name;
