@@ -357,26 +357,29 @@
                                             <div class="row g-2 mb-2 align-items-start" x-data="{ open: false, search: '' }" @click.outside="open = false" :style="open ? 'z-index: 9999; position: relative;' : 'position: relative;'">
                                                 <div class="col-md-4 col-12">
                                                     <div class="position-relative">
-                                                        <div class="input-group input-group-sm" @click="open = !open">
+                                                        <div class="input-group input-group-sm" @click="open = true; setTimeout(() => $refs.searchInput.focus(), 50)">
                                                             <input type="text" 
                                                                    class="form-control form-control-sm cursor-pointer bg-body" 
                                                                    placeholder="Search & choose product..." 
                                                                    :value="item.product_id ? (products.find(p => p.id == item.product_id)?.name + ' (' + products.find(p => p.id == item.product_id)?.sku + ')') : ''"
-                                                                   readonly>
-                                                            <span class="input-group-text bg-body"><i class="bi bi-chevron-down small text-muted"></i></span>
+                                                                   readonly
+                                                                   x-show="!open">
+                                                            <input type="text"
+                                                                   class="form-control form-control-sm bg-body"
+                                                                   placeholder="Search & choose product..."
+                                                                   x-model="search"
+                                                                   x-ref="searchInput"
+                                                                   x-show="open"
+                                                                   style="display: none;"
+                                                                   @click.stop>
+                                                            <span class="input-group-text bg-body"><i class="bi small text-muted" :class="open ? 'bi-search' : 'bi-chevron-down'"></i></span>
                                                         </div>
                                                         
                                                         <div x-show="open" 
                                                              class="w-100 bg-body border rounded shadow-sm mt-2 p-2" 
                                                              style="max-height: 200px; overflow-y: auto;"
                                                              x-transition>
-                                                            <div class="mb-2">
-                                                                <input type="text" 
-                                                                       class="form-control form-control-sm" 
-                                                                       placeholder="Type to search..." 
-                                                                       x-model="search"
-                                                                       @click.stop>
-                                                            </div>
+
                                                             <div class="list-group list-group-flush small">
                                                                 <template x-for="p in products.filter(p => !search || p.name.toLowerCase().includes(search.toLowerCase()) || p.sku.toLowerCase().includes(search.toLowerCase()))" :key="p.id">
                                                                     <button type="button" 

@@ -3361,6 +3361,7 @@ mapOrder(o) {
                 await this.evaluateFreeProducts();
             });
 
+            /*
             this.$watch('shippingAddressId', (newVal) => {
                 if (newVal) {
                     const selectedAddress = this.addresses.find(a => String(a.id) === String(newVal));
@@ -3377,6 +3378,7 @@ mapOrder(o) {
                     }
                 }
             });
+            */
 
             this.$watch('grandTotal', v => {
                 localStorage.setItem(`ecommerce_create_order_cart_total_${this.partyId}`, v);
@@ -3673,6 +3675,7 @@ mapOrder(o) {
                         this.billingAddressId = this.shippingAddressId;
                     }
 
+                    /*
                     if (!this.warehouseId || String(this.warehouseId) === String(this.defaultWarehouseId)) {
                         const defaultAddress = this.addresses.find(a => String(a.id) === String(this.shippingAddressId));
                         if (defaultAddress && defaultAddress.state) {
@@ -3687,6 +3690,7 @@ mapOrder(o) {
                             }
                         }
                     }
+                    */
                 }
             } catch(e) { console.error(e); }
         },
@@ -3996,7 +4000,7 @@ mapOrder(o) {
             if (reset) this.productPage = 1;
             this.searching = true;
             try {
-                const p = new URLSearchParams({ q: this.productQuery, category: this.categoryFilter, perPage: this.perPage, page: this.productPage, _t: Date.now() });
+                const p = new URLSearchParams({ q: this.productQuery, category: this.categoryFilter, stock: this.stockFilter, perPage: this.perPage, page: this.productPage, _t: Date.now() });
                 const res = await fetch(`/products-search-api?${p}`, { headers: {'Accept':'application/json','X-Requested-With':'XMLHttpRequest'} });
                 const json = await res.json();
                 this.products = (json.data || []).map(p => ({...p, _qty: 0, _disc: parseFloat(p.default_discount)||0}));
