@@ -983,7 +983,7 @@ class OrderController extends Controller implements HasMiddleware
                     }
                 },
             ],
-            'tracking_no' => 'nullable|string|max:255',
+            'tracking_no' => 'nullable|string|max:255|unique:shipments,tracking_no,'.$id.',order_id',
         ]);
 
         try {
@@ -1197,7 +1197,27 @@ class OrderController extends Controller implements HasMiddleware
                     }
                 },
             ],
-            'tracking_no' => 'nullable|string|max:255',
+            'tracking_no' => [
+                'nullable',
+                'string',
+                'max:255',
+                function ($attribute, $value, $fail) use ($request) {
+                    $orderIds = $request->input('order_ids', []);
+                    if (is_array($orderIds) && count($orderIds) > 1) {
+                        $fail('Tracking number cannot be assigned to multiple orders at once.');
+                    }
+                    if (is_array($orderIds) && count($orderIds) === 1) {
+                        $orderId = $orderIds[0];
+                        $exists = \Illuminate\Support\Facades\DB::table('shipments')
+                            ->where('tracking_no', $value)
+                            ->where('order_id', '!=', $orderId)
+                            ->exists();
+                        if ($exists) {
+                            $fail('The tracking no has already been taken.');
+                        }
+                    }
+                },
+            ],
         ]);
 
         $ids = $validated['order_ids'];
