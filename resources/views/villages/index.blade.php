@@ -12,7 +12,7 @@
             <p class="text-muted mb-0">Manage geolocations, pincodes, and service coverage</p>
         </div>
         <div class="d-flex gap-2">
-            <button class="btn btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#analyticsSections" aria-expanded="true" aria-controls="analyticsSections">
+            <button class="btn btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#analyticsSections" aria-expanded="false" aria-controls="analyticsSections">
                 <i class="bi bi-graph-up me-2"></i>Toggle Analytics
             </button>
             @can('village-export')
@@ -140,7 +140,7 @@
         </div>
     </div>
 
-    <div class="collapse show" id="analyticsSections">
+    <div class="collapse" id="analyticsSections">
         <!-- Advanced Analytics Row -->
         <div class="row g-4 g-lg-5 g-xl-6 mb-5 mb-lg-5 mb-xl-6">
         <div class="col-lg-4">
