@@ -354,9 +354,9 @@
                                         </div>
 
                                         <template x-for="(item, index) in form.items" :key="index">
-                                            <div class="row g-2 mb-2 align-items-center">
+                                            <div class="row g-2 mb-2 align-items-start" x-data="{ open: false, search: '' }" @click.outside="open = false" :style="open ? 'z-index: 9999; position: relative;' : 'position: relative;'">
                                                 <div class="col-md-4 col-12">
-                                                    <div class="position-relative" x-data="{ open: false, search: '' }" @click.outside="open = false">
+                                                    <div class="position-relative">
                                                         <div class="input-group input-group-sm" @click="open = !open">
                                                             <input type="text" 
                                                                    class="form-control form-control-sm cursor-pointer bg-body" 
@@ -367,8 +367,8 @@
                                                         </div>
                                                         
                                                         <div x-show="open" 
-                                                             class="position-absolute w-100 bg-body border rounded shadow-lg mt-1 p-2" 
-                                                             style="z-index: 1050; max-height: 200px; overflow-y: auto;"
+                                                             class="w-100 bg-body border rounded shadow-sm mt-2 p-2" 
+                                                             style="max-height: 200px; overflow-y: auto;"
                                                              x-transition>
                                                             <div class="mb-2">
                                                                 <input type="text" 
