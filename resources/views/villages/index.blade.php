@@ -12,6 +12,9 @@
             <p class="text-muted mb-0">Manage geolocations, pincodes, and service coverage</p>
         </div>
         <div class="d-flex gap-2">
+            <button class="btn btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#analyticsSections" aria-expanded="true" aria-controls="analyticsSections">
+                <i class="bi bi-graph-up me-2"></i>Toggle Analytics
+            </button>
             @can('village-export')
             <button type="button" class="btn btn-outline-secondary" @click="exportVillages()">
                 <i class="bi bi-download me-2"></i>Export
@@ -137,8 +140,9 @@
         </div>
     </div>
 
-    <!-- Advanced Analytics Row -->
-    <div class="row g-4 g-lg-5 g-xl-6 mb-5 mb-lg-5 mb-xl-6">
+    <div class="collapse show" id="analyticsSections">
+        <!-- Advanced Analytics Row -->
+        <div class="row g-4 g-lg-5 g-xl-6 mb-5 mb-lg-5 mb-xl-6">
         <div class="col-lg-4">
             <div class="card h-100 border-start border-4 border-primary">
                 <div class="card-header">
@@ -213,6 +217,7 @@
             </div>
         </div>
     </div>
+    </div>
 
     <!-- Main Table Container -->
     <div class="card">
@@ -240,7 +245,6 @@
                                 @change="filterVillages()"
                                 style="width: 130px;">
                             <option value="">Active</option>
-                            <option value="with">All</option>
                             <option value="only">Deleted</option>
                         </select>
 
@@ -254,6 +258,8 @@
                             <option value="20">20 / page</option>
                             <option value="25">25 / page</option>
                             <option value="50">50 / page</option>
+                            <option value="100">100 / page</option>
+                            <option value="200">200 / page</option>
                         </select>
 
                         <!-- Advanced Filters Trigger -->
@@ -473,9 +479,11 @@
                                        :checked="villages.length > 0 && selectedVillages.length === villages.length"
                                        @change="toggleAll($event.target.checked)">
                             </th>
+                            <th>ID</th>
                             <th @click="sort('village_name')" style="cursor: pointer;">
                                 Village Name <i class="bi" :class="getSortIcon('village_name')"></i>
                             </th>
+                            <th>Normalized Name</th>
                             <th @click="sort('pincode')" style="cursor: pointer;">
                                 Pincode <i class="bi" :class="getSortIcon('pincode')"></i>
                             </th>
@@ -483,8 +491,13 @@
                             <th>Taluka</th>
                             <th>District</th>
                             <th>State</th>
-                            <th>Office Info</th>
-                            <th>Timestamps</th>
+                            <th>Office ID</th>
+                            <th>Office Type Code</th>
+                            <th>Delivery Office Flag</th>
+                            <th>Is Rolled Out</th>
+                            <th>Created At</th>
+                            <th>Updated At</th>
+                            <th>Deleted At</th>
                             <th>Mapped Services</th>
                             <th style="width: 80px;"></th>
                         </tr>
@@ -492,7 +505,7 @@
                     <tbody>
                         <!-- Loading State -->
                         <tr x-show="isLoading">
-                            <td colspan="10" class="text-center py-5">
+                            <td colspan="18" class="text-center py-5">
                                 <div class="spinner-border text-primary" role="status"></div>
                                 <p class="mt-2 text-muted mb-0">Loading villages...</p>
                             </td>
@@ -500,7 +513,7 @@
 
                         <!-- Empty State -->
                         <tr x-show="!isLoading && villages.length === 0">
-                            <td colspan="10" class="text-center py-5">
+                            <td colspan="18" class="text-center py-5">
                                 <i class="bi bi-geo-alt text-muted display-4"></i>
                                 <p class="mt-2 fw-semibold mb-1">No villages found</p>
                                 <p class="text-muted small mb-0">Upload a CSV or add a village manually.</p>
@@ -516,30 +529,35 @@
                                            :value="v.id" :checked="selectedVillages.includes(String(v.id))"
                                            @change="toggleVillage(v.id)">
                                 </td>
+                                <td x-text="v.id"></td>
                                 <td>
-                                    <div>
-                                        <span class="fw-semibold text-body" x-text="v.village_name"></span>
-                                        <span class="badge bg-danger-subtle text-danger ms-1 small" x-show="v.deleted_at">Deleted</span>
-                                        <div class="text-muted small" x-show="v.normalized_name" x-text="'Norm: ' + v.normalized_name"></div>
-                                    </div>
+                                    <span class="fw-semibold text-body" x-text="v.village_name"></span>
                                 </td>
+                                <td x-text="v.normalized_name || '—'"></td>
                                 <td x-text="v.pincode"></td>
                                 <td x-text="v.post_so_name || '—'"></td>
                                 <td x-text="v.taluka_name || '—'"></td>
                                 <td x-text="v.district_name || '—'"></td>
                                 <td x-text="v.state_name || '—'"></td>
+                                <td x-text="v.office_id || '—'"></td>
+                                <td x-text="v.office_type_code || '—'"></td>
                                 <td>
-                                    <div class="d-flex flex-column gap-1">
-                                        <span x-show="v.office_type_code" class="badge bg-secondary w-auto align-self-start" x-text="v.office_type_code"></span>
-                                        <span x-show="v.delivery_office_flag" class="badge bg-info text-dark w-auto align-self-start">Delivery</span>
-                                        <span x-show="!v.office_type_code && !v.delivery_office_flag" class="text-muted small">—</span>
-                                    </div>
+                                    <span x-show="v.delivery_office_flag" class="badge bg-info text-dark w-auto">Yes</span>
+                                    <span x-show="!v.delivery_office_flag" class="badge bg-secondary w-auto">No</span>
                                 </td>
                                 <td>
-                                    <div class="small text-muted" style="white-space:nowrap;">
-                                        <div><i class="bi bi-calendar-plus me-1"></i><span x-text="v.created_at ? new Date(v.created_at).toLocaleString('en-IN', { year: 'numeric', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: true }) : '—'"></span></div>
-                                        <div><i class="bi bi-pencil-square me-1"></i><span x-text="v.updated_at ? new Date(v.updated_at).toLocaleString('en-IN', { year: 'numeric', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: true }) : '—'"></span></div>
-                                    </div>
+                                    <span x-show="v.is_rolled_out" class="badge bg-success w-auto">Yes</span>
+                                    <span x-show="!v.is_rolled_out" class="badge bg-secondary w-auto">No</span>
+                                </td>
+                                <td>
+                                    <div class="small text-muted" style="white-space:nowrap;" x-text="v.created_at ? new Date(v.created_at).toLocaleString('en-IN', { year: 'numeric', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: true }) : '—'"></div>
+                                </td>
+                                <td>
+                                    <div class="small text-muted" style="white-space:nowrap;" x-text="v.updated_at ? new Date(v.updated_at).toLocaleString('en-IN', { year: 'numeric', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: true }) : '—'"></div>
+                                </td>
+                                <td>
+                                    <span x-show="v.deleted_at" class="badge bg-danger-subtle text-danger small">Deleted</span>
+                                    <span x-show="!v.deleted_at" class="text-muted small">—</span>
                                 </td>
                                 <td>
                                     <div class="d-flex flex-wrap gap-1">
