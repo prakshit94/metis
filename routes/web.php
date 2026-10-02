@@ -218,6 +218,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('/files', [PageController::class, 'files'])->name('files')->middleware('permission:settings-view');
     Route::prefix('api/files')->middleware('permission:settings-view')->group(function () {
         Route::get('/', [FileManagerController::class, 'index']);
+        Route::get('/preview/{id}', [FileManagerController::class, 'preview']);
         Route::post('/upload', [FileManagerController::class, 'upload']);
         Route::delete('/', [FileManagerController::class, 'delete']);
         Route::post('/rename', [FileManagerController::class, 'rename']);

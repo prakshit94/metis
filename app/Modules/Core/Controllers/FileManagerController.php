@@ -10,20 +10,35 @@ use Illuminate\Support\Str;
 
 class FileManagerController extends Controller
 {
-    private function getFileUrl($path)
+    private function getFileUrl($fileRecord)
     {
         $disk = Storage::disk('public');
         if (config('filesystems.disks.public.driver') === 'local') {
-            return '/images/' . ltrim($path, '/');
+            return '/api/files/preview/' . $fileRecord->id;
         }
-        return $disk->url($path);
+        return $disk->url($fileRecord->path);
+    }
+
+    public function preview($id)
+    {
+        $fileRecord = SystemFile::find($id);
+        if (!$fileRecord) {
+            abort(404);
+        }
+        $absolutePath = storage_path('app/public/' . $fileRecord->path);
+        if (!file_exists($absolutePath)) {
+            abort(404);
+        }
+        return response()->file($absolutePath, [
+            'Access-Control-Allow-Origin' => '*'
+        ]);
     }
 
     public function index()
     {
         $files = SystemFile::latest()->get()->map(function ($fileRecord) {
             $disk = Storage::disk('public');
-            $url = $this->getFileUrl($fileRecord->path);
+            $url = $this->getFileUrl($fileRecord);
 
             $typeCategory = 'other';
             $icon = 'bi-file-earmark';
@@ -115,7 +130,7 @@ class FileManagerController extends Controller
         $filename = time().'_'.Str::random(10).'.'.$file->getClientOriginalExtension();
         $path = $file->storeAs('uploads', $filename, 'public');
 
-        SystemFile::create([
+        $fileRecord = SystemFile::create([
             'original_name' => $originalName,
             'filename' => $filename,
             'mime_type' => $file->getClientMimeType(),
@@ -125,7 +140,7 @@ class FileManagerController extends Controller
 
         return response()->json([
             'message' => 'File uploaded successfully',
-            'path' => $this->getFileUrl($path),
+            'path' => $this->getFileUrl($fileRecord),
         ]);
     }
 
@@ -143,7 +158,7 @@ class FileManagerController extends Controller
                 Storage::disk('public')->delete($fileRecord->path);
 
                 // If it was the login background, clear it
-                $url = $this->getFileUrl($fileRecord->path);
+                $url = $this->getFileUrl($fileRecord);
                 $pathOnly = parse_url($url, PHP_URL_PATH) ?: $url;
                 SystemSetting::where('key', 'login_background_image')
                     ->where(function ($query) use ($url, $pathOnly) {
@@ -181,7 +196,7 @@ class FileManagerController extends Controller
         $fileRecord->save();
 
         $disk = Storage::disk('public');
-        $newUrl = $this->getFileUrl($fileRecord->path);
+        $newUrl = $this->getFileUrl($fileRecord);
 
         return response()->json(['message' => 'File renamed successfully', 'url' => $newUrl]);
     }
@@ -253,7 +268,7 @@ class FileManagerController extends Controller
             $url = '/assets/images/' . $filename;
         } else {
             $fileRecord = SystemFile::find($fileId);
-            $url = $this->getFileUrl($fileRecord->path);
+            $url = $this->getFileUrl($fileRecord);
             $url = parse_url($url, PHP_URL_PATH) ?: $url;
         }
 
