@@ -96,6 +96,13 @@ class VillageController extends Controller implements HasMiddleware
             });
         }
 
+        if ($request->filled('office_type_code')) {
+            $officeTypes = array_filter(array_map('trim', explode(',', (string) $request->input('office_type_code'))));
+            if (! empty($officeTypes)) {
+                $query->whereIn('office_type_code', $officeTypes);
+            }
+        }
+
         if ($request->filled('deleted')) {
             $deleted = $request->input('deleted');
             if ($deleted === 'with') {
@@ -235,6 +242,8 @@ class VillageController extends Controller implements HasMiddleware
                 ->distinct()->pluck('village_name')->filter()->sort()->values();
         }) : [];
 
+        $officeTypesList = Village::distinct()->pluck('office_type_code')->filter()->sort()->values();
+
         return response()->json([
             'pagination' => $villages,
             'stats' => $stats,
@@ -242,6 +251,7 @@ class VillageController extends Controller implements HasMiddleware
             'districts' => $districtsList,
             'talukas' => $talukasList,
             'villages' => $villagesList,
+            'office_types' => $officeTypesList,
         ]);
     }
 

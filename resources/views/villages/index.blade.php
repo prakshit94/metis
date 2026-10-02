@@ -411,6 +411,36 @@
                         </div>
                     </div>
 
+                    <!-- Office Type Filter -->
+                    <div class="col-md-2 position-relative" @click.away="showOfficeTypeDropdown = false" :style="showOfficeTypeDropdown ? 'z-index: 1050;' : ''">
+                        <label class="form-label small fw-semibold text-body-secondary">
+                            Office Type <span class="badge bg-secondary rounded-pill ms-1" style="font-size: 0.65rem;" x-text="officeTypeFilter.length + ' / ' + Object.keys(officeTypesList).length"></span>
+                        </label>
+                        <div class="form-control form-control-sm d-flex flex-wrap align-items-center gap-1" style="min-height: 31px; cursor: text;" @click="showOfficeTypeDropdown = true; $refs.officeTypeSearch.focus()">
+                            <template x-for="type in officeTypeFilter" :key="type">
+                                <div class="badge bg-primary bg-opacity-10 text-primary d-flex align-items-center gap-1 border border-primary-subtle">
+                                    <span x-text="type" style="font-size: 11px;"></span>
+                                    <i class="bi bi-x cursor-pointer" @click.stop="toggleFilter('office_type', type)" style="font-size: 13px;"></i>
+                                </div>
+                            </template>
+                            <div class="flex-grow-1 position-relative" style="min-width: 50px;">
+                                <input x-ref="officeTypeSearch" type="text" x-model="officeTypeSearch" @focus="showOfficeTypeDropdown = true" placeholder="Search..." class="border-0 w-100 bg-transparent text-body" style="font-size: 12px; outline: none !important; box-shadow: none;">
+                            </div>
+                        </div>
+                        <div x-show="showOfficeTypeDropdown && filteredOfficeTypes.length > 0" class="position-absolute w-100 bg-body border rounded shadow-lg mt-1" style="max-height: 200px; overflow-y: auto; z-index: 1050;">
+                            <div class="px-3 py-2 cursor-pointer border-bottom bg-body-tertiary d-flex align-items-center" @click.stop="toggleAllFilter('office_type')">
+                                <input type="checkbox" :checked="officeTypeFilter.length > 0 && officeTypeFilter.length === Object.keys(officeTypesList).length" class="me-2" style="cursor: pointer;">
+                                <span style="font-size: 12px; font-weight: bold;">Select All</span>
+                            </div>
+                            <template x-for="type in filteredOfficeTypes" :key="type">
+                                <div class="px-3 py-1 cursor-pointer custom-hover-bg d-flex align-items-center" @click.stop="toggleFilter('office_type', type)">
+                                    <input type="checkbox" :checked="officeTypeFilter.includes(type)" class="me-2" style="cursor: pointer;">
+                                    <span style="font-size: 12px;" x-text="type"></span>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+
                     <!-- Reset Filters -->
                     <div class="col-md-2 d-flex align-items-end">
                         <button type="button" class="btn btn-sm btn-outline-secondary w-100 d-inline-flex align-items-center justify-content-center" @click="resetFilters()">

@@ -134,6 +134,9 @@ document.addEventListener('alpine:init', () => {
     talukaSearch: '',
     showVillageDropdown: false,
     villageSearch: '',
+    showOfficeTypeDropdown: false,
+    officeTypeSearch: '',
+    officeTypeFilter: [],
 
     get filteredStates() {
       let list = Object.values(this.statesList || {});
@@ -159,6 +162,12 @@ document.addEventListener('alpine:init', () => {
       return list.filter((v) => v && v.toLowerCase().includes(this.villageSearch.toLowerCase()));
     },
 
+    get filteredOfficeTypes() {
+      let list = Object.values(this.officeTypesList || {});
+      if (!this.officeTypeSearch) return list;
+      return list.filter((t) => t && t.toLowerCase().includes(this.officeTypeSearch.toLowerCase()));
+    },
+
     toggleFilter(type, value) {
       if (type === 'state') {
         if (this.stateFilter.includes(value))
@@ -182,6 +191,10 @@ document.addEventListener('alpine:init', () => {
         if (this.villageFilter.includes(value))
           this.villageFilter = this.villageFilter.filter((v) => v !== value);
         else this.villageFilter.push(value);
+      } else if (type === 'office_type') {
+        if (this.officeTypeFilter.includes(value))
+          this.officeTypeFilter = this.officeTypeFilter.filter((v) => v !== value);
+        else this.officeTypeFilter.push(value);
       }
       this.filterVillages();
     },
@@ -209,6 +222,10 @@ document.addEventListener('alpine:init', () => {
         let list = Object.values(this.villagesList || {});
         if (this.villageFilter.length === list.length) this.villageFilter = [];
         else this.villageFilter = [...list];
+      } else if (type === 'office_type') {
+        let list = Object.values(this.officeTypesList || {});
+        if (this.officeTypeFilter.length === list.length) this.officeTypeFilter = [];
+        else this.officeTypeFilter = [...list];
       }
       this.filterVillages();
     },
@@ -219,7 +236,8 @@ document.addEventListener('alpine:init', () => {
         this.stateFilter.length > 0 ||
         this.districtFilter.length > 0 ||
         this.talukaFilter.length > 0 ||
-        this.villageFilter.length > 0
+        this.villageFilter.length > 0 ||
+        this.officeTypeFilter.length > 0
       );
     },
 
@@ -231,6 +249,7 @@ document.addEventListener('alpine:init', () => {
     districtsList: [],
     talukasList: [],
     villagesList: [],
+    officeTypesList: [],
     servicesOptions: [],
 
     charts: {},
@@ -299,6 +318,7 @@ document.addEventListener('alpine:init', () => {
         if (this.districtFilter.length > 0) params.set('district', this.districtFilter.join(','));
         if (this.talukaFilter.length > 0) params.set('taluka', this.talukaFilter.join(','));
         if (this.villageFilter.length > 0) params.set('village', this.villageFilter.join(','));
+        if (this.officeTypeFilter.length > 0) params.set('office_type_code', this.officeTypeFilter.join(','));
         if (this.serviceFilter) params.set('service_id', this.serviceFilter);
         if (this.deletedFilter) params.set('deleted', this.deletedFilter);
 
@@ -315,6 +335,7 @@ document.addEventListener('alpine:init', () => {
         this.districtsList = data.districts ?? [];
         this.talukasList = data.talukas ?? [];
         this.villagesList = data.villages ?? [];
+        this.officeTypesList = data.office_types ?? [];
 
         this.$nextTick(() => {
           this.initCharts(data.stats ?? {});
@@ -400,6 +421,8 @@ document.addEventListener('alpine:init', () => {
       this.districtFilter = [];
       this.talukaFilter = [];
       this.villageFilter = [];
+      this.officeTypeFilter = [];
+      this.officeTypeSearch = '';
       this.serviceFilter = '';
       this.deletedFilter = '';
       this.currentPage = 1;
