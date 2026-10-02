@@ -202,5 +202,32 @@
             }
         });
     </script>
+    <script>
+        // Polyfill for clipboard in insecure contexts (like HTTP in production)
+        if (!navigator.clipboard) {
+            navigator.clipboard = {
+                writeText: function(text) {
+                    return new Promise(function(resolve, reject) {
+                        try {
+                            var textArea = document.createElement("textarea");
+                            textArea.value = text;
+                            textArea.style.position = "fixed";
+                            textArea.style.left = "-999999px";
+                            textArea.style.top = "-999999px";
+                            document.body.appendChild(textArea);
+                            textArea.focus();
+                            textArea.select();
+                            var successful = document.execCommand('copy');
+                            textArea.remove();
+                            if (successful) resolve();
+                            else reject(new Error('Copy failed'));
+                        } catch (err) {
+                            reject(err);
+                        }
+                    });
+                }
+            };
+        }
+    </script>
 </body>
 </html>
