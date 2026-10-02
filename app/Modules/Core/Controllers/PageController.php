@@ -1094,7 +1094,7 @@ class PageController extends Controller
 
     private function exportSalesOverview($dateFrom, $dateTo)
     {
-        $query = Order::query()->with(['party', 'creator', 'updater', 'warehouse', 'items.product']);
+        $query = Order::query()->with(['party', 'warehouse', 'items.product', 'shipments', 'billingAddress', 'shippingAddress']);
         if ($lobStateName = auth()->user()?->lob_state_name) {
             $query->where('shipping_state', $lobStateName);
         }
@@ -1118,89 +1118,87 @@ class PageController extends Controller
             'Expires' => '0',
         ];
 
-        $columns = [
-            'Sale Order Id', 'Farmer Id', 'Farmer Name', 'Mobile',
-            'Created On Date', 'Created On Time', 'Created By', 'Modified On Date',
-            'Modified On Time', 'Modified By', 'Advance Order Date', 'Village',
-            'PostOffice', 'Taluka', 'District', 'PinCode', 'State', 'Grand Total',
-            'Status', 'Item Sku', 'Item Name', 'Item Quantity', 'Item Unit Price',
-            'Item Total Price', 'Item Retail Store Discount',
-            'Order Type', 'FC Name',
-        ];
-
-        $callback = function () use ($query, $columns) {
+        $callback = function () use ($query) {
             $file = fopen('php://output', 'w');
+            
+            // Output BOM to fix UTF-8 in Excel
+            fputs($file, $bom = (chr(0xEF) . chr(0xBB) . chr(0xBF)));
+
+            $columns = [
+                'Order ID', 'Order No', 'Order Date', 'Status', 'Order Type',
+                'Order Subtotal', 'Order Tax', 'Order Discount', 'Order Total',
+                'Coupon Code', 'Applied Offer ID', 'Wallet Used', 'Cashback Earned',
+                'Customer First Name', 'Customer Middle Name', 'Customer Last Name',
+                'Company Name', 'Customer Email', 'Customer Phone', 'Alternate Mobile', 'Relative Name', 'Relative Phone', 'GST Number', 'PAN Number',
+                'Billing Address 1', 'Billing Address 2', 'Billing Village', 'Billing PO/BO', 'Billing Taluka', 'Billing District', 'Billing City', 'Billing State', 'Billing Pincode',
+                'Shipping Address 1', 'Shipping Address 2', 'Shipping Village', 'Shipping PO/BO', 'Shipping Taluka', 'Shipping District', 'Shipping City', 'Shipping State', 'Shipping Pincode',
+                'Warehouse Name', 'Carrier Name', 'Tracking No',
+                'Product Name', 'Product SKU', 'Batch Number', 'Quantity', 'Unit Price', 'Item Tax Rate', 'Item Tax', 'Item Discount', 'Item Net',
+            ];
             fputcsv($file, $columns);
 
             $query->chunk(100, function ($orders) use ($file) {
                 foreach ($orders as $order) {
+                    $carriers = $order->shipments->pluck('carrier_name')->filter()->implode(', ');
+                    $trackings = $order->shipments->pluck('tracking_no')->filter()->implode(', ');
+
+                    $customerFirstName = $order->party?->firstname ?? '';
+                    $customerMiddleName = $order->party?->middlename ?? '';
+                    $customerLastName = $order->party?->lastname ?? '';
+                    $customerCompanyName = $order->party?->company_name ?? '';
+                    $customerEmail = $order->party?->email ?? '';
+                    $customerPhone = $order->party?->phone ?? '';
+                    $customerAltMobile = $order->party?->alternatemobile ?? '';
+                    $customerRelName = $order->party?->relative_name ?? '';
+                    $customerRelPhone = $order->party?->relative_phone ?? '';
+                    $customerGst = $order->party?->gst_no ?? '';
+                    $customerPan = $order->party?->pan_no ?? '';
+
+                    $billingAdd1 = $order->billing_address_line_1 ?? '';
+                    $billingAdd2 = $order->billing_address_line_2 ?? '';
+                    $billingVillage = $order->billing_village_name ?? '';
+                    $billingPO = $order->billing_post_office ?? '';
+                    $billingTaluka = $order->billing_taluka ?? '';
+                    $billingDistrict = $order->billing_district ?? '';
+                    $billingCity = $order->billing_city ?? '';
+                    $billingState = $order->billing_state ?? '';
+                    $billingPin = $order->billing_pincode ?? '';
+
+                    $shippingAdd1 = $order->shipping_address_line_1 ?? '';
+                    $shippingAdd2 = $order->shipping_address_line_2 ?? '';
+                    $shippingVillage = $order->shipping_village_name ?? '';
+                    $shippingPO = $order->shipping_post_office ?? '';
+                    $shippingTaluka = $order->shipping_taluka ?? '';
+                    $shippingDistrict = $order->shipping_district ?? '';
+                    $shippingCity = $order->shipping_city ?? '';
+                    $shippingState = $order->shipping_state ?? '';
+                    $shippingPin = $order->shipping_pincode ?? '';
+
+                    $warehouseName = $order->warehouse?->name ?? '';
+                    
+                    $commonOrderData = [
+                        $order->id, $order->order_no, $order->order_date, $order->status, $order->type,
+                        $order->total_amount, $order->tax_amount, $order->discount_amount, $order->net_amount,
+                        $order->coupon_code ?? '-', $order->applied_offer_id ?? '-', $order->wallet_amount_used, $order->cashback_earned,
+                        $customerFirstName ?: '-', $customerMiddleName ?: '-', $customerLastName ?: '-',
+                        $customerCompanyName ?: '-', $customerEmail ?: '-', $customerPhone ?: '-', $customerAltMobile ?: '-', $customerRelName ?: '-', $customerRelPhone ?: '-', $customerGst ?: '-', $customerPan ?: '-',
+                        $billingAdd1 ?: '-', $billingAdd2 ?: '-', $billingVillage ?: '-', $billingPO ?: '-', $billingTaluka ?: '-', $billingDistrict ?: '-', $billingCity ?: '-', $billingState ?: '-', $billingPin ?: '-',
+                        $shippingAdd1 ?: '-', $shippingAdd2 ?: '-', $shippingVillage ?: '-', $shippingPO ?: '-', $shippingTaluka ?: '-', $shippingDistrict ?: '-', $shippingCity ?: '-', $shippingState ?: '-', $shippingPin ?: '-',
+                        $warehouseName ?: '-', $carriers ?: '-', $trackings ?: '-',
+                    ];
 
                     if ($order->items->isEmpty()) {
-                        $row = [
-                            $order->order_no, // Sale Order Id
-                            $order->party_id, // Farmer Id
-                            $order->party ? $order->party->name : '', // Farmer Name
-                            $order->party ? $order->party->mobile : '', // Mobile
-                            $order->created_at ? $order->created_at->format('Y-m-d') : '', // Created On Date
-                            $order->created_at ? $order->created_at->format('H:i:s') : '', // Created On Time
-                            $order->creator ? $order->creator->name : '', // Created By
-                            $order->updated_at ? $order->updated_at->format('Y-m-d') : '', // Modified On Date
-                            $order->updated_at ? $order->updated_at->format('H:i:s') : '', // Modified On Time
-                            $order->updater ? $order->updater->name : '', // Modified By
-                            $order->future_order_date ? Carbon::parse($order->future_order_date)->format('Y-m-d') : '', // Advance Order Date
-                            $order->shipping_village_name, // Village
-                            $order->shipping_post_office, // PostOffice
-                            $order->shipping_taluka, // Taluka
-                            $order->shipping_district, // District
-                            $order->shipping_pincode, // PinCode
-                            $order->shipping_state, // State
-                            $order->net_amount, // Grand Total
-                            $order->status, // Status
-                            '', // Item Sku
-                            '', // Item Name
-                            0, // Item Quantity
-                            0, // Item Unit Price
-                            0, // Item Total Price
-                            $order->discount_amount, // Item Retail Store Discount
-                            $order->type, // Order Type
-                            $order->warehouse ? $order->warehouse->name : '', // FC Name
-                        ];
-                        fputcsv($file, $row);
-
-                        continue;
-                    }
-
-                    foreach ($order->items as $item) {
-                        $row = [
-                            $order->order_no, // Sale Order Id
-                            $order->party_id, // Farmer Id
-                            $order->party ? $order->party->name : '', // Farmer Name
-                            $order->party ? $order->party->mobile : '', // Mobile
-                            $order->created_at ? $order->created_at->format('Y-m-d') : '', // Created On Date
-                            $order->created_at ? $order->created_at->format('H:i:s') : '', // Created On Time
-                            $order->creator ? $order->creator->name : '', // Created By
-                            $order->updated_at ? $order->updated_at->format('Y-m-d') : '', // Modified On Date
-                            $order->updated_at ? $order->updated_at->format('H:i:s') : '', // Modified On Time
-                            $order->updater ? $order->updater->name : '', // Modified By
-                            $order->future_order_date ? Carbon::parse($order->future_order_date)->format('Y-m-d') : '', // Advance Order Date
-                            $order->shipping_village_name, // Village
-                            $order->shipping_post_office, // PostOffice
-                            $order->shipping_taluka, // Taluka
-                            $order->shipping_district, // District
-                            $order->shipping_pincode, // PinCode
-                            $order->shipping_state, // State
-                            $order->net_amount, // Grand Total
-                            $order->status, // Status
-                            $item->product ? $item->product->sku : '', // Item Sku
-                            $item->product ? $item->product->name : '', // Item Name
-                            $item->quantity, // Item Quantity
-                            $item->unit_price, // Item Unit Price
-                            $item->total_amount, // Item Total Price
-                            $order->discount_amount, // Item Retail Store Discount
-                            $order->type, // Order Type
-                            $order->warehouse ? $order->warehouse->name : '', // FC Name
-                        ];
-                        fputcsv($file, $row);
+                        fputcsv($file, array_merge($commonOrderData, [
+                            '-', '-', '-', '-', '-', '-', '-', '-', '-'
+                        ]));
+                    } else {
+                        foreach ($order->items as $item) {
+                            $productName = $item->product ? $item->product->name : 'Unknown Product';
+                            $productSku = $item->product ? $item->product->sku : '-';
+                            fputcsv($file, array_merge($commonOrderData, [
+                                $productName, $productSku, $item->batch_number ?: '-', $item->quantity, $item->unit_price, $item->tax_rate, $item->tax_amount, $item->discount_amount, $item->total_amount,
+                            ]));
+                        }
                     }
                 }
             });
