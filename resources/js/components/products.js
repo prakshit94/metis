@@ -505,7 +505,7 @@ document.addEventListener('alpine:init', () => {
         ['published', 'active'].includes(String(p.status || '').toLowerCase())
       ).length;
       this.stats.inStock = baseProducts.filter(
-        (p) => this.getEffectiveStock(p) > (p.min_stock_level || 10)
+        (p) => this.getEffectiveStock(p) > 0
       ).length;
       this.stats.lowStock = baseProducts.filter(
         (p) =>
@@ -576,7 +576,7 @@ document.addEventListener('alpine:init', () => {
 
         const matchesStock =
           !this.stockFilter ||
-          (this.stockFilter === 'in-stock' && effStock > (product.min_stock_level || 10)) ||
+          (this.stockFilter === 'in-stock' && effStock > 0) ||
           (this.stockFilter === 'low-stock' &&
             effStock > 0 &&
             effStock <= (product.min_stock_level || 10)) ||

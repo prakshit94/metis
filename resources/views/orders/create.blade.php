@@ -1291,7 +1291,7 @@
         </div>
     </div>
 
-    <div class="card border-start border-4 border-danger shadow-sm rounded-5 overflow-hidden glass-panel mt-2 mb-4" x-show="partyId" x-cloak>
+    <div class="card border-start border-4 border-danger shadow-sm rounded-5 overflow-hidden glass-panel mt-2 mb-4" x-show="partyId && !editingOrderId && !isConfirmMode && new URLSearchParams(window.location.search).get('step') !== 'review'" x-cloak>
         <div class="card-header bg-body-tertiary border-bottom-0 p-3 p-lg-4">
             <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3">
                 <div class="d-flex flex-wrap gap-2">

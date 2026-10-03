@@ -420,9 +420,11 @@ class ProductController extends Controller
         }
 
         if ($request->filled('stock')) {
-            if ($request->stock === 'available') {
+            if ($request->stock === 'available' || $request->stock === 'in-stock') {
                 $query->havingRaw('((COALESCE(stocks_sum_quantity, 0) - COALESCE(stocks_sum_reserved_qty, 0) - COALESCE(pending_orders_qty, 0)) > 0 OR allow_overselling = 1)');
-            } elseif ($request->stock === 'out_of_stock') {
+            } elseif ($request->stock === 'low-stock' || $request->stock === 'low_stock') {
+                $query->havingRaw('((COALESCE(stocks_sum_quantity, 0) - COALESCE(stocks_sum_reserved_qty, 0) - COALESCE(pending_orders_qty, 0)) > 0 AND (COALESCE(stocks_sum_quantity, 0) - COALESCE(stocks_sum_reserved_qty, 0) - COALESCE(pending_orders_qty, 0)) <= COALESCE(min_stock_level, 10))');
+            } elseif ($request->stock === 'out_of_stock' || $request->stock === 'out-of-stock') {
                 $query->havingRaw('((COALESCE(stocks_sum_quantity, 0) - COALESCE(stocks_sum_reserved_qty, 0) - COALESCE(pending_orders_qty, 0)) <= 0 AND (allow_overselling = 0 OR allow_overselling IS NULL))');
             }
         }

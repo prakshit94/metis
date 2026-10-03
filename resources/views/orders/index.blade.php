@@ -46,18 +46,7 @@
                 <i class="bi bi-upload me-2"></i>Import Orders
             </button>
             <ul class="dropdown-menu">
-                @can('orders.import')
-                <li>
-                    <a class="dropdown-item" href="#" @click.prevent="document.getElementById('import-new-orders-file').click()">
-                        <i class="bi bi-file-earmark-plus me-2"></i>Upload Orders CSV
-                    </a>
-                </li>
-                <li>
-                    <a class="dropdown-item" href="{{ route('orders.import-new-template') }}">
-                        <i class="bi bi-file-earmark-arrow-down me-2"></i>Download Orders Template
-                    </a>
-                </li>
-                @endcan
+
                 @can('orders.deliver')
                 <li><hr class="dropdown-divider"></li>
                 <li><h6 class="dropdown-header">Bulk Deliver Orders</h6></li>
@@ -98,10 +87,7 @@
 </div>
 
 
-<form id="import-new-orders-form" action="{{ route('orders.import-new') }}" method="POST" enctype="multipart/form-data" class="d-none">
-    @csrf
-    <input type="file" name="file" id="import-new-orders-file" accept=".csv,.txt" @change="handleImportNewOrdersSelect($event)">
-</form>
+
 
 <form id="import-deliver-form" action="{{ route('orders.import-deliver') }}" method="POST" enctype="multipart/form-data" class="d-none">
     @csrf
