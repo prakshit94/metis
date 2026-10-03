@@ -683,6 +683,7 @@ class OrderController extends Controller implements HasMiddleware
                                 ->where('orders.status', 'pending')
                                 ->where('orders.warehouse_id', $s->warehouse_id)
                                 ->where('order_items.product_id', $item->product_id)
+                                ->where('orders.id', '!=', $item->order_id) // Exclude current order being edited
                                 ->sum('order_items.quantity');
 
                             return [

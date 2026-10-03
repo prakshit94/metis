@@ -3803,8 +3803,13 @@ mapOrder(o) {
                 available = match ? parseFloat(match.available || 0) : 0;
             }
             
+            // Only add back the current order's qty if the warehouse has NOT changed from the original.
+            // If the user switches to a different warehouse, those original items are not in the new warehouse,
+            // so adding them back would incorrectly inflate the available stock.
             let currentOrderQty = 0;
-            if (window.__INITIAL_ORDER_TO_EDIT__ && window.__INITIAL_ORDER_TO_EDIT__.items) {
+            const originalWarehouseId = window.__INITIAL_ORDER_TO_EDIT__?.warehouse_id;
+            const warehouseUnchanged = originalWarehouseId && String(originalWarehouseId) === String(this.warehouseId);
+            if (warehouseUnchanged && window.__INITIAL_ORDER_TO_EDIT__.items) {
                 const initItem = window.__INITIAL_ORDER_TO_EDIT__.items.find(i => String(i.product_id) === String(p.id) && !i.is_gift);
                 if (initItem) {
                     currentOrderQty = parseFloat(initItem.quantity) || 0;
@@ -3829,9 +3834,11 @@ mapOrder(o) {
             this.cart = this.cart.map(item => {
                 if (item.is_gift) return item;
                 
-                let p = item._product;
+                // Always prefer freshly-fetched product data (with correct warehouse stock)
+                // over the stale _product from the initial order load.
+                let p = this.products.find(prod => String(prod.id) === String(item.id));
                 if (!p) {
-                    p = this.products.find(prod => String(prod.id) === String(item.id));
+                    p = item._product;
                 }
                 
                 if (!p) return item;
@@ -3848,6 +3855,10 @@ mapOrder(o) {
                     notifyWarning = true;
                     item.quantity = maxAllowed;
                 }
+                
+                // Update the cached _product reference with the freshly loaded data
+                // so that subsequent stock checks are accurate for the new warehouse.
+                item._product = p;
                 
                 return item;
             }).filter(item => {
