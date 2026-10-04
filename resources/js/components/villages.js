@@ -403,7 +403,14 @@ document.addEventListener('alpine:init', () => {
       this.loadVillages();
     },
 
+    hasGeoFilters() {
+      return this.stateFilter.length > 0 || this.districtFilter.length > 0 || this.talukaFilter.length > 0 || this.villageFilter.length > 0;
+    },
+
     filterVillages() {
+      if (!this.hasGeoFilters() && this.itemsPerPage === -1) {
+        this.itemsPerPage = 15;
+      }
       this.currentPage = 1;
       this.loadVillages();
     },
@@ -426,6 +433,9 @@ document.addEventListener('alpine:init', () => {
       this.serviceFilter = '';
       this.deletedFilter = '';
       this.currentPage = 1;
+      if (this.itemsPerPage === -1) {
+        this.itemsPerPage = 15;
+      }
       this.loadVillages();
     },
 

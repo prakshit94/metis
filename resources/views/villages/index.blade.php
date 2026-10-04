@@ -260,7 +260,7 @@
                             <option value="50">50 / page</option>
                             <option value="100">100 / page</option>
                             <option value="200">200 / page</option>
-                            <option value="-1">All / page</option>
+                            <option value="-1" x-show="hasGeoFilters()">All / page</option>
                         </select>
 
                         <!-- Advanced Filters Trigger -->
