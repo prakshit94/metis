@@ -47,7 +47,8 @@ class VillageController extends Controller implements HasMiddleware
 
         $sortBy = $sortMap[$request->input('sort_by', 'id')] ?? 'id';
         $sortDir = strtolower((string) $request->input('sort_dir', 'desc')) === 'asc' ? 'asc' : 'desc';
-        $perPage = min(max((int) $request->input('per_page', 15), 1), 100);
+        $inputPerPage = $request->input('per_page', 15);
+        $perPage = ($inputPerPage === 'all' || $inputPerPage == -1) ? -1 : min(max((int) $inputPerPage, 1), 200);
 
         $query = Village::query()->with(['services', 'mappings.service']);
 
@@ -201,6 +202,9 @@ class VillageController extends Controller implements HasMiddleware
             'office_type_distribution' => $officeTypeDistribution,
         ];
 
+        if ($perPage === -1) {
+            $perPage = max((int) ($counts->total ?? 0), 1);
+        }
         $villages = $query->orderBy($sortBy, $sortDir)->paginate($perPage);
 
         // Include filters lists with caching
@@ -208,39 +212,31 @@ class VillageController extends Controller implements HasMiddleware
         if ($lobStateName) {
             $statesList = collect([$lobStateName]);
         } else {
-            $statesList = Cache::remember('geo_states', 3600, function () {
-                return Village::distinct()->pluck('state_name')->filter()->sort()->values();
-            });
+            $statesList = Village::distinct()->pluck('state_name')->filter()->sort()->values();
         }
 
         $targetStates = $request->filled('state') 
             ? array_map('trim', explode(',', (string) $request->state)) 
             : ($lobStateName ? [$lobStateName] : []);
 
-        $districtsList = Cache::remember('geo_districts_'.md5(implode(',', $targetStates)), 3600, function () use ($targetStates) {
-            return Village::when(!empty($targetStates), function ($q) use ($targetStates) {
-                $q->whereIn('state_name', $targetStates);
-            })->distinct()->pluck('district_name')->filter()->sort()->values();
-        });
+        $districtsList = Village::when(!empty($targetStates), function ($q) use ($targetStates) {
+            $q->whereIn('state_name', $targetStates);
+        })->distinct()->pluck('district_name')->filter()->sort()->values();
 
         $targetDistricts = $request->filled('district') ? array_map('trim', explode(',', (string) $request->district)) : [];
-        $talukasList = Cache::remember('geo_talukas_'.md5(implode(',', $targetStates).'_'.implode(',', $targetDistricts)), 3600, function () use ($targetStates, $targetDistricts) {
-            return Village::when(!empty($targetStates), function ($q) use ($targetStates) {
-                $q->whereIn('state_name', $targetStates);
-            })->when(!empty($targetDistricts), function ($q) use ($targetDistricts) {
-                $q->whereIn('district_name', $targetDistricts);
-            })->distinct()->pluck('taluka_name')->filter()->sort()->values();
-        });
+        $talukasList = Village::when(!empty($targetStates), function ($q) use ($targetStates) {
+            $q->whereIn('state_name', $targetStates);
+        })->when(!empty($targetDistricts), function ($q) use ($targetDistricts) {
+            $q->whereIn('district_name', $targetDistricts);
+        })->distinct()->pluck('taluka_name')->filter()->sort()->values();
 
         $targetTalukas = $request->filled('taluka') ? array_map('trim', explode(',', (string) $request->taluka)) : [];
-        $villagesList = !empty($targetTalukas) ? Cache::remember('geo_villages_'.md5(implode(',', $targetStates).'_'.implode(',', $targetDistricts).'_'.implode(',', $targetTalukas)), 3600, function () use ($targetStates, $targetDistricts, $targetTalukas) {
-            return Village::when(!empty($targetStates), function ($q) use ($targetStates) {
-                $q->whereIn('state_name', $targetStates);
-            })->when(!empty($targetDistricts), function ($q) use ($targetDistricts) {
-                $q->whereIn('district_name', $targetDistricts);
-            })->whereIn('taluka_name', $targetTalukas)
-                ->distinct()->pluck('village_name')->filter()->sort()->values();
-        }) : [];
+        $villagesList = !empty($targetTalukas) ? Village::when(!empty($targetStates), function ($q) use ($targetStates) {
+            $q->whereIn('state_name', $targetStates);
+        })->when(!empty($targetDistricts), function ($q) use ($targetDistricts) {
+            $q->whereIn('district_name', $targetDistricts);
+        })->whereIn('taluka_name', $targetTalukas)
+            ->distinct()->pluck('village_name')->filter()->sort()->values() : [];
 
         $officeTypesList = Village::distinct()->pluck('office_type_code')->filter()->sort()->values();
 
