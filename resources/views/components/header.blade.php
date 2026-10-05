@@ -1022,6 +1022,51 @@
                             </div>
                         </li>
                         
+                        <li class="px-4 pb-2 border-bottom mb-2 text-center" x-data="{ uploadingHeaderPhoto: false }">
+                            <button type="button" class="btn btn-sm btn-link text-decoration-none fw-semibold" @click="$refs.headerPhotoInput.click()" :disabled="uploadingHeaderPhoto">
+                                <span x-show="!uploadingHeaderPhoto"><i class="bi bi-camera me-1"></i> Change Profile Photo</span>
+                                <span x-show="uploadingHeaderPhoto" x-cloak><span class="spinner-border spinner-border-sm me-1" role="status"></span> Uploading...</span>
+                            </button>
+                            <input type="file" x-ref="headerPhotoInput" class="d-none" accept="image/*" @change="
+                                const file = $event.target.files[0];
+                                if (!file) return;
+                                
+                                const confirmUpload = window.Swal 
+                                    ? Swal.fire({title: 'Update Profile Picture?', text: 'Are you sure you want to change your profile picture?', icon: 'question', showCancelButton: true, confirmButtonText: 'Yes, update it'})
+                                    : Promise.resolve({isConfirmed: confirm('Are you sure you want to change your profile picture?')});
+                                    
+                                confirmUpload.then((result) => {
+                                    if (result.isConfirmed) {
+                                        uploadingHeaderPhoto = true;
+                                        const formData = new FormData();
+                                        formData.append('photo_file', file);
+                                        const csrfToken = document.querySelector('meta[name=csrf-token]')?.content || '';
+                                        
+                                        fetch('/api/users/{{ Auth::id() }}/update-photo', {
+                                            method: 'POST',
+                                            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-TOKEN': csrfToken },
+                                            body: formData
+                                        }).then(r => r.json()).then(d => {
+                                            uploadingHeaderPhoto = false;
+                                            $event.target.value = '';
+                                            if(d.photo) {
+                                                document.querySelectorAll('img[alt=\'User\']').forEach(img => img.src = d.photo);
+                                                if(window.Swal) Swal.fire({icon:'success', title:'Success', text:'Photo updated', toast:true, position:'top-end', showConfirmButton:false, timer:3000});
+                                            } else if(d.message) {
+                                                if(window.Swal) Swal.fire('Error', d.message, 'error');
+                                            }
+                                        }).catch(e => {
+                                            uploadingHeaderPhoto = false;
+                                            $event.target.value = '';
+                                            if(window.Swal) Swal.fire('Error', 'Upload failed', 'error');
+                                        });
+                                    } else {
+                                        $event.target.value = '';
+                                    }
+                                });
+                            ">
+                        </li>
+                        
                         @php
                             $todayTargets = collect();
                             if (Auth::check()) {

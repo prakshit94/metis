@@ -176,6 +176,9 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::patch('users/{user}/toggle-active', [UserController::class, 'toggleActive'])
             ->name('api.users.toggle-active');
 
+        Route::post('users/{user}/update-photo', [UserController::class, 'updatePhoto'])
+            ->name('api.users.update-photo');
+
         Route::post('users/{user}/sync-roles', [UserController::class, 'syncRoles'])
             ->name('api.users.sync-roles');
 

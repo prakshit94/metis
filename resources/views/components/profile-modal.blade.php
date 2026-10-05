@@ -17,7 +17,7 @@
                     {{-- Profile Header --}}
                     <div class="d-flex align-items-start justify-content-between mb-4 pb-4 border-bottom">
                         <div class="d-flex align-items-center gap-4">
-                            <div class="position-relative">
+                            <div class="position-relative group" style="cursor: pointer;" @click="if (form.id == {{ auth()->id() }}) $refs.photoInput.click()">
                                 <img :src="form.photo || (form.gender === 'Male' ? '/assets/images/default_male.png' : (form.gender === 'Female' ? '/assets/images/default_female.png' : '/assets/images/default_avatar.jpeg'))"
                                      class="rounded-circle border border-3 shadow-sm bg-body-tertiary"
                                      style="width: 110px; height: 110px; object-fit: cover; border-color: var(--bs-border-color) !important;"
@@ -25,6 +25,15 @@
                                 <span class="position-absolute bottom-0 end-0 p-2 border border-2 rounded-circle shadow-sm"
                                       :class="form.is_active ? 'bg-success' : 'bg-secondary'"
                                       style="width: 22px; height: 22px; right: 6px !important; bottom: 6px !important; border-color: var(--bs-body-bg) !important;"></span>
+                                
+                                <template x-if="form.id == {{ auth()->id() }}">
+                                    <div class="position-absolute top-0 start-0 w-100 h-100 rounded-circle bg-dark bg-opacity-50 d-flex align-items-center justify-content-center opacity-0 hover-opacity-100 transition-all" style="opacity: 0; transition: opacity 0.2s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0">
+                                        <i class="bi bi-camera-fill text-white fs-4" x-show="!uploadingPhoto"></i>
+                                        <div class="spinner-border spinner-border-sm text-white" role="status" x-show="uploadingPhoto" x-cloak></div>
+                                    </div>
+                                </template>
+                                
+                                <input type="file" x-ref="photoInput" class="d-none" accept="image/*" @change="uploadPhoto($event)">
                             </div>
                             <div>
                                 <h3 class="mb-1 fw-bold text-body" x-text="`${form.first_name || ''} ${form.middle_name || ''} ${form.last_name || ''}`.trim() || form.name"></h3>
@@ -255,6 +264,7 @@
 document.addEventListener('alpine:init', () => {
     Alpine.data('headerProfileModal', () => ({
         loading: false,
+        uploadingPhoto: false,
         form: {},
 
         openModal(userId) {
@@ -287,6 +297,87 @@ document.addEventListener('alpine:init', () => {
                 this.loading = false;
                 if (window.Swal) {
                     Swal.fire('Error', 'Failed to load profile details.', 'error');
+                }
+            });
+        },
+
+        uploadPhoto(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            if (window.Swal) {
+                Swal.fire({
+                    title: 'Update Profile Picture?',
+                    text: 'Are you sure you want to change your profile picture?',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: 'Yes, update it',
+                    cancelButtonText: 'Cancel'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        this.processUpload(file, event);
+                    } else {
+                        event.target.value = '';
+                    }
+                });
+            } else {
+                if (confirm('Are you sure you want to change your profile picture?')) {
+                    this.processUpload(file, event);
+                } else {
+                    event.target.value = '';
+                }
+            }
+        },
+
+        processUpload(file, event) {
+            this.uploadingPhoto = true;
+            const formData = new FormData();
+            formData.append('photo_file', file);
+
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
+
+            fetch('/api/users/' + this.form.id + '/update-photo', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': csrfToken,
+                },
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                this.uploadingPhoto = false;
+                event.target.value = '';
+                if (data.photo) {
+                    this.form.photo = data.photo;
+                    
+                    // Update header images dynamically without page refresh
+                    document.querySelectorAll('img[alt="User"]').forEach(img => {
+                        img.src = data.photo;
+                    });
+                    if (window.Swal) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Success',
+                            text: data.message || 'Profile photo updated successfully.',
+                            toast: true,
+                            position: 'top-end',
+                            showConfirmButton: false,
+                            timer: 3000
+                        });
+                    }
+                } else if (data.message) {
+                    if (window.Swal) Swal.fire('Error', data.message, 'error');
+                }
+            })
+            .catch(err => {
+                console.error('Photo upload error:', err);
+                this.uploadingPhoto = false;
+                event.target.value = '';
+                if (window.Swal) {
+                    Swal.fire('Error', 'Failed to upload photo.', 'error');
                 }
             });
         }

@@ -399,6 +399,32 @@ class UserController extends Controller implements HasMiddleware
     }
 
     /**
+     * Update user's profile photo.
+     */
+    public function updatePhoto(Request $request, User $user): JsonResponse
+    {
+        // Allow if user is updating their own photo or has edit permission
+        abort_unless($request->user()?->id == $user->id || $request->user()?->can('user-edit'), 403, 'You do not have permission to update this profile photo.');
+
+        $request->validate([
+            'photo_file' => ['required', 'image', 'max:2048'],
+        ]);
+
+        if ($request->hasFile('photo_file')) {
+            $file = $request->file('photo_file');
+            $extension = $file->extension() ?: 'jpg';
+            $filename = 'user-'.$user->id.'-'.time().'.'.$extension;
+            $user->photo = asset('storage/'.$file->storeAs('users/photos', $filename, 'public'));
+            $user->saveQuietly();
+        }
+
+        return response()->json([
+            'message' => 'Profile photo updated successfully.',
+            'photo' => $user->photo,
+        ]);
+    }
+
+    /**
      * Temporarily delete a user and revoke all their Sanctum tokens.
      * Prevents deletion of the last Super Admin.
      */
