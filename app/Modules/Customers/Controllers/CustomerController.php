@@ -233,15 +233,16 @@ class CustomerController extends Controller implements HasMiddleware
                 'nullable',
                 'string',
                 'max:20',
+                // Only enforce same-column uniqueness. Cross-column checks (phone vs alternatemobile)
+                // are too strict: in production, family members legitimately share numbers across
+                // primary/alternate roles, causing false conflicts on unrelated profile edits.
                 Rule::unique('parties', 'phone')->where(fn ($q) => $q->where('type', 'customer')->whereNull('deleted_at')),
-                Rule::unique('parties', 'alternatemobile')->where(fn ($q) => $q->where('type', 'customer')->whereNull('deleted_at')),
             ],
             'alternatemobile' => [
                 'nullable',
                 'string',
                 'max:20',
                 'different:phone',
-                Rule::unique('parties', 'phone')->where(fn ($q) => $q->where('type', 'customer')->whereNull('deleted_at')),
                 Rule::unique('parties', 'alternatemobile')->where(fn ($q) => $q->where('type', 'customer')->whereNull('deleted_at')),
             ],
             'relative_name' => ['nullable', 'string', 'max:100'],
@@ -456,15 +457,16 @@ class CustomerController extends Controller implements HasMiddleware
                 'nullable',
                 'string',
                 'max:20',
+                // Only enforce same-column uniqueness. Cross-column checks (phone vs alternatemobile)
+                // are too strict: in production, family members legitimately share numbers across
+                // primary/alternate roles, causing false conflicts on unrelated profile edits.
                 Rule::unique('parties', 'phone')->where(fn ($q) => $q->where('type', 'customer')->whereNull('deleted_at'))->ignore($customer->id),
-                Rule::unique('parties', 'alternatemobile')->where(fn ($q) => $q->where('type', 'customer')->whereNull('deleted_at'))->ignore($customer->id),
             ],
             'alternatemobile' => [
                 'nullable',
                 'string',
                 'max:20',
                 'different:phone',
-                Rule::unique('parties', 'phone')->where(fn ($q) => $q->where('type', 'customer')->whereNull('deleted_at'))->ignore($customer->id),
                 Rule::unique('parties', 'alternatemobile')->where(fn ($q) => $q->where('type', 'customer')->whereNull('deleted_at'))->ignore($customer->id),
             ],
             'relative_name' => ['nullable', 'string', 'max:100'],
