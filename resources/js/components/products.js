@@ -189,6 +189,7 @@ document.addEventListener('alpine:init', () => {
     searchQuery: '',
     categoryFilter: '',
     stockFilter: 'in-stock',
+    skuFilter: '',         // '' = all, 'sku-on' = SKU enabled only, 'sku-off' = SKU disabled only
     warehouseFilter: window.userContext?.warehouseId
       ? String(window.userContext.warehouseId)
       : '',
@@ -590,7 +591,13 @@ document.addEventListener('alpine:init', () => {
             effStock <= (product.min_stock_level ?? 10)) ||
           (this.stockFilter === 'out-of-stock' && effStock <= 0);
 
-        return matchesSearch && matchesCategory && matchesWarehouse && matchesStock;
+        const skuEnabled = this.isSkuEnabled(product);
+        const matchesSku =
+          !this.skuFilter ||
+          (this.skuFilter === 'sku-on' && skuEnabled) ||
+          (this.skuFilter === 'sku-off' && !skuEnabled);
+
+        return matchesSearch && matchesCategory && matchesWarehouse && matchesStock && matchesSku;
       });
 
       this.sortProducts();
@@ -602,6 +609,7 @@ document.addEventListener('alpine:init', () => {
       this.searchQuery = '';
       this.categoryFilter = '';
       this.stockFilter = '';
+      this.skuFilter = '';
       this.warehouseFilter = window.userContext?.warehouseId
         ? String(window.userContext.warehouseId)
         : (this.options.warehouses?.length > 0 ? String(this.options.warehouses[0].id) : '');

@@ -229,9 +229,21 @@
                                                     x-model="stockFilter" 
                                                     @change="filterProducts()"
                                                     style="width: 150px;">
+                                                <option value="">All Stock</option>
                                                 <option value="in-stock">In Stock</option>
                                                 <option value="low-stock">Low Stock</option>
                                                 <option value="out-of-stock">Out of Stock</option>
+                                            </select>
+
+                                            <!-- SKU Status Filter -->
+                                            <select class="form-select form-select-sm shadow-none border-opacity-25"
+                                                    :class="skuFilter ? 'border-primary border-2 text-primary fw-semibold' : 'border-secondary'"
+                                                    x-model="skuFilter"
+                                                    @change="filterProducts()"
+                                                    style="width: 140px;">
+                                                <option value="">All SKU</option>
+                                                <option value="sku-on">SKU On</option>
+                                                <option value="sku-off">SKU Off</option>
                                             </select>
 
                                             <!-- Items Per Page -->
