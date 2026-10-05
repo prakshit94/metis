@@ -569,9 +569,9 @@
                                 @endforeach
                             </select>
                             <select class="form-select" style="max-width:140px" x-model="stockFilter" @change="searchProducts(true)">
-                                <option value="available">In Stock</option>
-                                <option value="">All Stock</option>
-                                <option value="out_of_stock">Out of Stock</option>
+                                <option value="in-stock">In Stock</option>
+                                <option value="low-stock">Low Stock</option>
+                                <option value="out-of-stock">Out of Stock</option>
                             </select>
                             <select class="form-select" style="max-width:160px" x-model="categoryFilter" @change="searchProducts(true)">
                                 <option value="">All Categories</option>
@@ -3158,7 +3158,7 @@ mapOrder(o) {
         editingOrderNo: null,
         addresses: [],
         recentOrders: [],
-        products: [], productQuery: '', stockFilter: 'available', categoryFilter: '', perPage: 10,
+        products: [], productQuery: '', stockFilter: 'in-stock', categoryFilter: '', perPage: 10,
         searching: false, productPage: 1, productLastPage: 1, productTotal: 0, productFrom: 0, productTo: 0,
         cart: [], couponCode: '', couponApplied: false, appliedCouponObj: null, appliedOfferId: null,
         placing: false, formErrors: [],
@@ -3831,12 +3831,23 @@ mapOrder(o) {
             
             await this.searchProducts(true);
 
+            const missingCartItemIds = this.cart.filter(item => !item.is_gift && !this.products.some(p => String(p.id) === String(item.id))).map(item => item.id);
+            let missingProducts = [];
+            if (missingCartItemIds.length > 0) {
+                try {
+                    const p = new URLSearchParams({ ids: missingCartItemIds.join(','), warehouse_id: this.warehouseId, perPage: 100, _t: Date.now() });
+                    const res = await fetch(`/products-search-api?${p}`, { headers: {'Accept':'application/json','X-Requested-With':'XMLHttpRequest'} });
+                    const json = await res.json();
+                    missingProducts = json.data || [];
+                } catch(e) {}
+            }
+
             this.cart = this.cart.map(item => {
                 if (item.is_gift) return item;
                 
                 // Always prefer freshly-fetched product data (with correct warehouse stock)
                 // over the stale _product from the initial order load.
-                let p = this.products.find(prod => String(prod.id) === String(item.id));
+                let p = this.products.find(prod => String(prod.id) === String(item.id)) || missingProducts.find(prod => String(prod.id) === String(item.id));
                 if (!p) {
                     p = item._product;
                 }
@@ -4001,8 +4012,9 @@ mapOrder(o) {
             return this.products.filter(p => {
                 if (!this.isSkuEnabled(p)) return false;
                 const maxStock = this.getMaxAllowedStock(p);
-                if (this.stockFilter === 'available' && maxStock <= 0) return false;
-                if (this.stockFilter === 'out_of_stock' && maxStock > 0) return false;
+                if (this.stockFilter === 'in-stock' && maxStock <= 0) return false;
+                if (this.stockFilter === 'low-stock' && (maxStock <= 0 || maxStock > (p.min_stock_level || 10))) return false;
+                if (this.stockFilter === 'out-of-stock' && maxStock > 0) return false;
                 return true;
             });
         },
@@ -4011,7 +4023,7 @@ mapOrder(o) {
             if (reset) this.productPage = 1;
             this.searching = true;
             try {
-                const p = new URLSearchParams({ q: this.productQuery, category: this.categoryFilter, stock: this.stockFilter, perPage: this.perPage, page: this.productPage, _t: Date.now() });
+                const p = new URLSearchParams({ q: this.productQuery, category: this.categoryFilter, stock: this.stockFilter, perPage: this.perPage, page: this.productPage, warehouse_id: this.warehouseId, _t: Date.now() });
                 const res = await fetch(`/products-search-api?${p}`, { headers: {'Accept':'application/json','X-Requested-With':'XMLHttpRequest'} });
                 const json = await res.json();
                 this.products = (json.data || []).map(p => ({...p, _qty: 0, _disc: parseFloat(p.default_discount)||0}));

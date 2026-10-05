@@ -30,7 +30,9 @@ class ProductController extends Controller
         abort_unless($request->user()?->can('product-view'), 403);
 
         $stockScope = function ($q) use ($request) {
-            if ($lobState = $request->user()?->lob_state_name) {
+            if ($request->filled('warehouse_id')) {
+                $q->where('warehouse_id', $request->warehouse_id);
+            } elseif ($lobState = $request->user()?->lob_state_name) {
                 $q->whereHas('warehouse', function ($wq) use ($lobState) {
                     $wq->where('state', $lobState);
                 });
@@ -38,7 +40,11 @@ class ProductController extends Controller
         };
 
         $pendingOrderScope = function ($q) use ($request) {
-            if ($lobState = $request->user()?->lob_state_name) {
+            if ($request->filled('warehouse_id')) {
+                $q->whereHas('order', function ($oq) use ($request) {
+                    $oq->where('warehouse_id', $request->warehouse_id);
+                });
+            } elseif ($lobState = $request->user()?->lob_state_name) {
                 $q->whereHas('order.warehouse', function ($wq) use ($lobState) {
                     $wq->where('state', $lobState);
                 });
@@ -47,10 +53,6 @@ class ProductController extends Controller
 
         $products = Product::query()
             ->with($this->getEagerLoads($request))
-            ->withSum(['stocks as stocks_sum_quantity' => $stockScope], 'quantity')
-            ->withSum(['stocks as stocks_sum_reserved_qty' => $stockScope], 'reserved_qty')
-            ->withSum(['stocks as stocks_sum_dispatched_qty' => $stockScope], 'dispatched_qty')
-            ->withSum(['pendingOrderItems as pending_orders_qty' => $pendingOrderScope], 'quantity')
             ->latest()
             ->get()
             ->map(fn (Product $product) => $this->transform($product))
@@ -68,7 +70,9 @@ class ProductController extends Controller
         abort_unless($request->user()?->can('product-view'), 403);
 
         $stockScope = function ($q) use ($request) {
-            if ($lobState = $request->user()?->lob_state_name) {
+            if ($request->filled('warehouse_id')) {
+                $q->where('warehouse_id', $request->warehouse_id);
+            } elseif ($lobState = $request->user()?->lob_state_name) {
                 $q->whereHas('warehouse', function ($wq) use ($lobState) {
                     $wq->where('state', $lobState);
                 });
@@ -76,7 +80,11 @@ class ProductController extends Controller
         };
 
         $pendingOrderScope = function ($q) use ($request) {
-            if ($lobState = $request->user()?->lob_state_name) {
+            if ($request->filled('warehouse_id')) {
+                $q->whereHas('order', function ($oq) use ($request) {
+                    $oq->where('warehouse_id', $request->warehouse_id);
+                });
+            } elseif ($lobState = $request->user()?->lob_state_name) {
                 $q->whereHas('order.warehouse', function ($wq) use ($lobState) {
                     $wq->where('state', $lobState);
                 });
@@ -205,7 +213,7 @@ class ProductController extends Controller
         $data = $request->validate([
             'ids' => ['required', 'array', 'min:1'],
             'ids.*' => ['integer', 'exists:products,id'],
-            'status' => ['required', 'in:published,draft,pending,active,out_of_stock'],
+            'status' => ['required', 'in:published,draft'],
         ]);
 
         $status = $this->normalizeStatus((string) $data['status']);
@@ -376,7 +384,9 @@ class ProductController extends Controller
     public function searchApi(Request $request): JsonResponse
     {
         $stockScope = function ($q) use ($request) {
-            if ($lobState = $request->user()?->lob_state_name) {
+            if ($request->filled('warehouse_id')) {
+                $q->where('warehouse_id', $request->warehouse_id);
+            } elseif ($lobState = $request->user()?->lob_state_name) {
                 $q->whereHas('warehouse', function ($wq) use ($lobState) {
                     $wq->where('state', $lobState);
                 });
@@ -384,7 +394,11 @@ class ProductController extends Controller
         };
 
         $pendingOrderScope = function ($q) use ($request) {
-            if ($lobState = $request->user()?->lob_state_name) {
+            if ($request->filled('warehouse_id')) {
+                $q->whereHas('order', function ($oq) use ($request) {
+                    $oq->where('warehouse_id', $request->warehouse_id);
+                });
+            } elseif ($lobState = $request->user()?->lob_state_name) {
                 $q->whereHas('order.warehouse', function ($wq) use ($lobState) {
                     $wq->where('state', $lobState);
                 });
@@ -394,7 +408,9 @@ class ProductController extends Controller
         $query = Product::query()
             ->with(['category', 'brand', 'taxRate', 'uom', 'stocks' => function ($q) use ($request) {
                 $q->with('warehouse')->withSum('pendingOrderItems as pending_qty', 'quantity');
-                if ($lobState = $request->user()?->lob_state_name) {
+                if ($request->filled('warehouse_id')) {
+                    $q->where('warehouse_id', $request->warehouse_id);
+                } elseif ($lobState = $request->user()?->lob_state_name) {
                     $q->whereHas('warehouse', function ($wq) use ($lobState) {
                         $wq->where('state', $lobState);
                     });
@@ -417,6 +433,11 @@ class ProductController extends Controller
 
         if ($request->filled('category')) {
             $query->where('category_id', $request->category);
+        }
+
+        if ($request->filled('ids')) {
+            $ids = is_array($request->ids) ? $request->ids : explode(',', $request->ids);
+            $query->whereIn('id', $ids);
         }
 
         if ($request->filled('stock')) {
@@ -485,7 +506,7 @@ class ProductController extends Controller
                 'weight_g' => (float) $p->weight_g,
                 'is_sku_enabled' => (bool) $p->is_sku_enabled,
                 'default_discount' => (float) ($p->default_discount ?? 0),
-                'default_discount_type' => $p->default_discount_type ?? 'percent',
+                'default_discount_type' => in_array($p->default_discount_type, ['fixed', 'amount']) ? 'flat' : ($p->default_discount_type === 'percentage' ? 'percent' : ($p->default_discount_type ?? 'percent')),
                 'grade' => $p->grade,
                 'uom' => $p->uom?->name,
                 'uom_id' => $p->uom_id,
@@ -526,7 +547,9 @@ class ProductController extends Controller
         $clone->attributeValues()->sync($product->attributeValues->pluck('id')->all());
 
         $stockScope = function ($q) use ($request) {
-            if ($lobState = $request->user()?->lob_state_name) {
+            if ($request->filled('warehouse_id')) {
+                $q->where('warehouse_id', $request->warehouse_id);
+            } elseif ($lobState = $request->user()?->lob_state_name) {
                 $q->whereHas('warehouse', function ($wq) use ($lobState) {
                     $wq->where('state', $lobState);
                 });
@@ -534,7 +557,11 @@ class ProductController extends Controller
         };
 
         $pendingOrderScope = function ($q) use ($request) {
-            if ($lobState = $request->user()?->lob_state_name) {
+            if ($request->filled('warehouse_id')) {
+                $q->whereHas('order', function ($oq) use ($request) {
+                    $oq->where('warehouse_id', $request->warehouse_id);
+                });
+            } elseif ($lobState = $request->user()?->lob_state_name) {
                 $q->whereHas('order.warehouse', function ($wq) use ($lobState) {
                     $wq->where('state', $lobState);
                 });
@@ -765,13 +792,13 @@ class ProductController extends Controller
             'hsn_code_id' => ['required', 'integer', 'exists:hsn_codes,id'],
             'barcode' => ['nullable', 'string', 'max:255'],
             'purchase_price' => ['required', 'numeric', 'min:0'],
-            'mrp' => ['required', 'numeric', 'min:0'],
+            'mrp' => ['nullable', 'numeric', 'min:0'],
             'selling_price' => ['required', 'numeric', 'min:0'],
             // stock / stock_quantity are accepted interchangeably
             'stock' => ['nullable', 'integer', 'min:0'],
             'stock_quantity' => ['nullable', 'integer', 'min:0'],
             'min_stock_level' => ['required', 'integer', 'min:0'],
-            'status' => ['required', 'in:active,draft,out_of_stock,published,pending'],
+            'status' => ['required', 'in:published,draft'],
             'allow_overselling' => ['nullable', 'boolean'],
             'manage_stock' => ['nullable', 'boolean'],
             'batch_tracking' => ['nullable', 'boolean'],
@@ -785,12 +812,13 @@ class ProductController extends Controller
             'default_discount' => ['nullable', 'numeric', 'min:0'],
             'default_discount_type' => ['nullable', 'in:percent,flat'],
             'grade' => ['nullable', 'in:A,B,C,D'],
-            'weight_g' => ['required', 'numeric', 'min:0'],
-            'length_cm' => ['required', 'numeric', 'min:0'],
-            'width_cm' => ['required', 'numeric', 'min:0'],
-            'height_cm' => ['required', 'numeric', 'min:0'],
+            'weight_g' => ['nullable', 'numeric', 'min:0'],
+            'length_cm' => ['nullable', 'numeric', 'min:0'],
+            'width_cm' => ['nullable', 'numeric', 'min:0'],
+            'height_cm' => ['nullable', 'numeric', 'min:0'],
             'warehouse_allow_overselling' => ['nullable', 'boolean'],
             'warehouse_overselling_qty' => ['nullable', 'integer', 'min:0'],
+            'warehouse_is_sku_enabled' => ['nullable', 'boolean'],
         ]);
 
         $validated['attributes'] = $validated['attributes'] ?? null;
@@ -816,8 +844,16 @@ class ProductController extends Controller
         $product->width_cm = isset($data['width_cm']) ? (float) $data['width_cm'] : null;
         $product->height_cm = isset($data['height_cm']) ? (float) $data['height_cm'] : null;
         $product->purchase_price = (float) $data['purchase_price'];
-        $product->mrp = isset($data['mrp']) && $data['mrp'] !== '' ? (float) $data['mrp'] : (float) $data['selling_price'];
         $product->selling_price = (float) $data['selling_price'];
+
+        $taxRateValue = 0;
+        if ($product->tax_rate_id) {
+            $taxRate = \App\Modules\Catalog\Models\TaxRate::find($product->tax_rate_id);
+            $taxRateValue = $taxRate ? $taxRate->rate : 0;
+        }
+        $sellingPriceIncGst = $product->selling_price * (1 + $taxRateValue / 100);
+        $product->mrp = isset($data['mrp']) && $data['mrp'] !== '' ? (float) $data['mrp'] : $sellingPriceIncGst;
+
         $product->min_stock_level = (int) ($data['min_stock_level'] ?? 0);
         $product->batch_tracking = filter_var($data['batch_tracking'] ?? false, FILTER_VALIDATE_BOOL);
         $product->expiry_tracking = filter_var($data['expiry_tracking'] ?? false, FILTER_VALIDATE_BOOL);
@@ -960,7 +996,7 @@ class ProductController extends Controller
             'application_instructions' => $product->application_instructions,
             'overselling_qty' => (int) $product->overselling_qty,
             'default_discount' => (float) $product->default_discount,
-            'default_discount_type' => $product->default_discount_type,
+            'default_discount_type' => in_array($product->default_discount_type, ['fixed', 'amount']) ? 'flat' : ($product->default_discount_type === 'percentage' ? 'percent' : ($product->default_discount_type ?? 'percent')),
             'status' => $product->status,
             'created' => optional($product->created_at)->toDateString(),
             'image' => $product->image_url ?? asset('assets/images/product-placeholder.svg'),
@@ -1036,11 +1072,8 @@ class ProductController extends Controller
                     ])->values(),
                 ])->values(),
             'statusList' => [
-                ['value' => 'active', 'label' => 'Active'],
                 ['value' => 'published', 'label' => 'Published'],
-                ['value' => 'pending', 'label' => 'Pending'],
                 ['value' => 'draft', 'label' => 'Draft'],
-                ['value' => 'out_of_stock', 'label' => 'Out of Stock'],
             ],
         ];
     }
@@ -1100,6 +1133,7 @@ class ProductController extends Controller
     private function syncAttributes(Product $product, ?array $attributeIds): void
     {
         if ($attributeIds === null) {
+            $product->attributeValues()->sync([]);
             return;
         }
 
@@ -1201,10 +1235,7 @@ class ProductController extends Controller
         $status = Str::of($status)->lower()->trim()->toString();
 
         return match ($status) {
-            'published' => 'published',
-            'active' => 'active',
-            'out_of_stock' => 'out_of_stock',
-            'pending', 'review' => 'pending',
+            'published', 'active' => 'published',
             default => 'draft',
         };
     }

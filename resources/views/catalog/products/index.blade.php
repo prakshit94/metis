@@ -536,6 +536,7 @@
                                         <div class="col-12">
                                             <label class="form-label fw-medium text-muted small">Product Name <span class="text-danger">*</span></label>
                                             <input type="text" class="form-control shadow-none border-secondary border-opacity-25" x-model="form.name" required placeholder="e.g. Wireless Noise Cancelling Headphones">
+<div class="invalid-feedback">This field is required.</div>
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label fw-medium text-muted small">Category <span class="text-danger">*</span></label>
@@ -550,6 +551,7 @@
                                                     </optgroup>
                                                 </template>
                                             </select>
+<div class="invalid-feedback">This field is required.</div>
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label fw-medium text-muted small">Brand</label>
@@ -609,6 +611,7 @@
                                             <div class="input-group">
                                                 <span class="input-group-text bg-body-secondary border-secondary border-opacity-25">₹</span>
                                                 <input type="number" class="form-control shadow-none border-secondary border-opacity-25" x-model="form.purchase_price" step="1" min="0" required placeholder="0">
+<div class="invalid-feedback">This field is required.</div>
                                             </div>
                                         </div>
                                         <div class="col-md-4">
@@ -623,6 +626,7 @@
                                             <div class="input-group mb-1">
                                                 <span class="input-group-text bg-body-secondary border-secondary border-opacity-25">₹</span>
                                                 <input type="number" class="form-control shadow-none border-secondary border-opacity-25" x-model="form.selling_price_inc_gst" step="1" min="0" :max="form.mrp || ''" required placeholder="0">
+<div class="invalid-feedback">This field is required.</div>
                                             </div>
                                             <small class="text-muted fw-medium" x-show="form.selling_price_inc_gst && form.tax_rate_id" x-cloak>
                                                 Base (Excl): ₹<span x-text="Math.round(baseSellingPriceExcludingTax).toFixed(0)"></span>
@@ -636,6 +640,7 @@
                                                     <option :value="String(rate.id)" x-text="rate.name + ' (' + rate.rate + '%)'"></option>
                                                 </template>
                                             </select>
+<div class="invalid-feedback">This field is required.</div>
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label fw-medium text-muted small">HSN Code <span class="text-danger">*</span></label>
@@ -645,6 +650,7 @@
                                                     <option :value="String(hsn.id)" x-text="hsn.code + (hsn.description ? ' - ' + hsn.description : '')"></option>
                                                 </template>
                                             </select>
+<div class="invalid-feedback">This field is required.</div>
                                         </div>
                                         
                                         <div class="col-12 mt-4 pt-4 border-top">
@@ -653,7 +659,7 @@
                                         
                                         <div class="col-md-6">
                                             <label class="form-label fw-medium text-muted small">Default Discount Amount</label>
-                                            <input type="number" class="form-control shadow-none border-secondary border-opacity-25" x-model="form.default_discount" step="1" min="0" placeholder="0">
+                                            <input type="number" class="form-control shadow-none border-secondary border-opacity-25" x-model="form.default_discount" step="0.01" min="0" placeholder="0">
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label fw-medium text-muted small">Discount Type</label>
@@ -681,10 +687,12 @@
                                                     <option :value="String(uom.id)" x-text="uom.name + (uom.short_name ? ' (' + uom.short_name + ')' : '')"></option>
                                                 </template>
                                             </select>
+<div class="invalid-feedback">This field is required.</div>
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label fw-medium text-muted small">Reorder Level (Min Stock) <span class="text-danger">*</span></label>
                                             <input type="number" class="form-control shadow-none border-secondary border-opacity-25" x-model="form.min_stock_level" min="0" required placeholder="0">
+<div class="invalid-feedback">This field is required.</div>
                                         </div>
 
                                         
@@ -695,6 +703,7 @@
                                                     <option :value="String(warehouse.id)" x-text="warehouse.name"></option>
                                                 </template>
                                             </select>
+<div class="invalid-feedback">This field is required.</div>
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label fw-medium text-muted small">Supplier</label>
@@ -794,6 +803,7 @@
                                                     <option :value="status.value" x-text="status.label"></option>
                                                 </template>
                                             </select>
+<div class="invalid-feedback">This field is required.</div>
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label fw-medium text-muted small">Grade</label>

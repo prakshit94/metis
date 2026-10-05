@@ -40,7 +40,7 @@ class OrderService
         }
 
         if ($type === 'percent' || $type === 'percentage') {
-            return $itemBase * ($discountValue / 100);
+            return min($itemBase * ($discountValue / 100), $itemBase);
         }
 
         return min($discountValue * $qty, $itemBase);

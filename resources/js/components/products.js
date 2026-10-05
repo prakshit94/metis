@@ -62,11 +62,7 @@ function normalizeStatus(status) {
   const value = String(status ?? '')
     .trim()
     .toLowerCase();
-  if (['published', 'publish'].includes(value)) return 'published';
-  if (value === 'active') return 'active';
-  if (['draft', 'unpublished'].includes(value)) return 'draft';
-  if (['pending', 'review', 'pending review'].includes(value)) return 'pending';
-  if (value === 'out_of_stock') return 'out_of_stock';
+  if (['published', 'publish', 'active'].includes(value)) return 'published';
   return 'draft';
 }
 
@@ -193,11 +189,9 @@ document.addEventListener('alpine:init', () => {
     searchQuery: '',
     categoryFilter: '',
     stockFilter: 'in-stock',
-    warehouseFilter: window.userContext?.isMasterAdmin
-      ? ''
-      : window.userContext?.warehouseId
-        ? String(window.userContext.warehouseId)
-        : '',
+    warehouseFilter: window.userContext?.warehouseId
+      ? String(window.userContext.warehouseId)
+      : '',
     sortField: 'name',
     sortDirection: 'asc',
     isLoading: false,
@@ -310,6 +304,9 @@ document.addEventListener('alpine:init', () => {
             ...this.options,
             ...payload.options,
           };
+          if (!this.warehouseFilter && this.options.warehouses?.length > 0) {
+              this.warehouseFilter = String(this.options.warehouses[0].id);
+          }
           try {
             const form = this._getProductForm();
             if (
@@ -594,11 +591,9 @@ document.addEventListener('alpine:init', () => {
       this.searchQuery = '';
       this.categoryFilter = '';
       this.stockFilter = '';
-      this.warehouseFilter = window.userContext?.isMasterAdmin
-        ? ''
-        : window.userContext?.warehouseId
-          ? String(window.userContext.warehouseId)
-          : '';
+      this.warehouseFilter = window.userContext?.warehouseId
+        ? String(window.userContext.warehouseId)
+        : (this.options.warehouses?.length > 0 ? String(this.options.warehouses[0].id) : '');
       this.filterProducts();
     },
 
@@ -708,7 +703,7 @@ document.addEventListener('alpine:init', () => {
         min_stock_level: String(product.min_stock_level ?? 0),
         overselling_qty: String(product.overselling_qty ?? 0),
         default_discount: String(product.default_discount ?? 0),
-        default_discount_type: product.default_discount_type ?? 'percent',
+        default_discount_type: ['fixed', 'amount'].includes(product.default_discount_type) ? 'flat' : (product.default_discount_type === 'percentage' ? 'percent' : (product.default_discount_type ?? 'percent')),
         allow_overselling: Boolean(product.allow_overselling),
         manage_stock: product.manage_stock !== undefined ? Boolean(product.manage_stock) : true,
         batch_tracking: Boolean(product.batch_tracking),
@@ -1234,7 +1229,7 @@ document.addEventListener('alpine:init', () => {
       is_sku_enabled: true,
       description: '',
       application_instructions: '',
-      status: 'draft',
+      status: 'published',
       grade: '',
       image: '/assets/images/product-placeholder.svg',
       imageFile: null,
@@ -1279,7 +1274,7 @@ document.addEventListener('alpine:init', () => {
         is_sku_enabled: true,
         description: '',
         application_instructions: '',
-        status: 'draft',
+        status: 'published',
         grade: '',
         image: '/assets/images/product-placeholder.svg',
         imageFile: null,
@@ -1354,20 +1349,32 @@ document.addEventListener('alpine:init', () => {
               this.activeTab = tabMatch[1];
               setTimeout(() => {
                 event.target.reportValidity();
+                event.target.classList.add('was-validated');
               }, 100);
               return;
             }
           }
           if (!event.target.reportValidity()) {
+            event.target.classList.add('was-validated');
             return;
           }
         }
+      }
+      if (event && event.target) {
+          event.target.classList.remove('was-validated');
       }
 
       const spGst = parseFloat(this.form.selling_price_inc_gst) || 0;
       const mrpVal = parseFloat(this.form.mrp) || 0;
       if (mrpVal > 0 && spGst > mrpVal) {
         showToast('Selling Price (Inc. GST) cannot be greater than MRP.', 'warning');
+        this.activeTab = 'pricing';
+        return;
+      }
+
+      const defaultDiscount = parseFloat(this.form.default_discount) || 0;
+      if (this.form.default_discount_type === 'percent' && defaultDiscount > 100) {
+        showToast('Percentage discount cannot exceed 100%.', 'warning');
         this.activeTab = 'pricing';
         return;
       }
