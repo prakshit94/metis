@@ -215,8 +215,10 @@ class CustomerController extends Controller implements HasMiddleware
             $request->merge(['phone' => $phone]);
         }
 
-        foreach (['relative_name', 'relative_phone'] as $field) {
-            if (strtolower(trim((string)$request->input($field))) === 'null') {
+        // Convert 'null' strings or empty strings to true null to prevent unique constraint failures
+        foreach (['phone', 'alternatemobile', 'relative_name', 'relative_phone'] as $field) {
+            $val = $request->input($field);
+            if ($val === '' || strtolower(trim((string)$val)) === 'null') {
                 $request->merge([$field => null]);
             }
         }
@@ -435,8 +437,11 @@ class CustomerController extends Controller implements HasMiddleware
             $request->merge(['phone' => $phone]);
         }
 
-        foreach (['relative_name', 'relative_phone'] as $field) {
-            if (strtolower(trim((string)$request->input($field))) === 'null') {
+        // Convert 'null' strings or empty strings to true null to prevent unique constraint failures
+        // when users clear out optional fields like alternatemobile.
+        foreach (['phone', 'alternatemobile', 'relative_name', 'relative_phone'] as $field) {
+            $val = $request->input($field);
+            if ($val === '' || strtolower(trim((string)$val)) === 'null') {
                 $request->merge([$field => null]);
             }
         }
