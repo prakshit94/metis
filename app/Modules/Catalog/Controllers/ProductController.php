@@ -51,23 +51,44 @@ class ProductController extends Controller
             }
         };
 
-        $products = Product::query()
+        $query = Product::query()
             ->with($this->getEagerLoads($request))
             ->withSum(['stocks as stocks_sum_quantity' => $stockScope], 'quantity')
             ->withSum(['stocks as stocks_sum_reserved_qty' => $stockScope], 'reserved_qty')
             ->withSum(['stocks as stocks_sum_dispatched_qty' => $stockScope], 'dispatched_qty')
-            ->withSum(['pendingOrderItems as pending_orders_qty' => $pendingOrderScope], 'quantity')
+            ->withSum(['pendingOrderItems as pending_orders_qty' => $pendingOrderScope], 'quantity');
+
+        // Optional server-side pre-filters to reduce payload (used when catalog is loaded with URL params)
+        if ($request->filled('q')) {
+            $q = $request->q;
+            $query->where(function ($qb) use ($q) {
+                $qb->where('name', 'like', "%{$q}%")
+                   ->orWhere('sku', 'like', "%{$q}%");
+            });
+        }
+        if ($request->filled('category_id')) {
+            $query->where('category_id', $request->category_id);
+        }
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+        if ($request->boolean('trashed')) {
+            $query->onlyTrashed();
+        }
+
+        $products = $query
             ->latest()
             ->get()
             ->map(fn (Product $product) => $this->transform($product))
             ->values();
 
         return response()->json([
-            'data' => $products,
-            'stats' => $this->stats($products),
+            'data'    => $products,
+            'stats'   => $this->stats($products),
             'options' => $this->catalogOptions($request),
         ]);
     }
+
 
     public function show(Request $request, Product $product): JsonResponse
     {
@@ -471,15 +492,18 @@ class ProductController extends Controller
 
         if ($request->filled('stock')) {
             if ($request->stock === 'available' || $request->stock === 'in-stock') {
-                $query->havingRaw('((COALESCE(stocks_sum_quantity, 0) - COALESCE(stocks_sum_reserved_qty, 0) - COALESCE(pending_orders_qty, 0)) > 0 OR allow_overselling = 1 OR stocks_max_allow_overselling = 1)');
+                $query->havingRaw('((COALESCE(stocks_sum_quantity, 0) - COALESCE(stocks_sum_reserved_qty, 0) - COALESCE(pending_orders_qty, 0)) > 0 OR `products`.`allow_overselling` = 1 OR stocks_max_allow_overselling = 1)');
             } elseif ($request->stock === 'low-stock' || $request->stock === 'low_stock') {
                 $query->havingRaw('((COALESCE(stocks_sum_quantity, 0) - COALESCE(stocks_sum_reserved_qty, 0) - COALESCE(pending_orders_qty, 0)) > 0 AND (COALESCE(stocks_sum_quantity, 0) - COALESCE(stocks_sum_reserved_qty, 0) - COALESCE(pending_orders_qty, 0)) <= COALESCE(min_stock_level, 0))');
             } elseif ($request->stock === 'out_of_stock' || $request->stock === 'out-of-stock') {
-                $query->havingRaw('((COALESCE(stocks_sum_quantity, 0) - COALESCE(stocks_sum_reserved_qty, 0) - COALESCE(pending_orders_qty, 0)) <= 0 AND (allow_overselling = 0 OR allow_overselling IS NULL) AND (stocks_max_allow_overselling = 0 OR stocks_max_allow_overselling IS NULL))');
+                $query->havingRaw('((COALESCE(stocks_sum_quantity, 0) - COALESCE(stocks_sum_reserved_qty, 0) - COALESCE(pending_orders_qty, 0)) <= 0 AND (`products`.`allow_overselling` = 0 OR `products`.`allow_overselling` IS NULL) AND (stocks_max_allow_overselling = 0 OR stocks_max_allow_overselling IS NULL))');
             }
         }
 
-        $perPage = (int) $request->input('perPage', 12);
+        // Exclude products where SKU is explicitly disabled at the product level
+        $query->where('products.is_sku_enabled', true);
+
+        $perPage = max(1, min(100, (int) $request->input('perPage', 12)));
         $paginator = $query->latest()->paginate($perPage);
 
         $data = $paginator->through(function (Product $p) {

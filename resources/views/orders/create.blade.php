@@ -3151,6 +3151,7 @@ mapOrder(o) {
         recentOrders: [],
         products: [], productQuery: '', stockFilter: 'in-stock', categoryFilter: '', perPage: 10,
         searching: false, productPage: 1, productLastPage: 1, productTotal: 0, productFrom: 0, productTo: 0,
+        _searchAbortController: null,
         cart: [], couponCode: '', couponApplied: false, appliedCouponObj: null, appliedOfferId: null,
         placing: false, formErrors: [],
         warehouses: @json($warehouses->map(fn($w) => $w->toArray())),
@@ -4002,9 +4003,12 @@ mapOrder(o) {
             if (!this.products) return [];
             return this.products.filter(p => {
                 if (!this.isSkuEnabled(p)) return false;
-                const maxStock = this.getMaxAllowedStock(p);
-                if (this.stockFilter === 'in-stock' && maxStock <= 0) return false;
-                if (this.stockFilter === 'out-of-stock' && maxStock > 0) return false;
+                // Use the server-computed available_stock (already in the API response)
+                // instead of recomputing via getMaxAllowedStock() which could disagree with
+                // the server's warehouse-scoped aggregate calculation.
+                const avail = parseFloat(p.available_stock ?? 0);
+                if (this.stockFilter === 'in-stock' && avail <= 0) return false;
+                if (this.stockFilter === 'out-of-stock' && avail > 0) return false;
                 return true;
             });
         },
@@ -4012,14 +4016,50 @@ mapOrder(o) {
         async searchProducts(reset = false) {
             if (reset) this.productPage = 1;
             this.searching = true;
+
+            // Cancel any in-flight request to prevent race conditions / stale data
+            if (this._searchAbortController) {
+                this._searchAbortController.abort();
+            }
+            this._searchAbortController = new AbortController();
+
             try {
-                const p = new URLSearchParams({ q: this.productQuery, category: this.categoryFilter, stock: this.stockFilter, perPage: this.perPage, page: this.productPage, warehouse_id: this.warehouseId, _t: Date.now() });
-                const res = await fetch(`/products-search-api?${p}`, { headers: {'Accept':'application/json','X-Requested-With':'XMLHttpRequest'} });
+                const p = new URLSearchParams({
+                    q: this.productQuery,
+                    category: this.categoryFilter,
+                    stock: this.stockFilter,
+                    perPage: parseInt(this.perPage, 10) || 10,
+                    page: this.productPage,
+                    warehouse_id: this.warehouseId,
+                    _t: Date.now(),
+                });
+                const res = await fetch(`/products-search-api?${p}`, {
+                    headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                    signal: this._searchAbortController.signal,
+                });
+                if (!res.ok) {
+                    // Non-200 (403, 500 etc.) — clear stale data and report error
+                    this.products = [];
+                    this.productTotal = 0; this.productFrom = 0; this.productTo = 0; this.productLastPage = 1;
+                    const errBody = await res.json().catch(() => ({}));
+                    const msg = errBody?.message || `Server error (${res.status})`;
+                    window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: msg } }));
+                    return;
+                }
                 const json = await res.json();
-                this.products = (json.data || []).map(p => ({...p, _qty: 0, _disc: parseFloat(p.default_discount)||0}));
-                this.productTotal = json.total||0; this.productFrom = json.from||0; this.productTo = json.to||0; this.productLastPage = json.last_page||1;
-            } catch(e) { window.dispatchEvent(new CustomEvent('notify',{detail:{type:'error',message:'Failed to load products'}})); }
-            finally { this.searching = false; }
+                this.products = (json.data || []).map(p => ({ ...p, _qty: 0, _disc: parseFloat(p.default_discount) || 0 }));
+                this.productTotal = json.total || 0;
+                this.productFrom = json.from || 0;
+                this.productTo = json.to || 0;
+                this.productLastPage = json.last_page || 1;
+            } catch (e) {
+                if (e?.name === 'AbortError') return; // Intentionally cancelled — no error needed
+                this.products = [];
+                this.productTotal = 0; this.productFrom = 0; this.productTo = 0; this.productLastPage = 1;
+                window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: 'Failed to load products. Please try again.' } }));
+            } finally {
+                this.searching = false;
+            }
         },
 
         get productVisiblePages() {

@@ -155,9 +155,18 @@ class Product extends Model implements Auditable
 
     public function pendingOrderItems(): HasMany
     {
+        // Only include orders whose stock has NOT yet been reserved into stocks.reserved_qty.
+        // Stock reservation happens at confirmation (InventoryService::confirmOrder()).
+        // So only 'future_order', 'pending', and 'pending_confirmation' statuses belong here.
+        // 'confirmed', 'processing', 'ready_to_ship' are already in stocks.reserved_qty — adding
+        // them here would cause double-subtraction and make available_stock falsely negative.
         return $this->hasMany(OrderItem::class)
             ->whereHas('order', function ($query) {
-                $query->where('status', 'pending');
+                $query->whereIn('status', [
+                    'future_order',
+                    'pending',
+                    'pending_confirmation',
+                ]);
             });
     }
 

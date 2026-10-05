@@ -125,6 +125,8 @@ class Stock extends Model implements Auditable
 
     public function pendingOrderItems(): HasMany
     {
+        // Only pre-confirmation statuses — stock not yet reserved into stocks.reserved_qty.
+        // Must mirror Product::pendingOrderItems exactly.
         return $this->hasMany(OrderItem::class, 'product_id', 'product_id')
             ->whereHas('order', function ($query) {
                 if ($this->warehouse_id) {
@@ -132,7 +134,7 @@ class Stock extends Model implements Auditable
                 } else {
                     $query->whereColumn('orders.warehouse_id', 'stocks.warehouse_id');
                 }
-                $query->where('orders.status', 'pending');
+                $query->whereIn('orders.status', ['future_order', 'pending', 'pending_confirmation']);
             });
     }
 

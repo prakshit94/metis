@@ -199,6 +199,7 @@ document.addEventListener('alpine:init', () => {
     charts: {},
     _resizeHandler: null,
     _themeObserver: null,
+    _loadAbortController: null,
     chartsInitialized: false,
 
     // Statistics
@@ -291,8 +292,17 @@ document.addEventListener('alpine:init', () => {
     async loadProductsFromApi() {
       this.isLoading = true;
 
+      // Cancel any previous in-flight load to prevent race conditions on rapid reloads
+      if (this._loadAbortController) {
+        this._loadAbortController.abort();
+      }
+      this._loadAbortController = new AbortController();
+      const signal = this._loadAbortController.signal;
+
       try {
-        const payload = await apiFetch(this.apiBase);
+        const payload = await apiFetch(this.apiBase, { signal });
+        if (signal.aborted) return; // Superseded by a newer call — discard
+
         this.products = Array.isArray(payload.data) ? payload.data : [];
 
         if (payload.stats) {
@@ -323,9 +333,10 @@ document.addEventListener('alpine:init', () => {
           }
         }
       } catch (error) {
+        if (error?.name === 'AbortError') return; // Intentionally cancelled — no error needed
         console.error('Failed to load products from API:', error);
-        this.loadSampleData();
-        showToast('Loaded fallback product samples.', 'warning');
+        this.products = [];
+        showToast(error.message || 'Failed to load products. Please refresh the page.', 'danger');
       } finally {
         this.isLoading = false;
       }
@@ -603,14 +614,15 @@ document.addEventListener('alpine:init', () => {
         let bVal = b[this.sortField];
 
         if (this.sortField === 'price' || this.sortField === 'stock') {
-          aVal = parseFloat(aVal);
-          bVal = parseFloat(bVal);
+          aVal = parseFloat(aVal) || 0;
+          bVal = parseFloat(bVal) || 0;
         } else if (this.sortField === 'created') {
-          aVal = new Date(aVal);
-          bVal = new Date(bVal);
+          aVal = aVal ? new Date(aVal) : new Date(0);
+          bVal = bVal ? new Date(bVal) : new Date(0);
         } else {
-          aVal = aVal.toString().toLowerCase();
-          bVal = bVal.toString().toLowerCase();
+          // Null-guard: undefined/null fields sort to the end
+          aVal = (aVal ?? '').toString().toLowerCase();
+          bVal = (bVal ?? '').toString().toLowerCase();
         }
 
         if (this.sortDirection === 'asc') {
