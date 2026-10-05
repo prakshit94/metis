@@ -27,7 +27,7 @@ class UserController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:user-view', only: ['index', 'show', 'loginHistory']),
+            new Middleware('permission:user-view', only: ['index', 'loginHistory']),
             new Middleware('permission:user-create', only: ['store']),
             new Middleware('permission:user-edit', only: ['update', 'toggleActive', 'syncRoles', 'syncPermissions']),
             new Middleware('permission:user-delete', only: ['destroy', 'forceDelete']),
@@ -275,7 +275,7 @@ class UserController extends Controller implements HasMiddleware
      */
     public function show(Request $request, int|string $user): JsonResponse
     {
-        abort_unless($request->user()?->can('user-view'), 403);
+        abort_unless($request->user()?->id == $user || $request->user()?->can('user-view'), 403);
 
         $user = User::withTrashed()
             ->with(['allRoles', 'permissions', 'department', 'manager'])
