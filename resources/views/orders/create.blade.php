@@ -570,7 +570,6 @@
                             </select>
                             <select class="form-select" style="max-width:140px" x-model="stockFilter" @change="searchProducts(true)">
                                 <option value="in-stock">In Stock</option>
-                                <option value="low-stock">Low Stock</option>
                                 <option value="out-of-stock">Out of Stock</option>
                             </select>
                             <select class="form-select" style="max-width:160px" x-model="categoryFilter" @change="searchProducts(true)">
@@ -639,16 +638,20 @@
                                                     <div class="text-body-tertiary text-truncate mt-1" style="font-size: 10px;" x-show="p.description" :title="p.description" x-text="p.description"></div>
                                                 </div>
                                             </div>
-                                            <div class="d-flex justify-content-between align-items-start mb-2 px-2 py-2 bg-body-tertiary rounded">
-                                                <div class="d-flex flex-column gap-2">
-                                                    <div class="d-flex align-items-center gap-2">
-                                                        <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 text-decoration-line-through" x-show="p.mrp > (parseFloat(p.selling_price) * (1 + (parseFloat(p.tax_rate)||0)/100))" x-text="'₹' + parseFloat(p.mrp).toFixed(2)"></span>
-                                                        <span class="badge bg-success text-white fw-bold shadow-sm" style="font-size: 13px;" x-text="'₹ ' + (parseFloat(p.selling_price) * (1 + (parseFloat(p.tax_rate)||0)/100)).toFixed(2)"></span>
-                                                    </div>
-                                                    <div class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 align-self-start" x-show="p.default_discount > 0" style="font-size: 10px;"><span x-text="p.default_discount"></span><span x-text="p.default_discount_type === 'percent' ? '%' : ' Rs'"></span> OFF</div>
+                                            <div class="d-flex justify-content-between align-items-center mb-2 px-2 py-2 bg-body-tertiary rounded">
+                                                <div class="d-flex flex-row align-items-center flex-wrap gap-2">
+                                                    <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 text-decoration-line-through" x-show="p.mrp > (parseFloat(p.selling_price) * (1 + (parseFloat(p.tax_rate)||0)/100))" x-text="'MRP ₹' + parseFloat(p.mrp).toFixed(2)"></span>
+                                                    <span class="badge bg-success text-white fw-bold shadow-sm" style="font-size: 13px;" x-text="'₹ ' + (parseFloat(p.selling_price) * (1 + (parseFloat(p.tax_rate)||0)/100)).toFixed(2)"></span>
+                                                    <div class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25" x-show="p.default_discount > 0" style="font-size: 10px;"><span x-text="p.default_discount"></span><span x-text="p.default_discount_type === 'percent' ? '%' : ' Rs'"></span> OFF</div>
                                                 </div>
-                                                <div class="d-flex flex-column align-items-end gap-2 mt-1">
-                                                    <span class="badge shadow-sm" :class="getWarehouseStock(p) > 10 ? 'bg-success' : (getWarehouseStock(p) > 0 ? 'bg-warning text-body' : 'bg-danger')" x-text="'Stock: ' + parseFloat(getWarehouseStock(p))"></span>
+                                                <div class="d-flex flex-row align-items-center gap-2">
+                                                    <span class="badge shadow-sm" 
+                                                          :class="{
+                                                              'bg-success': (getWarehouseStock(p) + getOversellStock(p)) > (p.min_stock_level || 0),
+                                                              'bg-warning text-body': (getWarehouseStock(p) + getOversellStock(p)) > 0 && (getWarehouseStock(p) + getOversellStock(p)) <= (p.min_stock_level || 0),
+                                                              'bg-danger': (getWarehouseStock(p) + getOversellStock(p)) <= 0
+                                                          }" 
+                                                          x-text="getWarehouseStock(p) + getOversellStock(p)"></span>
                                                     <span x-show="p.allow_overselling" class="badge text-bg-warning-subtle text-warning-emphasis border border-warning border-opacity-25 shadow-sm"><i class="bi bi-infinity"></i> <span x-text="getOversellStock(p)"></span></span>
                                                 </div>
                                             </div>
@@ -735,15 +738,8 @@
                                                             <span x-show="p.brand && p.brand.name"><i class="bi bi-award-fill me-1 text-warning opacity-75"></i><span x-text="p.brand.name"></span></span>
                                                         </div>
                                                         <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
-                                                            <span class="badge bg-secondary bg-opacity-10 text-secondary-emphasis border border-secondary border-opacity-25" style="font-size: 10px; padding: 0.25em 0.5em;" x-text="'SKU: ' + p.sku"></span>
+                                                            <span class="badge bg-secondary bg-opacity-10 text-secondary-emphasis border border-secondary border-opacity-25" style="font-size: 10px; padding: 0.25em 0.5em;" x-text="p.sku"></span>
                                                             <span x-show="p.weight_g" class="badge bg-body-secondary border text-body-secondary" style="font-size: 9px;" x-text="p.weight_g + 'g'"></span>
-                                                            <span class="badge" 
-                                                                  :class="{
-                                                                      'bg-success': ['published', 'active'].includes(p.status),
-                                                                      'bg-secondary': p.status === 'draft',
-                                                                      'bg-warning': ['pending', 'out_of_stock'].includes(p.status)
-                                                                  }"
-                                                                  x-text="p.status"></span>
                                                         </div>
                                                         <div x-show="getProductPromotions(p).length > 0">
                                                             <div class="position-relative d-inline-block" x-data="{ showTooltip: false, pos: 'bottom' }" @mouseenter="showTooltip = true; pos = $event.clientY > window.innerHeight / 2 ? 'top' : 'bottom'" @mouseleave="showTooltip = false" :style="showTooltip ? 'z-index: 1050;' : ''">
@@ -781,12 +777,10 @@
                                                 </div>
                                             </td>
                                             <td class="align-middle">
-                                                <div class="d-flex flex-column gap-2">
-                                                    <div class="d-flex align-items-center gap-2">
-                                                        <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 text-decoration-line-through" x-show="p.mrp > (parseFloat(p.selling_price) * (1 + (parseFloat(p.tax_rate)||0)/100))" x-text="'₹' + parseFloat(p.mrp).toFixed(2)"></span>
-                                                        <span class="badge bg-success text-white fw-bold shadow-sm" style="font-size: 13px;" x-text="'₹' + (parseFloat(p.selling_price) * (1 + (parseFloat(p.tax_rate)||0)/100)).toFixed(2)"></span>
-                                                        <div class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 ms-1" x-show="p.default_discount > 0" style="font-size: 10px;"><span x-text="p.default_discount"></span><span x-text="p.default_discount_type === 'percent' ? '%' : ' Rs'"></span> OFF</div>
-                                                    </div>
+                                                <div class="d-flex flex-row align-items-center flex-wrap gap-2">
+                                                    <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 text-decoration-line-through" x-show="p.mrp > (parseFloat(p.selling_price) * (1 + (parseFloat(p.tax_rate)||0)/100))" x-text="'MRP ₹' + parseFloat(p.mrp).toFixed(2)"></span>
+                                                    <span class="badge bg-success text-white fw-bold shadow-sm" style="font-size: 13px;" x-text="'₹' + (parseFloat(p.selling_price) * (1 + (parseFloat(p.tax_rate)||0)/100)).toFixed(2)"></span>
+                                                    <div class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25" x-show="p.default_discount > 0" style="font-size: 10px;"><span x-text="p.default_discount"></span><span x-text="p.default_discount_type === 'percent' ? '%' : ' Rs'"></span> OFF</div>
                                                 </div>
                                             </td>
                                             <td class="align-middle">
@@ -796,25 +790,22 @@
                                                             <span class="text-muted fw-medium" style="font-size: 9px; letter-spacing: 0.5px;">AVAILABLE FOR SELL</span>
                                                             <span class="badge" 
                                                                   :class="{
-                                                                      'bg-success bg-opacity-10 text-success border border-success border-opacity-25': (getWarehouseStock(p) + getOversellStock(p)) > (p.min_stock_level || 10),
-                                                                      'bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25': (getWarehouseStock(p) + getOversellStock(p)) > 0 && (getWarehouseStock(p) + getOversellStock(p)) <= (p.min_stock_level || 10),
+                                                                      'bg-success bg-opacity-10 text-success border border-success border-opacity-25': (getWarehouseStock(p) + getOversellStock(p)) > (p.min_stock_level || 0),
+                                                                      'bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25': (getWarehouseStock(p) + getOversellStock(p)) > 0 && (getWarehouseStock(p) + getOversellStock(p)) <= (p.min_stock_level || 0),
                                                                       'bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25': (getWarehouseStock(p) + getOversellStock(p)) <= 0
                                                                   }"
                                                                   x-text="getWarehouseStock(p) + getOversellStock(p)"></span>
                                                         </div>
-                                                        <div class="d-flex justify-content-between align-items-center" style="font-size: 10px;">
-                                                            <template x-if="p.warehouse_stocks && p.warehouse_stocks.length > 0 && !p.warehouse_stocks.some(w => String(w.warehouse_id) === String(warehouseId))">
-                                                                <span class="text-danger"><i class="bi bi-x-circle me-1"></i>Not in warehouse</span>
-                                                            </template>
-                                                            <template x-if="!(p.warehouse_stocks && p.warehouse_stocks.length > 0 && !p.warehouse_stocks.some(w => String(w.warehouse_id) === String(warehouseId)))">
-                                                                <span class="text-muted">Physical: <span class="fw-bold text-body-emphasis" x-text="parseFloat(getWarehouseStock(p))"></span></span>
-                                                            </template>
-                                                            <span x-show="p.allow_overselling" class="text-warning fw-bold" title="Overselling Allowed" x-text="'+' + getOversellStock(p) + ' (OS)'"></span>
+                                                        <div class="d-flex justify-content-between align-items-center" style="font-size: 10px; min-height: 15px;">
+                                                            <div>
+                                                                <template x-if="p.warehouse_stocks && p.warehouse_stocks.length > 0 && !p.warehouse_stocks.some(w => String(w.warehouse_id) === String(warehouseId))">
+                                                                    <span class="text-danger"><i class="bi bi-x-circle me-1"></i>Not in warehouse</span>
+                                                                </template>
+                                                            </div>
+                                                            <span x-show="p.allow_overselling" class="text-warning fw-bold ms-auto" title="Overselling Allowed" x-text="'+' + getOversellStock(p) + ' (OS)'"></span>
                                                         </div>
                                                     </div>
                                                     <div class="d-flex flex-wrap gap-1" style="max-width: 180px;">
-                                                        <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25" style="font-size:9px;" x-show="isSkuEnabled(p)" title="SKU Enabled"><i class="bi bi-upc-scan me-1"></i>SKU On</span>
-                                                        <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25" style="font-size:9px;" x-show="!isSkuEnabled(p)" title="SKU Disabled"><i class="bi bi-upc-scan me-1"></i>SKU Off</span>
                                                         <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25" style="font-size:9px;" x-show="p.batch_tracking" title="Batch Tracking"><i class="bi bi-layers me-1"></i>Batch</span>
                                                         <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25" style="font-size:9px;" x-show="p.expiry_tracking" title="Expiry Tracking"><i class="bi bi-calendar-x me-1"></i>Expiry</span>
                                                         <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25" style="font-size:9px;" x-show="p.allow_overselling" title="Allow Overselling"><i class="bi bi-arrow-down-up me-1"></i>Oversell</span>
@@ -1788,7 +1779,7 @@
                                                     <div class="fw-bold text-body-emphasis" style="font-size:16px;" x-text="selectedProductForModal ? (parseFloat(selectedProductForModal.available_stock) + ' ' + (selectedProductForModal.uom || 'Units')) : ''"></div>
                                                     <div class="text-body-secondary" style="font-size:10px;">Available to Order</div>
                                                 </div>
-                                                <span class="badge" style="font-size:10px;" :class="selectedProductForModal && selectedProductForModal.available_stock > (selectedProductForModal.min_stock_level || 10) ? 'bg-success' : (selectedProductForModal && selectedProductForModal.available_stock > 0 ? 'bg-warning text-body-emphasis' : 'bg-danger')" x-text="selectedProductForModal && selectedProductForModal.available_stock > 0 ? 'In Stock' : 'Out of Stock'"></span>
+                                                <span class="badge" style="font-size:10px;" :class="selectedProductForModal && selectedProductForModal.available_stock > (selectedProductForModal.min_stock_level || 0) ? 'bg-success' : (selectedProductForModal && selectedProductForModal.available_stock > 0 ? 'bg-warning text-body-emphasis' : 'bg-danger')" x-text="selectedProductForModal && selectedProductForModal.available_stock > 0 ? 'In Stock' : 'Out of Stock'"></span>
                                             </div>
                                             <div class="row text-center g-1 mb-2">
                                                 <div class="col-4"><div class="fw-semibold" style="font-size:13px;" x-text="selectedProductForModal ? (selectedProductForModal.physical_available || selectedProductForModal.stock) : 0"></div><div class="text-body-secondary" style="font-size:9px;">Physical</div></div>
@@ -4013,7 +4004,6 @@ mapOrder(o) {
                 if (!this.isSkuEnabled(p)) return false;
                 const maxStock = this.getMaxAllowedStock(p);
                 if (this.stockFilter === 'in-stock' && maxStock <= 0) return false;
-                if (this.stockFilter === 'low-stock' && (maxStock <= 0 || maxStock > (p.min_stock_level || 10))) return false;
                 if (this.stockFilter === 'out-of-stock' && maxStock > 0) return false;
                 return true;
             });

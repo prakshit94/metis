@@ -53,6 +53,10 @@ class ProductController extends Controller
 
         $products = Product::query()
             ->with($this->getEagerLoads($request))
+            ->withSum(['stocks as stocks_sum_quantity' => $stockScope], 'quantity')
+            ->withSum(['stocks as stocks_sum_reserved_qty' => $stockScope], 'reserved_qty')
+            ->withSum(['stocks as stocks_sum_dispatched_qty' => $stockScope], 'dispatched_qty')
+            ->withSum(['pendingOrderItems as pending_orders_qty' => $pendingOrderScope], 'quantity')
             ->latest()
             ->get()
             ->map(fn (Product $product) => $this->transform($product))
@@ -129,6 +133,14 @@ class ProductController extends Controller
                 });
             }
         };
+        
+        $pendingOrderScope = function ($q) use ($request) {
+            if ($lobState = $request->user()?->lob_state_name) {
+                $q->whereHas('order.warehouse', function ($wq) use ($lobState) {
+                    $wq->where('state', $lobState);
+                });
+            }
+        };
 
         return response()->json([
             'message' => 'Product created successfully.',
@@ -136,7 +148,7 @@ class ProductController extends Controller
                 ->loadSum(['stocks as stocks_sum_quantity' => $stockScope], 'quantity')
                 ->loadSum(['stocks as stocks_sum_reserved_qty' => $stockScope], 'reserved_qty')
                 ->loadSum(['stocks as stocks_sum_dispatched_qty' => $stockScope], 'dispatched_qty')
-                ->loadSum('pendingOrderItems as pending_orders_qty', 'quantity')),
+                ->loadSum(['pendingOrderItems as pending_orders_qty' => $pendingOrderScope], 'quantity')),
         ], 201);
     }
 
@@ -167,6 +179,14 @@ class ProductController extends Controller
                 });
             }
         };
+        
+        $pendingOrderScope = function ($q) use ($request) {
+            if ($lobState = $request->user()?->lob_state_name) {
+                $q->whereHas('order.warehouse', function ($wq) use ($lobState) {
+                    $wq->where('state', $lobState);
+                });
+            }
+        };
 
         return response()->json([
             'message' => 'Product updated successfully.',
@@ -174,7 +194,7 @@ class ProductController extends Controller
                 ->loadSum(['stocks as stocks_sum_quantity' => $stockScope], 'quantity')
                 ->loadSum(['stocks as stocks_sum_reserved_qty' => $stockScope], 'reserved_qty')
                 ->loadSum(['stocks as stocks_sum_dispatched_qty' => $stockScope], 'dispatched_qty')
-                ->loadSum('pendingOrderItems as pending_orders_qty', 'quantity')),
+                ->loadSum(['pendingOrderItems as pending_orders_qty' => $pendingOrderScope], 'quantity')),
         ]);
     }
 
@@ -357,6 +377,14 @@ class ProductController extends Controller
                 });
             }
         };
+        
+        $pendingOrderScope = function ($q) use ($request) {
+            if ($lobState = $request->user()?->lob_state_name) {
+                $q->whereHas('order.warehouse', function ($wq) use ($lobState) {
+                    $wq->where('state', $lobState);
+                });
+            }
+        };
 
         return response()->json([
             'message' => 'Product restored successfully.',
@@ -364,7 +392,7 @@ class ProductController extends Controller
                 ->loadSum(['stocks as stocks_sum_quantity' => $stockScope], 'quantity')
                 ->loadSum(['stocks as stocks_sum_reserved_qty' => $stockScope], 'reserved_qty')
                 ->loadSum(['stocks as stocks_sum_dispatched_qty' => $stockScope], 'dispatched_qty')
-                ->loadSum('pendingOrderItems as pending_orders_qty', 'quantity')),
+                ->loadSum(['pendingOrderItems as pending_orders_qty' => $pendingOrderScope], 'quantity')),
         ]);
     }
 
@@ -419,6 +447,7 @@ class ProductController extends Controller
             ->withSum(['stocks as stocks_sum_quantity' => $stockScope], 'quantity')
             ->withSum(['stocks as stocks_sum_reserved_qty' => $stockScope], 'reserved_qty')
             ->withSum(['stocks as stocks_sum_dispatched_qty' => $stockScope], 'dispatched_qty')
+            ->withMax(['stocks as stocks_max_allow_overselling' => $stockScope], 'allow_overselling')
             ->withSum(['pendingOrderItems as pending_orders_qty' => $pendingOrderScope], 'quantity');
 
         if ($request->filled('q')) {
@@ -442,11 +471,11 @@ class ProductController extends Controller
 
         if ($request->filled('stock')) {
             if ($request->stock === 'available' || $request->stock === 'in-stock') {
-                $query->havingRaw('((COALESCE(stocks_sum_quantity, 0) - COALESCE(stocks_sum_reserved_qty, 0) - COALESCE(pending_orders_qty, 0)) > 0 OR allow_overselling = 1)');
+                $query->havingRaw('((COALESCE(stocks_sum_quantity, 0) - COALESCE(stocks_sum_reserved_qty, 0) - COALESCE(pending_orders_qty, 0)) > 0 OR allow_overselling = 1 OR stocks_max_allow_overselling = 1)');
             } elseif ($request->stock === 'low-stock' || $request->stock === 'low_stock') {
-                $query->havingRaw('((COALESCE(stocks_sum_quantity, 0) - COALESCE(stocks_sum_reserved_qty, 0) - COALESCE(pending_orders_qty, 0)) > 0 AND (COALESCE(stocks_sum_quantity, 0) - COALESCE(stocks_sum_reserved_qty, 0) - COALESCE(pending_orders_qty, 0)) <= COALESCE(min_stock_level, 10))');
+                $query->havingRaw('((COALESCE(stocks_sum_quantity, 0) - COALESCE(stocks_sum_reserved_qty, 0) - COALESCE(pending_orders_qty, 0)) > 0 AND (COALESCE(stocks_sum_quantity, 0) - COALESCE(stocks_sum_reserved_qty, 0) - COALESCE(pending_orders_qty, 0)) <= COALESCE(min_stock_level, 0))');
             } elseif ($request->stock === 'out_of_stock' || $request->stock === 'out-of-stock') {
-                $query->havingRaw('((COALESCE(stocks_sum_quantity, 0) - COALESCE(stocks_sum_reserved_qty, 0) - COALESCE(pending_orders_qty, 0)) <= 0 AND (allow_overselling = 0 OR allow_overselling IS NULL))');
+                $query->havingRaw('((COALESCE(stocks_sum_quantity, 0) - COALESCE(stocks_sum_reserved_qty, 0) - COALESCE(pending_orders_qty, 0)) <= 0 AND (allow_overselling = 0 OR allow_overselling IS NULL) AND (stocks_max_allow_overselling = 0 OR stocks_max_allow_overselling IS NULL))');
             }
         }
 
@@ -1021,10 +1050,10 @@ class ProductController extends Controller
         return [
             'total' => $products->count(),
             'active' => $products->whereIn('status', ['published', 'active'])->count(),
-            'inStock' => $products->where('stock', '>', 20)->count(),
-            'lowStock' => $products->where('stock', '>', 0)->where('stock', '<=', 20)->count(),
-            'outOfStock' => $products->where('stock', '<=', 0)->count(),
-            'totalValue' => round($products->sum(fn (array $product) => (float) $product['price'] * (int) $product['stock']), 2),
+            'inStock' => $products->filter(fn (array $product) => $product['available_stock'] > 0)->count(),
+            'lowStock' => $products->filter(fn (array $product) => $product['available_stock'] > 0 && $product['available_stock'] <= ($product['min_stock_level'] ?? 10))->count(),
+            'outOfStock' => $products->filter(fn (array $product) => $product['available_stock'] <= 0)->count(),
+            'totalValue' => round($products->sum(fn (array $product) => (float) $product['price'] * max(0, (float) $product['physical_available'])), 2),
         ];
     }
 

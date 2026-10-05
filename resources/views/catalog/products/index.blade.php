@@ -798,7 +798,6 @@
                                         <div class="col-md-6">
                                             <label class="form-label fw-medium text-muted small">Product Status <span class="text-danger">*</span></label>
                                             <select class="form-select form-select-lg shadow-none border-secondary border-opacity-25" x-model="form.status" required>
-                                                <option value="">Select Status</option>
                                                 <template x-for="status in options.statusList" :key="status.value">
                                                     <option :value="status.value" x-text="status.label"></option>
                                                 </template>

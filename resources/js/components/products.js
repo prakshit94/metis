@@ -506,7 +506,7 @@ document.addEventListener('alpine:init', () => {
       ).length;
       this.stats.lowStock = baseProducts.filter(
         (p) =>
-          this.getEffectiveStock(p) > 0 && this.getEffectiveStock(p) <= (p.min_stock_level || 10)
+          this.getEffectiveStock(p) > 0 && this.getEffectiveStock(p) <= (p.min_stock_level ?? 10)
       ).length;
       this.stats.outOfStock = baseProducts.filter((p) => this.getEffectiveStock(p) <= 0).length;
       this.stats.totalValue = baseProducts.reduce(
@@ -576,7 +576,7 @@ document.addEventListener('alpine:init', () => {
           (this.stockFilter === 'in-stock' && effStock > 0) ||
           (this.stockFilter === 'low-stock' &&
             effStock > 0 &&
-            effStock <= (product.min_stock_level || 10)) ||
+            effStock <= (product.min_stock_level ?? 10)) ||
           (this.stockFilter === 'out-of-stock' && effStock <= 0);
 
         return matchesSearch && matchesCategory && matchesWarehouse && matchesStock;
