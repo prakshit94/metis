@@ -111,7 +111,7 @@ class StockManagementController extends Controller implements HasMiddleware
 
         if ($warehouseId = $request->query('warehouse_id')) {
             $this->inventoryService->ensureWarehouseStockCoverage((int) $warehouseId);
-            $query->where('warehouse_id', $warehouseId);
+            $query->where('stocks.warehouse_id', $warehouseId);
         }
 
         if ($stockLevel = $request->query('stock_level')) {
@@ -127,16 +127,21 @@ class StockManagementController extends Controller implements HasMiddleware
         }
 
         $sortBy = $request->query('sort_by', 'id');
-        $sortDir = $request->query('sort_dir', 'desc');
+        $sortDir = strtolower((string) $request->query('sort_dir', 'desc')) === 'asc' ? 'asc' : 'desc';
 
         if ($sortBy === 'available') {
-            $query->orderByRaw('(quantity - reserved_qty - pending_qty) '.$sortDir);
+            $query->orderByRaw('(stocks.quantity - stocks.reserved_qty - COALESCE(order_quantities.pending_qty, 0)) '.$sortDir);
         } elseif ($sortBy === 'delivered_qty') {
-            $query->orderByRaw('(raw_delivered_qty - returned_qty) '.$sortDir);
+            $query->orderByRaw('(COALESCE(order_quantities.raw_delivered_qty, 0) - COALESCE(return_quantities.returned_qty, 0)) '.$sortDir);
         } elseif ($sortBy === 'dispatched_qty') {
-            $query->orderByRaw('(dispatched_qty + in_transit_qty) '.$sortDir);
+            $query->orderByRaw('(stocks.dispatched_qty + stocks.in_transit_qty) '.$sortDir);
         } elseif (in_array($sortBy, ['id', 'product_id', 'warehouse_id', 'quantity', 'reserved_qty', 'in_transit_qty', 'damaged_qty', 'pending_qty', 'return_requested_qty'])) {
-            $query->orderBy($sortBy, $sortDir);
+            $sortColumn = match ($sortBy) {
+                'pending_qty' => 'COALESCE(order_quantities.pending_qty, 0)',
+                'return_requested_qty' => 'COALESCE(return_quantities.return_requested_qty, 0)',
+                default => 'stocks.'.$sortBy,
+            };
+            $query->orderByRaw($sortColumn.' '.$sortDir);
         }
 
         $perPage = min(max((int) $request->query('per_page', 25), 1), 1000);
@@ -165,7 +170,7 @@ class StockManagementController extends Controller implements HasMiddleware
         }
 
         if ($warehouseId = $request->query('warehouse_id')) {
-            $statsBaseQuery->where('warehouse_id', $warehouseId);
+            $statsBaseQuery->where('stocks.warehouse_id', $warehouseId);
         }
 
         $statsRow = (clone $statsBaseQuery)->selectRaw("

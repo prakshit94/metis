@@ -4,6 +4,65 @@
 @section('page', 'inventory-stock-management')
 
 @section('content')
+<style>
+    .stock-management .stock-product-column {
+        position: sticky;
+        left: 0;
+        width: 280px;
+        min-width: 280px;
+        max-width: 280px;
+        white-space: normal;
+    }
+
+    .stock-management .stock-table-scroll {
+        max-height: min(70vh, 720px);
+        overflow: auto;
+    }
+
+    .stock-management thead tr:first-child th {
+        position: sticky;
+        top: 0;
+        z-index: 4;
+        background-color: var(--bs-tertiary-bg, #f8f9fa);
+    }
+
+    .stock-management thead tr:nth-child(2) th {
+        position: sticky;
+        top: 40px;
+        z-index: 4;
+        background-color: var(--bs-tertiary-bg, #f8f9fa);
+    }
+
+    .stock-management thead .stock-product-column {
+        top: 40px;
+        z-index: 6;
+    }
+
+    .stock-management tbody .stock-product-column {
+        z-index: 2;
+        background-color: var(--bs-body-bg, #fff);
+        box-shadow: inset -1px 0 var(--bs-border-color, #dee2e6);
+    }
+
+    .stock-management .stock-product-name-wrap {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    .stock-management .stock-product-name {
+        display: -webkit-box;
+        overflow: hidden;
+        white-space: normal;
+        overflow-wrap: anywhere;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+        line-height: 1.25;
+    }
+
+    .stock-management tbody tr:hover .stock-product-column {
+        background-color: var(--bs-table-hover-bg, #f8f9fa);
+    }
+</style>
 <div class="stock-management" x-data="stockManagement" x-cloak>
 
     {{-- ── Page Header ────────────────────────────────────────── --}}
@@ -212,7 +271,7 @@
                 </div>
 
                 {{-- Table --}}
-                <div class="table-responsive">
+                <div class="table-responsive stock-table-scroll">
                     <table class="table table-hover align-middle mb-0 text-nowrap">
                         <thead class="table-group-divider">
                             <tr class="table-light">
@@ -231,7 +290,7 @@
                                            @change="$event.isTrusted && toggleAll($event.target.checked)"
                                            :checked="selectedItems.length === paginatedItems.length && paginatedItems.length > 0">
                                 </th>
-                                <th @click="sortBy('product_id')" class="sortable"><i class="bi bi-box-seam me-1 text-secondary"></i>Product</th>
+                                <th @click="sortBy('product_id')" class="sortable stock-product-column"><i class="bi bi-box-seam me-1 text-secondary"></i>Product</th>
                                 <th @click="sortBy('warehouse_id')" class="sortable border-end"><i class="bi bi-buildings-fill me-1 text-secondary"></i>Warehouse</th>
                                 
                                 <!-- Physical Inventory -->
@@ -289,7 +348,7 @@
                                                :checked="selectedItems.includes(item.id)"
                                                @change="toggleItem(item.id)">
                                     </td>
-                                    <td>
+                                    <td class="stock-product-column">
                                         <div class="d-flex align-items-center">
                                             <div x-show="item.product?.grade" 
                                                  class="badge border shadow-sm rounded-2 d-flex flex-column align-items-center justify-content-center me-2 flex-shrink-0" 
@@ -310,8 +369,8 @@
                                                     <i class="bi bi-box-seam"></i>
                                                 </div>
                                             </template>
-                                            <div>
-                                                <div class="fw-medium" x-text="item.product?.name || '-'"></div>
+                                            <div class="stock-product-name-wrap">
+                                                <div class="fw-medium stock-product-name" x-text="item.product?.name || '-'" :title="item.product?.name || ''"></div>
                                                 <div class="d-flex align-items-center gap-2 mt-1">
                                                     <small class="text-muted font-monospace" x-text="item.product?.sku || ''"></small>
                                                     <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25" 
