@@ -203,18 +203,20 @@
         });
     </script>
     <script>
-        // Clipboard API is unavailable on HTTP origins and may reject in
-        // restricted browser contexts. Keep a selection-safe fallback for UI handlers.
+        // Clipboard API requires a secure context in many browsers. Run the
+        // execCommand fallback during the original click so HTTP deployments do
+        // not lose the browser's transient user activation while awaiting a denial.
         window.copyText = async function(value) {
             var text = value == null ? '' : String(value);
             if (!text) return false;
 
+            var clipboardWrite = null;
             if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
                 try {
-                    await navigator.clipboard['writeText'](text);
-                    return true;
+                    // Invoke the native API in the click's activation window.
+                    clipboardWrite = navigator.clipboard.writeText(text);
                 } catch (error) {
-                    // Try the legacy copy command when browser permissions deny the API.
+                    // The synchronous fallback below handles restricted contexts.
                 }
             }
 
@@ -228,16 +230,27 @@
 
             textArea.value = text;
             textArea.setAttribute('readonly', '');
+            textArea.setAttribute('aria-hidden', 'true');
+            textArea.tabIndex = -1;
             textArea.style.position = 'fixed';
+            textArea.style.left = '0';
+            textArea.style.top = '0';
+            textArea.style.width = '1px';
+            textArea.style.height = '1px';
+            textArea.style.padding = '0';
+            textArea.style.border = '0';
             textArea.style.opacity = '0';
             textArea.style.pointerEvents = 'none';
             document.body.appendChild(textArea);
+            var fallbackSucceeded = false;
             try {
                 textArea.focus();
                 textArea.select();
-                return document.execCommand('copy') === true;
+                textArea.setSelectionRange(0, textArea.value.length);
+                fallbackSucceeded = typeof document.execCommand === 'function'
+                    && document.execCommand('copy') === true;
             } catch (error) {
-                return false;
+                fallbackSucceeded = false;
             } finally {
                 textArea.remove();
                 try {
@@ -250,6 +263,17 @@
                     // Clipboard success should not depend on focus restoration.
                 }
             }
+
+            if (fallbackSucceeded) return true;
+            if (clipboardWrite) {
+                try {
+                    await clipboardWrite;
+                    return true;
+                } catch (error) {
+                    // Both clipboard methods failed.
+                }
+            }
+            return false;
         };
     </script>
 </body>
