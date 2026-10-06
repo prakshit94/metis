@@ -83,15 +83,12 @@ class InventoryService
             return $stock;
         }
 
-        $product = Product::find($productId);
-
-        // Create a brand-new row if it doesn't exist yet.
-        // Fall back to the legacy product stock value so older records can be reserved
-        // even when the dedicated stocks table has not been initialized yet.
+        // A missing product/warehouse row means zero stock at this warehouse. Product::total_stock
+        // is aggregated across warehouses, so using it here would copy stock between locations.
         return Stock::create([
             'warehouse_id' => $warehouseId,
             'product_id' => $productId,
-            'quantity' => max(0.0, (float) ($product?->total_stock ?? 0)),
+            'quantity' => 0,
             'reserved_qty' => 0,
             'dispatched_qty' => 0,
             'committed_qty' => 0,
@@ -711,14 +708,16 @@ class InventoryService
                 $stock->quantity = $newQty;
                 $stock->save();
 
-                $this->logMovement(
-                    $productId,
-                    $warehouseId,
-                    abs($diff),
-                    $diff > 0 ? 'adjustment_in' : 'adjustment_out',
-                    InventoryAdjustment::class,
-                    $adjustment->id
-                );
+                if ($diff != 0) {
+                    $this->logMovement(
+                        $productId,
+                        $warehouseId,
+                        abs($diff),
+                        $diff > 0 ? 'adjustment_in' : 'adjustment_out',
+                        InventoryAdjustment::class,
+                        $adjustment->id
+                    );
+                }
             }
 
             $adjustment->update(['status' => 'approved']);

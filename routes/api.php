@@ -386,7 +386,9 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::post('/adjustments/bulk-action', [InventoryAdjustmentController::class, 'bulkAction'])->name('adjustments.bulk-action');
         Route::post('/adjustments/{inventoryAdjustment}/approve', [InventoryAdjustmentController::class, 'approve'])->name('adjustments.approve');
         Route::post('/adjustments/{inventoryAdjustment}/reject', [InventoryAdjustmentController::class, 'reject'])->name('adjustments.reject');
-        Route::apiResource('/adjustments', InventoryAdjustmentController::class);
+        Route::apiResource('/adjustments', InventoryAdjustmentController::class)->parameters([
+            'adjustments' => 'inventoryAdjustment'
+        ]);
     });
 
     Route::prefix('products')->name('api.products.')->group(function (): void {

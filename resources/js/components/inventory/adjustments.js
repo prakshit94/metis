@@ -42,6 +42,9 @@ export default () => ({
   stats: { total: 0, pending: 0, approved: 0, rejected: 0 },
   warehouses: [],
   products: [],
+  productNames: {},
+  productSearchVersion: 0,
+  listRequestVersion: 0,
   isLoading: false,
   saving: false,
   isEditing: false,
@@ -52,6 +55,11 @@ export default () => ({
   totalItems: 0,
   totalPages: 1,
   modalInstance: null,
+  detailModalInstance: null,
+  detailItem: null,
+  detailLoading: false,
+  detailError: '',
+  detailRequestVersion: 0,
   form: {
     id: null,
     warehouse_id: '',
@@ -66,13 +74,14 @@ export default () => ({
   selectedItems: [],
 
   async init() {
-    await this.loadOptions();
-    await this.loadData();
+    await Promise.all([this.loadOptions(), this.loadData()]);
     const modalEl = document.getElementById('adjustmentModal');
     if (modalEl) {
       this.modalInstance = Modal.getOrCreateInstance(modalEl);
       modalEl.addEventListener('hidden.bs.modal', () => this.resetForm());
     }
+    const detailsModalEl = document.getElementById('adjustmentDetailsModal');
+    if (detailsModalEl) this.detailModalInstance = Modal.getOrCreateInstance(detailsModalEl);
   },
 
   async apiRequest(url, options = {}) {
@@ -103,18 +112,48 @@ export default () => ({
       const data = await this.apiRequest('/api/inventory/adjustments/options');
       this.warehouses = data.warehouses || [];
       this.products = data.products || [];
+      this.rememberProducts(this.products);
     } catch (e) {
       console.error(e);
     }
   },
 
+  rememberProducts(products) {
+    products.forEach((product) => {
+      this.productNames[product.id] = `${product.name} (${product.sku || ''})`;
+    });
+  },
+
+  async searchProducts(query) {
+    const version = ++this.productSearchVersion;
+    try {
+      const params = new URLSearchParams({ q: query || '' });
+      if (this.form.warehouse_id) params.set('warehouse_id', this.form.warehouse_id);
+      const data = await this.apiRequest(`/api/inventory/adjustments/options?${params}`);
+      if (version !== this.productSearchVersion) return;
+      this.products = data.products || [];
+      this.rememberProducts(this.products);
+      Object.values(data.stocks || {}).forEach((stock) => {
+        this.warehouseStocks[stock.product_id] = parseFloat(stock.quantity);
+      });
+    } catch (e) {
+      if (version === this.productSearchVersion) showToast(e.message, 'error');
+    }
+  },
+
   async loadData() {
+    const version = ++this.listRequestVersion;
     this.isLoading = true;
     try {
       const params = new URLSearchParams({ per_page: this.itemsPerPage, page: this.currentPage });
       if (this.searchQuery) params.set('search', this.searchQuery);
       if (this.statusFilter) params.set('status', this.statusFilter);
       const data = await this.apiRequest(`/api/inventory/adjustments?${params}`);
+      if (version !== this.listRequestVersion) return;
+      if (this.currentPage > (data.meta?.last_page || 1)) {
+        this.currentPage = data.meta?.last_page || 1;
+        return this.loadData();
+      }
       this.items = data.data || [];
       this.stats = data.stats || this.stats;
       this.totalItems = data.meta?.total || 0;
@@ -123,9 +162,9 @@ export default () => ({
       // Clear selection on page load
       this.selectedItems = [];
     } catch (e) {
-      showToast(e.message, 'error');
+      if (version === this.listRequestVersion) showToast(e.message, 'error');
     } finally {
-      this.isLoading = false;
+      if (version === this.listRequestVersion) this.isLoading = false;
     }
   },
 
@@ -197,15 +236,12 @@ export default () => ({
       return;
     }
     try {
-      const data = await this.apiRequest(
-        `/api/inventory/stocks?warehouse_id=${warehouseId}&per_page=1000`
-      );
+      const params = new URLSearchParams({ warehouse_id: warehouseId });
+      const data = await this.apiRequest(`/api/inventory/adjustments/options?${params}`);
       const stocks = {};
-      if (data.data) {
-        data.data.forEach((stock) => {
-          stocks[stock.product_id] = parseFloat(stock.quantity);
-        });
-      }
+      Object.values(data.stocks || {}).forEach((stock) => {
+        stocks[stock.product_id] = parseFloat(stock.quantity);
+      });
       this.warehouseStocks = stocks;
       // Also update current quantities for already selected products in the form
       this.form.items.forEach((item) => {
@@ -272,38 +308,80 @@ export default () => ({
     this.modalInstance?.show();
   },
 
+  async viewDetails(item) {
+    const version = ++this.detailRequestVersion;
+    this.detailItem = null;
+    this.detailError = '';
+    this.detailLoading = true;
+    this.detailModalInstance?.show();
+    try {
+      const response = await this.apiRequest(`/api/inventory/adjustments/${item.id}`);
+      if (version !== this.detailRequestVersion) return;
+      this.detailItem = response.data || response;
+    } catch (e) {
+      if (version === this.detailRequestVersion) {
+        this.detailError = `Unable to load adjustment details: ${e.message}`;
+      }
+    } finally {
+      if (version === this.detailRequestVersion) this.detailLoading = false;
+    }
+  },
+
   async editItem(item) {
     this.isEditing = true;
-    this.form = {
-      id: item.id,
-      warehouse_id: item.warehouse_id,
-      reason: item.reason || '',
-      items: (item.items || []).map((i) => {
-        const diff = parseFloat(i.new_qty) - parseFloat(i.current_qty);
-        let type = 'Set';
-        let val = parseFloat(i.new_qty);
-        if (diff > 0) {
-          type = 'Add';
-          val = diff;
-        } else if (diff < 0) {
-          type = 'Deduct';
-          val = Math.abs(diff);
+    try {
+      const fullItemData = await this.apiRequest(`/api/inventory/adjustments/${item.id}`);
+      const fullItem = fullItemData.data || fullItemData;
+      (fullItem.items || []).forEach((adjustmentItem) => {
+        if (adjustmentItem.product) this.rememberProducts([adjustmentItem.product]);
+      });
+
+      this.form = {
+        id: fullItem.id,
+        warehouse_id: fullItem.warehouse_id,
+        reason: fullItem.reason || '',
+        items: (fullItem.items || []).map((i) => {
+          const diff = parseFloat(i.new_qty) - parseFloat(i.current_qty);
+          let type = 'Set';
+          let val = parseFloat(i.new_qty);
+          if (diff > 0) {
+            type = 'Add';
+            val = diff;
+          } else if (diff < 0) {
+            type = 'Deduct';
+            val = Math.abs(diff);
+          }
+          return {
+            product_id: i.product_id,
+            current_qty: i.current_qty,
+            new_qty: i.new_qty,
+            adjustment_type: type,
+            adjustment_value: val,
+          };
+        }),
+      };
+
+      if (this.form.items.length === 0) {
+        this.form.items = [
+          { product_id: '', current_qty: 0, new_qty: 0, adjustment_type: 'Set', adjustment_value: 0 },
+        ];
+      }
+
+
+      if (this.modalInstance) {
+        this.modalInstance.show();
+      } else {
+        const modalEl = document.getElementById('adjustmentModal');
+        if (modalEl) {
+          this.modalInstance = Modal.getOrCreateInstance(modalEl);
+          this.modalInstance.show();
+        } else {
+          showToast('Adjustment form is unavailable.', 'error');
         }
-        return {
-          product_id: i.product_id,
-          current_qty: i.current_qty,
-          new_qty: i.new_qty,
-          adjustment_type: type,
-          adjustment_value: val,
-        };
-      }),
-    };
-    if (this.form.items.length === 0)
-      this.form.items = [
-        { product_id: '', current_qty: 0, new_qty: 0, adjustment_type: 'Set', adjustment_value: 0 },
-      ];
-    await this.fetchWarehouseStocks();
-    this.modalInstance?.show();
+      }
+    } catch (e) {
+      showToast('Failed to load adjustment details: ' + e.message, 'error');
+    }
   },
 
   addItem() {

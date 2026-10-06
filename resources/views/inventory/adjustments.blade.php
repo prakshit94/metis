@@ -108,15 +108,15 @@
                                 <input type="search"
                                        class="form-control form-control-sm"
                                        placeholder="Search reference or reason..."
-                                       x-model.debounce.400ms="searchQuery"
-                                       @input="loadData()"
+                                       x-model="searchQuery"
+                                       @input.debounce.400ms="currentPage = 1; loadData()"
                                        style="width: 250px;">
                                 <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-2 text-muted"></i>
                             </div>
                             {{-- Status Filter --}}
                             <select class="form-select form-select-sm"
                                     x-model="statusFilter"
-                                    @change="loadData()"
+                                    @change="currentPage = 1; loadData()"
                                     style="width: 150px;">
                                 <option value="">All Statuses</option>
                                 <option value="pending">Pending</option>
@@ -199,7 +199,11 @@
                                     </td>
                                     <td class="text-muted ps-2" x-text="item.id"></td>
                                     <td>
-                                        <span class="fw-semibold font-monospace text-primary" x-text="item.reference_no"></span>
+                                        <button type="button"
+                                                class="btn btn-link btn-sm p-0 fw-semibold font-monospace text-decoration-none"
+                                                @click="viewDetails(item)"
+                                                :aria-label="`View details for ${item.reference_no}`"
+                                                x-text="item.reference_no"></button>
                                     </td>
                                     <td>
                                         <span class="badge bg-body-secondary text-body-emphasis border" x-text="item.warehouse?.name || '-'"></span>
@@ -291,6 +295,88 @@
         </div>
     </div>
 
+    {{-- ── Adjustment Details Modal ─────────────────────────────── --}}
+    <div class="modal fade" id="adjustmentDetailsModal" tabindex="-1" aria-labelledby="adjustmentDetailsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div>
+                        <h5 class="modal-title fw-bold" id="adjustmentDetailsModalLabel">Adjustment Details</h5>
+                        <div class="small text-muted font-monospace" x-show="detailItem" x-text="detailItem?.reference_no"></div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div x-show="detailLoading" class="text-center py-5">
+                        <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading details...</span></div>
+                        <div class="small text-muted mt-2">Loading adjustment details...</div>
+                    </div>
+                    <div x-show="!detailLoading && detailItem" x-cloak>
+                        <div class="row g-3 mb-4">
+                            <div class="col-sm-6">
+                                <div class="small text-muted">Warehouse</div>
+                                <div class="fw-medium" x-text="detailItem?.warehouse?.name || '-' "></div>
+                                <div class="small text-muted" x-text="detailItem?.warehouse?.code || ''"></div>
+                            </div>
+                            <div class="col-sm-3">
+                                <div class="small text-muted">Status</div>
+                                <span class="badge rounded-pill" :class="{
+                                    'bg-warning-subtle text-warning': detailItem?.status === 'pending',
+                                    'bg-success-subtle text-success': detailItem?.status === 'approved',
+                                    'bg-danger-subtle text-danger': detailItem?.status === 'rejected'
+                                }" x-text="detailItem?.status"></span>
+                            </div>
+                            <div class="col-sm-3">
+                                <div class="small text-muted">Created</div>
+                                <div x-text="detailItem?.created_at ? new Date(detailItem.created_at).toLocaleString() : '-' "></div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="small text-muted">Adjusted By</div>
+                                <div x-text="detailItem?.user?.name || '-' "></div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="small text-muted">Reason</div>
+                                <div class="text-break" x-text="detailItem?.reason || '-' "></div>
+                            </div>
+                        </div>
+                        <h6 class="fw-semibold mb-2">Adjusted Products</h6>
+                        <div class="table-responsive border rounded">
+                            <table class="table table-sm table-hover mb-0 align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Product</th>
+                                        <th>SKU</th>
+                                        <th class="text-end">Current Qty</th>
+                                        <th class="text-end">New Qty</th>
+                                        <th class="text-end">Difference</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <template x-for="line in (detailItem?.items || [])" :key="line.id">
+                                        <tr>
+                                            <td x-text="line.product?.name || `Product #${line.product_id}`"></td>
+                                            <td class="font-monospace small" x-text="line.product?.sku || '-' "></td>
+                                            <td class="text-end" x-text="formatQty(line.current_qty)"></td>
+                                            <td class="text-end" x-text="formatQty(line.new_qty)"></td>
+                                            <td class="text-end" :class="Number(line.difference) > 0 ? 'text-success' : (Number(line.difference) < 0 ? 'text-danger' : 'text-muted')" x-text="formatDifference(line)"></td>
+                                        </tr>
+                                    </template>
+                                    <template x-if="!detailItem?.items?.length">
+                                        <tr><td colspan="5" class="text-center text-muted py-4">No line items.</td></tr>
+                                    </template>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div x-show="!detailLoading && detailError" class="alert alert-danger mb-0" x-text="detailError"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     {{-- ── Adjustment Form Modal ───────────────────────────────── --}}
     <div class="modal fade" id="adjustmentModal" tabindex="-1" aria-labelledby="adjustmentModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-lg">
@@ -361,13 +447,14 @@
                                                             <input type="text" 
                                                                    class="form-control form-control-sm cursor-pointer bg-body" 
                                                                    placeholder="Search & choose product..." 
-                                                                   :value="item.product_id ? (products.find(p => p.id == item.product_id)?.name + ' (' + products.find(p => p.id == item.product_id)?.sku + ')') : ''"
+                                                                   :value="item.product_id ? (productNames[item.product_id] || '') : ''"
                                                                    readonly
                                                                    x-show="!open">
                                                             <input type="text"
                                                                    class="form-control form-control-sm bg-body"
                                                                    placeholder="Search & choose product..."
                                                                    x-model="search"
+                                                                   @input.debounce.300ms="searchProducts(search)"
                                                                    x-ref="searchInput"
                                                                    x-show="open"
                                                                    style="display: none;"
@@ -381,7 +468,7 @@
                                                              x-transition>
 
                                                             <div class="list-group list-group-flush small">
-                                                                <template x-for="p in products.filter(p => !search || p.name.toLowerCase().includes(search.toLowerCase()) || p.sku.toLowerCase().includes(search.toLowerCase()))" :key="p.id">
+                                                                <template x-for="p in products" :key="p.id">
                                                                     <button type="button" 
                                                                             class="list-group-item list-group-item-action text-start border-0 py-2 px-3 rounded"
                                                                             :class="item.product_id == p.id ? 'active' : ''"
@@ -390,7 +477,7 @@
                                                                         <div class="small" :class="item.product_id == p.id ? 'text-white-50' : 'text-muted'" x-text="'SKU: ' + p.sku"></div>
                                                                     </button>
                                                                 </template>
-                                                                <template x-if="products.filter(p => !search || p.name.toLowerCase().includes(search.toLowerCase()) || p.sku.toLowerCase().includes(search.toLowerCase())).length === 0">
+                                                                <template x-if="products.length === 0">
                                                                     <div class="text-muted text-center py-2">No products found</div>
                                                                 </template>
                                                             </div>
