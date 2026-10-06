@@ -122,6 +122,7 @@ class ProductController extends Controller
     {
         abort_unless($request->user()?->can('product-view'), 403);
         $this->assertWarehouseAccess($request);
+        $excludeFutureOrders = $request->boolean('exclude_future_orders');
 
         $stockScope = function ($q) use ($request) {
             if ($request->filled('warehouse_id')) {
@@ -133,15 +134,23 @@ class ProductController extends Controller
             }
         };
 
-        $pendingOrderScope = function ($q) use ($request) {
+        $pendingOrderScope = function ($q) use ($request, $excludeFutureOrders) {
             if ($request->filled('warehouse_id')) {
-                $q->whereHas('order', function ($oq) use ($request) {
+                $q->whereHas('order', function ($oq) use ($request, $excludeFutureOrders) {
                     $oq->where('warehouse_id', $request->warehouse_id);
+                    if ($excludeFutureOrders) {
+                        $oq->whereIn('status', ['pending', 'pending_confirmation']);
+                    }
                 });
             } elseif ($lobState = $request->user()?->lob_state_name) {
                 $q->whereHas('order.warehouse', function ($wq) use ($lobState) {
                     $wq->where('state', $lobState);
                 });
+                if ($excludeFutureOrders) {
+                    $q->whereHas('order', fn ($oq) => $oq->whereIn('status', ['pending', 'pending_confirmation']));
+                }
+            } elseif ($excludeFutureOrders) {
+                $q->whereHas('order', fn ($oq) => $oq->whereIn('status', ['pending', 'pending_confirmation']));
             }
         };
 
@@ -467,6 +476,7 @@ class ProductController extends Controller
     public function searchApi(Request $request): JsonResponse
     {
         $this->assertWarehouseAccess($request);
+        $excludeFutureOrders = $request->boolean('exclude_future_orders');
         $stockScope = function ($q) use ($request) {
             if ($request->filled('warehouse_id')) {
                 $q->where('warehouse_id', $request->warehouse_id);
@@ -477,21 +487,35 @@ class ProductController extends Controller
             }
         };
 
-        $pendingOrderScope = function ($q) use ($request) {
+        $pendingOrderScope = function ($q) use ($request, $excludeFutureOrders) {
             if ($request->filled('warehouse_id')) {
-                $q->whereHas('order', function ($oq) use ($request) {
+                $q->whereHas('order', function ($oq) use ($request, $excludeFutureOrders) {
                     $oq->where('warehouse_id', $request->warehouse_id);
+                    if ($excludeFutureOrders) {
+                        $oq->whereIn('status', ['pending', 'pending_confirmation']);
+                    }
                 });
             } elseif ($lobState = $request->user()?->lob_state_name) {
                 $q->whereHas('order.warehouse', function ($wq) use ($lobState) {
                     $wq->where('state', $lobState);
                 });
+                if ($excludeFutureOrders) {
+                    $q->whereHas('order', fn ($oq) => $oq->whereIn('status', ['pending', 'pending_confirmation']));
+                }
+            } elseif ($excludeFutureOrders) {
+                $q->whereHas('order', fn ($oq) => $oq->whereIn('status', ['pending', 'pending_confirmation']));
             }
         };
 
         $query = Product::query()
-            ->with(['category', 'brand', 'taxRate', 'uom', 'stocks' => function ($q) use ($request) {
-                $q->with('warehouse')->withSum('pendingOrderItems as pending_qty', 'quantity');
+            ->with(['category', 'brand', 'taxRate', 'uom', 'stocks' => function ($q) use ($request, $excludeFutureOrders) {
+                $q->with('warehouse')->withSum([
+                    'pendingOrderItems as pending_qty' => function ($pendingItems) use ($excludeFutureOrders) {
+                        if ($excludeFutureOrders) {
+                            $pendingItems->whereHas('order', fn ($order) => $order->whereIn('status', ['pending', 'pending_confirmation']));
+                        }
+                    },
+                ], 'quantity');
                 if ($request->filled('warehouse_id')) {
                     $q->where('warehouse_id', $request->warehouse_id);
                 } elseif ($lobState = $request->user()?->lob_state_name) {
@@ -1014,7 +1038,13 @@ class ProductController extends Controller
             'attributeValues.attribute',
             'supplier',
             'stocks' => function ($q) use ($request) {
-                $q->with('warehouse')->withSum('pendingOrderItems as pending_qty', 'quantity');
+                $q->with('warehouse')->withSum([
+                    'pendingOrderItems as pending_qty' => function ($pendingItems) use ($request) {
+                        if ($request?->boolean('exclude_future_orders')) {
+                            $pendingItems->whereHas('order', fn ($order) => $order->whereIn('status', ['pending', 'pending_confirmation']));
+                        }
+                    },
+                ], 'quantity');
                 if ($request && $request->boolean('warehouse_scope') && $request->filled('warehouse_id')) {
                     $q->where('warehouse_id', $request->integer('warehouse_id'));
                 } elseif ($request && $lobState = $request->user()?->lob_state_name) {

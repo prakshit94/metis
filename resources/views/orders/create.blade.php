@@ -3844,7 +3844,7 @@ mapOrder(o) {
             let missingProducts = [];
             if (missingCartItemIds.length > 0) {
                 try {
-                    const p = new URLSearchParams({ ids: missingCartItemIds.join(','), warehouse_id: this.warehouseId, perPage: 100, _t: Date.now() });
+                    const p = new URLSearchParams({ ids: missingCartItemIds.join(','), warehouse_id: this.warehouseId, perPage: 100, exclude_future_orders: '1', _t: Date.now() });
                     const res = await fetch(`/products-search-api?${p}`, { headers: {'Accept':'application/json','X-Requested-With':'XMLHttpRequest'} });
                     const json = await res.json();
                     missingProducts = json.data || [];
@@ -4047,6 +4047,7 @@ mapOrder(o) {
                     perPage: parseInt(this.perPage, 10) || 10,
                     page: this.productPage,
                     warehouse_id: this.warehouseId,
+                    exclude_future_orders: '1',
                     _t: Date.now(),
                 });
                 const res = await fetch(`/products-search-api?${p}`, {
@@ -4167,7 +4168,12 @@ mapOrder(o) {
         },
         async fetchProductDetails(id) {
             try {
-                const res = await fetch(`/api/products/${id}?_t=${Date.now()}`, { headers: {'Accept':'application/json'} });
+                const params = new URLSearchParams({
+                    warehouse_id: this.warehouseId || '',
+                    exclude_future_orders: '1',
+                    _t: Date.now(),
+                });
+                const res = await fetch('/api/products/' + id + '?' + params, { headers: {'Accept':'application/json'} });
                 const json = await res.json();
                 return json.data;
             } catch(e) { return null; }
