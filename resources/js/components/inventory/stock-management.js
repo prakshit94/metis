@@ -29,7 +29,7 @@ export default () => ({
   dataRequestController: null,
   searchQuery: new URLSearchParams(window.location.search).get('search') || '',
   warehouseFilter: new URLSearchParams(window.location.search).get('warehouse_id') ? parseInt(new URLSearchParams(window.location.search).get('warehouse_id')) : '',
-  stockLevelFilter: new URLSearchParams(window.location.search).get('stock_level') || '',
+  stockLevelFilter: new URLSearchParams(window.location.search).get('stock_level') || 'in_stock',
   sortField: new URLSearchParams(window.location.search).get('sort_by') || 'id',
   sortDirection: new URLSearchParams(window.location.search).get('sort_dir') || 'desc',
   currentPage: parseInt(new URLSearchParams(window.location.search).get('page')) || 1,

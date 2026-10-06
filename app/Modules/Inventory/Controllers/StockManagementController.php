@@ -9,6 +9,7 @@ use App\Modules\Catalog\Models\Warehouse;
 use App\Modules\Core\Controllers\Controller;
 use App\Modules\Inventory\Models\Stock;
 use App\Services\InventoryService;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
@@ -110,8 +111,8 @@ class StockManagementController extends Controller implements HasMiddleware
         }
 
         if ($warehouseId = $request->query('warehouse_id')) {
-            $this->inventoryService->ensureWarehouseStockCoverage((int) $warehouseId);
             $query->where('stocks.warehouse_id', $warehouseId);
+            $this->applyWarehouseSkuScope($query, (int) $warehouseId, true);
         }
 
         if ($stockLevel = $request->query('stock_level')) {
@@ -171,6 +172,7 @@ class StockManagementController extends Controller implements HasMiddleware
 
         if ($warehouseId = $request->query('warehouse_id')) {
             $statsBaseQuery->where('stocks.warehouse_id', $warehouseId);
+            $this->applyWarehouseSkuScope($statsBaseQuery, (int) $warehouseId, false);
         }
 
         $statsRow = (clone $statsBaseQuery)->selectRaw("
@@ -201,6 +203,53 @@ class StockManagementController extends Controller implements HasMiddleware
             ],
             'stats' => $stats,
         ]);
+    }
+
+    /**
+     * Ignore zero-stock rows that were created only to seed warehouse coverage.
+     * Keep rows with a warehouse assignment, stock activity, or related order/return
+     * history so legitimate out-of-stock and pipeline records remain visible.
+     */
+    private function applyWarehouseSkuScope(Builder $query, int $warehouseId, bool $aggregateJoinsPresent): void
+    {
+        $query->where(function (Builder $eligible) use ($warehouseId, $aggregateJoinsPresent) {
+            $eligible
+                ->where('stocks.quantity', '>', 0)
+                ->orWhere('stocks.reserved_qty', '>', 0)
+                ->orWhere('stocks.dispatched_qty', '>', 0)
+                ->orWhere('stocks.committed_qty', '>', 0)
+                ->orWhere('stocks.in_transit_qty', '>', 0)
+                ->orWhere('stocks.damaged_qty', '>', 0)
+                ->orWhereHas('product', fn (Builder $product) => $product->where('default_warehouse_id', $warehouseId))
+                ->orWhereHas('movements')
+                ->orWhereHas('reservations');
+
+            if ($aggregateJoinsPresent) {
+                $eligible
+                    ->orWhereNotNull('order_quantities.product_id')
+                    ->orWhereNotNull('return_quantities.product_id');
+
+                return;
+            }
+
+            $eligible
+                ->orWhereExists(function ($orders) {
+                    $orders->selectRaw('1')
+                        ->from('order_items')
+                        ->join('orders', 'orders.id', '=', 'order_items.order_id')
+                        ->whereColumn('order_items.product_id', 'stocks.product_id')
+                        ->whereColumn('orders.warehouse_id', 'stocks.warehouse_id')
+                        ->whereNull('orders.deleted_at');
+                })
+                ->orWhereExists(function ($returns) {
+                    $returns->selectRaw('1')
+                        ->from('order_return_items')
+                        ->join('order_returns', 'order_returns.id', '=', 'order_return_items.order_return_id')
+                        ->join('orders', 'orders.id', '=', 'order_returns.order_id')
+                        ->whereColumn('order_return_items.product_id', 'stocks.product_id')
+                        ->whereColumn('orders.warehouse_id', 'stocks.warehouse_id');
+                });
+        });
     }
 
     /**
