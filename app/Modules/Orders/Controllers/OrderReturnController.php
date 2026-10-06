@@ -405,14 +405,21 @@ class OrderReturnController extends Controller implements HasMiddleware
         }
 
         $headers = array_map('trim', array_map('strtolower', $firstRow));
-        $required = ['order_no', 'sku', 'received_qty', 'restocked_qty', 'damaged_qty'];
-        foreach ($required as $req) {
-            if (!in_array($req, $headers, true)) {
-                fclose($handle);
-                return response()->json(['error' => "Missing required column: {$req}"], 400);
+        $orderIdMode = in_array('order_id', $headers, true);
+        if (!$orderIdMode) {
+            $required = ['order_no', 'sku', 'received_qty', 'restocked_qty', 'damaged_qty'];
+            foreach ($required as $req) {
+                if (!in_array($req, $headers, true)) {
+                    fclose($handle);
+                    return response()->json(['error' => "Missing required column: {$req}. Use an order_id-only CSV to fetch return items automatically."], 400);
+                }
             }
+        } elseif (!$isPreview) {
+            fclose($handle);
+            return response()->json(['error' => 'Order ID imports must be previewed and submitted through the QC review form.'], 422);
         }
 
+        $idxOrderId = array_search('order_id', $headers, true);
         $idxReturnNo = array_search('order_no', $headers, true);
         $idxSku = array_search('sku', $headers, true);
         $idxReceived = array_search('received_qty', $headers, true);
@@ -423,6 +430,17 @@ class OrderReturnController extends Controller implements HasMiddleware
         $rowsByReturn = [];
 
         while (($row = fgetcsv($handle)) !== false) {
+            if ($orderIdMode) {
+                $orderIdentifier = trim((string) ($row[$idxOrderId] ?? ''));
+                if ($orderIdentifier === '') continue;
+                // Accept both the numeric orders.id and the visible order_no (for example ORD-20260922-0011).
+                $lookupKey = ctype_digit($orderIdentifier) && (int) $orderIdentifier > 0
+                    ? 'id:' . (int) $orderIdentifier
+                    : 'number:' . $orderIdentifier;
+                $rowsByReturn[$lookupKey] = [['order_identifier' => $orderIdentifier]];
+                continue;
+            }
+
             if (!isset($row[$idxReturnNo]) || !isset($row[$idxSku])) continue;
 
             $returnNo = trim($row[$idxReturnNo]);
@@ -453,23 +471,57 @@ class OrderReturnController extends Controller implements HasMiddleware
             DB::beginTransaction();
 
             foreach ($rowsByReturn as $returnNo => $itemsData) {
-                $return = OrderReturn::with(['items.product', 'order'])->whereHas('order', function($q) use ($returnNo) { $q->where('order_no', $returnNo); })->whereIn('status', ['approved', 'received', 'qc_in_progress'])->first();
+                if ($orderIdMode) {
+                    $isDatabaseId = str_starts_with($returnNo, 'id:');
+                    $identifier = substr($returnNo, $isDatabaseId ? 3 : 7);
+                    $returnQuery = OrderReturn::with(['items.product', 'order'])->whereIn('status', ['approved', 'received', 'qc_in_progress']);
+                    $return = $isDatabaseId
+                        ? $returnQuery->where('order_id', (int) $identifier)->latest('id')->first()
+                        : $returnQuery->whereHas('order', function($q) use ($identifier) { $q->where('order_no', $identifier); })->latest('id')->first();
+                } else {
+                    $return = OrderReturn::with(['items.product', 'order'])->whereHas('order', function($q) use ($returnNo) { $q->where('order_no', $returnNo); })->whereIn('status', ['approved', 'received', 'qc_in_progress'])->first();
+                }
+
+                if ($orderIdMode && $return) {
+                    $itemsData = $return->items->map(function ($item) {
+                        return [
+                            'return_item_id' => $item->id,
+                            'sku' => $item->product->sku ?? '',
+                            // Match the existing QC modal defaults; the operator can adjust each quantity before submission.
+                            'received_qty' => (float) $item->requested_qty,
+                            'restocked_qty' => (float) $item->requested_qty,
+                            'damaged_qty' => 0,
+                            'qc_notes' => '',
+                        ];
+                    })->all();
+                }
 
                 $isValidReturn = $return && in_array($return->status, ['approved', 'received', 'qc_in_progress'], true);
                 $returnError = null;
-                if (!$return) $returnError = 'Return not found';
+                if (!$return) $returnError = $orderIdMode ? 'No QC-eligible return found for this order ID' : 'Return not found';
                 elseif (!$isValidReturn) $returnError = 'Invalid status: ' . $return->status;
 
                 $returnItemsPayload = [];
                 $allPassed = true;
                 
+                if ($orderIdMode && $return && count($itemsData) === 0) {
+                    $previewData[] = ['order_id' => (int) $returnNo, 'order_no' => $return->order->order_no ?? '', 'sku' => '', 'error' => 'The return has no items to inspect', 'is_valid' => false];
+                    continue;
+                }
+                if ($orderIdMode && !$return) {
+                    $itemsData = [['sku' => '', 'received_qty' => 0, 'restocked_qty' => 0, 'damaged_qty' => 0, 'qc_notes' => '']];
+                }
+
                 foreach ($itemsData as $csvItem) {
                     $itemError = $returnError;
                     $matchedItem = null;
 
                     if ($return && !isset($previewReturns[$return->id])) { $previewReturns[$return->id] = $return; }
                     if ($return) {
-                        $matchedItem = $return->items->first(function($i) use ($csvItem) {
+                        $matchedItem = $return->items->first(function($i) use ($csvItem, $orderIdMode) {
+                            if ($orderIdMode && isset($csvItem['return_item_id'])) {
+                                return (int) $i->id === (int) $csvItem['return_item_id'];
+                            }
                             return $i->product && $i->product->sku === $csvItem['sku'];
                         });
 
@@ -497,7 +549,8 @@ class OrderReturnController extends Controller implements HasMiddleware
 
                     if ($isPreview) {
                         $previewData[] = [
-                            'order_no' => $returnNo,
+                            'order_id' => $orderIdMode && str_starts_with($returnNo, 'id:') ? (int) substr($returnNo, 3) : null,
+                            'order_no' => $return?->order?->order_no ?? (str_starts_with($returnNo, 'number:') ? substr($returnNo, 7) : $returnNo),
                             'sku' => $csvItem['sku'],
                             'requested_qty' => $matchedItem ? $matchedItem->requested_qty : 0,
                             'received_qty' => $csvItem['received_qty'],

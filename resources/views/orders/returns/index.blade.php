@@ -12,7 +12,7 @@
             <p class="text-muted mb-0 small">Inspect returned items, update stock, and process financials.</p>
         </div>
         <div class="d-flex gap-2">
-            <button class="btn btn-outline-secondary shadow-sm" @click="downloadBulkQcTemplate()">
+            <button class="btn btn-outline-secondary shadow-sm" @click="downloadBulkQcTemplate()" title="CSV template with one order_id column; accepts database ID or order number">
                 <i class="bi bi-file-earmark-spreadsheet me-1"></i>Template
             </button>
             <button class="btn btn-primary shadow-sm" @click="$refs.importQcFile.click()" :disabled="importingQc">
@@ -23,6 +23,7 @@
             <input type="file" x-ref="importQcFile" class="d-none" accept=".csv" @change="uploadBulkQc($event)">
         </div>
     </div>
+    <p class="text-muted small mb-3">For bulk QC, upload one database order ID or order number per <code>order_id</code> row. Return items and product details are loaded automatically, then reviewed before QC is submitted.</p>
 
     {{-- Stats Cards --}}
     <div class="row g-3 mb-4">

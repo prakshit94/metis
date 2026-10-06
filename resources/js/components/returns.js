@@ -131,14 +131,8 @@ document.addEventListener('alpine:init', () => {
     // ─── Lifecycle ───────────────────────────────────────────────────────────
 
     downloadBulkQcTemplate() {
-      const headers = ['order_no', 'sku', 'received_qty', 'restocked_qty', 'damaged_qty', 'qc_notes'];
-      const demoData = [
-        ['ORD-0001', 'SKU-ABC-123', '2', '2', '0', 'Perfect condition'],
-        ['ORD-0001', 'SKU-XYZ-999', '1', '0', '1', 'Broken during transit'],
-        ['ORD-0002', 'SKU-DEF-456', '5', '4', '1', '1 unit scratched']
-      ];
-      const rows = demoData.map(row => row.join(',')).join('\n');
-      const csvContent = headers.join(',') + '\n' + rows + '\n';
+      // The backend expands each order ID into its return items and product details.
+      const csvContent = 'order_id\n';
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
@@ -175,9 +169,13 @@ document.addEventListener('alpine:init', () => {
         }
 
         if (data.preview && data.returns) {
+          if (data.preview.length === 0) {
+            showToast('The CSV does not contain any order IDs.', 'warning');
+            return;
+          }
           const errors = data.preview.filter(r => !r.is_valid);
           if (errors.length > 0) {
-              showToast("CSV Error on " + errors[0].order_no + " (" + errors[0].sku + "): " + errors[0].error, 'danger');
+              showToast("CSV Error on " + (errors[0].order_no || errors[0].order_id || 'order') + (errors[0].sku ? " (" + errors[0].sku + ")" : '') + ": " + errors[0].error, 'danger');
               return;
           }
 
