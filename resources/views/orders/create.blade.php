@@ -620,7 +620,7 @@
                                                     <span x-text="p.grade" style="line-height: 1; font-weight: 800;"></span>
                                                 </div>
                                                 <div class="position-relative cursor-pointer" @click="openProductModal(p)">
-                                                    <img :src="p.image_url || '{{ asset('assets/images/product-placeholder.svg') }}'" class="rounded border bg-body" style="width:60px;height:60px;object-fit:cover;flex-shrink:0" x-on:error="$el.src='{{ asset('assets/images/product-placeholder.svg') }}'">
+                                                    <img :src="p.image_url || '/assets/images/product-placeholder.svg'" class="rounded border bg-body" style="width:60px;height:60px;object-fit:cover;flex-shrink:0" x-on:error="$el.src='/assets/images/product-placeholder.svg'">
                                                     <div x-show="isInCart(p.id)" class="position-absolute top-0 start-100 translate-middle p-1 bg-success border border-light rounded-circle text-white d-flex align-items-center justify-content-center" style="width: 20px; height: 20px; font-size: 10px;">
                                                         <i class="bi bi-check"></i>
                                                     </div>
@@ -717,11 +717,11 @@
                                             <td class="align-middle">
                                                 <div class="d-flex align-items-start gap-3">
                                                     <div class="position-relative flex-shrink-0 cursor-pointer" @click="openProductModal(p)">
-                                                        <img :src="p.image_url || '{{ asset('assets/images/product-placeholder.svg') }}'" 
+                                                        <img :src="p.image_url || '/assets/images/product-placeholder.svg'"
                                                              class="rounded border shadow-sm object-fit-cover bg-body" 
                                                              style="width: 48px; height: 48px;" 
                                                              :alt="p.name"
-                                                             x-on:error="$el.src='{{ asset('assets/images/product-placeholder.svg') }}'">
+                                                             x-on:error="$el.src='/assets/images/product-placeholder.svg'">
                                                         <div x-show="p.grade" 
                                                              class="position-absolute top-100 start-50 translate-middle badge border shadow-sm rounded-pill px-2 d-flex align-items-center" 
                                                              style="font-size: 9px; padding-top: 2px; padding-bottom: 2px;"
@@ -892,7 +892,7 @@
                     <div class="card border shadow-sm mb-3">
                         <div class="d-flex align-items-start gap-3 p-3">
                             <div class="rounded-3 bg-body-tertiary border flex-shrink-0 d-flex align-items-center justify-content-center overflow-hidden" style="width: 70px; height: 70px;">
-                                <img :src="item.image_url || '{{ asset('assets/images/product-placeholder.svg') }}'" class="w-100 h-100 object-fit-cover" x-on:error="$el.src='{{ asset('assets/images/product-placeholder.svg') }}'">
+                                <img :src="item.image_url || '/assets/images/product-placeholder.svg'" class="w-100 h-100 object-fit-cover" x-on:error="$el.src='/assets/images/product-placeholder.svg'">
                             </div>
                             <div class="flex-grow-1 min-w-0">
                                 <div class="d-flex align-items-start justify-content-between gap-2">
@@ -976,7 +976,7 @@
                             <div class="card border shadow-sm mb-3">
                                 <div class="d-flex align-items-start gap-3 p-3">
                                     <div class="rounded-3 bg-body-tertiary border flex-shrink-0 d-flex align-items-center justify-content-center overflow-hidden" style="width: 70px; height: 70px;">
-                                        <img :src="item.image_url || '{{ asset('assets/images/product-placeholder.svg') }}'" class="w-100 h-100 object-fit-cover" x-on:error="$el.src='{{ asset('assets/images/product-placeholder.svg') }}'">
+                                        <img :src="item.image_url || '/assets/images/product-placeholder.svg'" class="w-100 h-100 object-fit-cover" x-on:error="$el.src='/assets/images/product-placeholder.svg'">
                                     </div>
                                     <div class="flex-grow-1" style="min-width: 0;">
                                         <div class="d-flex align-items-start justify-content-between gap-2">
@@ -1707,7 +1707,7 @@
                         <!-- Left: Image & Meta (fixed panel) -->
                         <div class="col-md-4 bg-body-tertiary border-end p-3" style="position: sticky; top: 0; height: fit-content; align-self: flex-start;">
                             <div class="card border border-secondary border-opacity-25 mb-3 rounded-4 overflow-hidden position-relative" style="aspect-ratio:1;width:100%;">
-                                <img :src="selectedProductForModal ? (selectedProductForModal.image_url || '{{ asset('assets/images/product-placeholder.svg') }}') : ''" class="w-100 h-100 object-fit-cover" x-on:error="$el.src='{{ asset('assets/images/product-placeholder.svg') }}'">
+                            <img :src="selectedProductForModal ? (selectedProductForModal.image_url || '/assets/images/product-placeholder.svg') : ''" class="w-100 h-100 object-fit-cover" x-on:error="$el.src='/assets/images/product-placeholder.svg'">
                                 <span class="position-absolute top-0 end-0 m-2 badge bg-success shadow-sm" x-show="selectedProductForModal && selectedProductForModal.default_discount > 0" x-text="selectedProductForModal ? selectedProductForModal.default_discount + (selectedProductForModal.default_discount_type === 'percent' ? '%' : '') + ' OFF' : ''"></span>
                             </div>
                             <div x-show="selectedProductForModal">
@@ -1996,7 +1996,7 @@
                                             <td class="text-start ps-3 py-2">
                                                 <div class="d-flex align-items-center gap-2">
                                                     <div class="rounded border shadow-sm overflow-hidden flex-shrink-0 bg-white" style="width: 32px; height: 32px;">
-                                                        <img :src="item.image_url || '{{ asset('assets/images/product-placeholder.svg') }}'" class="w-100 h-100 object-fit-contain" x-on:error="$el.src='{{ asset('assets/images/product-placeholder.svg') }}'" :alt="item.name">
+                                                        <img :src="item.image_url || '/assets/images/product-placeholder.svg'" class="w-100 h-100 object-fit-contain" x-on:error="$el.src='/assets/images/product-placeholder.svg'" :alt="item.name">
                                                     </div>
                                                     <div>
                                                         <div class="fw-bold text-body" x-text="item.name"></div>
@@ -2374,12 +2374,12 @@
                                                     <tr class="border-bottom">
                                                         <td class="ps-4 py-3">
                                                             <div class="d-flex align-items-center gap-3">
-                                                                <img :src="item.image || '{{ asset('assets/images/product-placeholder.svg') }}'"
+                                                                <img :src="item.image || '/assets/images/product-placeholder.svg'"
                                                                      class="rounded-3 shadow-sm object-fit-cover"
                                                                      width="48"
                                                                      height="48"
                                                                      :alt="item.name"
-                                                                     x-on:error="$el.src='{{ asset('assets/images/product-placeholder.svg') }}'">
+                                                                     x-on:error="$el.src='/assets/images/product-placeholder.svg'">
                                                                 <div>
                                                                     <p class="fw-bold text-body-emphasis mb-0" x-text="item.name"></p>
                                                                     <p class="text-muted small mb-0 font-monospace" style="font-size: 0.75rem;" x-text="item.sku || 'No SKU'"></p>
@@ -3085,7 +3085,7 @@ mapOrder(o) {
             product_id: item.product_id || (item.product ? item.product.id : null),
             name: item.product ? item.product.name : 'Unknown Product',
             sku: item.product ? item.product.sku || '' : '',
-            image: item.product && item.product.image_path ? `/storage/${item.product.image_path}` : null,
+            image: item.product?.image_url || (item.product?.image_path ? `/storage/${String(item.product.image_path).replace(/^\/+/, '')}` : null),
             quantity: item.quantity,
             price: item.unit_price,
             discount: discAmt,
@@ -3759,7 +3759,7 @@ mapOrder(o) {
                     name: item.product?.name || item.product_name || 'Product',
                     sku: item.product?.sku || item.sku || '',
                     price: price,
-                    image_url: item.product?.image_url || (item.product?.image_path ? `/storage/${item.product.image_path}` : null),
+                    image_url: item.product?.image_url || (item.product?.image_path ? `/storage/${String(item.product.image_path).replace(/^\/+/, '')}` : null),
                     quantity: quantity,
                     available: item.product?.available_stock ?? item.available ?? null,
                     taxRate: Number(item.tax_rate > 0 ? item.tax_rate : (item.taxRate || item.product?.tax_rate?.rate || item.product?.taxRate?.rate || 0)),
