@@ -16,6 +16,15 @@ class OrderReturn extends Model implements Auditable
     use LogsActivity;
     use AuditableTrait;
 
+    public const STATUSES = [
+        'pending',
+        'approved',
+        'received',
+        'qc_in_progress',
+        'completed',
+        'rejected',
+    ];
+
     protected $fillable = [
         'order_id',
         'return_no',

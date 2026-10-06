@@ -16,6 +16,7 @@ use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class OrderReturnController extends Controller implements HasMiddleware
 {
@@ -85,6 +86,9 @@ class OrderReturnController extends Controller implements HasMiddleware
         }
 
         if ($request->filled('status')) {
+            $request->validate([
+                'status' => ['required', 'string', Rule::in(OrderReturn::STATUSES)],
+            ]);
             $query->where('status', $request->status);
         }
 
@@ -99,11 +103,15 @@ class OrderReturnController extends Controller implements HasMiddleware
         }
 
         $sortField = $request->input('sort_field', 'id');
-        $sortDirection = $request->input('sort_direction', 'desc');
+        if (! in_array($sortField, ['id', 'return_no', 'created_at'], true)) {
+            $sortField = 'id';
+        }
+        $sortDirection = $request->input('sort_direction', 'desc') === 'asc' ? 'asc' : 'desc';
 
-        $query->orderBy($sortField, $sortDirection === 'asc' ? 'asc' : 'desc');
+        $query->orderBy('order_returns.'.$sortField, $sortDirection);
 
-        $returns = $query->paginate($request->integer('limit', 15));
+        $limit = min(max($request->integer('limit', 15), 1), 100);
+        $returns = $query->paginate($limit);
 
         if ($request->wantsJson() || $request->ajax()) {
             $stats = [
@@ -122,7 +130,7 @@ class OrderReturnController extends Controller implements HasMiddleware
             return response()->json([
                 'returns' => $returns,
                 'stats' => $stats,
-                'statuses' => ['pending', 'received', 'qc_in_progress', 'completed', 'rejected'],
+                'statuses' => OrderReturn::STATUSES,
                 'financial_statuses' => ['pending', 'partial_refund', 'fully_refunded', 'credited'],
                 'shipping_services' => Service::active()->select('name')->pluck('name'),
             ]);

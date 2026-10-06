@@ -93,6 +93,7 @@ document.addEventListener('alpine:init', () => {
     // --- Filters ---
     searchQuery: '',
     statusFilter: '',
+    statusOptions: ['pending', 'approved', 'received', 'qc_in_progress', 'completed', 'rejected'],
     financialFilter: '',
     serviceFilter: '',
     sortField: 'id',
@@ -268,6 +269,9 @@ document.addEventListener('alpine:init', () => {
           }
           if (data.shipping_services) {
             this.shippingServices = data.shipping_services;
+          }
+          if (Array.isArray(data.statuses)) {
+            this.statusOptions = data.statuses;
           }
         })
         .catch((err) => showToast(err.message, 'danger'))
@@ -978,6 +982,7 @@ document.addEventListener('alpine:init', () => {
       return (
         {
           pending: '#f97316',
+          approved: '#0ea5e9',
           received: '#0ea5e9',
           qc_in_progress: '#6366f1',
           completed: '#10b981',
@@ -990,6 +995,7 @@ document.addEventListener('alpine:init', () => {
       return (
         {
           pending: 'Pending',
+          approved: 'Approved',
           received: 'Received',
           qc_in_progress: 'QC In Progress',
           completed: 'Completed',

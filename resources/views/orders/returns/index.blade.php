@@ -145,11 +145,9 @@
                         </div>
                         <select class="form-select form-select-sm" x-model="statusFilter" @change="filterReturns()" style="width:160px;">
                             <option value="">All Statuses</option>
-                            <option value="pending">Pending</option>
-                            <option value="received">Received</option>
-                            <option value="qc_in_progress">QC In Progress</option>
-                            <option value="completed">Completed</option>
-                            <option value="rejected">Rejected</option>
+                            <template x-for="status in statusOptions" :key="status">
+                                <option :value="status" x-text="getStatusLabel(status)"></option>
+                            </template>
                         </select>
                         <select class="form-select form-select-sm" x-model="serviceFilter" @change="filterReturns()" style="width:160px;" x-show="shippingServices.length > 0">
                             <option value="">All Carriers</option>
