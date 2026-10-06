@@ -21,6 +21,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ProductController extends Controller
@@ -956,13 +957,26 @@ class ProductController extends Controller
         $product->grade = $this->nullableString($data['grade'] ?? null);
 
         if ($request?->hasFile('image')) {
-            $this->deleteImage($product);
-
             $file = $request->file('image');
             $extension = $file->extension() ?: 'jpg';
-            $filename = Str::slug($product->sku).'-'.time().'.'.$extension;
+            $filename = Str::slug($product->sku).'-'.Str::uuid().'.'.$extension;
+            $disk = Storage::disk('public');
+            $imagePath = $file->storeAs('products', $filename, 'public');
 
-            $product->image_path = $file->storeAs('products', $filename, 'public');
+            // Some production filesystem adapters return false on write failure instead
+            // of throwing. Do not report a successful product save with a broken image URL.
+            if (! $imagePath || ! $disk->exists($imagePath)) {
+                if ($imagePath) {
+                    $disk->delete($imagePath);
+                }
+
+                throw ValidationException::withMessages([
+                    'image' => 'The image could not be saved to product storage. Please try again or contact support.',
+                ]);
+            }
+
+            $this->deleteImage($product);
+            $product->image_path = $imagePath;
         }
     }
 
