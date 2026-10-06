@@ -288,10 +288,10 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     // ─── Order Creation Helper Endpoints ─────────────────────────────────────
     Route::get('/products-search-api', [ProductController::class, 'searchApi'])
         ->name('products.search.api')
-        ->middleware('permission:orders.create');
+        ->middleware('permission:orders.create|orders.edit');
     Route::post('/coupons/validate', [CouponController::class, 'validateApi'])
         ->name('coupons.validate')
-        ->middleware('permission:orders.create');
+        ->middleware('permission:orders.create|orders.edit');
 
     // Call Tagging Ajax Routes
     Route::get('/call-tags', [CallTaggingController::class, 'getTags']);

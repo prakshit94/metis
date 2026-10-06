@@ -565,7 +565,7 @@
                                class="form-control form-control-sm ps-4" 
                                placeholder="Search orders..."
                                x-model="searchQuery"
-                               @input="filterOrders()"
+                               @input="filterOrdersDebounced()"
                                style="width: 200px;">
                     </div>
                     
@@ -1067,6 +1067,7 @@
                             <i class="bi bi-arrow-down" x-show="sortField === 'order_no' && sortDirection === 'desc'" aria-hidden="true"></i>
                         </th>
                         <th scope="col">Placed By</th>
+                        <th scope="col">Customer</th>
                         <th scope="col">Items</th>
                         <th scope="col"
                             role="button"
@@ -1109,7 +1110,7 @@
                             <td>
                                 <div class="d-inline-flex align-items-center gap-1">
                                     <a href="#" class="fw-bold text-decoration-none text-primary" @click.prevent="viewOrder(order)" x-text="order.orderNumber"></a>
-                                    <i class="bi opacity-50 cursor-pointer text-primary-hover" x-data="{ copied: false }" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'" style="font-size: 0.85em;" title="Copy" @click="navigator.clipboard.writeText(order.orderNumber).then(() => { copied = true; setTimeout(() => copied = false, 2000) })"></i>
+                                    <i class="bi opacity-50 cursor-pointer text-primary-hover" x-data="{ copied: false }" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'" style="font-size: 0.85em;" title="Copy" @click="copyText(order.orderNumber).then((success) => { if (success) { copied = true; setTimeout(() => copied = false, 2000); } })"></i>
                                 </div>
                                 <div class="d-flex align-items-center flex-wrap gap-1 mt-1">
                                     <small class="text-muted" x-text="'ID: ' + order.id"></small>
@@ -1129,9 +1130,13 @@
                                          :alt="order.createdBy.name">
                                     <div>
                                         <div class="fw-medium small" x-text="order.createdBy.name"></div>
-                                        <small class="text-muted cursor-pointer d-inline-flex align-items-center gap-1" title="Click to copy" x-data="{ copied: false }" @click="navigator.clipboard.writeText(order.createdBy.email).then(() => { copied = true; setTimeout(() => copied = false, 2000) })"><span x-text="order.createdBy.email"></span><i class="bi opacity-50" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'" style="font-size: 0.8em;"></i></small>
+                                        <small class="text-muted cursor-pointer d-inline-flex align-items-center gap-1" title="Click to copy" x-data="{ copied: false }" @click="copyText(order.createdBy.email).then((success) => { if (success) { copied = true; setTimeout(() => copied = false, 2000); } })"><span x-text="order.createdBy.email"></span><i class="bi opacity-50" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'" style="font-size: 0.8em;"></i></small>
                                     </div>
                                 </div>
+                            </td>
+                            <td>
+                                <div class="fw-medium small" x-text="order.customer.name"></div>
+                                <small class="text-muted d-block mt-1" x-text="order.customer.phone || order.customer.secondaryPhone || 'No mobile number'"></small>
                             </td>
                             <td>
                                 <div class="order-items small cursor-pointer custom-hover-bg p-2 rounded border border-transparent hover-border-secondary-subtle transition-all" @click="viewItems(order)" title="Click to view items">
@@ -1289,9 +1294,11 @@
                                             @endcan
                                         </template>
                                         @can('orders.revert_status')
+                                        <template x-if="['confirmed', 'processing', 'ready_to_ship', 'dispatched', 'delivered', 'cancelled', 'return_requested'].includes(order.status)">
                                         <li><a class="dropdown-item" href="#" @click.prevent="revertStatus(order)">
                                             <i class="bi bi-arrow-left-right me-2"></i>Revert Status
                                         </a></li>
+                                        </template>
                                         @endcan
                                         <li><hr class="dropdown-divider"></li>
                                         @can('orders.invoice_pdf')

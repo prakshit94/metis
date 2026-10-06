@@ -41,6 +41,10 @@ class StoreOrderRequest extends FormRequest
                         $fail('The selected shipping address no longer exists. Please select a valid address.');
                         return;
                     }
+                    if ((int) $address->party_id !== (int) $this->input('party_id')) {
+                        $fail('The selected shipping address does not belong to this customer.');
+                        return;
+                    }
                     if (empty($address->village_id)) {
                         $fail('The selected shipping address has an invalid or missing village. Please update the address to link it to our village database before placing the order.');
                     }
@@ -58,6 +62,10 @@ class StoreOrderRequest extends FormRequest
                     $address = \App\Modules\Customers\Models\PartyAddress::find($value);
                     if (!$address) {
                         $fail('The selected billing address no longer exists. Please select a valid address.');
+                        return;
+                    }
+                    if ((int) $address->party_id !== (int) $this->input('party_id')) {
+                        $fail('The selected billing address does not belong to this customer.');
                         return;
                     }
                     if (empty($address->village_id)) {

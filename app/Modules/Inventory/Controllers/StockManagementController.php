@@ -13,6 +13,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class StockManagementController extends Controller implements HasMiddleware
@@ -34,25 +35,65 @@ class StockManagementController extends Controller implements HasMiddleware
     {
         $this->authorize('product-view');
 
+        // Aggregate order and return quantities once per product/warehouse instead
+        // of running a separate correlated subquery for every stock row.
+        $orderQuantities = DB::table('order_items')
+            ->join('orders', 'orders.id', '=', 'order_items.order_id')
+            ->whereNull('orders.deleted_at')
+            ->select('order_items.product_id', 'orders.warehouse_id')
+            ->selectRaw("SUM(CASE WHEN orders.status = 'pending' THEN order_items.quantity ELSE 0 END) as pending_qty")
+            ->selectRaw("SUM(CASE WHEN orders.status = 'future_order' THEN order_items.quantity ELSE 0 END) as future_order_qty")
+            ->selectRaw("SUM(CASE WHEN orders.status = 'pending_confirmation' THEN order_items.quantity ELSE 0 END) as pending_confirmation_qty")
+            ->selectRaw("SUM(CASE WHEN orders.status = 'confirmed' THEN order_items.quantity ELSE 0 END) as confirmed_qty")
+            ->selectRaw("SUM(CASE WHEN orders.status = 'processing' THEN order_items.quantity ELSE 0 END) as processing_qty")
+            ->selectRaw("SUM(CASE WHEN orders.status = 'ready_to_ship' THEN order_items.quantity ELSE 0 END) as ready_to_ship_qty")
+            ->selectRaw("SUM(CASE WHEN orders.status = 'dispatched' AND EXISTS (SELECT 1 FROM shipments WHERE shipments.order_id = orders.id AND shipments.delivery_attempts > 0) THEN order_items.quantity ELSE 0 END) as delivery_attempted_qty")
+            ->selectRaw("SUM(CASE WHEN orders.status = 'cancelled' THEN order_items.quantity ELSE 0 END) as cancelled_qty")
+            ->selectRaw("SUM(CASE WHEN orders.status IN ('delivered', 'completed') THEN order_items.quantity ELSE 0 END) as raw_delivered_qty")
+            ->groupBy('order_items.product_id', 'orders.warehouse_id');
+
+        $returnQuantities = DB::table('order_return_items')
+            ->join('order_returns', 'order_returns.id', '=', 'order_return_items.order_return_id')
+            ->join('orders', 'orders.id', '=', 'order_returns.order_id')
+            ->select('order_return_items.product_id', 'orders.warehouse_id')
+            ->selectRaw("SUM(CASE WHEN order_returns.status = 'completed' THEN order_return_items.received_qty ELSE 0 END) as returned_qty")
+            ->selectRaw("SUM(CASE WHEN order_returns.status IN ('pending', 'approved', 'received', 'qc_in_progress') THEN order_return_items.requested_qty ELSE 0 END) as return_requested_qty")
+            ->selectRaw("SUM(CASE WHEN order_returns.status = 'pending' THEN order_return_items.requested_qty ELSE 0 END) as return_pending_qty")
+            ->selectRaw("SUM(CASE WHEN order_returns.status = 'approved' THEN order_return_items.requested_qty ELSE 0 END) as return_approved_qty")
+            ->selectRaw("SUM(CASE WHEN order_returns.status = 'received' THEN order_return_items.requested_qty ELSE 0 END) as return_received_qty")
+            ->selectRaw("SUM(CASE WHEN order_returns.status = 'qc_in_progress' THEN order_return_items.requested_qty ELSE 0 END) as return_qc_qty")
+            ->selectRaw("SUM(CASE WHEN order_returns.status = 'rejected' THEN order_return_items.requested_qty ELSE 0 END) as return_rejected_qty")
+            ->groupBy('order_return_items.product_id', 'orders.warehouse_id');
+
         $query = Stock::query()
             ->with(['product:id,name,sku,status,image_path,grade,allow_overselling,overselling_qty', 'warehouse:id,name,code'])
             ->select('stocks.*')
-            ->selectRaw('(SELECT COALESCE(SUM(quantity), 0) FROM order_items INNER JOIN orders ON orders.id = order_items.order_id WHERE order_items.product_id = stocks.product_id AND orders.warehouse_id = stocks.warehouse_id AND orders.status = ? AND orders.deleted_at IS NULL) as pending_qty', ['pending'])
-            ->selectRaw('(SELECT COALESCE(SUM(quantity), 0) FROM order_items INNER JOIN orders ON orders.id = order_items.order_id WHERE order_items.product_id = stocks.product_id AND orders.warehouse_id = stocks.warehouse_id AND orders.status = ? AND orders.deleted_at IS NULL) as future_order_qty', ['future_order'])
-            ->selectRaw('(SELECT COALESCE(SUM(quantity), 0) FROM order_items INNER JOIN orders ON orders.id = order_items.order_id WHERE order_items.product_id = stocks.product_id AND orders.warehouse_id = stocks.warehouse_id AND orders.status = ? AND orders.deleted_at IS NULL) as pending_confirmation_qty', ['pending_confirmation'])
-            ->selectRaw('(SELECT COALESCE(SUM(quantity), 0) FROM order_items INNER JOIN orders ON orders.id = order_items.order_id WHERE order_items.product_id = stocks.product_id AND orders.warehouse_id = stocks.warehouse_id AND orders.status = ? AND orders.deleted_at IS NULL) as confirmed_qty', ['confirmed'])
-            ->selectRaw('(SELECT COALESCE(SUM(quantity), 0) FROM order_items INNER JOIN orders ON orders.id = order_items.order_id WHERE order_items.product_id = stocks.product_id AND orders.warehouse_id = stocks.warehouse_id AND orders.status = ? AND orders.deleted_at IS NULL) as processing_qty', ['processing'])
-            ->selectRaw('(SELECT COALESCE(SUM(quantity), 0) FROM order_items INNER JOIN orders ON orders.id = order_items.order_id WHERE order_items.product_id = stocks.product_id AND orders.warehouse_id = stocks.warehouse_id AND orders.status = ? AND orders.deleted_at IS NULL) as ready_to_ship_qty', ['ready_to_ship'])
-            ->selectRaw('(SELECT COALESCE(SUM(quantity), 0) FROM order_items INNER JOIN orders ON orders.id = order_items.order_id WHERE order_items.product_id = stocks.product_id AND orders.warehouse_id = stocks.warehouse_id AND orders.status = ? AND orders.deleted_at IS NULL AND EXISTS (SELECT 1 FROM shipments WHERE shipments.order_id = orders.id AND shipments.delivery_attempts > 0)) as delivery_attempted_qty', ['dispatched'])
-            ->selectRaw('(SELECT COALESCE(SUM(quantity), 0) FROM order_items INNER JOIN orders ON orders.id = order_items.order_id WHERE order_items.product_id = stocks.product_id AND orders.warehouse_id = stocks.warehouse_id AND orders.status = ? AND orders.deleted_at IS NULL) as cancelled_qty', ['cancelled'])
-            ->selectRaw('(SELECT COALESCE(SUM(quantity), 0) FROM order_items INNER JOIN orders ON orders.id = order_items.order_id WHERE order_items.product_id = stocks.product_id AND orders.warehouse_id = stocks.warehouse_id AND orders.status IN (?, ?) AND orders.deleted_at IS NULL) as raw_delivered_qty', ['delivered', 'completed'])
-            ->selectRaw('(SELECT COALESCE(SUM(received_qty), 0) FROM order_return_items INNER JOIN order_returns ON order_returns.id = order_return_items.order_return_id INNER JOIN orders ON orders.id = order_returns.order_id WHERE order_return_items.product_id = stocks.product_id AND orders.warehouse_id = stocks.warehouse_id AND order_returns.status = ?) as returned_qty', ['completed'])
-            ->selectRaw('(SELECT COALESCE(SUM(requested_qty), 0) FROM order_return_items INNER JOIN order_returns ON order_returns.id = order_return_items.order_return_id INNER JOIN orders ON orders.id = order_returns.order_id WHERE order_return_items.product_id = stocks.product_id AND orders.warehouse_id = stocks.warehouse_id AND order_returns.status IN (?, ?, ?, ?)) as return_requested_qty', ['pending', 'approved', 'received', 'qc_in_progress'])
-            ->selectRaw('(SELECT COALESCE(SUM(requested_qty), 0) FROM order_return_items INNER JOIN order_returns ON order_returns.id = order_return_items.order_return_id INNER JOIN orders ON orders.id = order_returns.order_id WHERE order_return_items.product_id = stocks.product_id AND orders.warehouse_id = stocks.warehouse_id AND order_returns.status = ?) as return_pending_qty', ['pending'])
-            ->selectRaw('(SELECT COALESCE(SUM(requested_qty), 0) FROM order_return_items INNER JOIN order_returns ON order_returns.id = order_return_items.order_return_id INNER JOIN orders ON orders.id = order_returns.order_id WHERE order_return_items.product_id = stocks.product_id AND orders.warehouse_id = stocks.warehouse_id AND order_returns.status = ?) as return_approved_qty', ['approved'])
-            ->selectRaw('(SELECT COALESCE(SUM(requested_qty), 0) FROM order_return_items INNER JOIN order_returns ON order_returns.id = order_return_items.order_return_id INNER JOIN orders ON orders.id = order_returns.order_id WHERE order_return_items.product_id = stocks.product_id AND orders.warehouse_id = stocks.warehouse_id AND order_returns.status = ?) as return_received_qty', ['received'])
-            ->selectRaw('(SELECT COALESCE(SUM(requested_qty), 0) FROM order_return_items INNER JOIN order_returns ON order_returns.id = order_return_items.order_return_id INNER JOIN orders ON orders.id = order_returns.order_id WHERE order_return_items.product_id = stocks.product_id AND orders.warehouse_id = stocks.warehouse_id AND order_returns.status = ?) as return_qc_qty', ['qc_in_progress'])
-            ->selectRaw('(SELECT COALESCE(SUM(requested_qty), 0) FROM order_return_items INNER JOIN order_returns ON order_returns.id = order_return_items.order_return_id INNER JOIN orders ON orders.id = order_returns.order_id WHERE order_return_items.product_id = stocks.product_id AND orders.warehouse_id = stocks.warehouse_id AND order_returns.status = ?) as return_rejected_qty', ['rejected'])
+            ->leftJoinSub($orderQuantities, 'order_quantities', function ($join) {
+                $join->on('order_quantities.product_id', '=', 'stocks.product_id')
+                    ->on('order_quantities.warehouse_id', '=', 'stocks.warehouse_id');
+            })
+            ->leftJoinSub($returnQuantities, 'return_quantities', function ($join) {
+                $join->on('return_quantities.product_id', '=', 'stocks.product_id')
+                    ->on('return_quantities.warehouse_id', '=', 'stocks.warehouse_id');
+            })
+            ->addSelect([
+                DB::raw('COALESCE(order_quantities.pending_qty, 0) as pending_qty'),
+                DB::raw('COALESCE(order_quantities.future_order_qty, 0) as future_order_qty'),
+                DB::raw('COALESCE(order_quantities.pending_confirmation_qty, 0) as pending_confirmation_qty'),
+                DB::raw('COALESCE(order_quantities.confirmed_qty, 0) as confirmed_qty'),
+                DB::raw('COALESCE(order_quantities.processing_qty, 0) as processing_qty'),
+                DB::raw('COALESCE(order_quantities.ready_to_ship_qty, 0) as ready_to_ship_qty'),
+                DB::raw('COALESCE(order_quantities.delivery_attempted_qty, 0) as delivery_attempted_qty'),
+                DB::raw('COALESCE(order_quantities.cancelled_qty, 0) as cancelled_qty'),
+                DB::raw('COALESCE(order_quantities.raw_delivered_qty, 0) as raw_delivered_qty'),
+                DB::raw('COALESCE(return_quantities.returned_qty, 0) as returned_qty'),
+                DB::raw('COALESCE(return_quantities.return_requested_qty, 0) as return_requested_qty'),
+                DB::raw('COALESCE(return_quantities.return_pending_qty, 0) as return_pending_qty'),
+                DB::raw('COALESCE(return_quantities.return_approved_qty, 0) as return_approved_qty'),
+                DB::raw('COALESCE(return_quantities.return_received_qty, 0) as return_received_qty'),
+                DB::raw('COALESCE(return_quantities.return_qc_qty, 0) as return_qc_qty'),
+                DB::raw('COALESCE(return_quantities.return_rejected_qty, 0) as return_rejected_qty'),
+            ])
             ->whereHas('product')
             ->whereHas('warehouse', function ($wq) use ($request) {
                 if ($lobState = $request->user()?->lob_state_name) {
@@ -244,11 +285,12 @@ class StockManagementController extends Controller implements HasMiddleware
         $this->authorize('product-view');
 
         $warehouses = Warehouse::query()
+            ->where('status', 'active')
             ->when($request->user()?->lob_state_name, function ($query, $state) {
                 $query->where('state', $state);
             })
             ->orderBy('name')
-            ->get(['id', 'name', 'code']);
+            ->get(['id', 'name', 'code', 'is_default']);
 
         return response()->json(['data' => $warehouses]);
     }

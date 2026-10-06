@@ -868,6 +868,44 @@ class OrderService
 
             $calc = $this->recalculateAndValidate($data, $lastCouponCode, true);
 
+            // Treat the amount already used on this order as available while
+            // recalculating it, then apply only the difference to the wallet.
+            $previousWalletUsed = max(0.0, (float) $order->wallet_amount_used);
+            $party = $order->party_id
+                ? Party::whereKey($order->party_id)->lockForUpdate()->first()
+                : null;
+            $walletBalance = (float) ($party?->wallet_balance ?? 0);
+            $availableWalletBalance = $walletBalance + $previousWalletUsed;
+            // Customer-side order edits may not submit this admin-only option.
+            // Preserve an existing redemption when the field is omitted; an
+            // explicit false from the order editor still releases it.
+            $shouldUseWallet = array_key_exists('use_wallet_balance', $data)
+                ? filter_var($data['use_wallet_balance'], FILTER_VALIDATE_BOOLEAN)
+                : $previousWalletUsed > 0;
+            $walletUsed = $shouldUseWallet && $party
+                ? min((float) $calc['grand_total'], $availableWalletBalance)
+                : 0.0;
+            $walletUsed = round(max(0.0, $walletUsed), 2);
+            $walletDelta = round($walletUsed - $previousWalletUsed, 2);
+
+            if ($party && abs($walletDelta) >= 0.01) {
+                $balanceAfter = round($walletBalance - $walletDelta, 2);
+                $party->wallet_balance = $balanceAfter;
+                $party->save();
+
+                WalletTransaction::create([
+                    'party_id' => $party->id,
+                    'amount' => abs($walletDelta),
+                    'type' => $walletDelta > 0 ? 'debit' : 'credit',
+                    'reference_type' => 'order',
+                    'reference_id' => $order->id,
+                    'description' => 'Wallet redemption adjusted for order #'.$order->order_no,
+                    'created_by' => auth()->id() ?? $order->updated_by ?? $order->created_by,
+                    'balance_before' => $walletBalance,
+                    'balance_after' => $balanceAfter,
+                ]);
+            }
+
             // If already confirmed, release all reservations before recalculating
             if ($order->status === 'confirmed' && $order->type === 'sale' && $order->warehouse_id) {
                 foreach ($order->items as $item) {
@@ -891,7 +929,8 @@ class OrderService
                 'discount_amount' => $calc['total_discount'],
                 'coupon_code' => $calc['coupon_code'],
                 'applied_offer_id' => $calc['applied_offer_id'],
-                'net_amount' => $calc['grand_total'],
+                'net_amount' => max(0.0, (float) $calc['grand_total'] - $walletUsed),
+                'wallet_amount_used' => $walletUsed,
                 'status' => $newStatus,
                 'future_order_date' => $newStatus === 'future_order' ? (array_key_exists('future_order_date', $data) ? $data['future_order_date'] : $order->future_order_date) : null,
                 'cashback_earned' => $calc['cashback_earned'] ?? 0,

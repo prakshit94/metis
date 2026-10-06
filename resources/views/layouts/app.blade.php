@@ -203,31 +203,54 @@
         });
     </script>
     <script>
-        // Polyfill for clipboard in insecure contexts (like HTTP in production)
-        if (!navigator.clipboard) {
-            navigator.clipboard = {
-                writeText: function(text) {
-                    return new Promise(function(resolve, reject) {
-                        try {
-                            var textArea = document.createElement("textarea");
-                            textArea.value = text;
-                            textArea.style.position = "fixed";
-                            textArea.style.left = "-999999px";
-                            textArea.style.top = "-999999px";
-                            document.body.appendChild(textArea);
-                            textArea.focus();
-                            textArea.select();
-                            var successful = document.execCommand('copy');
-                            textArea.remove();
-                            if (successful) resolve();
-                            else reject(new Error('Copy failed'));
-                        } catch (err) {
-                            reject(err);
-                        }
-                    });
+        // Clipboard API is unavailable on HTTP origins and may reject in
+        // restricted browser contexts. Keep a selection-safe fallback for UI handlers.
+        window.copyText = async function(value) {
+            var text = value == null ? '' : String(value);
+            if (!text) return false;
+
+            if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+                try {
+                    await navigator.clipboard['writeText'](text);
+                    return true;
+                } catch (error) {
+                    // Try the legacy copy command when browser permissions deny the API.
                 }
-            };
-        }
+            }
+
+            var textArea = document.createElement('textarea');
+            var activeElement = document.activeElement;
+            var selection = document.getSelection();
+            var ranges = [];
+            if (selection) {
+                for (var i = 0; i < selection.rangeCount; i++) ranges.push(selection.getRangeAt(i).cloneRange());
+            }
+
+            textArea.value = text;
+            textArea.setAttribute('readonly', '');
+            textArea.style.position = 'fixed';
+            textArea.style.opacity = '0';
+            textArea.style.pointerEvents = 'none';
+            document.body.appendChild(textArea);
+            try {
+                textArea.focus();
+                textArea.select();
+                return document.execCommand('copy') === true;
+            } catch (error) {
+                return false;
+            } finally {
+                textArea.remove();
+                try {
+                    if (activeElement && typeof activeElement.focus === 'function') activeElement.focus();
+                    if (selection) {
+                        selection.removeAllRanges();
+                        ranges.forEach(function(range) { selection.addRange(range); });
+                    }
+                } catch (error) {
+                    // Clipboard success should not depend on focus restoration.
+                }
+            }
+        };
     </script>
 </body>
 </html>

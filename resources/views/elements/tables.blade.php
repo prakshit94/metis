@@ -748,13 +748,13 @@
                 const copyBtn = e.target.closest('[data-copy-code]');
                 if (copyBtn) {
                     const code = copyBtn.parentElement.querySelector('.element-code-block pre code');
-                    if (code) navigator.clipboard.writeText(code.textContent).then(() => flashCopied(copyBtn));
+                    if (code) copyText(code.textContent).then((success) => { if (success) flashCopied(copyBtn); });
                     return;
                 }
                 if (e.target.closest('[data-copy-all]')) {
                     const blocks = document.querySelectorAll('.element-code-block pre code');
                     const all = Array.from(blocks).map(b => b.textContent).join('\n\n');
-                    navigator.clipboard.writeText(all);
+                    copyText(all);
                     return;
                 }
                 if (e.target.closest('[data-history-back]')) {

@@ -28,6 +28,7 @@ class ProductController extends Controller
     public function index(Request $request): JsonResponse
     {
         abort_unless($request->user()?->can('product-view'), 403);
+        $this->assertWarehouseAccess($request);
 
         $stockScope = function ($q) use ($request) {
             if ($request->filled('warehouse_id')) {
@@ -51,8 +52,26 @@ class ProductController extends Controller
             }
         };
 
+        $eagerLoads = $request->boolean('summary')
+            ? [
+                'category:id,name,slug,parent_id',
+                'brand:id,name',
+                'taxRate:id,name,rate',
+                'uom:id,name',
+                'warehouse:id,name',
+                'stocks' => function ($q) use ($request) {
+                    $q->with('warehouse:id,name')->withSum('pendingOrderItems as pending_qty', 'quantity');
+                    if ($request->filled('warehouse_id')) {
+                        $q->where('warehouse_id', $request->integer('warehouse_id'));
+                    } elseif ($lobState = $request->user()?->lob_state_name) {
+                        $q->whereHas('warehouse', fn ($wq) => $wq->where('state', $lobState));
+                    }
+                },
+            ]
+            : $this->getEagerLoads($request);
+
         $query = Product::query()
-            ->with($this->getEagerLoads($request))
+            ->with($eagerLoads)
             ->withSum(['stocks as stocks_sum_quantity' => $stockScope], 'quantity')
             ->withSum(['stocks as stocks_sum_reserved_qty' => $stockScope], 'reserved_qty')
             ->withSum(['stocks as stocks_sum_dispatched_qty' => $stockScope], 'dispatched_qty')
@@ -79,20 +98,28 @@ class ProductController extends Controller
         $products = $query
             ->latest()
             ->get()
-            ->map(fn (Product $product) => $this->transform($product))
+            ->map(fn (Product $product) => $request->boolean('summary')
+                ? $this->transformForIndex($product)
+                : $this->transform($product))
             ->values();
 
-        return response()->json([
+        $response = [
             'data'    => $products,
             'stats'   => $this->stats($products),
-            'options' => $this->catalogOptions($request),
-        ]);
+        ];
+
+        if (! $request->boolean('without_options')) {
+            $response['options'] = $this->catalogOptions($request);
+        }
+
+        return response()->json($response);
     }
 
 
     public function show(Request $request, Product $product): JsonResponse
     {
         abort_unless($request->user()?->can('product-view'), 403);
+        $this->assertWarehouseAccess($request);
 
         $stockScope = function ($q) use ($request) {
             if ($request->filled('warehouse_id')) {
@@ -122,10 +149,15 @@ class ProductController extends Controller
         $product->loadSum(['stocks as stocks_sum_dispatched_qty' => $stockScope], 'dispatched_qty');
         $product->loadSum(['pendingOrderItems as pending_orders_qty' => $pendingOrderScope], 'quantity');
 
-        return response()->json([
+        $response = [
             'data' => $this->transform($product),
-            'options' => $this->catalogOptions($request),
-        ]);
+        ];
+
+        if (! $request->boolean('without_options')) {
+            $response['options'] = $this->catalogOptions($request);
+        }
+
+        return response()->json($response);
     }
 
     public function store(Request $request): JsonResponse
@@ -432,6 +464,7 @@ class ProductController extends Controller
 
     public function searchApi(Request $request): JsonResponse
     {
+        $this->assertWarehouseAccess($request);
         $stockScope = function ($q) use ($request) {
             if ($request->filled('warehouse_id')) {
                 $q->where('warehouse_id', $request->warehouse_id);
@@ -946,12 +979,119 @@ class ProductController extends Controller
             'supplier',
             'stocks' => function ($q) use ($request) {
                 $q->with('warehouse')->withSum('pendingOrderItems as pending_qty', 'quantity');
-                if ($request && $lobState = $request->user()?->lob_state_name) {
+                if ($request && $request->boolean('warehouse_scope') && $request->filled('warehouse_id')) {
+                    $q->where('warehouse_id', $request->integer('warehouse_id'));
+                } elseif ($request && $lobState = $request->user()?->lob_state_name) {
                     $q->whereHas('warehouse', function ($wq) use ($lobState) {
                         $wq->where('state', $lobState);
                     });
                 }
             },
+        ];
+    }
+
+    private function assertWarehouseAccess(Request $request): void
+    {
+        if (! $request->filled('warehouse_id')) {
+            return;
+        }
+
+        abort_unless(Warehouse::query()
+            ->whereKey($request->integer('warehouse_id'))
+            ->where('status', 'active')
+            ->when($request->user()?->lob_state_name, fn ($query, $state) => $query->where('state', $state))
+            ->exists(), 403);
+    }
+
+    private function transformForIndex(Product $product): array
+    {
+        $totalQty = (float) ($product->stocks_sum_quantity ?? 0);
+        $reservedQty = (float) ($product->stocks_sum_reserved_qty ?? 0);
+        $dispatchedQty = (float) ($product->stocks_sum_dispatched_qty ?? 0);
+        $pendingQty = (float) ($product->pending_orders_qty ?? 0);
+        $rawAvailable = $totalQty - $reservedQty - $pendingQty;
+        $availableQty = max(0.0, $rawAvailable);
+        $maxAllowedQty = 0.0;
+        if ($product->stocks->isNotEmpty()) {
+            foreach ($product->stocks as $stock) {
+                $stockAvailable = (float) $stock->quantity - (float) $stock->reserved_qty - (float) ($stock->pending_qty ?? 0);
+                $allowOverselling = $stock->allow_overselling !== null
+                    ? (bool) $stock->allow_overselling
+                    : (bool) $product->allow_overselling;
+                $limit = $stock->overselling_qty !== null
+                    ? (float) $stock->overselling_qty
+                    : (float) ($product->overselling_qty ?: 999);
+                $maxAllowedQty += $allowOverselling
+                    ? max(0.0, $stockAvailable + $limit)
+                    : max(0.0, $stockAvailable);
+            }
+        } else {
+            $limit = (float) ($product->overselling_qty ?: 999);
+            $maxAllowedQty = $product->allow_overselling
+                ? max(0.0, $rawAvailable + $limit)
+                : $availableQty;
+        }
+
+        return [
+            'id' => $product->id,
+            'name' => $product->name,
+            'sku' => $product->sku,
+            'category' => $product->category?->slug ?? '',
+            'category_id' => $product->category_id,
+            'category_label' => $product->category?->name ?? 'Uncategorized',
+            'brand_id' => $product->brand_id,
+            'brand' => $product->brand?->name,
+            'uom_id' => $product->uom_id,
+            'uom' => $product->uom?->name,
+            'tax_rate_id' => $product->tax_rate_id,
+            'tax_rate' => $product->taxRate?->rate,
+            'tax_label' => $product->taxRate?->name,
+            'warehouse_id' => $product->default_warehouse_id,
+            'warehouse' => $product->warehouse?->name,
+            'weight_g' => $product->weight_g,
+            'length_cm' => $product->length_cm,
+            'width_cm' => $product->width_cm,
+            'height_cm' => $product->height_cm,
+            'price' => (float) $product->selling_price,
+            'selling_price' => (float) $product->selling_price,
+            'purchase_price' => (float) $product->purchase_price,
+            'mrp' => (float) $product->mrp,
+            'stock' => (int) $totalQty,
+            'stock_quantity' => (int) $totalQty,
+            'stock_qty' => $totalQty,
+            'reserved_qty' => $reservedQty,
+            'pending_qty' => $pendingQty,
+            'dispatched_qty' => $dispatchedQty,
+            'available_stock' => $maxAllowedQty,
+            'physical_available' => $availableQty,
+            'min_stock_level' => (int) $product->min_stock_level,
+            'allow_overselling' => (bool) $product->allow_overselling,
+            'manage_stock' => (bool) $product->manage_stock,
+            'batch_tracking' => (bool) $product->batch_tracking,
+            'expiry_tracking' => (bool) $product->expiry_tracking,
+            'overselling_qty' => (int) $product->overselling_qty,
+            'default_discount' => (float) $product->default_discount,
+            'default_discount_type' => in_array($product->default_discount_type, ['fixed', 'amount'])
+                ? 'flat'
+                : ($product->default_discount_type === 'percentage' ? 'percent' : ($product->default_discount_type ?? 'percent')),
+            'status' => $product->status,
+            'created' => optional($product->created_at)->toDateString(),
+            'image' => $product->image_url ?? asset('assets/images/product-placeholder.svg'),
+            'description' => $product->description,
+            'deleted_at' => optional($product->deleted_at)?->toDateTimeString(),
+            'is_sku_enabled' => (bool) $product->is_sku_enabled,
+            'grade' => $product->grade,
+            'warehouse_stocks' => $product->stocks->map(fn ($stock) => [
+                'warehouse_id' => $stock->warehouse_id,
+                'warehouse_name' => $stock->warehouse?->name ?? 'Unknown',
+                'quantity' => $stock->quantity,
+                'reserved_qty' => (float) $stock->reserved_qty,
+                'pending_qty' => (float) ($stock->pending_qty ?? 0),
+                'available' => $stock->quantity - $stock->reserved_qty - (float) ($stock->pending_qty ?? 0),
+                'allow_overselling' => $stock->allow_overselling !== null ? (bool) $stock->allow_overselling : null,
+                'overselling_qty' => $stock->overselling_qty !== null ? (int) $stock->overselling_qty : null,
+                'is_sku_enabled' => $stock->is_sku_enabled !== null ? (bool) $stock->is_sku_enabled : null,
+            ])->values()->all(),
         ];
     }
 

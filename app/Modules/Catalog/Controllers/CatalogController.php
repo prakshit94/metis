@@ -5,12 +5,29 @@ declare(strict_types=1);
 namespace App\Modules\Catalog\Controllers;
 
 use App\Modules\Core\Controllers\Controller;
+use App\Modules\Catalog\Models\Warehouse;
+use Illuminate\Http\Request;
 
 class CatalogController extends Controller
 {
-    public function products()
+    public function products(Request $request)
     {
-        return view('catalog.products.index');
+        $user = $request->user();
+        $userAttributes = $user?->getAttributes() ?? [];
+        $defaultWarehouseId = array_key_exists('warehouse_id', $userAttributes)
+            ? $userAttributes['warehouse_id']
+            : null;
+        $accessibleWarehouse = fn ($query) => $query
+            ->where('status', 'active')
+            ->when($user?->lob_state_name, fn ($query, $state) => $query->where('state', $state));
+
+        if (! $defaultWarehouseId || ! $accessibleWarehouse(Warehouse::query()->whereKey($defaultWarehouseId))->exists()) {
+            $defaultWarehouseId = $accessibleWarehouse(Warehouse::query())
+                ->orderBy('name')
+                ->value('id');
+        }
+
+        return view('catalog.products.index', compact('defaultWarehouseId'));
     }
 
     public function brands()

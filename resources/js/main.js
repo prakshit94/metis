@@ -17,7 +17,6 @@ window.bootstrap = {
 
 // Import our custom modules
 import { ThemeManager } from './utils/theme-manager.js';
-import { DashboardManager } from './components/dashboard.js';
 import { NotificationManager } from './utils/notifications.js';
 import { SidebarManager } from './components/sidebar.js';
 import { iconManager } from './utils/icon-manager.js';
@@ -138,10 +137,12 @@ class AdminApp {
     const currentPage = document.body.dataset.page;
 
     switch (currentPage) {
-      case 'dashboard':
+      case 'dashboard': {
+        const { DashboardManager } = await import('./components/dashboard.js');
         this.components.set('dashboard', new DashboardManager());
         await this.initOrdersPage();
         break;
+      }
       case 'users':
         await this.initUsersPage();
         break;

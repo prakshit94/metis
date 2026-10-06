@@ -161,7 +161,7 @@
                                                title="Smart Tags Criteria:&#10;👤 New Customer: 0 Orders&#10;🥈 Silver: 1-5 Orders&#10;🥇 Gold: 6-9 Orders&#10;⭐ VIP: 10+ Orders&#10;💵 High Spender: Delivered Revenue > ₹50,000&#10;💳 Wallet Cash: Wallet Balance > 0&#10;⚠️ High Return Risk: Returns > 30% of total orders&#10;🚫 Blacklisted: Customer is blocked"></i>
                                         </div>
                                         <div class="small text-body-secondary d-flex align-items-center gap-2">
-                                            <span class="cursor-pointer d-inline-flex align-items-center gap-1" title="Click to copy" x-data="{ copied: false }" @click="navigator.clipboard.writeText(customerDetails.party_code).then(() => { copied = true; setTimeout(() => copied = false, 2000) })"><span x-text="customerDetails.party_code"></span><i class="bi opacity-75" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'"></i></span>
+                                            <span class="cursor-pointer d-inline-flex align-items-center gap-1" title="Click to copy" x-data="{ copied: false }" @click="copyText(customerDetails.party_code).then((success) => { if (success) { copied = true; setTimeout(() => copied = false, 2000); } })"><span x-text="customerDetails.party_code"></span><i class="bi opacity-75" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'"></i></span>
                                             <span class="badge text-bg-success-subtle text-success-emphasis" x-text="customerDetails.status || 'Active'"></span>
                                             <span class="badge text-bg-info-subtle text-info-emphasis" x-show="customerDetails.kyc_completed">KYC Verified</span>
                                         </div>
@@ -177,7 +177,7 @@
                                             <span class="fw-bold text-primary font-monospace bg-primary bg-opacity-10 px-2 py-1 rounded d-flex align-items-center gap-1" 
                                                   style="letter-spacing: 1px; font-size: 11px; cursor: pointer; transition: all 0.2s;" 
                                                   title="Click to copy"
-                                                  @click="navigator.clipboard.writeText(customerDetails.referral_code).then(() => { copied = true; setTimeout(() => copied = false, 2000) })">
+                                                  @click="copyText(customerDetails.referral_code).then((success) => { if (success) { copied = true; setTimeout(() => copied = false, 2000); } })">
                                                 <span x-text="customerDetails.referral_code"></span>
                                                 <i class="bi" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'"></i>
                                             </span>
@@ -190,7 +190,7 @@
                                         <span class="text-body-secondary d-block fw-bold text-uppercase" style="font-size: 9px; letter-spacing: 0.5px;">Referred By</span>
                                         <div class="d-flex flex-column mt-1">
                                             <span class="fw-bold text-body-emphasis lh-1" style="font-size: 11px;" x-text="(customerDetails?.referrer?.firstname || '') + ' ' + (customerDetails?.referrer?.lastname || '')"></span>
-                                            <span class="text-body-secondary mt-1 lh-1 cursor-pointer" title="Click to copy" style="font-size: 10px;" x-data="{ copied: false }" @click="navigator.clipboard.writeText(customerDetails?.referrer?.phone).then(() => { copied = true; setTimeout(() => copied = false, 2000) })"><i class="bi me-1" :class="copied ? 'bi-check-lg text-success' : 'bi-telephone text-primary opacity-75'" style="font-size: 9px;"></i><span x-text="customerDetails?.referrer?.phone"></span></span>
+                                            <span class="text-body-secondary mt-1 lh-1 cursor-pointer" title="Click to copy" style="font-size: 10px;" x-data="{ copied: false }" @click="copyText(customerDetails?.referrer?.phone).then((success) => { if (success) { copied = true; setTimeout(() => copied = false, 2000); } })"><i class="bi me-1" :class="copied ? 'bi-check-lg text-success' : 'bi-telephone text-primary opacity-75'" style="font-size: 9px;"></i><span x-text="customerDetails?.referrer?.phone"></span></span>
                                         </div>
                                     </div>
 
@@ -210,7 +210,7 @@
                                                         <span class="text-success-emphasis fw-bold text-truncate" style="font-size: 10px; max-width: 65%;">
                                                             <span class="text-success opacity-75 me-1" x-text="(index + 1) + '.'"></span><span x-text="(ref.firstname || '') + ' ' + (ref.lastname || '')"></span>
                                                         </span>
-                                                        <span class="text-body-secondary cursor-pointer" title="Click to copy" style="font-size: 10px;" x-data="{ copied: false }" @click="navigator.clipboard.writeText(ref.phone).then(() => { copied = true; setTimeout(() => copied = false, 2000) })"><i class="bi me-1" :class="copied ? 'bi-check-lg text-success' : 'bi-telephone text-success opacity-50'" style="font-size: 8px;"></i><span x-text="ref.phone"></span></span>
+                                                        <span class="text-body-secondary cursor-pointer" title="Click to copy" style="font-size: 10px;" x-data="{ copied: false }" @click="copyText(ref.phone).then((success) => { if (success) { copied = true; setTimeout(() => copied = false, 2000); } })"><i class="bi me-1" :class="copied ? 'bi-check-lg text-success' : 'bi-telephone text-success opacity-50'" style="font-size: 8px;"></i><span x-text="ref.phone"></span></span>
                                                     </div>
                                                     <div class="mt-1" style="padding-left: 12px;" x-show="ref.addresses && ref.addresses.length > 0 && ref.addresses[0].village">
                                                         <span class="text-body-secondary d-flex align-items-center gap-1 text-truncate" style="font-size: 9px; max-width: 100%;">
@@ -282,10 +282,10 @@
                                                 <i class="bi bi-person-lines-fill text-primary me-2"></i>
                                                 <h6 class="fw-bold text-primary mb-0" style="text-transform: uppercase; font-size: 11px;">Contact</h6>
                                             </div>
-                                            <div class="d-flex justify-content-between align-items-center mb-1" x-show="customerDetails.phone && String(customerDetails.phone).trim().toLowerCase() !== 'null'"><span class="text-body-secondary small">Phone</span><span class="fw-bold text-body-emphasis cursor-pointer" title="Click to copy" style="font-size: 11px;" x-data="{ copied: false }" @click="navigator.clipboard.writeText(customerDetails.phone).then(() => { copied = true; setTimeout(() => copied = false, 2000) })"><i class="bi me-1" :class="copied ? 'bi-check-lg text-success' : 'bi-telephone text-primary'" style="font-size: 9px;"></i><span x-text="customerDetails.phone"></span></span></div>
-                                            <div class="d-flex justify-content-between align-items-center mb-1" x-show="customerDetails.alternatemobile && String(customerDetails.alternatemobile).trim().toLowerCase() !== 'null'"><span class="text-body-secondary small">Alt Phone</span><span class="fw-medium text-body-emphasis cursor-pointer" title="Click to copy" style="font-size: 11px;" x-data="{ copied: false }" @click="navigator.clipboard.writeText(customerDetails.alternatemobile).then(() => { copied = true; setTimeout(() => copied = false, 2000) })"><span x-text="customerDetails.alternatemobile"></span><i class="bi ms-1" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'" style="font-size: 9px;"></i></span></div>
-                                            <div class="d-flex justify-content-between align-items-center mb-1" x-show="customerDetails.email && String(customerDetails.email).trim().toLowerCase() !== 'null'"><span class="text-body-secondary small">Email</span><span class="fw-medium text-body-emphasis text-truncate d-inline-block text-end cursor-pointer" style="max-width: 130px; font-size: 11px;" :title="customerDetails.email" x-data="{ copied: false }" @click="navigator.clipboard.writeText(customerDetails.email).then(() => { copied = true; setTimeout(() => copied = false, 2000) })"><span x-text="customerDetails.email"></span><i class="bi ms-1 opacity-75" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'" style="font-size: 9px;"></i></span></div>
-                                            <div class="d-flex justify-content-between align-items-center mb-1" x-show="customerDetails.relative_name && String(customerDetails.relative_name).trim().toLowerCase() !== 'null'"><span class="text-body-secondary small">Relative</span><span class="fw-medium text-body-emphasis text-end cursor-pointer" title="Click to copy phone" style="font-size: 11px;" x-data="{ copied: false }" @click="navigator.clipboard.writeText(String(customerDetails.relative_phone).trim().toLowerCase() !== 'null' ? customerDetails.relative_phone : '').then(() => { copied = true; setTimeout(() => copied = false, 2000) })"><span x-text="customerDetails.relative_name + (customerDetails.relative_phone && String(customerDetails.relative_phone).trim().toLowerCase() !== 'null' ? ' (' + customerDetails.relative_phone + ')' : '')"></span><i class="bi ms-1 opacity-75" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'" style="font-size: 9px;"></i></span></div>
+                                            <div class="d-flex justify-content-between align-items-center mb-1" x-show="customerDetails.phone && String(customerDetails.phone).trim().toLowerCase() !== 'null'"><span class="text-body-secondary small">Phone</span><span class="fw-bold text-body-emphasis cursor-pointer" title="Click to copy" style="font-size: 11px;" x-data="{ copied: false }" @click="copyText(customerDetails.phone).then((success) => { if (success) { copied = true; setTimeout(() => copied = false, 2000); } })"><i class="bi me-1" :class="copied ? 'bi-check-lg text-success' : 'bi-telephone text-primary'" style="font-size: 9px;"></i><span x-text="customerDetails.phone"></span></span></div>
+                                            <div class="d-flex justify-content-between align-items-center mb-1" x-show="customerDetails.alternatemobile && String(customerDetails.alternatemobile).trim().toLowerCase() !== 'null'"><span class="text-body-secondary small">Alt Phone</span><span class="fw-medium text-body-emphasis cursor-pointer" title="Click to copy" style="font-size: 11px;" x-data="{ copied: false }" @click="copyText(customerDetails.alternatemobile).then((success) => { if (success) { copied = true; setTimeout(() => copied = false, 2000); } })"><span x-text="customerDetails.alternatemobile"></span><i class="bi ms-1" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'" style="font-size: 9px;"></i></span></div>
+                                            <div class="d-flex justify-content-between align-items-center mb-1" x-show="customerDetails.email && String(customerDetails.email).trim().toLowerCase() !== 'null'"><span class="text-body-secondary small">Email</span><span class="fw-medium text-body-emphasis text-truncate d-inline-block text-end cursor-pointer" style="max-width: 130px; font-size: 11px;" :title="customerDetails.email" x-data="{ copied: false }" @click="copyText(customerDetails.email).then((success) => { if (success) { copied = true; setTimeout(() => copied = false, 2000); } })"><span x-text="customerDetails.email"></span><i class="bi ms-1 opacity-75" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'" style="font-size: 9px;"></i></span></div>
+                                            <div class="d-flex justify-content-between align-items-center mb-1" x-show="customerDetails.relative_name && String(customerDetails.relative_name).trim().toLowerCase() !== 'null'"><span class="text-body-secondary small">Relative</span><span class="fw-medium text-body-emphasis text-end cursor-pointer" title="Click to copy phone" style="font-size: 11px;" x-data="{ copied: false }" @click="copyText(String(customerDetails.relative_phone).trim().toLowerCase() !== 'null' ? customerDetails.relative_phone : '').then((success) => { if (success) { copied = true; setTimeout(() => copied = false, 2000); } })"><span x-text="customerDetails.relative_name + (customerDetails.relative_phone && String(customerDetails.relative_phone).trim().toLowerCase() !== 'null' ? ' (' + customerDetails.relative_phone + ')' : '')"></span><i class="bi ms-1 opacity-75" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'" style="font-size: 9px;"></i></span></div>
                                         </div>
                                     </div>
                                 </div>
@@ -298,10 +298,10 @@
                                                 <i class="bi bi-building text-info me-2"></i>
                                                 <h6 class="fw-bold text-info mb-0" style="text-transform: uppercase; font-size: 11px;">Business & Identity</h6>
                                             </div>
-                                            <div class="d-flex justify-content-between align-items-center mb-1" x-show="customerDetails.company_name && String(customerDetails.company_name).trim().toLowerCase() !== 'null'"><span class="text-body-secondary small">Company</span><span class="fw-bold text-body-emphasis text-truncate ms-2 cursor-pointer" title="Click to copy" style="font-size: 11px;" x-data="{ copied: false }" @click="navigator.clipboard.writeText(customerDetails.company_name).then(() => { copied = true; setTimeout(() => copied = false, 2000) })"><span x-text="customerDetails.company_name"></span><i class="bi ms-1 opacity-75" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'" style="font-size: 9px;"></i></span></div>
+                                            <div class="d-flex justify-content-between align-items-center mb-1" x-show="customerDetails.company_name && String(customerDetails.company_name).trim().toLowerCase() !== 'null'"><span class="text-body-secondary small">Company</span><span class="fw-bold text-body-emphasis text-truncate ms-2 cursor-pointer" title="Click to copy" style="font-size: 11px;" x-data="{ copied: false }" @click="copyText(customerDetails.company_name).then((success) => { if (success) { copied = true; setTimeout(() => copied = false, 2000); } })"><span x-text="customerDetails.company_name"></span><i class="bi ms-1 opacity-75" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'" style="font-size: 9px;"></i></span></div>
                                             <div class="d-flex justify-content-between align-items-center mb-1" x-show="customerDetails.category && String(customerDetails.category).trim().toLowerCase() !== 'null'"><span class="text-body-secondary small">Category</span><span class="fw-medium text-body-emphasis text-capitalize"><span class="badge bg-info text-body-emphasis bg-opacity-25" style="font-size: 9px;" x-text="customerDetails.category"></span></span></div>
-                                            <div class="d-flex justify-content-between align-items-center mb-1" x-show="customerDetails.gst_no && String(customerDetails.gst_no).trim().toLowerCase() !== 'null'"><span class="text-body-secondary small">GST No</span><span class="fw-medium text-body-emphasis text-uppercase font-monospace cursor-pointer" title="Click to copy" style="font-size: 11px;" x-data="{ copied: false }" @click="navigator.clipboard.writeText(customerDetails.gst_no).then(() => { copied = true; setTimeout(() => copied = false, 2000) })"><span x-text="customerDetails.gst_no"></span><i class="bi ms-1 opacity-75" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'" style="font-size: 9px;"></i></span></div>
-                                            <div class="d-flex justify-content-between align-items-center mb-1" x-show="customerDetails.pan_no && String(customerDetails.pan_no).trim().toLowerCase() !== 'null'"><span class="text-body-secondary small">PAN No</span><span class="fw-medium text-body-emphasis text-uppercase font-monospace cursor-pointer" title="Click to copy" style="font-size: 11px;" x-data="{ copied: false }" @click="navigator.clipboard.writeText(customerDetails.pan_no).then(() => { copied = true; setTimeout(() => copied = false, 2000) })"><span x-text="customerDetails.pan_no"></span><i class="bi ms-1 opacity-75" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'" style="font-size: 9px;"></i></span></div>
+                                            <div class="d-flex justify-content-between align-items-center mb-1" x-show="customerDetails.gst_no && String(customerDetails.gst_no).trim().toLowerCase() !== 'null'"><span class="text-body-secondary small">GST No</span><span class="fw-medium text-body-emphasis text-uppercase font-monospace cursor-pointer" title="Click to copy" style="font-size: 11px;" x-data="{ copied: false }" @click="copyText(customerDetails.gst_no).then((success) => { if (success) { copied = true; setTimeout(() => copied = false, 2000); } })"><span x-text="customerDetails.gst_no"></span><i class="bi ms-1 opacity-75" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'" style="font-size: 9px;"></i></span></div>
+                                            <div class="d-flex justify-content-between align-items-center mb-1" x-show="customerDetails.pan_no && String(customerDetails.pan_no).trim().toLowerCase() !== 'null'"><span class="text-body-secondary small">PAN No</span><span class="fw-medium text-body-emphasis text-uppercase font-monospace cursor-pointer" title="Click to copy" style="font-size: 11px;" x-data="{ copied: false }" @click="copyText(customerDetails.pan_no).then((success) => { if (success) { copied = true; setTimeout(() => copied = false, 2000); } })"><span x-text="customerDetails.pan_no"></span><i class="bi ms-1 opacity-75" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'" style="font-size: 9px;"></i></span></div>
                                             <div class="d-flex justify-content-between align-items-center mb-1" x-show="customerDetails.tax_no && String(customerDetails.tax_no).trim().toLowerCase() !== 'null'"><span class="text-body-secondary small">Tax No</span><span class="fw-medium text-body-emphasis font-monospace" style="font-size: 11px;" x-text="customerDetails.tax_no"></span></div>
                                             <div class="d-flex justify-content-between align-items-center mb-1" x-show="customerDetails.aadhaar_last4"><span class="text-body-secondary small">Aadhaar</span><span class="fw-medium text-body-emphasis font-monospace" style="font-size: 11px;" x-text="'**' + customerDetails.aadhaar_last4"></span></div>
                                             <div class="text-center mt-2" x-show="!customerDetails.company_name && !customerDetails.gst_no && !customerDetails.pan_no && !customerDetails.tax_no && !customerDetails.category && !customerDetails.aadhaar_last4"><span class="text-body-secondary fst-italic small" style="font-size: 10px;">No business details</span></div>
@@ -1319,7 +1319,7 @@
                                                 <a href="#" @click.prevent="viewOrder(order.id)" class="text-decoration-none text-primary" title="View Order Details">
                                                     <span x-text="order.order_no || order.order_number || ('Order #' + order.id)"></span>
                                                 </a>
-                                                <i class="bi ms-2 text-secondary opacity-50" style="cursor: pointer; font-size: 0.85rem;" title="Copy Order Number" x-data="{ copied: false }" @click="navigator.clipboard.writeText(order.order_no || order.order_number || ('Order #' + order.id)).then(() => { copied = true; setTimeout(() => copied = false, 2000) })" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'"></i>
+                                                <i class="bi ms-2 text-secondary opacity-50" style="cursor: pointer; font-size: 0.85rem;" title="Copy Order Number" x-data="{ copied: false }" @click="copyText(order.order_no || order.order_number || ('Order #' + order.id)).then((success) => { if (success) { copied = true; setTimeout(() => copied = false, 2000); } })" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'"></i>
                                             </td>
                                             <td class="text-nowrap py-2">
                                                 <div class="fw-medium text-body-emphasis" x-text="order.order_date ? new Date(order.order_date).toLocaleDateString() : 'No date'"></div>
@@ -1380,7 +1380,7 @@
                                                 <a href="#" @click.prevent="viewOrder(order.id)" class="text-decoration-none text-primary" title="View Order Details">
                                                     <span x-text="order.order_no || order.order_number || ('Order #' + order.id)"></span>
                                                 </a>
-                                                <i class="bi ms-2 text-secondary opacity-50" style="cursor: pointer; font-size: 0.85rem;" title="Copy Order Number" x-data="{ copied: false }" @click="navigator.clipboard.writeText(order.order_no || order.order_number || ('Order #' + order.id)).then(() => { copied = true; setTimeout(() => copied = false, 2000) })" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'"></i>
+                                                <i class="bi ms-2 text-secondary opacity-50" style="cursor: pointer; font-size: 0.85rem;" title="Copy Order Number" x-data="{ copied: false }" @click="copyText(order.order_no || order.order_number || ('Order #' + order.id)).then((success) => { if (success) { copied = true; setTimeout(() => copied = false, 2000); } })" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'"></i>
                                             </td>
                                             <td class="text-nowrap py-2">
                                                 <div class="fw-medium text-body-emphasis" x-text="order.future_order_date ? new Date(order.future_order_date).toLocaleDateString() : 'No future date'"></div>
@@ -2234,7 +2234,7 @@
                                 </div>
                                 <div>
                                     <h4 class="modal-title fw-bolder mb-1" id="orderDetailModalLabel" style="letter-spacing: -0.5px;">
-                                        Order <span class="text-primary cursor-pointer d-inline-flex align-items-center gap-1" title="Click to copy" x-data="{ copied: false }" @click="navigator.clipboard.writeText(selectedOrder.orderNumber).then(() => { copied = true; setTimeout(() => copied = false, 2000) })"><span x-text="selectedOrder.orderNumber"></span><i class="bi opacity-50" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'" style="font-size: 0.6em;"></i></span>
+                                        Order <span class="text-primary cursor-pointer d-inline-flex align-items-center gap-1" title="Click to copy" x-data="{ copied: false }" @click="copyText(selectedOrder.orderNumber).then((success) => { if (success) { copied = true; setTimeout(() => copied = false, 2000); } })"><span x-text="selectedOrder.orderNumber"></span><i class="bi opacity-50" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'" style="font-size: 0.6em;"></i></span>
                                     </h4>
                                     <div class="d-flex align-items-center flex-wrap gap-2 mt-1">
                                         <p class="text-muted small mb-0 d-flex align-items-center gap-2">
@@ -2315,22 +2315,22 @@
                                                     <img :src="selectedOrder.customer.avatar" class="rounded-circle shadow-sm" width="48" height="48" alt="Customer">
                                                     <div>
                                                         <h6 class="fw-bold mb-1" x-text="selectedOrder.customer.name"></h6>
-                                                        <p class="text-muted small mb-1 d-flex align-items-center gap-1"><i class="bi bi-envelope"></i> <span class="cursor-pointer" title="Click to copy" x-data="{ copied: false }" @click="navigator.clipboard.writeText(selectedOrder.customer.email).then(() => { copied = true; setTimeout(() => copied = false, 2000) })"><span x-text="selectedOrder.customer.email"></span><i class="bi ms-1 opacity-50" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'"></i></span></p>
-                                                        <p class="text-muted small mb-1 d-flex align-items-center gap-1"><i class="bi bi-telephone"></i> <span class="cursor-pointer" title="Click to copy" x-data="{ copied: false }" @click="navigator.clipboard.writeText(selectedOrder.customer.phone).then(() => { copied = true; setTimeout(() => copied = false, 2000) })"><span x-text="selectedOrder.customer.phone || 'N/A'"></span><template x-if="selectedOrder.customer.phone"><i class="bi ms-1 opacity-50" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'"></i></template></span></p>
+                                                        <p class="text-muted small mb-1 d-flex align-items-center gap-1"><i class="bi bi-envelope"></i> <span class="cursor-pointer" title="Click to copy" x-data="{ copied: false }" @click="copyText(selectedOrder.customer.email).then((success) => { if (success) { copied = true; setTimeout(() => copied = false, 2000); } })"><span x-text="selectedOrder.customer.email"></span><i class="bi ms-1 opacity-50" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'"></i></span></p>
+                                                        <p class="text-muted small mb-1 d-flex align-items-center gap-1"><i class="bi bi-telephone"></i> <span class="cursor-pointer" title="Click to copy" x-data="{ copied: false }" @click="copyText(selectedOrder.customer.phone).then((success) => { if (success) { copied = true; setTimeout(() => copied = false, 2000); } })"><span x-text="selectedOrder.customer.phone || 'N/A'"></span><template x-if="selectedOrder.customer.phone"><i class="bi ms-1 opacity-50" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'"></i></template></span></p>
                                                         <template x-if="selectedOrder.customer.secondaryPhone">
-                                                            <p class="text-muted small mb-1 d-flex align-items-center gap-1"><i class="bi bi-telephone-plus"></i> <span class="cursor-pointer" title="Click to copy" x-data="{ copied: false }" @click="navigator.clipboard.writeText(selectedOrder.customer.secondaryPhone).then(() => { copied = true; setTimeout(() => copied = false, 2000) })"><span x-text="selectedOrder.customer.secondaryPhone"></span><i class="bi ms-1 opacity-50" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'"></i></span></p>
+                                                            <p class="text-muted small mb-1 d-flex align-items-center gap-1"><i class="bi bi-telephone-plus"></i> <span class="cursor-pointer" title="Click to copy" x-data="{ copied: false }" @click="copyText(selectedOrder.customer.secondaryPhone).then((success) => { if (success) { copied = true; setTimeout(() => copied = false, 2000); } })"><span x-text="selectedOrder.customer.secondaryPhone"></span><i class="bi ms-1 opacity-50" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'"></i></span></p>
                                                         </template>
                                                         <template x-if="selectedOrder.customer.relativeName">
-                                                            <p class="text-muted small mb-1 d-flex align-items-center gap-1"><i class="bi bi-people"></i> <span x-text="selectedOrder.customer.relativeName"></span> <span x-show="selectedOrder.customer.relativePhone" class="cursor-pointer ms-1" title="Click to copy phone" x-data="{ copied: false }" @click="navigator.clipboard.writeText(selectedOrder.customer.relativePhone).then(() => { copied = true; setTimeout(() => copied = false, 2000) })"><span x-text="`(${selectedOrder.customer.relativePhone})`"></span><i class="bi ms-1 opacity-50" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'"></i></span></p>
+                                                            <p class="text-muted small mb-1 d-flex align-items-center gap-1"><i class="bi bi-people"></i> <span x-text="selectedOrder.customer.relativeName"></span> <span x-show="selectedOrder.customer.relativePhone" class="cursor-pointer ms-1" title="Click to copy phone" x-data="{ copied: false }" @click="copyText(selectedOrder.customer.relativePhone).then((success) => { if (success) { copied = true; setTimeout(() => copied = false, 2000); } })"><span x-text="`(${selectedOrder.customer.relativePhone})`"></span><i class="bi ms-1 opacity-50" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'"></i></span></p>
                                                         </template>
                                                         <template x-if="selectedOrder.customer.company">
-                                                            <p class="text-muted small mb-1 d-flex align-items-center gap-1"><i class="bi bi-building"></i> <span class="cursor-pointer" title="Click to copy" x-data="{ copied: false }" @click="navigator.clipboard.writeText(selectedOrder.customer.company).then(() => { copied = true; setTimeout(() => copied = false, 2000) })"><span x-text="selectedOrder.customer.company"></span><i class="bi ms-1 opacity-50" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'"></i></span></p>
+                                                            <p class="text-muted small mb-1 d-flex align-items-center gap-1"><i class="bi bi-building"></i> <span class="cursor-pointer" title="Click to copy" x-data="{ copied: false }" @click="copyText(selectedOrder.customer.company).then((success) => { if (success) { copied = true; setTimeout(() => copied = false, 2000); } })"><span x-text="selectedOrder.customer.company"></span><i class="bi ms-1 opacity-50" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'"></i></span></p>
                                                         </template>
                                                         <template x-if="selectedOrder.customer.pan">
-                                                            <p class="text-muted small mb-1 d-flex align-items-center gap-1"><i class="bi bi-card-text"></i> PAN: <span class="cursor-pointer" title="Click to copy" x-data="{ copied: false }" @click="navigator.clipboard.writeText(selectedOrder.customer.pan).then(() => { copied = true; setTimeout(() => copied = false, 2000) })"><span x-text="selectedOrder.customer.pan"></span><i class="bi ms-1 opacity-50" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'"></i></span></p>
+                                                            <p class="text-muted small mb-1 d-flex align-items-center gap-1"><i class="bi bi-card-text"></i> PAN: <span class="cursor-pointer" title="Click to copy" x-data="{ copied: false }" @click="copyText(selectedOrder.customer.pan).then((success) => { if (success) { copied = true; setTimeout(() => copied = false, 2000); } })"><span x-text="selectedOrder.customer.pan"></span><i class="bi ms-1 opacity-50" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'"></i></span></p>
                                                         </template>
                                                         <template x-if="selectedOrder.customer.gstin">
-                                                            <p class="text-muted small mb-0 d-flex align-items-center gap-1"><i class="bi bi-receipt"></i> GSTIN: <span class="cursor-pointer" title="Click to copy" x-data="{ copied: false }" @click="navigator.clipboard.writeText(selectedOrder.customer.gstin).then(() => { copied = true; setTimeout(() => copied = false, 2000) })"><span x-text="selectedOrder.customer.gstin"></span><i class="bi ms-1 opacity-50" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'"></i></span></p>
+                                                            <p class="text-muted small mb-0 d-flex align-items-center gap-1"><i class="bi bi-receipt"></i> GSTIN: <span class="cursor-pointer" title="Click to copy" x-data="{ copied: false }" @click="copyText(selectedOrder.customer.gstin).then((success) => { if (success) { copied = true; setTimeout(() => copied = false, 2000); } })"><span x-text="selectedOrder.customer.gstin"></span><i class="bi ms-1 opacity-50" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'"></i></span></p>
                                                         </template>
                                                     </div>
                                                 </div>
@@ -2338,11 +2338,11 @@
                                             <div class="col-md-6">
                                                 <div class="mb-3">
                                                     <p class="fw-bold small text-muted text-uppercase mb-1" style="font-size: 0.7rem;">Shipping Address</p>
-                                                    <p class="small mb-0 text-body-emphasis cursor-pointer" title="Click to copy" x-data="{ copied: false }" @click="if(selectedOrder.shippingAddress) { navigator.clipboard.writeText(selectedOrder.shippingAddress.formatted).then(() => { copied = true; setTimeout(() => copied = false, 2000) }) }"><span x-text="selectedOrder.shippingAddress ? selectedOrder.shippingAddress.formatted : 'N/A'"></span><template x-if="selectedOrder.shippingAddress"><i class="bi ms-1 opacity-50" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'" style="font-size: 0.9em;"></i></template></p>
+                                                    <p class="small mb-0 text-body-emphasis cursor-pointer" title="Click to copy" x-data="{ copied: false }" @click="if(selectedOrder.shippingAddress) { copyText(selectedOrder.shippingAddress.formatted).then((success) => { if (success) { copied = true; setTimeout(() => copied = false, 2000); } }) }"><span x-text="selectedOrder.shippingAddress ? selectedOrder.shippingAddress.formatted : 'N/A'"></span><template x-if="selectedOrder.shippingAddress"><i class="bi ms-1 opacity-50" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'" style="font-size: 0.9em;"></i></template></p>
                                                 </div>
                                                 <div>
                                                     <p class="fw-bold small text-muted text-uppercase mb-1" style="font-size: 0.7rem;">Billing Address</p>
-                                                    <p class="small mb-0 text-body-emphasis cursor-pointer" title="Click to copy" x-data="{ copied: false }" @click="if(selectedOrder.billingAddress) { navigator.clipboard.writeText(selectedOrder.billingAddress.formatted).then(() => { copied = true; setTimeout(() => copied = false, 2000) }) }"><span x-text="selectedOrder.billingAddress ? selectedOrder.billingAddress.formatted : 'N/A'"></span><template x-if="selectedOrder.billingAddress"><i class="bi ms-1 opacity-50" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'" style="font-size: 0.9em;"></i></template></p>
+                                                    <p class="small mb-0 text-body-emphasis cursor-pointer" title="Click to copy" x-data="{ copied: false }" @click="if(selectedOrder.billingAddress) { copyText(selectedOrder.billingAddress.formatted).then((success) => { if (success) { copied = true; setTimeout(() => copied = false, 2000); } }) }"><span x-text="selectedOrder.billingAddress ? selectedOrder.billingAddress.formatted : 'N/A'"></span><template x-if="selectedOrder.billingAddress"><i class="bi ms-1 opacity-50" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'" style="font-size: 0.9em;"></i></template></p>
                                                 </div>
                                             </div>
                                         </div>
@@ -2815,6 +2815,8 @@
     ])->values()->all();
 @endphp
 <script>
+const createOrderSearchControllers = new WeakMap();
+
 function createOrderApp(initialCustomer = null, initialOrder = null) {
     return {
         activeTab: 'customer',
@@ -2992,15 +2994,16 @@ mapOrder(o) {
         confirmAttempts: o.confirmation_attempts || 0,
         statusLabel: o.status_label || (o.lifecycle_status || o.status || '').charAt(0).toUpperCase() + (o.lifecycle_status || o.status || '').slice(1).replace(/_/g, ' '),
         customer: {
-          name: o.party ? `${o.party.firstname} ${o.party.lastname}` : 'N/A',
+          name: o.party ? [o.party.firstname, o.party.middlename, o.party.lastname].map((part) => String(part ?? '').trim()).filter(Boolean).join(' ') || 'N/A' : 'N/A',
           email: o.party ? o.party.email : 'N/A',
           avatar: o.party && o.party.avatar ? o.party.avatar : '/assets/images/default_avatar.jpeg',
           phone: o.party ? o.party.phone : '',
+          secondaryPhone: o.party ? o.party.alternatemobile : '',
           relativeName: o.party ? (o.party.relative_name || o.party.relative_name) : '',
           relativePhone: o.party ? o.party.relative_phone : '',
           company: o.party ? o.party.company_name : '',
-          pan: o.party ? o.party.pan_number : '',
-          gstin: o.party ? o.party.gstin : ''
+          pan: o.party ? o.party.pan_no : '',
+          gstin: o.party ? o.party.gst_no : ''
         },
         warehouse: o.warehouse ? {
           name: o.warehouse.name || o.warehouse.company_name || 'N/A',
@@ -3109,7 +3112,7 @@ mapOrder(o) {
         createdBy: {
           name: o.creator ? (o.creator.name || '').trim() : 'N/A',
           email: o.creator ? (o.creator.email || '') : '',
-          avatar: o.creator && o.creator.avatar ? o.creator.avatar : '/assets/images/default_avatar.jpeg',
+          avatar: o.creator && (o.creator.avatar || o.creator.photo) ? (o.creator.avatar || o.creator.photo) : '/assets/images/default_avatar.jpeg',
         },
         updatedBy: o.updater ? `${o.updater.name || ''}`.trim() : 'N/A',
         isUnfulfillable: o.is_unfulfillable || false,
@@ -3151,7 +3154,6 @@ mapOrder(o) {
         recentOrders: [],
         products: [], productQuery: '', stockFilter: 'in-stock', categoryFilter: '', perPage: 10,
         searching: false, productPage: 1, productLastPage: 1, productTotal: 0, productFrom: 0, productTo: 0,
-        _searchAbortController: null,
         cart: [], couponCode: '', couponApplied: false, appliedCouponObj: null, appliedOfferId: null,
         placing: false, formErrors: [],
         warehouses: @json($warehouses->map(fn($w) => $w->toArray())),
@@ -3324,6 +3326,8 @@ mapOrder(o) {
 
             if (initialOrder) {
                 this.applyOrderForEdit(initialOrder);
+                // Reload products after restoring the order's warehouse.
+                await this.searchProducts(true);
                 localStorage.removeItem(`ecommerce_create_order_cart_${this.partyId}`);
                 localStorage.removeItem(`ecommerce_create_order_cart_total_${this.partyId}`);
                 this.isCartSidebarOpen = true;
@@ -3718,7 +3722,13 @@ mapOrder(o) {
             this.orderDate = order.order_date ? String(order.order_date).replace('T', ' ').substring(0, 19) : this.orderDate;
             this.orderStatus = order.status;
             this.futureOrderDate = order.future_order_date ? String(order.future_order_date).substring(0, 10) : '';
-            this.couponCode = order.coupon_code || '';
+            const savedCouponCode = String(order.coupon_code || '').trim();
+            const savedCoupon = savedCouponCode
+                ? (this.activeCoupons || []).find(coupon => String(coupon.code || '').toUpperCase() === savedCouponCode.toUpperCase()) || null
+                : null;
+            this.couponCode = savedCoupon ? savedCoupon.code : '';
+            this.appliedCouponObj = savedCoupon;
+            this.couponApplied = Boolean(savedCoupon);
             this.appliedOfferId = order.applied_offer_id || null;
             this.customerDetails = this.sanitizeCustomerData(order.party
                 ? {
@@ -3727,6 +3737,11 @@ mapOrder(o) {
                     addresses: order.party.addresses || this.customerDetails?.addresses || [],
                 }
                 : this.customerDetails);
+            const walletAmountUsed = Math.max(0, Number(order.wallet_amount_used) || 0);
+            this.useWalletBalance = walletAmountUsed > 0;
+            if (walletAmountUsed && this.customerDetails) {
+                this.customerDetails.wallet_balance = (Number(this.customerDetails.wallet_balance) || 0) + walletAmountUsed;
+            }
             this.addresses = order.party?.addresses || this.addresses;
             this.recentOrders = order.party?.orders || this.recentOrders;
 
@@ -3799,13 +3814,15 @@ mapOrder(o) {
             // If the user switches to a different warehouse, those original items are not in the new warehouse,
             // so adding them back would incorrectly inflate the available stock.
             let currentOrderQty = 0;
-            const originalWarehouseId = window.__INITIAL_ORDER_TO_EDIT__?.warehouse_id;
+            const originalOrder = window.__INITIAL_ORDER_TO_EDIT__;
+            const originalWarehouseId = originalOrder?.warehouse_id;
             const warehouseUnchanged = originalWarehouseId && String(originalWarehouseId) === String(this.warehouseId);
-            if (warehouseUnchanged && window.__INITIAL_ORDER_TO_EDIT__.items) {
-                const initItem = window.__INITIAL_ORDER_TO_EDIT__.items.find(i => String(i.product_id) === String(p.id) && !i.is_gift);
-                if (initItem) {
-                    currentOrderQty = parseFloat(initItem.quantity) || 0;
-                }
+            const stockWasAccountedFor = ['future_order', 'pending', 'pending_confirmation'].includes(originalOrder?.status)
+                || (originalOrder?.status === 'confirmed' && originalOrder?.type === 'sale');
+            if (warehouseUnchanged && stockWasAccountedFor && Array.isArray(originalOrder?.items)) {
+                currentOrderQty = originalOrder.items
+                    .filter(i => String(i.product_id) === String(p.id) && !i.is_gift)
+                    .reduce((total, item) => total + (parseFloat(item.quantity) || 0), 0);
             }
             return available + currentOrderQty;
         },
@@ -4018,10 +4035,9 @@ mapOrder(o) {
             this.searching = true;
 
             // Cancel any in-flight request to prevent race conditions / stale data
-            if (this._searchAbortController) {
-                this._searchAbortController.abort();
-            }
-            this._searchAbortController = new AbortController();
+            createOrderSearchControllers.get(this)?.abort();
+            const controller = new AbortController();
+            createOrderSearchControllers.set(this, controller);
 
             try {
                 const p = new URLSearchParams({
@@ -4035,8 +4051,9 @@ mapOrder(o) {
                 });
                 const res = await fetch(`/products-search-api?${p}`, {
                     headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-                    signal: this._searchAbortController.signal,
+                    signal: controller.signal,
                 });
+                if (controller.signal.aborted) return;
                 if (!res.ok) {
                     // Non-200 (403, 500 etc.) — clear stale data and report error
                     this.products = [];
@@ -4047,6 +4064,7 @@ mapOrder(o) {
                     return;
                 }
                 const json = await res.json();
+                if (controller.signal.aborted) return;
                 this.products = (json.data || []).map(p => ({ ...p, _qty: 0, _disc: parseFloat(p.default_discount) || 0 }));
                 this.productTotal = json.total || 0;
                 this.productFrom = json.from || 0;
@@ -4058,7 +4076,10 @@ mapOrder(o) {
                 this.productTotal = 0; this.productFrom = 0; this.productTo = 0; this.productLastPage = 1;
                 window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: 'Failed to load products. Please try again.' } }));
             } finally {
-                this.searching = false;
+                if (createOrderSearchControllers.get(this) === controller) {
+                    createOrderSearchControllers.delete(this);
+                    this.searching = false;
+                }
             }
         },
 
@@ -4735,6 +4756,10 @@ mapOrder(o) {
 
         async submitConfirmation() {
             this.formErrors = [];
+            if (!this.editingOrderId) {
+                this.formErrors.push('Select an existing order before confirming it.');
+                return;
+            }
             if (this.confirmAction === 'schedule') {
                 if (!this.scheduleReason) this.formErrors.push('Please provide a reason for rescheduling.');
                 if (!this.scheduledConfirmDate) this.formErrors.push('Please select a scheduled date.');

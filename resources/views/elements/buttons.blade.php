@@ -263,7 +263,8 @@
 <script>
         function copyCode(button) {
             const codeBlock = button.parentElement.querySelector('.element-code-block pre code');
-            navigator.clipboard.writeText(codeBlock.textContent).then(() => {
+            copyText(codeBlock.textContent).then((success) => {
+                if (!success) return;
                 const originalText = button.innerHTML;
                 button.innerHTML = '<i class="bi bi-check me-2"></i>Copied!';
                 button.classList.add('btn-success');
@@ -280,7 +281,8 @@
             allCodeBlocks.forEach(block => {
                 allCode += block.textContent + '\n\n';
             });
-            navigator.clipboard.writeText(allCode).then(() => {
+            copyText(allCode).then((success) => {
+                if (!success) return;
                 // Show success notification
                 alert('All code copied to clipboard!');
             });

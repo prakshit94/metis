@@ -2,6 +2,7 @@
 
 namespace App\Modules\Orders\Requests;
 
+use App\Modules\Orders\Models\Order;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -24,7 +25,16 @@ class UpdateOrderRequest extends FormRequest
     {
         return [
             'type' => 'required|string|in:sale,purchase',
-            'party_id' => 'required|exists:parties,id',
+            'party_id' => [
+                'required',
+                'exists:parties,id',
+                function ($attribute, $value, $fail) {
+                    $orderPartyId = $this->existingOrderPartyId();
+                    if ($orderPartyId !== null && (int) $value !== $orderPartyId) {
+                        $fail('The customer on an existing order cannot be changed.');
+                    }
+                },
+            ],
             'warehouse_id' => 'required|exists:warehouses,id',
             'shipping_address_id' => [
                 'required',
@@ -38,6 +48,11 @@ class UpdateOrderRequest extends FormRequest
                     $address = \App\Modules\Customers\Models\PartyAddress::find($value);
                     if (!$address) {
                         $fail('The selected shipping address no longer exists. Please select a valid address.');
+                        return;
+                    }
+                    $expectedPartyId = $this->existingOrderPartyId() ?? (int) $this->input('party_id');
+                    if ((int) $address->party_id !== $expectedPartyId) {
+                        $fail('The selected shipping address does not belong to this customer.');
                         return;
                     }
                     if (empty($address->village_id)) {
@@ -57,6 +72,11 @@ class UpdateOrderRequest extends FormRequest
                     $address = \App\Modules\Customers\Models\PartyAddress::find($value);
                     if (!$address) {
                         $fail('The selected billing address no longer exists. Please select a valid address.');
+                        return;
+                    }
+                    $expectedPartyId = $this->existingOrderPartyId() ?? (int) $this->input('party_id');
+                    if ((int) $address->party_id !== $expectedPartyId) {
+                        $fail('The selected billing address does not belong to this customer.');
                         return;
                     }
                     if (empty($address->village_id)) {
@@ -88,5 +108,20 @@ class UpdateOrderRequest extends FormRequest
             'net_amount' => 'required|numeric',
             'use_wallet_balance' => 'nullable|boolean',
         ];
+    }
+
+    private function existingOrderPartyId(): ?int
+    {
+        $order = $this->route('order');
+        if ($order instanceof Order) {
+            return (int) $order->party_id;
+        }
+
+        if ($order !== null) {
+            $partyId = Order::whereKey($order)->value('party_id');
+            return $partyId === null ? null : (int) $partyId;
+        }
+
+        return null;
     }
 }

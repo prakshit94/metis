@@ -40,7 +40,7 @@ class OrderController extends Controller implements HasMiddleware
     {
         return [
             new Middleware('permission:orders.view', only: ['index', 'show']),
-            new Middleware('permission:orders.create', only: ['create', 'store']),
+            new Middleware('permission:orders.create', only: ['store']),
             new Middleware('permission:orders.edit', only: ['edit', 'update']),
             new Middleware('permission:orders.delete', only: ['destroy']),
             new Middleware('permission:orders.confirm', only: ['confirm']),
@@ -64,19 +64,36 @@ class OrderController extends Controller implements HasMiddleware
     public function index(Request $request)
     {
         $query = Order::with([
-            'party',
-            'warehouse',
+            'party:id,firstname,middlename,lastname,email,avatar,phone,alternatemobile,relative_name,relative_phone,company_name,pan_no,gst_no',
+            'warehouse:id,name,company_name,phone,gstin,address_line_1,address_line_2,city,state,pincode',
+            'shippingAddress:id,village_id,label,address_line_1,address_line_2,city,state,pincode,village_name,taluka,district,post_office',
+            'shippingAddress.village:id,village_name,taluka_name,district_name,post_so_name',
+            'billingAddress:id,village_id,label,address_line_1,address_line_2,city,state,pincode,village_name,taluka,district,post_office',
+            'billingAddress.village:id,village_name,taluka_name,district_name,post_so_name',
+            'shippingAddress.village.services',
             'shippingAddress.village.services.providers:id,name,phone',
-            'billingAddress.village',
-            'invoice.payments',
-            'items.product',
-            'shipments.events',
-            'payments',
-            'creator',
-            'updater',
-            'orderReturns',
-            'appliedOffer',
-            'statusLogs' => fn ($q) => $q->with('user')->latest(),
+            'invoice' => fn ($q) => $q->select(
+                'invoices.id',
+                'invoices.order_id',
+                'invoices.invoice_no',
+                'invoices.invoice_date',
+                'invoices.status',
+                'invoices.total_amount',
+                'invoices.tax_amount',
+                'invoices.net_amount',
+            ),
+            'invoice.payments:id,invoice_id,status,amount,payment_method,payment_date',
+            'items:id,order_id,product_id,quantity,unit_price,discount_amount,tax_amount,tax_rate,total_amount',
+            'items.product:id,name,sku,image_path,default_discount_type,default_discount',
+            'shipments:id,order_id,shipment_no,carrier_name,tracking_no,status,service_provider_id,shipped_at,delivered_at,delivery_attempts,next_followup_date,reschedule_reason',
+            'shipments.events:id,shipment_id,event_name,location,description,reschedule_reason,occurred_at',
+            'payments:id,order_id,payment_no,amount,payment_method,status,payment_date,transaction_id',
+            'creator:id,name,email,photo',
+            'updater:id,name,email',
+            'orderReturns:id,order_id,return_no,created_at,reason,notes,refund_amount,status',
+            'appliedOffer:id,name',
+            'statusLogs' => fn ($q) => $q->select('id', 'order_id', 'changed_by', 'status', 'notes', 'created_at')
+                ->with('user:id,name,first_name,last_name')->latest(),
         ])->withCount('items');
 
         $user = auth()->user();
@@ -258,7 +275,8 @@ class OrderController extends Controller implements HasMiddleware
         // Stats Query (Cached)
         $statsQuery = clone $query;
         $statsVersion = Cache::get('order_stats_version', 0);
-        $cacheKey = 'order_stats_'.$statsVersion.'_'.auth()->id().'_'.md5(json_encode($request->all()));
+        $statsFilterHash = md5(json_encode($request->except(['page', 'limit', 'sort_field', 'sort_direction'])));
+        $cacheKey = 'order_stats_'.$statsVersion.'_'.auth()->id().'_'.$statsFilterHash;
         $stats = Cache::remember($cacheKey, 300, function () use ($statsQuery) {
             $statsQuery->setEagerLoads([]);
             $grouped = $statsQuery->select('status', DB::raw('COUNT(*) as total'), DB::raw('SUM(net_amount) as amount'))
@@ -333,7 +351,7 @@ class OrderController extends Controller implements HasMiddleware
 
         // Warehouse Stats Query (Cached)
         $warehouseStatsQuery = clone $query;
-        $warehouseStatsCacheKey = 'order_warehouse_stats_'.$statsVersion.'_'.auth()->id().'_'.md5(json_encode($request->all()));
+        $warehouseStatsCacheKey = 'order_warehouse_stats_'.$statsVersion.'_'.auth()->id().'_'.$statsFilterHash;
         $warehouseStats = Cache::remember($warehouseStatsCacheKey, 300, function () use ($warehouseStatsQuery) {
             $warehouseStatsQuery->setEagerLoads([]);
             $grouped = $warehouseStatsQuery->select('warehouse_id', 'status', DB::raw('COUNT(*) as total'), DB::raw('SUM(net_amount) as amount'))
@@ -583,6 +601,9 @@ class OrderController extends Controller implements HasMiddleware
 
     public function create()
     {
+        $requiredPermission = request()->filled('order_id') ? 'orders.edit' : 'orders.create';
+        abort_unless(auth()->user()?->can($requiredPermission), 403);
+
         $warehouses = Warehouse::where('status', 'active')
             ->orderBy('name')
             ->when(auth()->user()?->lob_state_name, function ($query, $state) {
@@ -592,7 +613,11 @@ class OrderController extends Controller implements HasMiddleware
 
         
         $activeOffers = Offer::with('product')->active()->orderByDesc('priority')->orderBy('id')->get();
-        $activeCoupons = Coupon::where('is_active', true)->get();
+        $activeCoupons = Coupon::where('is_active', true)
+            ->where(function ($query) {
+                $query->whereNull('expiry_date')->orWhere('expiry_date', '>=', now()->startOfDay());
+            })
+            ->get();
         $categories = Category::whereNull('parent_id')->with('children')->orderBy('name')->get();
         $initialCustomer = null;
         $initialOrder = null;
@@ -658,7 +683,7 @@ class OrderController extends Controller implements HasMiddleware
                 'party.addresses.village.services',
                 'warehouse',
                 'items.product:id,name,sku,image_path,tax_rate_id,allow_overselling',
-                'items.product.stocks',
+                'items.product.stocks.warehouse',
                 'items.product.taxRate',
                 'shippingAddress.village.services',
                 'billingAddress.village.services',
@@ -668,7 +693,25 @@ class OrderController extends Controller implements HasMiddleware
             ])->find(request()->integer('order_id'));
 
             if ($initialOrder) {
-                $initialOrder->items->each(function ($item) {
+                $productIds = $initialOrder->items->pluck('product_id')->filter()->unique()->values();
+                $warehouseIds = $initialOrder->items
+                    ->flatMap(fn ($item) => $item->product?->stocks?->pluck('warehouse_id') ?? collect())
+                    ->filter()->unique()->values();
+                $pendingByStock = collect();
+
+                if ($productIds->isNotEmpty() && $warehouseIds->isNotEmpty()) {
+                    $pendingByStock = DB::table('order_items')
+                        ->join('orders', 'orders.id', '=', 'order_items.order_id')
+                        ->whereIn('orders.status', ['future_order', 'pending', 'pending_confirmation'])
+                        ->whereIn('order_items.product_id', $productIds)
+                        ->whereIn('orders.warehouse_id', $warehouseIds)
+                        ->groupBy('order_items.product_id', 'orders.warehouse_id')
+                        ->selectRaw('order_items.product_id, orders.warehouse_id, SUM(order_items.quantity) as pending_qty')
+                        ->get()
+                        ->mapWithKeys(fn ($row) => [$row->product_id.':'.$row->warehouse_id => (float) $row->pending_qty]);
+                }
+
+                $initialOrder->items->each(function ($item) use ($pendingByStock) {
                     if ($item->product) {
                         $totalQty = (float) $item->product->stocks->sum('quantity');
                         $reservedQty = (float) $item->product->stocks->sum('reserved_qty');
@@ -677,14 +720,8 @@ class OrderController extends Controller implements HasMiddleware
                         $item->product->setAttribute('reserved_qty', $reservedQty);
                         $item->product->setAttribute('allow_overselling', $item->product->allow_overselling);
                         
-                        $item->product->setAttribute('warehouse_stocks', $item->product->stocks->map(function ($s) use ($item) {
-                            $pendingQty = \DB::table('order_items')
-                                ->join('orders', 'orders.id', '=', 'order_items.order_id')
-                                ->where('orders.status', 'pending')
-                                ->where('orders.warehouse_id', $s->warehouse_id)
-                                ->where('order_items.product_id', $item->product_id)
-                                ->where('orders.id', '!=', $item->order_id) // Exclude current order being edited
-                                ->sum('order_items.quantity');
+                        $item->product->setAttribute('warehouse_stocks', $item->product->stocks->map(function ($s) use ($item, $pendingByStock) {
+                            $pendingQty = $pendingByStock[$item->product_id.':'.$s->warehouse_id] ?? 0;
 
                             return [
                                 'warehouse_id' => $s->warehouse_id,
@@ -757,9 +794,10 @@ class OrderController extends Controller implements HasMiddleware
         $cancelReasons = CancelReason::where('is_active', true)->orderBy('id')->get();
 
         if ($initialCustomer && class_exists(Invoice::class)) {
-            $invoices = Invoice::join('orders', 'invoices.order_id', '=', 'orders.id')
-                ->where('orders.party_id', $initialCustomer->id)
-                ->whereIn('invoices.status', ['unpaid', 'partially_paid'])
+            $invoices = Invoice::query()
+                ->whereHas('order', fn ($query) => $query->where('party_id', $initialCustomer->id))
+                ->whereIn('status', ['unpaid', 'partially_paid'])
+                ->with(['payments' => fn ($query) => $query->where('status', 'completed')])
                 ->get();
             
             $due = 0;
@@ -806,10 +844,28 @@ class OrderController extends Controller implements HasMiddleware
             return redirect()->route('orders')->with('error', 'Orders in this status cannot be edited.');
         }
 
-        $order->load(['party', 'warehouse', 'items.product.stocks', 'shippingAddress', 'billingAddress', 'appliedOffer']);
+        $order->load(['party', 'warehouse', 'items.product.stocks.warehouse', 'shippingAddress', 'billingAddress', 'appliedOffer']);
+
+        $productIds = $order->items->pluck('product_id')->filter()->unique()->values();
+        $warehouseIds = $order->items
+            ->flatMap(fn ($item) => $item->product?->stocks?->pluck('warehouse_id') ?? collect())
+            ->filter()->unique()->values();
+        $pendingByStock = collect();
+
+        if ($productIds->isNotEmpty() && $warehouseIds->isNotEmpty()) {
+            $pendingByStock = DB::table('order_items')
+                ->join('orders', 'orders.id', '=', 'order_items.order_id')
+                ->whereIn('orders.status', ['future_order', 'pending', 'pending_confirmation'])
+                ->whereIn('order_items.product_id', $productIds)
+                ->whereIn('orders.warehouse_id', $warehouseIds)
+                ->groupBy('order_items.product_id', 'orders.warehouse_id')
+                ->selectRaw('order_items.product_id, orders.warehouse_id, SUM(order_items.quantity) as pending_qty')
+                ->get()
+                ->mapWithKeys(fn ($row) => [$row->product_id.':'.$row->warehouse_id => (float) $row->pending_qty]);
+        }
 
         // Format product stocks to match searchApi structure
-        $order->items->each(function ($item) {
+        $order->items->each(function ($item) use ($pendingByStock) {
             if ($item->product) {
                 $totalQty = (float) $item->product->stocks->sum('quantity');
                 $reservedQty = (float) $item->product->stocks->sum('reserved_qty');
@@ -818,13 +874,8 @@ class OrderController extends Controller implements HasMiddleware
                 $item->product->setAttribute('reserved_qty', $reservedQty);
                 $item->product->setAttribute('allow_overselling', $item->product->allow_overselling);
                 
-                $item->product->setAttribute('warehouse_stocks', $item->product->stocks->map(function ($s) use ($item) {
-                        $pendingQty = \DB::table('order_items')
-                            ->join('orders', 'orders.id', '=', 'order_items.order_id')
-                            ->where('orders.status', 'pending')
-                            ->where('orders.warehouse_id', $s->warehouse_id)
-                            ->where('order_items.product_id', $item->product_id)
-                            ->sum('order_items.quantity');
+                $item->product->setAttribute('warehouse_stocks', $item->product->stocks->map(function ($s) use ($item, $pendingByStock) {
+                        $pendingQty = $pendingByStock[$item->product_id.':'.$s->warehouse_id] ?? 0;
 
                         return [
                             'warehouse_id' => $s->warehouse_id,
@@ -1795,15 +1846,70 @@ class OrderController extends Controller implements HasMiddleware
         abort_unless(auth()->user()->can('orders.revert_status'), 403);
 
         $request->validate([
-            'status' => 'required|string',
+            'status' => 'required|string|in:pending,confirmed,processing,ready_to_ship,dispatched,delivered',
         ]);
 
         $targetStatus = $request->status;
 
-        if ($targetStatus === 'pending' && in_array($order->status, ['confirmed', 'processing', 'cancelled', 'ready_to_ship'])) {
-            $inventoryService->revertOrderToPending($order);
-        } elseif ($targetStatus === 'confirmed' && $order->status === 'processing') {
-            \DB::transaction(function () use ($order) {
+        DB::transaction(function () use ($order, $targetStatus, $inventoryService) {
+            $order = Order::query()->lockForUpdate()->findOrFail($order->id);
+            $currentStatus = $order->status;
+            $allowedTargets = [
+                'confirmed' => ['pending'],
+                'processing' => ['confirmed'],
+                'ready_to_ship' => ['processing'],
+                'dispatched' => ['ready_to_ship'],
+                'delivered' => ['dispatched'],
+                'cancelled' => ['pending'],
+            ];
+
+            if ($currentStatus === 'return_requested') {
+                $previousStatus = $order->statusLogs()
+                    ->whereIn('status', ['delivered', 'dispatched'])
+                    ->latest('id')
+                    ->value('status') ?? 'delivered';
+                $allowedTargets['return_requested'] = [$previousStatus];
+            }
+
+            if (! in_array($targetStatus, $allowedTargets[$currentStatus] ?? [], true)) {
+                throw ValidationException::withMessages([
+                    'status' => "Cannot revert an order from {$currentStatus} to {$targetStatus}.",
+                ]);
+            }
+
+            if ($currentStatus === 'return_requested') {
+                $pendingReturn = $order->orderReturns()
+                    ->where('status', 'pending')
+                    ->latest('id')
+                    ->first();
+                if (! $pendingReturn) {
+                    throw ValidationException::withMessages([
+                        'status' => 'The pending return request could not be found to revert this order.',
+                    ]);
+                }
+
+                $pendingReturn->load('items');
+                $wasInTransit = in_array($targetStatus, Order::inTransitStatuses(), true);
+                if ($wasInTransit && $order->warehouse_id) {
+                    foreach ($pendingReturn->items as $item) {
+                        $stock = Stock::where('product_id', $item->product_id)
+                            ->where('warehouse_id', $order->warehouse_id)
+                            ->lockForUpdate()
+                            ->first();
+
+                        if ($stock) {
+                            $stock->dispatched_qty = (float) $stock->dispatched_qty + (float) $item->requested_qty;
+                            $stock->save();
+                        }
+                    }
+                }
+
+                $pendingReturn->items()->delete();
+                $pendingReturn->delete();
+                $order->update(['status' => $targetStatus, 'updated_by' => auth()->id()]);
+            } elseif ($targetStatus === 'pending') {
+                $inventoryService->revertOrderToPending($order);
+            } elseif ($currentStatus === 'processing' && $targetStatus === 'confirmed') {
                 $order->loadMissing('shipments');
                 foreach ($order->shipments as $shipment) {
                     if ($shipment->status === 'pending') {
@@ -1811,46 +1917,21 @@ class OrderController extends Controller implements HasMiddleware
                         $shipment->delete();
                     }
                 }
-                $order->update([
-                    'status' => 'confirmed',
-                    'updated_by' => auth()->id(),
-                ]);
-            });
-        } elseif ($targetStatus === 'processing' && $order->status === 'ready_to_ship') {
-            $inventoryService->revertOrderToProcessing($order);
-        } elseif ($targetStatus === 'ready_to_ship' && in_array($order->status, \App\Modules\Orders\Models\Order::inTransitStatuses(), true)) {
-            $inventoryService->revertOrderToProcessing($order);
-        } elseif ($targetStatus === 'dispatched' && $order->status === 'delivered') {
-            $inventoryService->revertDeliveredToDispatched($order);
-        } elseif ($order->status === 'return_requested') {
-            \DB::transaction(function () use ($order, $targetStatus) {
-                $pendingReturn = $order->orderReturns()->where('status', 'pending')->latest()->first();
-                if ($pendingReturn) {
-                    $wasInTransit = in_array($targetStatus, \App\Modules\Orders\Models\Order::inTransitStatuses(), true);
-                    
-                    if ($wasInTransit && $order->warehouse_id) {
-                        foreach ($pendingReturn->items as $item) {
-                            $stock = \App\Modules\Inventory\Models\Stock::where('product_id', $item->product_id)
-                                ->where('warehouse_id', $order->warehouse_id)
-                                ->lockForUpdate()
-                                ->first();
+                $order->update(['status' => $targetStatus, 'updated_by' => auth()->id()]);
+            } elseif ($currentStatus === 'ready_to_ship' && $targetStatus === 'processing') {
+                $inventoryService->revertOrderToProcessing($order);
+            } elseif ($currentStatus === 'dispatched' && $targetStatus === 'ready_to_ship') {
+                $inventoryService->revertOrderToProcessing($order);
+            } elseif ($currentStatus === 'delivered' && $targetStatus === 'dispatched') {
+                $inventoryService->revertDeliveredToDispatched($order);
+            }
 
-                            if ($stock) {
-                                $stock->dispatched_qty = (float) $stock->dispatched_qty + (float) $item->requested_qty;
-                                $stock->save();
-                            }
-                        }
-                    }
-                    $pendingReturn->items()->delete();
-                    $pendingReturn->delete();
-                }
-
-                $order->update([
-                    'status' => $targetStatus,
-                    'updated_by' => auth()->id(),
-                ]);
-            });
-        }
+            $order->statusLogs()->create([
+                'status' => $targetStatus,
+                'notes' => "Order status reverted from {$currentStatus} to {$targetStatus}.",
+                'changed_by' => auth()->id(),
+            ]);
+        }, 3);
 
         if ($request->wantsJson() || $request->ajax()) {
             return response()->json(['success' => true, 'message' => 'Order reverted successfully.']);

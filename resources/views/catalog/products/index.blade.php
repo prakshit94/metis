@@ -26,7 +26,6 @@
 
     $user = auth()->user();
     $isMasterAdmin = $user && ($user->hasRole(['Super Admin', 'Admin']) || $user->can('view-all-data'));
-    $userWarehouseId = $user->warehouse_id ?? null;
 @endphp
 <script>
     window.globalPromotions = {
@@ -36,7 +35,7 @@
     };
     window.userContext = {
         isMasterAdmin: @json($isMasterAdmin),
-        warehouseId: @json($userWarehouseId)
+        warehouseId: @json($defaultWarehouseId)
     };
     window.getApplicablePromotions = function(product) {
         if (!product) return { offers: [], coupons: [], referrals: window.globalPromotions.referrals };
@@ -214,7 +213,7 @@
                                             <!-- Warehouse Filter -->
                                             <select class="form-select form-select-sm shadow-none border-secondary border-opacity-25" 
                                                     x-model="warehouseFilter" 
-                                                    @change="filterProducts()"
+                                                    @change="changeWarehouse()"
                                                     style="width: 150px;">
                                                 @if($isMasterAdmin)
                                                 <option value="">All Warehouses</option>

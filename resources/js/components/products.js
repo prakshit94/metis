@@ -201,6 +201,7 @@ document.addEventListener('alpine:init', () => {
     _resizeHandler: null,
     _themeObserver: null,
     _loadAbortController: null,
+    _optionsLoaded: false,
     chartsInitialized: false,
 
     // Statistics
@@ -301,7 +302,13 @@ document.addEventListener('alpine:init', () => {
       const signal = this._loadAbortController.signal;
 
       try {
-        const payload = await apiFetch(this.apiBase, { signal });
+        const params = new URLSearchParams();
+        params.set('summary', '1');
+        if (this._optionsLoaded) params.set('without_options', '1');
+        if (this.warehouseFilter) params.set('warehouse_id', this.warehouseFilter);
+        const query = params.toString();
+        const url = query ? `${this.apiBase}?${query}` : this.apiBase;
+        const payload = await apiFetch(url, { signal });
         if (signal.aborted) return; // Superseded by a newer call — discard
 
         this.products = Array.isArray(payload.data) ? payload.data : [];
@@ -311,13 +318,11 @@ document.addEventListener('alpine:init', () => {
         }
 
         if (payload.options) {
+          this._optionsLoaded = true;
           this.options = {
             ...this.options,
             ...payload.options,
           };
-          if (!this.warehouseFilter && this.options.warehouses?.length > 0) {
-              this.warehouseFilter = String(this.options.warehouses[0].id);
-          }
           try {
             const form = this._getProductForm();
             if (
@@ -605,7 +610,8 @@ document.addEventListener('alpine:init', () => {
       this.calculateStats();
     },
 
-    resetFilters() {
+    async resetFilters() {
+      const previousWarehouse = this.warehouseFilter;
       this.searchQuery = '';
       this.categoryFilter = '';
       this.stockFilter = '';
@@ -613,6 +619,16 @@ document.addEventListener('alpine:init', () => {
       this.warehouseFilter = window.userContext?.warehouseId
         ? String(window.userContext.warehouseId)
         : (this.options.warehouses?.length > 0 ? String(this.options.warehouses[0].id) : '');
+      if (String(previousWarehouse || '') !== String(this.warehouseFilter || '')) {
+        this.selectedProducts = [];
+        await this.loadProductsFromApi();
+      }
+      this.filterProducts();
+    },
+
+    async changeWarehouse() {
+      this.selectedProducts = [];
+      await this.loadProductsFromApi();
       this.filterProducts();
     },
 
@@ -783,73 +799,104 @@ document.addEventListener('alpine:init', () => {
       form.form.imageFile = file;
     },
 
-    editProduct(product) {
-      const form = this._getProductForm();
-      if (!form) return;
-
-      form.editingProductId = product.id;
-
-      const mapped = this._mapProductForForm(product);
-
+    async fetchProductDetails(product) {
+      const params = new URLSearchParams();
+      params.set('without_options', '1');
       if (this.warehouseFilter) {
-        mapped.default_warehouse_id = String(this.warehouseFilter);
-        const ws = product.warehouse_stocks?.find(
-          (s) => String(s.warehouse_id) === String(this.warehouseFilter)
-        );
-        mapped.stock = String(ws ? ws.quantity || 0 : 0);
-        if (ws && ws.allow_overselling !== null && ws.allow_overselling !== undefined) {
-          mapped.warehouse_allow_overselling = ws.allow_overselling;
-          mapped.warehouse_overselling_qty = ws.overselling_qty;
-        } else {
-          mapped.warehouse_allow_overselling = null;
-          mapped.warehouse_overselling_qty = null;
-        }
-        if (ws && ws.is_sku_enabled !== null && ws.is_sku_enabled !== undefined) {
-          mapped.warehouse_is_sku_enabled = ws.is_sku_enabled;
-        } else {
-          mapped.warehouse_is_sku_enabled = null;
-        }
+        params.set('warehouse_id', this.warehouseFilter);
+        params.set('warehouse_scope', '1');
       }
-
-      form.form = mapped;
-      form.originalProduct = product;
-      form.form.imageFile = null;
-
-      const title = document.querySelector('#productModal .modal-title');
-      if (title) title.textContent = `Edit ${product.name}`;
-
-      getModal('#productModal')?.show();
+      const query = params.toString();
+      const queryString = query ? `?${query}` : '';
+      const response = await apiFetch(`${this.apiBase}/${product.id}${queryString}`);
+      return response?.data || product;
     },
 
-    cloneProduct(product) {
+    async editProduct(product) {
       const form = this._getProductForm();
       if (!form) return;
 
-      form.editingProductId = null;
+      try {
+        product = await this.fetchProductDetails(product);
 
-      const mapped = this._mapProductForForm(product);
+        form.editingProductId = product.id;
 
-      mapped.name = mapped.name + ' (Copy)';
-      mapped.sku = mapped.sku + '-COPY'; // User will likely change this
-      
-      mapped.stock = '0';
-      mapped.warehouse_allow_overselling = null;
-      mapped.warehouse_overselling_qty = null;
-      mapped.warehouse_is_sku_enabled = null;
+        const mapped = this._mapProductForForm(product);
 
-      form.form = mapped;
-      form.originalProduct = null;
-      form.form.imageFile = null;
+        if (this.warehouseFilter) {
+          mapped.default_warehouse_id = String(this.warehouseFilter);
+          const ws = product.warehouse_stocks?.find(
+            (s) => String(s.warehouse_id) === String(this.warehouseFilter)
+          );
+          mapped.stock = String(ws ? ws.quantity || 0 : 0);
+          if (ws && ws.allow_overselling !== null && ws.allow_overselling !== undefined) {
+            mapped.warehouse_allow_overselling = ws.allow_overselling;
+            mapped.warehouse_overselling_qty = ws.overselling_qty;
+          } else {
+            mapped.warehouse_allow_overselling = null;
+            mapped.warehouse_overselling_qty = null;
+          }
+          if (ws && ws.is_sku_enabled !== null && ws.is_sku_enabled !== undefined) {
+            mapped.warehouse_is_sku_enabled = ws.is_sku_enabled;
+          } else {
+            mapped.warehouse_is_sku_enabled = null;
+          }
+        }
 
-      const title = document.querySelector('#productModal .modal-title');
-      if (title) title.textContent = `Clone ${product.name} (Select Warehouse)`;
+        form.form = mapped;
+        form.originalProduct = product;
+        form.form.imageFile = null;
 
-      getModal('#productModal')?.show();
+        const title = document.querySelector('#productModal .modal-title');
+        if (title) title.textContent = `Edit ${product.name}`;
+
+        getModal('#productModal')?.show();
+      } catch (error) {
+        showToast(error.message || 'Unable to load product details.', 'danger');
+      }
     },
 
-    viewProduct(product) {
+    async cloneProduct(product) {
+      const form = this._getProductForm();
+      if (!form) return;
+
+      try {
+        product = await this.fetchProductDetails(product);
+
+        form.editingProductId = null;
+
+        const mapped = this._mapProductForForm(product);
+
+        mapped.name = mapped.name + ' (Copy)';
+        mapped.sku = mapped.sku + '-COPY'; // User will likely change this
+
+        mapped.stock = '0';
+        mapped.warehouse_allow_overselling = null;
+        mapped.warehouse_overselling_qty = null;
+        mapped.warehouse_is_sku_enabled = null;
+
+        form.form = mapped;
+        form.originalProduct = null;
+        form.form.imageFile = null;
+
+        const title = document.querySelector('#productModal .modal-title');
+        if (title) title.textContent = `Clone ${product.name} (Select Warehouse)`;
+
+        getModal('#productModal')?.show();
+      } catch (error) {
+        showToast(error.message || 'Unable to load product details.', 'danger');
+      }
+    },
+
+    async viewProduct(product) {
       this.previewProduct = { ...product };
       getModal('#productViewModal')?.show();
+      try {
+        const details = await this.fetchProductDetails(product);
+        if (this.previewProduct?.id === details.id) this.previewProduct = details;
+      } catch (error) {
+        showToast(error.message || 'Unable to load product details.', 'danger');
+      }
     },
 
     bulkAction(action) {

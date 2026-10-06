@@ -393,7 +393,7 @@
                                                         <a href="#" class="fw-bold text-decoration-none text-primary align-middle" @click.prevent="$dispatch('fetch-order', order.id)" x-text="order.order_no || order.id"></a>
                                                         <button type="button" class="btn btn-sm btn-link text-muted p-0 ms-2 align-middle" 
                                                                 title="Copy Order ID" 
-                                                                @click.prevent="navigator.clipboard.writeText(order.order_no || order.id); $el.innerHTML = '<i class=\'bi bi-check2 text-success\'></i>'; setTimeout(() => $el.innerHTML = '<i class=\'bi bi-clipboard\'></i>', 1500)">
+                                                                @click.prevent="copyText(order.order_no || order.id).then((success) => { if (!success) return; $el.innerHTML = '<i class=\'bi bi-check2 text-success\'></i>'; setTimeout(() => $el.innerHTML = '<i class=\'bi bi-clipboard\'></i>', 1500); })">
                                                             <i class="bi bi-clipboard"></i>
                                                         </button>
                                                     </td>

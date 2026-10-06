@@ -25,8 +25,8 @@ export default () => ({
   items: [],
   stats: { total_products: 0, total_warehouses: 0, low_stock_count: 0, out_of_stock: 0 },
   warehouses: [],
-  productOptions: [],
   isLoading: false,
+  dataRequestController: null,
   searchQuery: new URLSearchParams(window.location.search).get('search') || '',
   warehouseFilter: new URLSearchParams(window.location.search).get('warehouse_id') ? parseInt(new URLSearchParams(window.location.search).get('warehouse_id')) : '',
   stockLevelFilter: new URLSearchParams(window.location.search).get('stock_level') || '',
@@ -72,9 +72,8 @@ export default () => ({
     try {
       const urlParam = new URLSearchParams(window.location.search).get('warehouse_id');
       const initialWarehouse = urlParam ? parseInt(urlParam) : '';
-      const data = await this.apiRequest('/api/inventory/transfers/options');
-      this.warehouses = data.warehouses || [];
-      this.productOptions = data.products || [];
+      const data = await this.apiRequest('/api/inventory/stocks/warehouse-options');
+      this.warehouses = data.data || [];
 
       // Wait for DOM to render options
       await new Promise(resolve => this.$nextTick(resolve));
@@ -93,6 +92,9 @@ export default () => ({
   },
 
   async loadData() {
+    this.dataRequestController?.abort();
+    const requestController = new AbortController();
+    this.dataRequestController = requestController;
     this.isLoading = true;
     try {
       const params = new URLSearchParams({
@@ -109,7 +111,7 @@ export default () => ({
       currentUrl.search = params.toString();
       window.history.pushState({}, '', currentUrl);
 
-      const data = await this.apiRequest(`/api/inventory/stocks?${params}`);
+      const data = await this.apiRequest(`/api/inventory/stocks?${params}`, { signal: requestController.signal });
       this.items = data.data || [];
       this.stats = data.stats || this.stats;
       this.totalItems = data.meta?.total || 0;
@@ -118,9 +120,12 @@ export default () => ({
       // Clear selection on page load
       this.selectedItems = [];
     } catch (e) {
-      showToast(e.message, 'error');
+      if (e.name !== 'AbortError') showToast(e.message, 'error');
     } finally {
-      this.isLoading = false;
+      if (this.dataRequestController === requestController) {
+        this.isLoading = false;
+        this.dataRequestController = null;
+      }
     }
   },
 
@@ -354,4 +359,3 @@ export default () => ({
   },
 
 });
-

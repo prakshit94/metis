@@ -907,8 +907,91 @@ class InventoryService
                 }
             }
 
+            if ($order->status === 'cancelled') {
+                $this->restoreCancelledOrderWalletUsage($order);
+
+                $invoice = $order->invoices()->latest('id')->first();
+                if ($invoice && $invoice->status === 'cancelled') {
+                    $paidAmount = (float) $invoice->payments()->where('status', 'completed')->sum('amount');
+                    $invoice->update([
+                        'status' => $paidAmount >= (float) $invoice->net_amount
+                            ? 'paid'
+                            : ($paidAmount > 0 ? 'partially_paid' : 'unpaid'),
+                    ]);
+                }
+
+                $shipment = $order->shipments()->latest('id')->first();
+                if ($shipment && $shipment->status === 'cancelled') {
+                    $shipment->update([
+                        'status' => 'pending',
+                        'shipped_at' => null,
+                        'delivered_at' => null,
+                        'delivered_by' => null,
+                    ]);
+                }
+            }
+
             $order->update(['status' => 'pending', 'updated_by' => auth()->id()]);
         }, 3);
+    }
+
+    /** Restore a wallet redemption that was refunded when the order was cancelled. */
+    private function restoreCancelledOrderWalletUsage(Order $order): void
+    {
+        $refunded = (float) WalletTransaction::query()
+            ->where('reference_type', 'order_refund')
+            ->where('reference_id', $order->id)
+            ->where('type', 'credit')
+            ->sum('amount');
+        $reversed = (float) WalletTransaction::query()
+            ->where('reference_type', 'order_refund_reversal')
+            ->where('reference_id', $order->id)
+            ->where('type', 'debit')
+            ->sum('amount');
+        $amount = round(max(0, $refunded - $reversed), 2);
+
+        if ($amount <= 0) {
+            return;
+        }
+
+        if (! $order->party_id) {
+            throw ValidationException::withMessages([
+                'wallet' => 'The customer wallet cannot be restored because the customer no longer exists.',
+            ]);
+        }
+
+        $party = Party::query()->lockForUpdate()->find($order->party_id);
+        if (! $party) {
+            throw ValidationException::withMessages([
+                'wallet' => 'The customer wallet cannot be restored because the customer no longer exists.',
+            ]);
+        }
+
+        $balanceBefore = (float) $party->wallet_balance;
+        if ($balanceBefore < $amount) {
+            throw ValidationException::withMessages([
+                'wallet' => 'The customer wallet balance is too low to revert this cancellation.',
+            ]);
+        }
+
+        $balanceAfter = round($balanceBefore - $amount, 2);
+        $party->wallet_balance = $balanceAfter;
+        $party->save();
+
+        WalletTransaction::create([
+            'party_id' => $party->id,
+            'amount' => $amount,
+            'type' => 'debit',
+            'reference_type' => 'order_refund_reversal',
+            'reference_id' => $order->id,
+            'description' => 'Cancellation refund reversed for order #'.$order->order_no,
+            'created_by' => auth()->id() ?? $order->created_by,
+            'balance_before' => $balanceBefore,
+            'balance_after' => $balanceAfter,
+        ]);
+
+        $order->wallet_amount_used = round((float) $order->wallet_amount_used + $amount, 2);
+        $order->saveQuietly();
     }
 
     /**
@@ -1310,6 +1393,7 @@ class InventoryService
                 $shipment->update([
                     'status' => 'in_transit',
                     'delivered_at' => null,
+                    'delivered_by' => null,
                 ]);
             }
         }, 3);

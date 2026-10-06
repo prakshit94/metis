@@ -1,8 +1,14 @@
 import Alpine from 'alpinejs';
-import ApexCharts from 'apexcharts';
 import { Modal } from 'bootstrap';
 import Swal from 'sweetalert2';
 import { createSearchComponent } from '../utils/search-component.js';
+
+// Keep browser-native objects outside Alpine's reactive proxy. Some native
+// methods (for example AbortController.abort and Promise.then) require their
+// original receiver and fail when called through a Proxy.
+const orderLoadControllers = new WeakMap();
+let orderApexChartsPromise;
+let OrderApexCharts;
 
 // ─── CSRF helper ─────────────────────────────────────────────────────────────
 function getCsrfToken() {
@@ -124,6 +130,9 @@ document.addEventListener('alpine:init', () => {
     sortField: 'id',
     sortDirection: 'desc',
     isLoading: false,
+    _loadRequestId: 0,
+    _searchDebounce: null,
+    _analyticsToggleHandler: null,
 
     // ApexCharts settings
     charts: {},
@@ -449,6 +458,14 @@ document.addEventListener('alpine:init', () => {
         }
       });
 
+      const analyticsToggle = document.getElementById('ordersAnalyticsToggle');
+      if (analyticsToggle) {
+        this._analyticsToggleHandler = () => {
+          if (analyticsToggle.checked) requestAnimationFrame(() => this.initCharts());
+        };
+        analyticsToggle.addEventListener('change', this._analyticsToggleHandler);
+      }
+
       if (params.has('success')) {
         showToast(params.get('success'));
         params.delete('success');
@@ -482,6 +499,16 @@ document.addEventListener('alpine:init', () => {
     },
 
     destroy() {
+      orderLoadControllers.get(this)?.abort();
+      orderLoadControllers.delete(this);
+      if (this._searchDebounce) {
+        clearTimeout(this._searchDebounce);
+        this._searchDebounce = null;
+      }
+      const analyticsToggle = document.getElementById('ordersAnalyticsToggle');
+      if (analyticsToggle && this._analyticsToggleHandler) {
+        analyticsToggle.removeEventListener('change', this._analyticsToggleHandler);
+      }
       if (this._resizeHandler) {
         window.removeEventListener('resize', this._resizeHandler);
         this._resizeHandler = null;
@@ -511,6 +538,14 @@ document.addEventListener('alpine:init', () => {
     },
 
     loadOrders() {
+      if (this._searchDebounce) {
+        clearTimeout(this._searchDebounce);
+        this._searchDebounce = null;
+      }
+      const requestId = ++this._loadRequestId;
+      orderLoadControllers.get(this)?.abort();
+      const controller = new AbortController();
+      orderLoadControllers.set(this, controller);
       this.isLoading = true;
       const params = new URLSearchParams();
 
@@ -583,8 +618,9 @@ document.addEventListener('alpine:init', () => {
       const newUrl = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
       window.history.replaceState({}, '', newUrl);
 
-      apiFetch(`/orders?${params.toString()}`)
+      apiFetch(`/orders?${params.toString()}`, { signal: controller.signal })
         .then((data) => {
+          if (requestId !== this._loadRequestId) return;
           this.orders = (data.orders.data || []).map((o) => this.mapOrder(o));
           this.currentPage = data.orders.current_page || 1;
           this.totalPages = data.orders.last_page || 1;
@@ -764,10 +800,13 @@ document.addEventListener('alpine:init', () => {
           }
         })
         .catch((err) => {
-          showToast(err.message, 'danger');
+          if (requestId === this._loadRequestId) showToast(err.message, 'danger');
         })
         .finally(() => {
-          this.isLoading = false;
+          if (requestId === this._loadRequestId) {
+            this.isLoading = false;
+            orderLoadControllers.delete(this);
+          }
         });
     },
 
@@ -867,6 +906,13 @@ document.addEventListener('alpine:init', () => {
       };
 
       const shipment = Array.isArray(o.shipments) && o.shipments.length ? o.shipments[0] : null;
+      const shipmentEvents = shipment && Array.isArray(shipment.events)
+        ? shipment.events.map((event) => ({
+            ...event,
+            status: event.status || event.event_name || '',
+            created_at: event.created_at || event.occurred_at || null,
+          }))
+        : [];
       const availableServices = (o.shipping_address?.village?.services || [])
         .filter((service) => {
           const pivot = service.pivot || {};
@@ -945,15 +991,21 @@ document.addEventListener('alpine:init', () => {
           (o.lifecycle_status || o.status || '').charAt(0).toUpperCase() +
             (o.lifecycle_status || o.status || '').slice(1).replace(/_/g, ' '),
         customer: {
-          name: o.party ? `${o.party.firstname} ${o.party.lastname}` : 'N/A',
+          name: o.party
+            ? [o.party.firstname, o.party.middlename, o.party.lastname]
+                .map((part) => String(part ?? '').trim())
+                .filter(Boolean)
+                .join(' ') || 'N/A'
+            : 'N/A',
           email: o.party ? o.party.email : 'N/A',
           avatar: o.party && o.party.avatar ? o.party.avatar : '/assets/images/default_avatar.jpeg',
           phone: o.party ? o.party.phone : '',
+          secondaryPhone: o.party ? o.party.alternatemobile : '',
           relativeName: o.party ? o.party.relative_name || o.party.relative_name : '',
           relativePhone: o.party ? o.party.relative_phone : '',
           company: o.party ? o.party.company_name : '',
-          pan: o.party ? o.party.pan_number : '',
-          gstin: o.party ? o.party.gstin : '',
+          pan: o.party ? o.party.pan_no : '',
+          gstin: o.party ? o.party.gst_no : '',
         },
         warehouse: o.warehouse
           ? {
@@ -1001,7 +1053,7 @@ document.addEventListener('alpine:init', () => {
               delivery_attempts: shipment.delivery_attempts || 0,
               next_followup_date: shipment.next_followup_date || null,
               reschedule_reason: shipment.reschedule_reason || null,
-              events: Array.isArray(shipment.events) ? shipment.events : [],
+              events: shipmentEvents,
             }
           : null,
         orderReturn:
@@ -1098,7 +1150,9 @@ document.addEventListener('alpine:init', () => {
           name: o.creator ? (o.creator.name || '').trim() : 'N/A',
           email: o.creator ? o.creator.email || '' : '',
           avatar:
-            o.creator && o.creator.avatar ? o.creator.avatar : '/assets/images/default_avatar.jpeg',
+            o.creator && (o.creator.avatar || o.creator.photo)
+              ? (o.creator.avatar || o.creator.photo)
+              : '/assets/images/default_avatar.jpeg',
         },
         updatedBy: o.updater ? `${o.updater.name || ''}`.trim() : 'N/A',
         isUnfulfillable: o.is_unfulfillable || false,
@@ -1145,6 +1199,15 @@ document.addEventListener('alpine:init', () => {
     filterOrders() {
       this.currentPage = 1;
       this.loadOrders();
+    },
+
+    filterOrdersDebounced() {
+      this.currentPage = 1;
+      if (this._searchDebounce) clearTimeout(this._searchDebounce);
+      this._searchDebounce = setTimeout(() => {
+        this._searchDebounce = null;
+        this.loadOrders();
+      }, 250);
     },
 
     clearFilters() {
@@ -1246,8 +1309,8 @@ document.addEventListener('alpine:init', () => {
         canDispatch: statuses.has('ready_to_ship'),
         // Dispatched → Delivered
         canDeliver: statuses.has('dispatched'),
-        // Return (delivered, dispatched)
-        canReturn: statuses.has('delivered') || statuses.has('dispatched'),
+        // Bulk return is only available for dispatched orders.
+        canReturn: statuses.has('dispatched') && !statuses.has('delivered'),
         // Cancel (any order that is still active)
         canCancel: [...statuses].some((s) => cancellableStatuses.includes(s)),
       };
@@ -1708,7 +1771,7 @@ document.addEventListener('alpine:init', () => {
           break;
         case 'return_requested':
           const logs = order.original.status_logs || [];
-          const prevLog = logs.find((l) => l.status !== 'return_requested');
+          const prevLog = logs.find((l) => ['delivered', 'dispatched'].includes(l.status));
           const prevStatus = prevLog ? prevLog.status : 'delivered';
           const statusName =
             prevStatus.charAt(0).toUpperCase() + prevStatus.slice(1).replace(/_/g, ' ');
@@ -2260,38 +2323,53 @@ document.addEventListener('alpine:init', () => {
 
 
 
-    initCharts() {
-      if (this.chartsInitialized) {
-        if (this.charts.status) {
-          this.charts.status.updateSeries(this.statusStats.map((stat) => stat.count));
-          this.charts.status.updateOptions({
-            labels: this.statusStats.map((stat) => stat.name),
-            colors: this.statusStats.map((stat) => stat.color),
-          });
-        }
-        if (this.charts.orderTrends && this.trendsData && this.trendsData.length) {
-          this.charts.orderTrends.updateSeries([
-            {
-              name: 'Orders',
-              data: this.trendsData.map((t) => t.orders),
-            },
-            {
-              name: 'Revenue',
-              data: this.trendsData.map((t) => t.revenue),
-            },
-          ]);
-          this.charts.orderTrends.updateOptions({
-            xaxis: {
-              categories: this.trendsData.map((t) => t.date),
-            },
-          });
-        }
-        return;
-      }
+    async initCharts() {
+      const analyticsToggle = document.getElementById('ordersAnalyticsToggle');
+      const chartElements = ['orderTrendsChart', 'statusChart']
+        .map((id) => document.getElementById(id))
+        .filter(Boolean);
+      if (!chartElements.length || (analyticsToggle && !analyticsToggle.checked)) return;
 
-      this.initOrderTrendsChart();
-      this.initStatusChart();
-      this.chartsInitialized = true;
+      try {
+        if (!OrderApexCharts) {
+          orderApexChartsPromise ||= import('apexcharts').then((module) => module.default);
+          OrderApexCharts = await orderApexChartsPromise;
+        }
+
+        if (this.chartsInitialized) {
+          if (this.charts.status) {
+            this.charts.status.updateSeries(this.statusStats.map((stat) => stat.count));
+            this.charts.status.updateOptions({
+              labels: this.statusStats.map((stat) => stat.name),
+              colors: this.statusStats.map((stat) => stat.color),
+            });
+          }
+          if (this.charts.orderTrends && this.trendsData && this.trendsData.length) {
+            this.charts.orderTrends.updateSeries([
+              {
+                name: 'Orders',
+                data: this.trendsData.map((t) => t.orders),
+              },
+              {
+                name: 'Revenue',
+                data: this.trendsData.map((t) => t.revenue),
+              },
+            ]);
+            this.charts.orderTrends.updateOptions({
+              xaxis: {
+                categories: this.trendsData.map((t) => t.date),
+              },
+            });
+          }
+          return;
+        }
+
+        this.initOrderTrendsChart();
+        this.initStatusChart();
+        this.chartsInitialized = true;
+      } catch (error) {
+        console.error('Failed to load order analytics charts:', error);
+      }
     },
 
     initOrderTrendsChart() {
@@ -2363,7 +2441,7 @@ document.addEventListener('alpine:init', () => {
           },
         };
 
-        this.charts.orderTrends = new ApexCharts(chartElement, trendsData);
+        this.charts.orderTrends = new OrderApexCharts(chartElement, trendsData);
         this.charts.orderTrends.render();
       } catch (error) {
         console.error('Error rendering order trends chart:', error);
@@ -2398,7 +2476,7 @@ document.addEventListener('alpine:init', () => {
           },
         };
 
-        this.charts.status = new ApexCharts(chartElement, chartData);
+        this.charts.status = new OrderApexCharts(chartElement, chartData);
         this.charts.status.render();
       } catch (error) {
         console.error('Error rendering status chart:', error);
