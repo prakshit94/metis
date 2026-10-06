@@ -19,6 +19,7 @@ use App\Modules\Inventory\Models\Supplier;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -961,11 +962,32 @@ class ProductController extends Controller
             $extension = $file->extension() ?: 'jpg';
             $filename = Str::slug($product->sku).'-'.Str::uuid().'.'.$extension;
             $disk = Storage::disk('public');
+            if (! $disk->directoryExists('products') && ! $disk->makeDirectory('products')) {
+                Log::error('Unable to create product image storage directory.', [
+                    'disk' => config('filesystems.disks.public.driver'),
+                    'directory' => storage_path('app/public/products'),
+                    'directory_exists' => is_dir(storage_path('app/public/products')),
+                    'directory_writable' => is_writable(storage_path('app/public')),
+                ]);
+
+                throw ValidationException::withMessages([
+                    'image' => 'Product image storage is unavailable. Please contact support.',
+                ]);
+            }
             $imagePath = $file->storeAs('products', $filename, 'public');
 
             // Some production filesystem adapters return false on write failure instead
             // of throwing. Do not report a successful product save with a broken image URL.
             if (! $imagePath || ! $disk->exists($imagePath)) {
+                Log::error('Unable to persist uploaded product image.', [
+                    'disk' => config('filesystems.disks.public.driver'),
+                    'directory' => storage_path('app/public/products'),
+                    'directory_exists' => is_dir(storage_path('app/public/products')),
+                    'directory_writable' => is_writable(storage_path('app/public/products')),
+                    'returned_path' => $imagePath,
+                    'file_exists_on_disk' => $imagePath ? $disk->exists($imagePath) : false,
+                ]);
+
                 if ($imagePath) {
                     $disk->delete($imagePath);
                 }
