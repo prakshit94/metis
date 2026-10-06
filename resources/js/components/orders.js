@@ -110,7 +110,7 @@ document.addEventListener('alpine:init', () => {
     currentPage: 1,
     totalPages: 1,
     totalOrders: 0,
-    itemsPerPage: 15,
+    itemsPerPage: 25,
     currentBulkImportType: null,
 
     // Filters state
@@ -403,7 +403,10 @@ document.addEventListener('alpine:init', () => {
         this.villageFilter = params.get('village').split(',').filter(Boolean);
       if (params.has('from_date')) this.fromDate = params.get('from_date');
       if (params.has('to_date')) this.toDate = params.get('to_date');
-      if (params.has('limit')) this.itemsPerPage = parseInt(params.get('limit')) || 15;
+      if (params.has('limit')) {
+        const requestedLimit = parseInt(params.get('limit'), 10);
+        this.itemsPerPage = [25, 50, 100, 200].includes(requestedLimit) ? requestedLimit : 25;
+      }
       if (params.has('page')) this.currentPage = parseInt(params.get('page')) || 1;
       if (params.has('sort_field')) this.sortField = params.get('sort_field');
       if (params.has('sort_direction')) this.sortDirection = params.get('sort_direction');
