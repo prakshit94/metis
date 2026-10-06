@@ -344,11 +344,11 @@
                                                     <td class="align-middle">
                                                         <div class="d-flex align-items-start gap-3">
                                                             <div class="position-relative flex-shrink-0">
-                                                                <img :src="product.image || '{{ asset('assets/images/product-placeholder.svg') }}'" 
+                                                                <img :src="product.image || '/assets/images/product-placeholder.svg'"
                                                                      class="rounded border shadow-sm object-fit-cover" 
                                                                      style="width: 48px; height: 48px;" 
                                                                      :alt="product.name"
-                                                                     x-on:error="$el.src='{{ asset('assets/images/product-placeholder.svg') }}'">
+                                                                     x-on:error="$el.src='/assets/images/product-placeholder.svg'">
                                                                 <div x-show="product.grade" 
                                                                      class="position-absolute top-100 start-50 translate-middle badge border shadow-sm rounded-pill px-2 d-flex align-items-center" 
                                                                      style="font-size: 9px; padding-top: 2px; padding-bottom: 2px;"
@@ -950,7 +950,7 @@
                     <!-- Left: Image & Meta (sticky panel) -->
                     <div class="pvm-left bg-body-tertiary border-end p-3">
                         <div class="card border-start border-4 border-danger shadow-sm mb-3 rounded-4 overflow-hidden position-relative" style="aspect-ratio:1;width:100%;">
-                            <img :src="product ? (product.image || '{{ asset('assets/images/product-placeholder.svg') }}') : ''" class="w-100 h-100 object-fit-cover" x-on:error="$el.src='{{ asset('assets/images/product-placeholder.svg') }}'">
+                            <img :src="product ? (product.image || '/assets/images/product-placeholder.svg') : ''" class="w-100 h-100 object-fit-cover" x-on:error="$el.src='/assets/images/product-placeholder.svg'">
                             <span class="position-absolute top-0 end-0 m-2 badge bg-success shadow-sm" x-show="product && product.default_discount > 0" x-text="product ? product.default_discount + (product.default_discount_type === 'percent' ? '%' : '') + ' OFF' : ''"></span>
                         </div>
                         <div x-show="product">

@@ -219,7 +219,7 @@ class Product extends Model implements Auditable
             return null;
         }
 
-        return $this->image_path ? asset('storage/'.$this->image_path) : null;
+        return $this->image_path ? '/storage/'.ltrim($this->image_path, '/') : null;
     }
 
     public function getActivitylogOptions(): LogOptions
