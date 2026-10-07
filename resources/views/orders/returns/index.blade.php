@@ -7,9 +7,8 @@
 
     {{-- Page Header --}}
     <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center mb-4 gap-3">
-         <div class="overflow-hidden" style="min-width: 0;">
+        <div class="overflow-hidden" style="min-width: 0;">
             <h1 class="h3 mb-1 fw-bold"><i class="bi bi-arrow-return-left text-primary me-2"></i>Returns &amp; QC</h1>
-            <p class="text-muted mb-0 small">Inspect returned items, update stock, and process financials.</p>
         </div>
         <div class="d-flex gap-2">
             <button class="btn btn-outline-secondary shadow-sm" @click="downloadBulkQcTemplate()" title="CSV template with one order_id column; accepts database ID or order number">
@@ -23,8 +22,6 @@
             <input type="file" x-ref="importQcFile" class="d-none" accept=".csv" @change="uploadBulkQc($event)">
         </div>
     </div>
-    <p class="text-muted small mb-3">For bulk QC, upload one database order ID or order number per <code>order_id</code> row. Return items and product details are loaded automatically, then reviewed before QC is submitted.</p>
-
     {{-- Stats Cards --}}
     <div class="row g-3 mb-4">
         <div class="col-xl-3 col-lg-6">
@@ -137,7 +134,14 @@
     <div class="card">
         <div class="card-header">
             <div class="row align-items-center g-2">
-                <div class="col"><h2 class="h5 card-title mb-0">Returns Overview</h2></div>
+                <div class="col">
+                    <div class="d-flex align-items-center flex-wrap gap-2">
+                        <span class="small text-muted" x-show="totalReturns > 0">
+                            Showing <span x-text="((currentPage - 1) * itemsPerPage) + 1"></span>–<span x-text="Math.min(currentPage * itemsPerPage, totalReturns)"></span>
+                            of <span x-text="totalReturns"></span> returns
+                        </span>
+                    </div>
+                </div>
                 <div class="col-auto">
                     <div class="d-flex flex-wrap gap-2 justify-content-end">
                         <div class="position-relative">
@@ -156,6 +160,15 @@
                                 <option :value="svc" x-text="svc"></option>
                             </template>
                         </select>
+                        <label class="d-flex align-items-center gap-2 small text-muted mb-0">
+                            Rows
+                            <select class="form-select form-select-sm" style="width: auto; min-width: 84px;" aria-label="Rows per page" x-model.number="itemsPerPage" @change="changePageSize()">
+                                <option value="25">25</option>
+                                <option value="50">50</option>
+                                <option value="100">100</option>
+                                <option value="200">200</option>
+                            </select>
+                        </label>
                         <button class="btn btn-sm btn-outline-secondary" @click="clearFilters()" title="Clear filters"><i class="bi bi-x-circle"></i></button>
                     </div>
                 </div>
@@ -291,7 +304,7 @@
                         </template>
                         <template x-if="!isLoading && returns.length === 0">
                             <tr>
-                                <td colspan="9" class="text-center py-5 text-muted">
+                                <td colspan="10" class="text-center py-5 text-muted">
                                     <i class="bi bi-inbox fs-1 d-block mb-2 opacity-50"></i>
                                     No returns found.
                                 </td>
@@ -302,26 +315,28 @@
             </div>
 
             {{-- Pagination --}}
-            <div class="d-flex justify-content-between align-items-center px-3 py-2 border-top" x-show="totalPages > 1">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 px-3 py-2 border-top" x-show="totalReturns > 0">
                 <div class="text-muted small">
-                    Page <span x-text="currentPage"></span> of <span x-text="totalPages"></span>
-                    &nbsp;·&nbsp; <span x-text="totalReturns"></span> total
+                    Showing <span x-text="((currentPage - 1) * itemsPerPage) + 1"></span>–<span x-text="Math.min(currentPage * itemsPerPage, totalReturns)"></span>
+                    of <span x-text="totalReturns"></span> returns
                 </div>
-                <nav>
-                    <ul class="pagination pagination-sm mb-0 gap-1">
-                        <li class="page-item" :class="{ disabled: currentPage === 1 }">
-                            <a class="page-link rounded" href="#" @click.prevent="goToPage(currentPage - 1)">‹</a>
-                        </li>
-                        <template x-for="(page, idx) in visiblePages" :key="idx">
-                            <li class="page-item" :class="{ active: page === currentPage, disabled: page === '...' }">
-                                <a class="page-link rounded" href="#" @click.prevent="page !== '...' && goToPage(page)" x-text="page"></a>
+                <div class="ms-auto">
+                    <nav aria-label="Returns pagination" x-show="totalPages > 1">
+                        <ul class="pagination pagination-sm mb-0 gap-1">
+                            <li class="page-item" :class="{ disabled: currentPage === 1 }">
+                                <a class="page-link rounded" href="#" aria-label="Previous page" @click.prevent="goToPage(currentPage - 1)">‹</a>
                             </li>
-                        </template>
-                        <li class="page-item" :class="{ disabled: currentPage === totalPages }">
-                            <a class="page-link rounded" href="#" @click.prevent="goToPage(currentPage + 1)">›</a>
-                        </li>
-                    </ul>
-                </nav>
+                            <template x-for="(page, idx) in visiblePages" :key="idx">
+                                <li class="page-item" :class="{ active: page === currentPage, disabled: page === '...' }">
+                                    <a class="page-link rounded" href="#" @click.prevent="page !== '...' && goToPage(page)" x-text="page"></a>
+                                </li>
+                            </template>
+                            <li class="page-item" :class="{ disabled: currentPage === totalPages }">
+                                <a class="page-link rounded" href="#" aria-label="Next page" @click.prevent="goToPage(currentPage + 1)">›</a>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
             </div>
 
         </div>{{-- /card-body --}}

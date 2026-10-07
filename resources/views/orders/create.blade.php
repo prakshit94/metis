@@ -13,11 +13,11 @@
          @complaint-saved.window="loadAddresses()">
     
     {{-- Page Header --}}
-    <div class="d-flex justify-content-between align-items-center mb-4 mb-lg-5 mb-xl-6">
+    <div class="d-flex justify-content-between align-items-center mb-4 mb-lg-5 mb-xl-6 order-create-header">
         <div>
             <h1 class="h3 mb-1 d-flex align-items-center">
-                <template x-if="isConfirmMode"><i class="bi bi-check-circle me-2"></i> Confirm Order</template>
-                <template x-if="!isConfirmMode"><i class="bi bi-cart-check me-2"></i> <span x-text="editingOrderId ? 'Edit Order' : 'Create New Order'"></span></template>
+                <template x-if="isConfirmMode"><span><i class="bi bi-check-circle me-2"></i>Confirm Order</span></template>
+                <template x-if="!isConfirmMode"><span><i class="bi bi-cart-check me-2"></i><span x-text="editingOrderId ? 'Edit Order' : 'Create New Order'"></span></span></template>
                 <template x-if="editingOrderId && originalOrder">
                     <span class="ms-2 text-primary">#<span x-text="originalOrder.order_no"></span></span>
                 </template>
@@ -40,7 +40,7 @@
                 </template>
             </div>
         </div>
-        <div class="d-flex gap-2">
+        <div class="d-flex gap-2 order-create-header-actions">
             <template x-if="editingOrderId || isConfirmMode">
                 <a href="{{ route('orders') }}" data-bypass="true" class="btn btn-outline-danger shadow-sm" @click="clearCartCache(); isCallLoggedOrClosed = true">
                     <i class="bi bi-x-circle me-1"></i> <span x-text="isConfirmMode ? 'Cancel Confirmation' : 'Cancel Edit Mode'"></span>
@@ -128,7 +128,7 @@
             </template>
 
             <div id="customer-workspace" class="card shadow-sm border-start border-4 border-success mb-4">
-                <div class="card-header bg-transparent border-bottom py-3 px-4 d-flex justify-content-between align-items-center">
+                <div class="card-header bg-transparent border-bottom py-3 px-4 d-flex justify-content-between align-items-center customer-workspace-header">
                     <div class="d-flex align-items-center gap-3">
                         <template x-if="customerDetails">
                             <div class="d-flex align-items-center gap-4 flex-wrap">
@@ -256,7 +256,7 @@
                             <h5 class="mb-0 fw-bold"><i class="bi bi-person-badge me-2 text-primary"></i>Customer Workspace</h5>
                         </template>
                     </div>
-                    <div class="d-flex align-items-center gap-3" x-show="customerDetails" x-cloak>
+                    <div class="d-flex align-items-center gap-3 customer-workspace-header-actions" x-show="customerDetails" x-cloak>
                         <div class="form-check form-switch cursor-pointer ms-2 mb-0 d-flex align-items-center" title="Toggle Workspace">
                             <input class="form-check-input mt-0 me-2 shadow-sm" type="checkbox" role="switch" id="workspaceToggleBtn" x-model="showCustomerWorkspace" style="cursor: pointer;">
                             <label class="form-check-label fw-bold text-body-secondary text-uppercase mb-0" for="workspaceToggleBtn" style="cursor: pointer; font-size: 10px; letter-spacing: 0.5px;" x-text="showCustomerWorkspace ? 'Hide Profile' : 'View Profile'"></label>
@@ -628,8 +628,8 @@
                                                 <div class="flex-grow-1" style="min-width: 0;">
                                                     <div class="fw-bold text-truncate text-body cursor-pointer text-primary-hover mb-1" :title="p.name" x-text="p.name" @click="openProductModal(p)"></div>
                                                     <div class="small text-body-secondary text-truncate mb-1" style="font-size: 10px;">
-                                                        <span x-show="p.category && p.category.name" class="me-2"><i class="bi bi-tag-fill me-1 text-primary opacity-50"></i><span x-text="p.category.name"></span></span>
-                                                        <span x-show="p.brand && p.brand.name"><i class="bi bi-award-fill me-1 text-warning opacity-75"></i><span x-text="p.brand.name"></span></span>
+                                                        <span x-show="p.category && p.category.name" class="me-2"><i class="bi bi-tag-fill me-1 text-primary opacity-50"></i><span x-text="p.category?.name || ''"></span></span>
+                                                        <span x-show="p.brand && p.brand.name"><i class="bi bi-award-fill me-1 text-warning opacity-75"></i><span x-text="p.brand?.name || ''"></span></span>
                                                     </div>
                                                     <div class="d-flex align-items-center gap-1 mt-1">
                                                         <span class="badge text-bg-secondary-subtle text-secondary-emphasis" style="font-size: 9px;" x-text="p.sku"></span>
@@ -734,8 +734,8 @@
                                                     <div class="d-flex flex-column min-w-0 pt-1">
                                                         <a href="#" class="fw-bold text-decoration-none text-body-emphasis text-truncate mb-1 cursor-pointer" style="max-width: 220px;" @click.prevent="openProductModal(p)" x-text="p.name"></a>
                                                         <div class="small text-body-secondary text-truncate mb-1" style="font-size: 10px;">
-                                                            <span x-show="p.category && p.category.name" class="me-2"><i class="bi bi-tag-fill me-1 text-primary opacity-50"></i><span x-text="p.category.name"></span></span>
-                                                            <span x-show="p.brand && p.brand.name"><i class="bi bi-award-fill me-1 text-warning opacity-75"></i><span x-text="p.brand.name"></span></span>
+                                                            <span x-show="p.category && p.category.name" class="me-2"><i class="bi bi-tag-fill me-1 text-primary opacity-50"></i><span x-text="p.category?.name || ''"></span></span>
+                                                            <span x-show="p.brand && p.brand.name"><i class="bi bi-award-fill me-1 text-warning opacity-75"></i><span x-text="p.brand?.name || ''"></span></span>
                                                         </div>
                                                         <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
                                                             <span class="badge bg-secondary bg-opacity-10 text-secondary-emphasis border border-secondary border-opacity-25" style="font-size: 10px; padding: 0.25em 0.5em;" x-text="p.sku"></span>
@@ -1153,7 +1153,7 @@
                                     <span>Coupon Savings</span>
                                     <span class="text-body-secondary d-block" style="font-size: 10px;" x-text="appliedCouponObj ? '(Code: ' + couponCode + ')' : 'No coupon applied'"></span>
                                 </div>
-                                <span class="fw-bold align-top" x-show="appliedCouponObj && (appliedCouponObj.type === 'free_shipping' || appliedCouponObj.type === 'free_product')" x-text="appliedCouponObj.type === 'free_shipping' ? 'Free Shipping' : 'Free Gift'"></span>
+                                <span class="fw-bold align-top" x-show="appliedCouponObj && (appliedCouponObj.type === 'free_shipping' || appliedCouponObj.type === 'free_product')" x-text="appliedCouponObj?.type === 'free_shipping' ? 'Free Shipping' : 'Free Gift'"></span>
                                 <span class="fw-bold align-top" x-show="!appliedCouponObj || (appliedCouponObj.type !== 'free_shipping' && appliedCouponObj.type !== 'free_product')" x-text="'- ₹ ' + Number(couponDiscount).toFixed(2)"></span>
                             </div>
 
@@ -2788,6 +2788,55 @@
     #productDetailsModal .modal-body > .row > .col-md-8 {
         flex: 1;
         min-width: 0;
+    }
+
+    @media (max-width: 767.98px) {
+        .order-create-header {
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .order-create-header > div:first-child,
+        .order-create-header-actions {
+            width: 100%;
+            min-width: 0;
+        }
+
+        .order-create-header-actions {
+            flex-wrap: wrap;
+            justify-content: flex-start;
+        }
+
+        .customer-workspace-header {
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .customer-workspace-header > div:first-child,
+        .customer-workspace-header-actions {
+            width: 100%;
+            min-width: 0;
+        }
+
+        .customer-workspace-header-actions {
+            justify-content: space-between;
+            flex-wrap: wrap;
+        }
+
+        #productDetailsModal .modal-body > .row {
+            flex-wrap: wrap;
+        }
+
+        #productDetailsModal .modal-body > .row > .col-md-4 {
+            min-width: 0;
+            max-width: 100%;
+            width: 100%;
+        }
+
+        #productDetailsModal .modal-body > .row > .col-md-8 {
+            flex: 0 0 100%;
+            width: 100%;
+        }
     }
 </style>
 

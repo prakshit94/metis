@@ -8,6 +8,54 @@
 <style>
     /* Prevent layout shifting during Alpine load */
     [x-cloak] { display: none !important; }
+
+    .analytics-chart-empty {
+        min-height: 320px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+        text-align: center;
+    }
+
+    .analytics-kpi-content {
+        min-width: 0;
+    }
+
+    .analytics-kpi-layout {
+        min-height: 100%;
+        gap: .25rem;
+    }
+
+    .analytics-kpi-layout .analytics-kpi-content {
+        width: 100%;
+        text-align: center;
+    }
+
+    .analytics-kpi-value {
+        max-width: 100%;
+        font-size: clamp(1rem, 1.5vw, 1.5rem);
+        line-height: 1.2;
+        overflow-wrap: anywhere;
+    }
+
+    @media (max-width: 575.98px) {
+        .analytics-table-header {
+            align-items: stretch !important;
+            flex-direction: column;
+            gap: .5rem;
+        }
+
+        .analytics-table-header .btn-group {
+            display: flex;
+            width: 100%;
+        }
+
+        .analytics-table-header .btn-group > .btn {
+            flex: 1 1 0;
+            white-space: nowrap;
+        }
+    }
 </style>
 @endpush
 
@@ -90,15 +138,15 @@
         <div class="col-sm-6 col-xl-3">
             <div class="card stats-card h-100 border-start border-4 border-primary">
                 <div class="card-body">
-                    <div class="d-flex align-items-center">
+                    <div class="d-flex flex-column align-items-center analytics-kpi-layout">
                         <div class="flex-shrink-0">
                             <div class="stats-icon bg-success bg-opacity-10 text-success">
                                 <i class="bi bi-cart-check"></i>
                             </div>
                         </div>
-                        <div class="flex-grow-1 ms-3">
+                        <div class="analytics-kpi-content">
                             <p class="h6 mb-0 text-body-secondary">Total Sales</p>
-                            <div class="h3 mb-0" x-text="formatCurrency(data.kpis.totalSales)"></div>
+                            <div class="h3 mb-0 analytics-kpi-value" x-text="formatCurrency(data.kpis.totalSales)"></div>
                             <small class="text-body-secondary"><span x-text="data.kpis.totalSalesCount"></span> Orders</small>
                         </div>
                     </div>
@@ -110,15 +158,15 @@
         <div class="col-sm-6 col-xl-3">
             <div class="card stats-card h-100 border-start border-4 border-success">
                 <div class="card-body">
-                    <div class="d-flex align-items-center">
+                    <div class="d-flex flex-column align-items-center analytics-kpi-layout">
                         <div class="flex-shrink-0">
                             <div class="stats-icon bg-info bg-opacity-10 text-info">
                                 <i class="bi bi-wallet2"></i>
                             </div>
                         </div>
-                        <div class="flex-grow-1 ms-3">
+                        <div class="analytics-kpi-content">
                             <p class="h6 mb-0 text-body-secondary">Income (Inward)</p>
-                            <div class="h3 mb-0" x-text="formatCurrency(data.kpis.inwardPayments)"></div>
+                            <div class="h3 mb-0 analytics-kpi-value" x-text="formatCurrency(data.kpis.inwardPayments)"></div>
                         </div>
                     </div>
                 </div>
@@ -129,15 +177,15 @@
         <div class="col-sm-6 col-xl-3">
             <div class="card stats-card h-100 border-start border-4 border-warning">
                 <div class="card-body">
-                    <div class="d-flex align-items-center">
+                    <div class="d-flex flex-column align-items-center analytics-kpi-layout">
                         <div class="flex-shrink-0">
                             <div class="stats-icon bg-warning bg-opacity-10 text-warning">
                                 <i class="bi bi-exclamation-circle"></i>
                             </div>
                         </div>
-                        <div class="flex-grow-1 ms-3">
+                        <div class="analytics-kpi-content">
                             <p class="h6 mb-0 text-body-secondary">Sales Outstanding</p>
-                            <div class="h3 mb-0 text-warning" x-text="formatCurrency(data.kpis.salesOutstanding)"></div>
+                            <div class="h3 mb-0 text-warning analytics-kpi-value" x-text="formatCurrency(data.kpis.salesOutstanding)"></div>
                             <small class="text-body-secondary"><span x-text="data.kpis.salesOutstandingCount"></span> Unpaid Invoices</small>
                         </div>
                     </div>
@@ -149,15 +197,15 @@
         <div class="col-sm-6 col-xl-3">
             <div class="card stats-card h-100 border-start border-4 border-info">
                 <div class="card-body">
-                    <div class="d-flex align-items-center">
+                    <div class="d-flex flex-column align-items-center analytics-kpi-layout">
                         <div class="flex-shrink-0">
                             <div class="stats-icon bg-primary bg-opacity-10 text-primary">
                                 <i class="bi bi-people"></i>
                             </div>
                         </div>
-                        <div class="flex-grow-1 ms-3">
+                        <div class="analytics-kpi-content">
                             <p class="h6 mb-0 text-body-secondary">Customers</p>
-                            <div class="h3 mb-0" x-text="data.kpis.newCustomers"></div>
+                            <div class="h3 mb-0 analytics-kpi-value" x-text="data.kpis.newCustomers"></div>
                             <small class="text-success">New</small>
                             <small class="text-body-secondary ms-2">/ <span x-text="data.kpis.existingCustomers"></span> Existing</small>
                         </div>
@@ -175,15 +223,15 @@
         <div class="col-sm-6 col-xl-3">
             <div class="card stats-card h-100 border-start border-4 border-primary">
                 <div class="card-body">
-                    <div class="d-flex align-items-center">
+                    <div class="d-flex flex-column align-items-center analytics-kpi-layout">
                         <div class="flex-shrink-0">
                             <div class="stats-icon bg-warning bg-opacity-10 text-warning">
                                 <i class="bi bi-bag"></i>
                             </div>
                         </div>
-                        <div class="flex-grow-1 ms-3">
+                        <div class="analytics-kpi-content">
                             <p class="h6 mb-0 text-body-secondary">Total Purchase</p>
-                            <div class="h3 mb-0" x-text="formatCurrency(data.kpis.totalPurchase)"></div>
+                            <div class="h3 mb-0 analytics-kpi-value" x-text="formatCurrency(data.kpis.totalPurchase)"></div>
                             <small class="text-body-secondary"><span x-text="data.kpis.totalPurchaseCount"></span> Orders</small>
                         </div>
                     </div>
@@ -195,15 +243,15 @@
         <div class="col-sm-6 col-xl-3">
             <div class="card stats-card h-100 border-start border-4 border-danger">
                 <div class="card-body">
-                    <div class="d-flex align-items-center">
+                    <div class="d-flex flex-column align-items-center analytics-kpi-layout">
                         <div class="flex-shrink-0">
                             <div class="stats-icon bg-danger bg-opacity-10 text-danger">
                                 <i class="bi bi-cash-stack"></i>
                             </div>
                         </div>
-                        <div class="flex-grow-1 ms-3">
+                        <div class="analytics-kpi-content">
                             <p class="h6 mb-0 text-body-secondary">Expense (Outward)</p>
-                            <div class="h3 mb-0" x-text="formatCurrency(data.kpis.outwardPayments)"></div>
+                            <div class="h3 mb-0 analytics-kpi-value" x-text="formatCurrency(data.kpis.outwardPayments)"></div>
                         </div>
                     </div>
                 </div>
@@ -214,15 +262,15 @@
         <div class="col-sm-6 col-xl-3">
             <div class="card stats-card h-100 border-start border-4 border-warning">
                 <div class="card-body">
-                    <div class="d-flex align-items-center">
+                    <div class="d-flex flex-column align-items-center analytics-kpi-layout">
                         <div class="flex-shrink-0">
                             <div class="stats-icon bg-danger bg-opacity-10 text-danger">
                                 <i class="bi bi-clock-history"></i>
                             </div>
                         </div>
-                        <div class="flex-grow-1 ms-3">
+                        <div class="analytics-kpi-content">
                             <p class="h6 mb-0 text-body-secondary">Purchase Outstanding</p>
-                            <div class="h3 mb-0 text-danger" x-text="formatCurrency(data.kpis.purchaseOutstanding)"></div>
+                            <div class="h3 mb-0 text-danger analytics-kpi-value" x-text="formatCurrency(data.kpis.purchaseOutstanding)"></div>
                             <small class="text-body-secondary">Payables Due</small>
                         </div>
                     </div>
@@ -237,15 +285,15 @@
                     <p class="h6 mb-3 text-body-secondary">Inventory Health</p>
                     <div class="d-flex justify-content-between text-center mt-3">
                         <div>
-                            <h4 class="mb-0 text-success" x-text="data.kpis.inStock"></h4>
+                            <h4 class="mb-0 text-success analytics-kpi-value" x-text="data.kpis.inStock"></h4>
                             <small class="text-body-secondary">In Stock</small>
                         </div>
                         <div class="border-start px-3">
-                            <h4 class="mb-0 text-warning" x-text="data.kpis.lowStock"></h4>
+                            <h4 class="mb-0 text-warning analytics-kpi-value" x-text="data.kpis.lowStock"></h4>
                             <small class="text-body-secondary">Low Stock</small>
                         </div>
                         <div class="border-start ps-3">
-                            <h4 class="mb-0 text-danger" x-text="data.kpis.zeroStock"></h4>
+                            <h4 class="mb-0 text-danger analytics-kpi-value" x-text="data.kpis.zeroStock"></h4>
                             <small class="text-body-secondary">Out of Stock</small>
                         </div>
                     </div>
@@ -263,7 +311,9 @@
                     <h2 class="h5 card-title mb-0">Sales vs Purchase Trend</h2>
                 </div>
                 <div class="card-body">
-                    <div id="trendChart" style="min-height: 320px;"></div>
+                    <div id="trendChart" x-show="data.charts.salesTrend.length || data.charts.purchaseTrend.length" x-cloak style="min-height: 320px;"></div>
+                    <div class="analytics-chart-empty text-body-secondary" x-show="!error && !data.charts.salesTrend.length && !data.charts.purchaseTrend.length" x-cloak role="status" aria-live="polite" x-text="loading ? 'Loading chart data…' : 'No sales or purchase data for this period'">
+                    </div>
                 </div>
             </div>
         </div>
@@ -275,7 +325,9 @@
                     <h2 class="h5 card-title mb-0">State-wise Sales</h2>
                 </div>
                 <div class="card-body">
-                    <div id="stateWiseChart" style="min-height: 320px;"></div>
+                    <div id="stateWiseChart" x-show="data.charts.stateWiseSales.length" x-cloak style="min-height: 320px;"></div>
+                    <div class="analytics-chart-empty text-body-secondary" x-show="!error && !data.charts.stateWiseSales.length" x-cloak role="status" aria-live="polite" x-text="loading ? 'Loading chart data…' : 'No sales by state for this period'">
+                    </div>
                 </div>
             </div>
         </div>
@@ -287,7 +339,7 @@
         <!-- Product Performance -->
         <div class="col-lg-6">
             <div class="card h-100 border-start border-4 border-warning">
-                <div class="card-header d-flex justify-content-between align-items-center">
+                <div class="card-header analytics-table-header d-flex justify-content-between align-items-center">
                     <h2 class="h5 card-title mb-0">Product Performance</h2>
                     <div class="btn-group btn-group-sm" role="group">
                         <button type="button" class="btn btn-outline-primary" :class="{'active': showBestSelling}" @click="showBestSelling = true">Best Selling</button>
@@ -389,7 +441,7 @@
         <!-- Top Customers & Vendors -->
         <div class="col-lg-6">
             <div class="card h-100 border-start border-4 border-info">
-                <div class="card-header d-flex justify-content-between align-items-center">
+                <div class="card-header analytics-table-header d-flex justify-content-between align-items-center">
                     <h2 class="h5 card-title mb-0">Top Parties</h2>
                     <div class="btn-group btn-group-sm" role="group">
                         <button type="button" class="btn btn-outline-primary" :class="{'active': showTopCustomers}" @click="showTopCustomers = true">Customers</button>
@@ -447,7 +499,7 @@
         <!-- Unpaid / Due Invoices -->
         <div class="col-lg-6">
             <div class="card h-100 border-start border-4 border-danger">
-                <div class="card-header d-flex justify-content-between align-items-center">
+                <div class="card-header analytics-table-header d-flex justify-content-between align-items-center">
                     <h2 class="h5 card-title mb-0">Unpaid / Due</h2>
                     <div class="btn-group btn-group-sm" role="group">
                         <button type="button" class="btn btn-outline-primary" :class="{'active': showSalesDue}" @click="showSalesDue = true">Sales Due</button>
@@ -597,8 +649,10 @@ function erpAnalyticsDashboard() {
                 this.data.charts = { ...this.data.charts, ...json.charts };
                 this.data.tables = { ...this.data.tables, ...json.tables };
                 
-                this.renderTrendChart();
-                this.renderStateChart();
+                requestAnimationFrame(() => {
+                    this.renderTrendChart();
+                    this.renderStateChart();
+                });
 
             } catch (err) {
                 console.error(err);
@@ -611,6 +665,12 @@ function erpAnalyticsDashboard() {
         renderTrendChart() {
             const salesData = this.data.charts.salesTrend || [];
             const purchaseData = this.data.charts.purchaseTrend || [];
+
+            if (salesData.length === 0 && purchaseData.length === 0) {
+                this.trendChartInstance?.destroy();
+                this.trendChartInstance = null;
+                return;
+            }
             
             const dateSet = new Set([
                 ...salesData.map(d => d.day),
@@ -644,6 +704,12 @@ function erpAnalyticsDashboard() {
                     height: 320,
                     toolbar: { show: false },
                     fontFamily: 'inherit',
+                },
+                noData: {
+                    text: 'No sales or purchase data for this period',
+                    align: 'center',
+                    verticalAlign: 'middle',
+                    style: { color: textColor, fontSize: '14px', fontFamily: 'inherit' }
                 },
                 colors: [this.getCssVar('--bs-success') || '#20c997', this.getCssVar('--bs-warning') || '#ffc107'],
                 dataLabels: { enabled: false },
@@ -687,6 +753,12 @@ function erpAnalyticsDashboard() {
 
         renderStateChart() {
             const stateData = this.data.charts.stateWiseSales || [];
+
+            if (stateData.length === 0) {
+                this.stateChartInstance?.destroy();
+                this.stateChartInstance = null;
+                return;
+            }
             
             const textColor = this.getCssVar('--bs-body-color') || '#6c757d';
             
@@ -700,6 +772,12 @@ function erpAnalyticsDashboard() {
                     height: 320,
                     toolbar: { show: false },
                     fontFamily: 'inherit',
+                },
+                noData: {
+                    text: 'No sales by state for this period',
+                    align: 'center',
+                    verticalAlign: 'middle',
+                    style: { color: textColor, fontSize: '14px', fontFamily: 'inherit' }
                 },
                 colors: [this.getCssVar('--bs-primary') || '#0d6efd'],
                 plotOptions: {

@@ -110,7 +110,7 @@ class OrderReturnController extends Controller implements HasMiddleware
 
         $query->orderBy('order_returns.'.$sortField, $sortDirection);
 
-        $limit = min(max($request->integer('limit', 15), 1), 100);
+        $limit = min(max($request->integer('limit', 15), 1), 200);
         $returns = $query->paginate($limit);
 
         if ($request->wantsJson() || $request->ajax()) {

@@ -84,7 +84,7 @@ document.addEventListener('alpine:init', () => {
     currentPage: 1,
     totalPages: 1,
     totalReturns: 0,
-    itemsPerPage: 15,
+    itemsPerPage: 25,
     isLoading: false,
     isSubmitting: false,
     importingQc: false,
@@ -414,6 +414,11 @@ document.addEventListener('alpine:init', () => {
         this.currentPage = page;
         this.loadReturns();
       }
+    },
+
+    changePageSize() {
+      this.currentPage = 1;
+      this.loadReturns();
     },
 
     get visiblePages() {
