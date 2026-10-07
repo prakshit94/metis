@@ -84,10 +84,9 @@ class CategoryController extends Controller implements HasMiddleware
         ], 201);
     }
 
-    public function show(Category $model): JsonResponse
+    public function show(Category $category): JsonResponse
     {
-
-        return response()->json(['data' => $model->load('parent')->loadCount('products')]);
+        return response()->json(['data' => $category->load('parent')->loadCount('products')]);
     }
 
     public function update(Request $request, $id): JsonResponse

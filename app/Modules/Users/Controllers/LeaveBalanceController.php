@@ -41,6 +41,15 @@ class LeaveBalanceController extends Controller implements HasMiddleware
         return response()->json($balances);
     }
 
+    public function show(Request $request, LeaveBalance $leaveBalance): JsonResponse
+    {
+        $user = $request->user();
+        $isGlobalView = $user && ($user->hasRole(['Super Admin', 'Admin']) || $user->can('view-all-data'));
+        abort_unless($isGlobalView || (int) $leaveBalance->user_id === (int) $user?->id, 404);
+
+        return response()->json(['data' => $leaveBalance->load('user:id,name,employee_id')]);
+    }
+
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([

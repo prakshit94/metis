@@ -1,0 +1,2379 @@
+{
+    "metrics": {
+        "http_req_waiting": {
+            "avg": 3468.8170909735236,
+            "med": 3088.550223,
+            "p(90)": 6786.003346,
+            "p(95)": 9148.0291925,
+            "p(99)": 15654.242598900002,
+            "max": 15909.850808
+        },
+        "http_reqs": {
+            "count": 491,
+            "rate": 2.017780328055695
+        },
+        "http_req_blocked": {
+            "med": 1.087963,
+            "p(90)": 5.103252,
+            "p(95)": 7.1428135,
+            "p(99)": 12.672902300000011,
+            "max": 32.121929,
+            "avg": 2.2044245274949064
+        },
+        "http_req_duration{expected_response:true}": {
+            "p(95)": 9186.5727502,
+            "p(99)": 15684.747080800002,
+            "max": 15912.564015,
+            "avg": 3520.7282192817183,
+            "med": 3106.658063,
+            "p(90)": 6932.732896000002
+        },
+        "http_req_tls_handshaking": {
+            "p(90)": 0,
+            "p(95)": 0,
+            "p(99)": 0,
+            "max": 0,
+            "avg": 0,
+            "med": 0
+        },
+        "http_req_receiving": {
+            "avg": 121.18375092871693,
+            "med": 4.267474,
+            "p(90)": 11.977836,
+            "p(95)": 16.886857499999998,
+            "p(99)": 27.46432390000008,
+            "max": 56668.967487
+        },
+        "http_req_duration": {
+            "p(95)": 9185.272456,
+            "p(99)": 15745.9379532,
+            "max": 60008.314725,
+            "avg": 3590.1882580814636,
+            "med": 3093.108237,
+            "p(90)": 6840.109923,
+            "thresholds": {
+                "p(95)<5000": true,
+                "p(99)<10000": true
+            }
+        },
+        "group_duration": {
+            "p(95)": 6293.792309099999,
+            "p(99)": 14932.751910119996,
+            "max": 60010.09495,
+            "avg": 2077.573923191304,
+            "med": 625.175578,
+            "p(90)": 3857.2048824000003
+        },
+        "checks": {
+            "passes": 462,
+            "fails": 26,
+            "thresholds": {
+                "rate>0.99": true
+            },
+            "value": 0.9467213114754098
+        },
+        "iteration_duration": {
+            "max": 60010.17799,
+            "avg": 3607.657175034837,
+            "med": 3109.2525290000003,
+            "p(90)": 6853.7050967000005,
+            "p(95)": 9187.4952464,
+            "p(99)": 15752.02488917
+        },
+        "data_sent": {
+            "count": 467033,
+            "rate": 1919.2871689467117
+        },
+        "http_req_failed": {
+            "passes": 26,
+            "fails": 465,
+            "thresholds": {
+                "rate<0.01": true
+            },
+            "value": 0.05295315682281059
+        },
+        "http_req_sending": {
+            "avg": 0.18741617922606932,
+            "med": 0.05541,
+            "p(90)": 0.208164,
+            "p(95)": 0.5746100000000001,
+            "p(99)": 2.3729920000000044,
+            "max": 21.826484
+        },
+        "data_received": {
+            "count": 19105936,
+            "rate": 78516.45989794524
+        },
+        "iterations": {
+            "count": 488,
+            "rate": 2.005451731346597
+        },
+        "vus": {
+            "value": 1,
+            "min": 0,
+            "max": 21
+        },
+        "vus_max": {
+            "value": 21,
+            "min": 21,
+            "max": 21
+        },
+        "http_req_connecting": {
+            "p(95)": 5.4985455000000005,
+            "p(99)": 12.14891440000001,
+            "max": 30.004825,
+            "avg": 1.5519111038696547,
+            "med": 0.746425,
+            "p(90)": 3.874131
+        }
+    },
+    "setup_data": {
+        "apiToken": "",
+        "cookieHeader": "XSRF-TOKEN=eyJpdiI6IjVncDJrKyt0YW5VdFNxLzZ4SmpIUmc9PSIsInZhbHVlIjoiczAxUnRkWFl3eEttRXRmSnFwMTdhQU9vQ1lNRGVGT1RON2ZiSWZ1eHJFUlJ5MUhQc2pTN0dKbzgxc1JwcDhKak52TGpnR0RhWEE5MENQN25MdFl4R3pueTNYR1RMVUkyWE5JSkxRdldEVDRzT3FhMVZuZ0M2dWtnNGJzd2ZONTUiLCJtYWMiOiJhNmMzN2RmOGZkMDhhMzZmMTNmZmM5NDhjM2NiMzUyOGVmNDczOWJlODRlMDQ3ODM5ZTlmNWY4ZDgwNTRlODE4IiwidGFnIjoiIn0%3D; laravel-session=eyJpdiI6IkF6cGIrMy9Td2Y3L25aNXcyRnAwbUE9PSIsInZhbHVlIjoiVDhwNEV5SDUvS3ZrbTFaYXNwRWFTTUVMVHE1RnpLYkVQUHMyM05nUlhPR1lrV3FZZ25pcWFOUE16Vno5M2loZXZuWk1MUWp4NngwR2NGK2tVZmZiS2JEdzFJclpDN3dKMVRVM0gxc3A4K1dJWjh4c1JGMDhFTFlZaVZabDRucTIiLCJtYWMiOiJmNGE5ODBjZjhmODgxMWVkZTc1Y2FiMWJiYWY5N2I1ODViZDgwY2I0NmUyNzk2MGFjYjQ1MzFhMDZjNjMyMmRiIiwidGFnIjoiIn0%3D"
+    },
+    "root_group": {
+        "path": "",
+        "id": "d41d8cd98f00b204e9800998ecf8427e",
+        "groups": {
+            "API route sweep /api/activities/recent": {
+                "name": "API route sweep /api/activities/recent",
+                "path": "::API route sweep /api/activities/recent",
+                "id": "0176199ff65e0b062df5aedaf4bc37c1",
+                "groups": {},
+                "checks": {
+                        "/api/activities/recent reached an authenticated API response": {
+                            "name": "/api/activities/recent reached an authenticated API response",
+                            "path": "::API route sweep /api/activities/recent::/api/activities/recent reached an authenticated API response",
+                            "id": "d8bd225c84e5a81784a3e36aac24b7fa",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    }
+            },
+            "API route sweep /api/admin/audit-logs": {
+                "name": "API route sweep /api/admin/audit-logs",
+                "path": "::API route sweep /api/admin/audit-logs",
+                "id": "212eb5a6ccc66aed61289acd1682e774",
+                "groups": {},
+                "checks": {
+                        "/api/admin/audit-logs reached an authenticated API response": {
+                            "name": "/api/admin/audit-logs reached an authenticated API response",
+                            "path": "::API route sweep /api/admin/audit-logs::/api/admin/audit-logs reached an authenticated API response",
+                            "id": "a1fbe4a76e9ddb2dcf65a5dd3859b160",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    }
+            },
+            "API route sweep /api/attendances": {
+                "id": "58cf4cd89ec7d99424433433a26dc35e",
+                "groups": {},
+                "checks": {
+                        "/api/attendances reached an authenticated API response": {
+                            "path": "::API route sweep /api/attendances::/api/attendances reached an authenticated API response",
+                            "id": "add8d05ad712ec0d3ec23aa398050137",
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/api/attendances reached an authenticated API response"
+                        }
+                    },
+                "name": "API route sweep /api/attendances",
+                "path": "::API route sweep /api/attendances"
+            },
+            "API route sweep /api/attendances/export/detailed": {
+                "name": "API route sweep /api/attendances/export/detailed",
+                "path": "::API route sweep /api/attendances/export/detailed",
+                "id": "ea09a9c18bd664a047e2b2f9e29afbcf",
+                "groups": {},
+                "checks": {
+                        "/api/attendances/export/detailed reached an authenticated API response": {
+                            "name": "/api/attendances/export/detailed reached an authenticated API response",
+                            "path": "::API route sweep /api/attendances/export/detailed::/api/attendances/export/detailed reached an authenticated API response",
+                            "id": "cb821173ba9ccde08920f766efb690f1",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    }
+            },
+            "API route sweep /api/attendances/export/summary": {
+                "name": "API route sweep /api/attendances/export/summary",
+                "path": "::API route sweep /api/attendances/export/summary",
+                "id": "638066832efe96256ac62e8fbcaf6013",
+                "groups": {},
+                "checks": {
+                        "/api/attendances/export/summary reached an authenticated API response": {
+                            "path": "::API route sweep /api/attendances/export/summary::/api/attendances/export/summary reached an authenticated API response",
+                            "id": "ff688c6172932d0e7e8808599c691b55",
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/api/attendances/export/summary reached an authenticated API response"
+                        }
+                    }
+            },
+            "API route sweep /api/attendances/{attendance}": {
+                "groups": {},
+                "checks": {
+                        "/api/attendances/{attendance} reached an authenticated API response": {
+                            "name": "/api/attendances/{attendance} reached an authenticated API response",
+                            "path": "::API route sweep /api/attendances/{attendance}::/api/attendances/{attendance} reached an authenticated API response",
+                            "id": "b95f0594cbbeb105bd8a2d70295bf093",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    },
+                "name": "API route sweep /api/attendances/{attendance}",
+                "path": "::API route sweep /api/attendances/{attendance}",
+                "id": "a122e53e598f14b5906420045f1e8f9f"
+            },
+            "API route sweep /api/attributes": {
+                "name": "API route sweep /api/attributes",
+                "path": "::API route sweep /api/attributes",
+                "id": "76966ccba85ad73f061ee5c10b51b784",
+                "groups": {},
+                "checks": {
+                        "/api/attributes reached an authenticated API response": {
+                            "name": "/api/attributes reached an authenticated API response",
+                            "path": "::API route sweep /api/attributes::/api/attributes reached an authenticated API response",
+                            "id": "41b891a2272cc85419dcb9e5c2a4df0f",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    }
+            },
+            "API route sweep /api/attributes/{attribute}": {
+                "path": "::API route sweep /api/attributes/{attribute}",
+                "id": "e93e36dbe00a86d75d4e42103382a76a",
+                "groups": {},
+                "checks": {
+                        "/api/attributes/{attribute} reached an authenticated API response": {
+                            "fails": 0,
+                            "name": "/api/attributes/{attribute} reached an authenticated API response",
+                            "path": "::API route sweep /api/attributes/{attribute}::/api/attributes/{attribute} reached an authenticated API response",
+                            "id": "d6fb9834e0f62d4ef7b4754c82c1583b",
+                            "passes": 1
+                        }
+                    },
+                "name": "API route sweep /api/attributes/{attribute}"
+            },
+            "API route sweep /api/brands": {
+                "id": "c023218cb27d3a5c480281e7c4d8ab04",
+                "groups": {},
+                "checks": {
+                        "/api/brands reached an authenticated API response": {
+                            "path": "::API route sweep /api/brands::/api/brands reached an authenticated API response",
+                            "id": "6a5be740f6b3e5b98364a1f89cc79a3f",
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/api/brands reached an authenticated API response"
+                        }
+                    },
+                "name": "API route sweep /api/brands",
+                "path": "::API route sweep /api/brands"
+            },
+            "API route sweep /api/brands/{brand}": {
+                "path": "::API route sweep /api/brands/{brand}",
+                "id": "54d28ab8a530c99f5a7096fe9bbe58ad",
+                "groups": {},
+                "checks": {
+                        "/api/brands/{brand} reached an authenticated API response": {
+                            "name": "/api/brands/{brand} reached an authenticated API response",
+                            "path": "::API route sweep /api/brands/{brand}::/api/brands/{brand} reached an authenticated API response",
+                            "id": "b7431960d33ee1dbfa660211e0352931",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    },
+                "name": "API route sweep /api/brands/{brand}"
+            },
+            "API route sweep /api/call-tags": {
+                "name": "API route sweep /api/call-tags",
+                "path": "::API route sweep /api/call-tags",
+                "id": "c0016e8f42afa1eab25984f8451518d5",
+                "groups": {},
+                "checks": {
+                        "/api/call-tags reached an authenticated API response": {
+                            "name": "/api/call-tags reached an authenticated API response",
+                            "path": "::API route sweep /api/call-tags::/api/call-tags reached an authenticated API response",
+                            "id": "084895cbf73a0ba6fd1f72975e8bf444",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    }
+            },
+            "API route sweep /api/call-tags-admin": {
+                "name": "API route sweep /api/call-tags-admin",
+                "path": "::API route sweep /api/call-tags-admin",
+                "id": "7a18f1b7307113d79849cd96895777a2",
+                "groups": {},
+                "checks": {
+                        "/api/call-tags-admin reached an authenticated API response": {
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/api/call-tags-admin reached an authenticated API response",
+                            "path": "::API route sweep /api/call-tags-admin::/api/call-tags-admin reached an authenticated API response",
+                            "id": "e90ddfca954186e2f4f93bb27540b999"
+                        }
+                    }
+            },
+            "API route sweep /api/call-tags/{tag}/form": {
+                "name": "API route sweep /api/call-tags/{tag}/form",
+                "path": "::API route sweep /api/call-tags/{tag}/form",
+                "id": "d6c39506050ffec3f83f697868358761",
+                "groups": {},
+                "checks": {
+                        "/api/call-tags/{tag}/form reached an authenticated API response": {
+                            "name": "/api/call-tags/{tag}/form reached an authenticated API response",
+                            "path": "::API route sweep /api/call-tags/{tag}/form::/api/call-tags/{tag}/form reached an authenticated API response",
+                            "id": "c3846f74a628bd3e07add3dde4d27d89",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    }
+            },
+            "API route sweep /api/categories": {
+                "path": "::API route sweep /api/categories",
+                "id": "df7ccc017606e6917c50afd66403a994",
+                "groups": {},
+                "checks": {
+                        "/api/categories reached an authenticated API response": {
+                            "name": "/api/categories reached an authenticated API response",
+                            "path": "::API route sweep /api/categories::/api/categories reached an authenticated API response",
+                            "id": "4a5376e0eb9dfd3432608e62ea3bbcbc",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    },
+                "name": "API route sweep /api/categories"
+            },
+            "API route sweep /api/categories/{category}": {
+                "name": "API route sweep /api/categories/{category}",
+                "path": "::API route sweep /api/categories/{category}",
+                "id": "92f02934ec885af9e955fe5271b01778",
+                "groups": {},
+                "checks": {
+                        "/api/categories/{category} reached an authenticated API response": {
+                            "passes": 0,
+                            "fails": 1,
+                            "name": "/api/categories/{category} reached an authenticated API response",
+                            "path": "::API route sweep /api/categories/{category}::/api/categories/{category} reached an authenticated API response",
+                            "id": "d1a0bd6e42686cb450709fe6e9d99180"
+                        }
+                    }
+            },
+            "API route sweep /api/chat/active-status": {
+                "id": "177dda609495c493700f9e53238ff102",
+                "groups": {},
+                "checks": {
+                        "/api/chat/active-status reached an authenticated API response": {
+                            "fails": 0,
+                            "name": "/api/chat/active-status reached an authenticated API response",
+                            "path": "::API route sweep /api/chat/active-status::/api/chat/active-status reached an authenticated API response",
+                            "id": "2ee9ff4faf8d7f06482e3bc34f0f44e0",
+                            "passes": 1
+                        }
+                    },
+                "name": "API route sweep /api/chat/active-status",
+                "path": "::API route sweep /api/chat/active-status"
+            },
+            "API route sweep /api/chat/conversations": {
+                "groups": {},
+                "checks": {
+                        "/api/chat/conversations reached an authenticated API response": {
+                            "path": "::API route sweep /api/chat/conversations::/api/chat/conversations reached an authenticated API response",
+                            "id": "658831111d5488fd5f5d4b20f048dd85",
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/api/chat/conversations reached an authenticated API response"
+                        }
+                    },
+                "name": "API route sweep /api/chat/conversations",
+                "path": "::API route sweep /api/chat/conversations",
+                "id": "2ba3540f926bca6aac1dcad1402793e5"
+            },
+            "API route sweep /api/chat/conversations/{conversation}": {
+                "path": "::API route sweep /api/chat/conversations/{conversation}",
+                "id": "b0d0f7342f0858ed01f03066a4efed3e",
+                "groups": {},
+                "checks": {
+                        "/api/chat/conversations/{conversation} reached an authenticated API response": {
+                            "name": "/api/chat/conversations/{conversation} reached an authenticated API response",
+                            "path": "::API route sweep /api/chat/conversations/{conversation}::/api/chat/conversations/{conversation} reached an authenticated API response",
+                            "id": "9d094de28cd5c0f46a21419b44ca41d3",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    },
+                "name": "API route sweep /api/chat/conversations/{conversation}"
+            },
+            "API route sweep /api/chat/conversations/{conversation}/messages": {
+                "path": "::API route sweep /api/chat/conversations/{conversation}/messages",
+                "id": "b52e7b5491e127ae735fcaeb5e0d53e4",
+                "groups": {},
+                "checks": {
+                        "/api/chat/conversations/{conversation}/messages reached an authenticated API response": {
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/api/chat/conversations/{conversation}/messages reached an authenticated API response",
+                            "path": "::API route sweep /api/chat/conversations/{conversation}/messages::/api/chat/conversations/{conversation}/messages reached an authenticated API response",
+                            "id": "3a33229314deb96f9a45aaa22decaf40"
+                        }
+                    },
+                "name": "API route sweep /api/chat/conversations/{conversation}/messages"
+            },
+            "API route sweep /api/chat/search": {
+                "path": "::API route sweep /api/chat/search",
+                "id": "470d163cd04d6f51f6083dd72664aa26",
+                "groups": {},
+                "checks": {
+                        "/api/chat/search reached an authenticated API response": {
+                            "name": "/api/chat/search reached an authenticated API response",
+                            "path": "::API route sweep /api/chat/search::/api/chat/search reached an authenticated API response",
+                            "id": "54a737fa4ed585858e374c01bf99a6b1",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    },
+                "name": "API route sweep /api/chat/search"
+            },
+            "API route sweep /api/chat/unread-count": {
+                "name": "API route sweep /api/chat/unread-count",
+                "path": "::API route sweep /api/chat/unread-count",
+                "id": "a71597874407da9fda9e40849d1d16b8",
+                "groups": {},
+                "checks": {
+                        "/api/chat/unread-count reached an authenticated API response": {
+                            "name": "/api/chat/unread-count reached an authenticated API response",
+                            "path": "::API route sweep /api/chat/unread-count::/api/chat/unread-count reached an authenticated API response",
+                            "id": "265010c4711efe403c0c49cd1bfe2d4a",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    }
+            },
+            "API route sweep /api/chat/users": {
+                "id": "ac0bc49aaeb113c86c88e0f2c1478905",
+                "groups": {},
+                "checks": {
+                        "/api/chat/users reached an authenticated API response": {
+                            "id": "f26c213930abc3cd4be2819b780e758a",
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/api/chat/users reached an authenticated API response",
+                            "path": "::API route sweep /api/chat/users::/api/chat/users reached an authenticated API response"
+                        }
+                    },
+                "name": "API route sweep /api/chat/users",
+                "path": "::API route sweep /api/chat/users"
+            },
+            "API route sweep /api/complaints": {
+                "name": "API route sweep /api/complaints",
+                "path": "::API route sweep /api/complaints",
+                "id": "2908d11c4695c1874a59ed7564774613",
+                "groups": {},
+                "checks": {
+                        "/api/complaints reached an authenticated API response": {
+                            "id": "6f4342de1452656594f00cbccb448d2a",
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/api/complaints reached an authenticated API response",
+                            "path": "::API route sweep /api/complaints::/api/complaints reached an authenticated API response"
+                        }
+                    }
+            },
+            "API route sweep /api/complaints/export": {
+                "name": "API route sweep /api/complaints/export",
+                "path": "::API route sweep /api/complaints/export",
+                "id": "719c9196c8e36514caa67e1252f010ca",
+                "groups": {},
+                "checks": {
+                        "/api/complaints/export reached an authenticated API response": {
+                            "path": "::API route sweep /api/complaints/export::/api/complaints/export reached an authenticated API response",
+                            "id": "528fa97e966007938ae4631d9eb7813f",
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/api/complaints/export reached an authenticated API response"
+                        }
+                    }
+            },
+            "API route sweep /api/complaints/stats": {
+                "checks": {
+                    "/api/complaints/stats reached an authenticated API response": {
+                        "id": "4fee0ef4d8a7530cf07d0971301f946a",
+                        "passes": 1,
+                        "fails": 0,
+                        "name": "/api/complaints/stats reached an authenticated API response",
+                        "path": "::API route sweep /api/complaints/stats::/api/complaints/stats reached an authenticated API response"
+                    }
+                },
+                "name": "API route sweep /api/complaints/stats",
+                "path": "::API route sweep /api/complaints/stats",
+                "id": "dc3098aaeb556519fdd09a3a72f7f7b7",
+                "groups": {}
+            },
+            "API route sweep /api/complaints/{complaint}": {
+                "name": "API route sweep /api/complaints/{complaint}",
+                "path": "::API route sweep /api/complaints/{complaint}",
+                "id": "117e9b759ca69f331c0fe2e8a2e0c93d",
+                "groups": {},
+                "checks": {
+                        "/api/complaints/{complaint} reached an authenticated API response": {
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/api/complaints/{complaint} reached an authenticated API response",
+                            "path": "::API route sweep /api/complaints/{complaint}::/api/complaints/{complaint} reached an authenticated API response",
+                            "id": "395b64a8937477485c1734e7b400b856"
+                        }
+                    }
+            },
+            "API route sweep /api/credit-notes": {
+                "checks": {
+                    "/api/credit-notes reached an authenticated API response": {
+                        "id": "840ff5bf029f165de5c8d8a507fa9b90",
+                        "passes": 1,
+                        "fails": 0,
+                        "name": "/api/credit-notes reached an authenticated API response",
+                        "path": "::API route sweep /api/credit-notes::/api/credit-notes reached an authenticated API response"
+                    }
+                },
+                "name": "API route sweep /api/credit-notes",
+                "path": "::API route sweep /api/credit-notes",
+                "id": "65cbdb7a2e8d3b35e6991f53611c46b6",
+                "groups": {}
+            },
+            "API route sweep /api/customer-settings/{type}": {
+                "id": "cec2e0f78eb0980ab337c57f78eb8d05",
+                "groups": {},
+                "checks": {
+                        "/api/customer-settings/{type} reached an authenticated API response": {
+                            "name": "/api/customer-settings/{type} reached an authenticated API response",
+                            "path": "::API route sweep /api/customer-settings/{type}::/api/customer-settings/{type} reached an authenticated API response",
+                            "id": "75a7352ad0678f9c43617e80df2ce8af",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    },
+                "name": "API route sweep /api/customer-settings/{type}",
+                "path": "::API route sweep /api/customer-settings/{type}"
+            },
+            "API route sweep /api/customers": {
+                "name": "API route sweep /api/customers",
+                "path": "::API route sweep /api/customers",
+                "id": "4d2f8b9b37531ff620b5c186b450e5ac",
+                "groups": {},
+                "checks": {
+                        "/api/customers reached an authenticated API response": {
+                            "id": "a38d425d2d7bf2416ec731f185726102",
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/api/customers reached an authenticated API response",
+                            "path": "::API route sweep /api/customers::/api/customers reached an authenticated API response"
+                        }
+                    }
+            },
+            "API route sweep /api/customers/check-referral/{code}": {
+                "checks": {
+                    "/api/customers/check-referral/{code} reached an authenticated API response": {
+                        "path": "::API route sweep /api/customers/check-referral/{code}::/api/customers/check-referral/{code} reached an authenticated API response",
+                        "id": "ebb30e68bfa873bdbfa1e281677d888e",
+                        "passes": 1,
+                        "fails": 0,
+                        "name": "/api/customers/check-referral/{code} reached an authenticated API response"
+                    }
+                },
+                "name": "API route sweep /api/customers/check-referral/{code}",
+                "path": "::API route sweep /api/customers/check-referral/{code}",
+                "id": "12b707c214c640fd9c2eb471f32563b4",
+                "groups": {}
+            },
+            "API route sweep /api/customers/{customer}": {
+                "checks": {
+                    "/api/customers/{customer} reached an authenticated API response": {
+                        "path": "::API route sweep /api/customers/{customer}::/api/customers/{customer} reached an authenticated API response",
+                        "id": "138b4418ce9605aa4af92e55c9658294",
+                        "passes": 1,
+                        "fails": 0,
+                        "name": "/api/customers/{customer} reached an authenticated API response"
+                    }
+                },
+                "name": "API route sweep /api/customers/{customer}",
+                "path": "::API route sweep /api/customers/{customer}",
+                "id": "f0f966d45ed82ddaaaa3faaa8340f1e5",
+                "groups": {}
+            },
+            "API route sweep /api/dashboard": {
+                "name": "API route sweep /api/dashboard",
+                "path": "::API route sweep /api/dashboard",
+                "id": "77e7bdf52fe7c749a0bd4a6077146039",
+                "groups": {},
+                "checks": {
+                        "/api/dashboard reached an authenticated API response": {
+                            "id": "9f6b8f03b6a4e8276cdf0e8992aff81a",
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/api/dashboard reached an authenticated API response",
+                            "path": "::API route sweep /api/dashboard::/api/dashboard reached an authenticated API response"
+                        }
+                    }
+            },
+            "API route sweep /api/departments": {
+                "name": "API route sweep /api/departments",
+                "path": "::API route sweep /api/departments",
+                "id": "851f58da59eeaacab2b175fc82b94f1c",
+                "groups": {},
+                "checks": {
+                        "/api/departments reached an authenticated API response": {
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/api/departments reached an authenticated API response",
+                            "path": "::API route sweep /api/departments::/api/departments reached an authenticated API response",
+                            "id": "4824817f27dbaac45c96d1dd96d700cd"
+                        }
+                    }
+            },
+            "API route sweep /api/departments/{department}": {
+                "name": "API route sweep /api/departments/{department}",
+                "path": "::API route sweep /api/departments/{department}",
+                "id": "71636391c9574302995f935407adb397",
+                "groups": {},
+                "checks": {
+                        "/api/departments/{department} reached an authenticated API response": {
+                            "path": "::API route sweep /api/departments/{department}::/api/departments/{department} reached an authenticated API response",
+                            "id": "2180db8c9c6527e3b07323e4544d8143",
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/api/departments/{department} reached an authenticated API response"
+                        }
+                    }
+            },
+            "API route sweep /api/files": {
+                "checks": {
+                    "/api/files reached an authenticated API response": {
+                        "passes": 1,
+                        "fails": 0,
+                        "name": "/api/files reached an authenticated API response",
+                        "path": "::API route sweep /api/files::/api/files reached an authenticated API response",
+                        "id": "57db8f03bcc2de65c01b437b6c6d2fe6"
+                    }
+                },
+                "name": "API route sweep /api/files",
+                "path": "::API route sweep /api/files",
+                "id": "b167ace0bfeb185468499a3a7c098a67",
+                "groups": {}
+            },
+            "API route sweep /api/files/preview": {
+                "name": "API route sweep /api/files/preview",
+                "path": "::API route sweep /api/files/preview",
+                "id": "eac00a3126edd822b7c081c5c40d31f2",
+                "groups": {},
+                "checks": {
+                        "/api/files/preview reached an authenticated API response": {
+                            "name": "/api/files/preview reached an authenticated API response",
+                            "path": "::API route sweep /api/files/preview::/api/files/preview reached an authenticated API response",
+                            "id": "a0155f0b112fede212ca0c4bb8b71cd8",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    }
+            },
+            "API route sweep /api/holidays": {
+                "name": "API route sweep /api/holidays",
+                "path": "::API route sweep /api/holidays",
+                "id": "aaae5fe1a9c3ecfc3e904c40e2404995",
+                "groups": {},
+                "checks": {
+                        "/api/holidays reached an authenticated API response": {
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/api/holidays reached an authenticated API response",
+                            "path": "::API route sweep /api/holidays::/api/holidays reached an authenticated API response",
+                            "id": "fcfa62785fe111cf2e8c1b255ee823db"
+                        }
+                    }
+            },
+            "API route sweep /api/holidays/{holiday}": {
+                "name": "API route sweep /api/holidays/{holiday}",
+                "path": "::API route sweep /api/holidays/{holiday}",
+                "id": "f25ac1d8612b18063214e3f6e0e29f7a",
+                "groups": {},
+                "checks": {
+                        "/api/holidays/{holiday} reached an authenticated API response": {
+                            "name": "/api/holidays/{holiday} reached an authenticated API response",
+                            "path": "::API route sweep /api/holidays/{holiday}::/api/holidays/{holiday} reached an authenticated API response",
+                            "id": "2ae4685e4487b4b9e38b88f4b217e5fe",
+                            "passes": 0,
+                            "fails": 1
+                        }
+                    }
+            },
+            "API route sweep /api/hr-settings/{type}": {
+                "name": "API route sweep /api/hr-settings/{type}",
+                "path": "::API route sweep /api/hr-settings/{type}",
+                "id": "16ea03170211a0c4b3419323fcfe251c",
+                "groups": {},
+                "checks": {
+                        "/api/hr-settings/{type} reached an authenticated API response": {
+                            "name": "/api/hr-settings/{type} reached an authenticated API response",
+                            "path": "::API route sweep /api/hr-settings/{type}::/api/hr-settings/{type} reached an authenticated API response",
+                            "id": "6dea77ab8cc97eaa8b1649656db9143b",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    }
+            },
+            "API route sweep /api/hsn-codes": {
+                "id": "f03930ee21119fcccbea516142af4f3f",
+                "groups": {},
+                "checks": {
+                        "/api/hsn-codes reached an authenticated API response": {
+                            "name": "/api/hsn-codes reached an authenticated API response",
+                            "path": "::API route sweep /api/hsn-codes::/api/hsn-codes reached an authenticated API response",
+                            "id": "2d3b341c0706831bb30a40d607bddd45",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    },
+                "name": "API route sweep /api/hsn-codes",
+                "path": "::API route sweep /api/hsn-codes"
+            },
+            "API route sweep /api/hsn-codes/{hsn_code}": {
+                "name": "API route sweep /api/hsn-codes/{hsn_code}",
+                "path": "::API route sweep /api/hsn-codes/{hsn_code}",
+                "id": "1b6434715de39c7233d2931908c71ada",
+                "groups": {},
+                "checks": {
+                        "/api/hsn-codes/{hsn_code} reached an authenticated API response": {
+                            "name": "/api/hsn-codes/{hsn_code} reached an authenticated API response",
+                            "path": "::API route sweep /api/hsn-codes/{hsn_code}::/api/hsn-codes/{hsn_code} reached an authenticated API response",
+                            "id": "bc511f72ab4e1c03c803d521ee7e68c0",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    }
+            },
+            "API route sweep /api/inventory/adjustments": {
+                "path": "::API route sweep /api/inventory/adjustments",
+                "id": "ab151edbd029858181706c5be60bf85c",
+                "groups": {},
+                "checks": {
+                        "/api/inventory/adjustments reached an authenticated API response": {
+                            "name": "/api/inventory/adjustments reached an authenticated API response",
+                            "path": "::API route sweep /api/inventory/adjustments::/api/inventory/adjustments reached an authenticated API response",
+                            "id": "e975c4ef2ef954a7c591dbc58bdf18e9",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    },
+                "name": "API route sweep /api/inventory/adjustments"
+            },
+            "API route sweep /api/inventory/adjustments/options": {
+                "groups": {},
+                "checks": {
+                        "/api/inventory/adjustments/options reached an authenticated API response": {
+                            "fails": 0,
+                            "name": "/api/inventory/adjustments/options reached an authenticated API response",
+                            "path": "::API route sweep /api/inventory/adjustments/options::/api/inventory/adjustments/options reached an authenticated API response",
+                            "id": "4a50b3baf1181fdfaaf8f5f770f61293",
+                            "passes": 1
+                        }
+                    },
+                "name": "API route sweep /api/inventory/adjustments/options",
+                "path": "::API route sweep /api/inventory/adjustments/options",
+                "id": "8d3f0f3b29cd378dbc67575c8f6dcbd1"
+            },
+            "API route sweep /api/inventory/adjustments/{inventoryAdjustment}": {
+                "id": "2cc4141a165697e017da2645a4380af5",
+                "groups": {},
+                "checks": {
+                        "/api/inventory/adjustments/{inventoryAdjustment} reached an authenticated API response": {
+                            "name": "/api/inventory/adjustments/{inventoryAdjustment} reached an authenticated API response",
+                            "path": "::API route sweep /api/inventory/adjustments/{inventoryAdjustment}::/api/inventory/adjustments/{inventoryAdjustment} reached an authenticated API response",
+                            "id": "38c2c0a54a9540b6b174105eb5d29c14",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    },
+                "name": "API route sweep /api/inventory/adjustments/{inventoryAdjustment}",
+                "path": "::API route sweep /api/inventory/adjustments/{inventoryAdjustment}"
+            },
+            "API route sweep /api/inventory/stocks": {
+                "name": "API route sweep /api/inventory/stocks",
+                "path": "::API route sweep /api/inventory/stocks",
+                "id": "2237c22b4d7b76fa7b51eefecf339436",
+                "groups": {},
+                "checks": {
+                        "/api/inventory/stocks reached an authenticated API response": {
+                            "name": "/api/inventory/stocks reached an authenticated API response",
+                            "path": "::API route sweep /api/inventory/stocks::/api/inventory/stocks reached an authenticated API response",
+                            "id": "27b7d506071810dcb3ed6b39ca28c182",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    }
+            },
+            "API route sweep /api/inventory/stocks/show": {
+                "path": "::API route sweep /api/inventory/stocks/show",
+                "id": "6c7f6b42f05a8f104d2780b6edca2bbe",
+                "groups": {},
+                "checks": {
+                        "/api/inventory/stocks/show reached an authenticated API response": {
+                            "fails": 0,
+                            "name": "/api/inventory/stocks/show reached an authenticated API response",
+                            "path": "::API route sweep /api/inventory/stocks/show::/api/inventory/stocks/show reached an authenticated API response",
+                            "id": "6a313411d9a905b107e31eba4f2729f9",
+                            "passes": 1
+                        }
+                    },
+                "name": "API route sweep /api/inventory/stocks/show"
+            },
+            "API route sweep /api/inventory/stocks/warehouse-options": {
+                "name": "API route sweep /api/inventory/stocks/warehouse-options",
+                "path": "::API route sweep /api/inventory/stocks/warehouse-options",
+                "id": "e2d18a9b2dc6d6d9f5122e96ce8d008d",
+                "groups": {},
+                "checks": {
+                        "/api/inventory/stocks/warehouse-options reached an authenticated API response": {
+                            "fails": 0,
+                            "name": "/api/inventory/stocks/warehouse-options reached an authenticated API response",
+                            "path": "::API route sweep /api/inventory/stocks/warehouse-options::/api/inventory/stocks/warehouse-options reached an authenticated API response",
+                            "id": "49d4e873f26e7adb3ab255ad9e7c9a9e",
+                            "passes": 1
+                        }
+                    }
+            },
+            "API route sweep /api/inventory/transfers": {
+                "name": "API route sweep /api/inventory/transfers",
+                "path": "::API route sweep /api/inventory/transfers",
+                "id": "fefc705d8cef34354cccf7ae435f86ee",
+                "groups": {},
+                "checks": {
+                        "/api/inventory/transfers reached an authenticated API response": {
+                            "name": "/api/inventory/transfers reached an authenticated API response",
+                            "path": "::API route sweep /api/inventory/transfers::/api/inventory/transfers reached an authenticated API response",
+                            "id": "512bbab9696fefcb0fbf06d05cca39a5",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    }
+            },
+            "API route sweep /api/inventory/transfers/options": {
+                "groups": {},
+                "checks": {
+                        "/api/inventory/transfers/options reached an authenticated API response": {
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/api/inventory/transfers/options reached an authenticated API response",
+                            "path": "::API route sweep /api/inventory/transfers/options::/api/inventory/transfers/options reached an authenticated API response",
+                            "id": "6f7ed03eeb9d59dfd9563759093fb202"
+                        }
+                    },
+                "name": "API route sweep /api/inventory/transfers/options",
+                "path": "::API route sweep /api/inventory/transfers/options",
+                "id": "4a14c5aa3ef754e52e6b05a24308853e"
+            },
+            "API route sweep /api/inventory/transfers/{transfer}": {
+                "name": "API route sweep /api/inventory/transfers/{transfer}",
+                "path": "::API route sweep /api/inventory/transfers/{transfer}",
+                "id": "cbb9b98d1c4fb772ab6fa483eb3842a1",
+                "groups": {},
+                "checks": {
+                        "/api/inventory/transfers/{transfer} reached an authenticated API response": {
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/api/inventory/transfers/{transfer} reached an authenticated API response",
+                            "path": "::API route sweep /api/inventory/transfers/{transfer}::/api/inventory/transfers/{transfer} reached an authenticated API response",
+                            "id": "237ae7633a2d3fedff2589af293a1a07"
+                        }
+                    }
+            },
+            "API route sweep /api/invoices": {
+                "name": "API route sweep /api/invoices",
+                "path": "::API route sweep /api/invoices",
+                "id": "d7ad627bcd48aea37fa8c0a5d56c11b9",
+                "groups": {},
+                "checks": {
+                        "/api/invoices reached an authenticated API response": {
+                            "name": "/api/invoices reached an authenticated API response",
+                            "path": "::API route sweep /api/invoices::/api/invoices reached an authenticated API response",
+                            "id": "8197d743fe1210c6ad0cdac76049b8c4",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    }
+            },
+            "API route sweep /api/invoices/{invoice}": {
+                "name": "API route sweep /api/invoices/{invoice}",
+                "path": "::API route sweep /api/invoices/{invoice}",
+                "id": "4781bbd23815b06091499ba184a8fed9",
+                "groups": {},
+                "checks": {
+                        "/api/invoices/{invoice} reached an authenticated API response": {
+                            "name": "/api/invoices/{invoice} reached an authenticated API response",
+                            "path": "::API route sweep /api/invoices/{invoice}::/api/invoices/{invoice} reached an authenticated API response",
+                            "id": "d638cc57cbc1667cbc9a3d3fe492b824",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    }
+            },
+            "API route sweep /api/invoices/{invoice}/pdf": {
+                "checks": {
+                    "/api/invoices/{invoice}/pdf reached an authenticated API response": {
+                        "path": "::API route sweep /api/invoices/{invoice}/pdf::/api/invoices/{invoice}/pdf reached an authenticated API response",
+                        "id": "22d3844527555af2d951999a37a853ce",
+                        "passes": 0,
+                        "fails": 1,
+                        "name": "/api/invoices/{invoice}/pdf reached an authenticated API response"
+                    }
+                },
+                "name": "API route sweep /api/invoices/{invoice}/pdf",
+                "path": "::API route sweep /api/invoices/{invoice}/pdf",
+                "id": "c86d16ce1e676efaba6ebd7ad856e041",
+                "groups": {}
+            },
+            "API route sweep /api/leave-balances": {
+                "checks": {
+                    "/api/leave-balances reached an authenticated API response": {
+                        "passes": 1,
+                        "fails": 0,
+                        "name": "/api/leave-balances reached an authenticated API response",
+                        "path": "::API route sweep /api/leave-balances::/api/leave-balances reached an authenticated API response",
+                        "id": "6e50ccfbbaade0e3a5f64712c7678dbc"
+                    }
+                },
+                "name": "API route sweep /api/leave-balances",
+                "path": "::API route sweep /api/leave-balances",
+                "id": "8adfbbb503be001e4918c4cd9a0f1bb6",
+                "groups": {}
+            },
+            "API route sweep /api/leave-balances/{leave_balance}": {
+                "path": "::API route sweep /api/leave-balances/{leave_balance}",
+                "id": "8d5f4d20cdde8a0bf467ac246319caf8",
+                "groups": {},
+                "checks": {
+                        "/api/leave-balances/{leave_balance} reached an authenticated API response": {
+                            "id": "c11f1540f8df201d9f56d28e287ac9fd",
+                            "passes": 0,
+                            "fails": 1,
+                            "name": "/api/leave-balances/{leave_balance} reached an authenticated API response",
+                            "path": "::API route sweep /api/leave-balances/{leave_balance}::/api/leave-balances/{leave_balance} reached an authenticated API response"
+                        }
+                    },
+                "name": "API route sweep /api/leave-balances/{leave_balance}"
+            },
+            "API route sweep /api/leaves": {
+                "name": "API route sweep /api/leaves",
+                "path": "::API route sweep /api/leaves",
+                "id": "afc4e45107a794c4c40b304a5ec1a93b",
+                "groups": {},
+                "checks": {
+                        "/api/leaves reached an authenticated API response": {
+                            "name": "/api/leaves reached an authenticated API response",
+                            "path": "::API route sweep /api/leaves::/api/leaves reached an authenticated API response",
+                            "id": "083f858e8dd9bc58833a20e057352d2f",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    }
+            },
+            "API route sweep /api/leaves/{leave}": {
+                "checks": {
+                    "/api/leaves/{leave} reached an authenticated API response": {
+                        "passes": 1,
+                        "fails": 0,
+                        "name": "/api/leaves/{leave} reached an authenticated API response",
+                        "path": "::API route sweep /api/leaves/{leave}::/api/leaves/{leave} reached an authenticated API response",
+                        "id": "972ea62af9fab94d97cabd049add69d0"
+                    }
+                },
+                "name": "API route sweep /api/leaves/{leave}",
+                "path": "::API route sweep /api/leaves/{leave}",
+                "id": "38eb33e1eb8fba6c663361ea2ff1de8d",
+                "groups": {}
+            },
+            "API route sweep /api/order-reasons/{type}": {
+                "id": "7bf2f614019ec0e03ffa3447b39433a9",
+                "groups": {},
+                "checks": {
+                        "/api/order-reasons/{type} reached an authenticated API response": {
+                            "id": "d467b14b873f914b0c466cd23b3371bd",
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/api/order-reasons/{type} reached an authenticated API response",
+                            "path": "::API route sweep /api/order-reasons/{type}::/api/order-reasons/{type} reached an authenticated API response"
+                        }
+                    },
+                "name": "API route sweep /api/order-reasons/{type}",
+                "path": "::API route sweep /api/order-reasons/{type}"
+            },
+            "API route sweep /api/orders": {
+                "name": "API route sweep /api/orders",
+                "path": "::API route sweep /api/orders",
+                "id": "965d51ba998a2eca69dce377d59de51f",
+                "groups": {},
+                "checks": {
+                        "/api/orders reached an authenticated API response": {
+                            "name": "/api/orders reached an authenticated API response",
+                            "path": "::API route sweep /api/orders::/api/orders reached an authenticated API response",
+                            "id": "415526d79d9ee6b29e75f5c9e7cac889",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    }
+            },
+            "API route sweep /api/orders/bulk-print": {
+                "name": "API route sweep /api/orders/bulk-print",
+                "path": "::API route sweep /api/orders/bulk-print",
+                "id": "94837e747af580b0e0282ad4e58221a2",
+                "groups": {},
+                "checks": {
+                        "/api/orders/bulk-print reached an authenticated API response": {
+                            "name": "/api/orders/bulk-print reached an authenticated API response",
+                            "path": "::API route sweep /api/orders/bulk-print::/api/orders/bulk-print reached an authenticated API response",
+                            "id": "3160bebc114bad9d96cd85ef69c052ca",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    }
+            },
+            "API route sweep /api/orders/export": {
+                "name": "API route sweep /api/orders/export",
+                "path": "::API route sweep /api/orders/export",
+                "id": "e6217d492c384637507d1d818cdde774",
+                "groups": {},
+                "checks": {
+                        "/api/orders/export reached an authenticated API response": {
+                            "name": "/api/orders/export reached an authenticated API response",
+                            "path": "::API route sweep /api/orders/export::/api/orders/export reached an authenticated API response",
+                            "id": "0076d1825a4ba6f6057480843d3a81f5",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    }
+            },
+            "API route sweep /api/orders/{order}": {
+                "id": "b259f2a6eda8fff8cd1bfd0acde592fc",
+                "groups": {},
+                "checks": {
+                        "/api/orders/{order} reached an authenticated API response": {
+                            "name": "/api/orders/{order} reached an authenticated API response",
+                            "path": "::API route sweep /api/orders/{order}::/api/orders/{order} reached an authenticated API response",
+                            "id": "bb979cb6eb0b45d1e8164fceeb757e3e",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    },
+                "name": "API route sweep /api/orders/{order}",
+                "path": "::API route sweep /api/orders/{order}"
+            },
+            "API route sweep /api/org-chart": {
+                "id": "70105759961a28e8a76e6e69fb86cbb4",
+                "groups": {},
+                "checks": {
+                        "/api/org-chart reached an authenticated API response": {
+                            "name": "/api/org-chart reached an authenticated API response",
+                            "path": "::API route sweep /api/org-chart::/api/org-chart reached an authenticated API response",
+                            "id": "866d396f0c7fb10bb2bd44e275f4f1f4",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    },
+                "name": "API route sweep /api/org-chart",
+                "path": "::API route sweep /api/org-chart"
+            },
+            "API route sweep /api/payments": {
+                "checks": {
+                    "/api/payments reached an authenticated API response": {
+                        "name": "/api/payments reached an authenticated API response",
+                        "path": "::API route sweep /api/payments::/api/payments reached an authenticated API response",
+                        "id": "a3bf9e6d7b67a512688a1679ad9bd925",
+                        "passes": 1,
+                        "fails": 0
+                    }
+                },
+                "name": "API route sweep /api/payments",
+                "path": "::API route sweep /api/payments",
+                "id": "b3fb12936ce1756db15cde0304c9a980",
+                "groups": {}
+            },
+            "API route sweep /api/payments/{payment}": {
+                "path": "::API route sweep /api/payments/{payment}",
+                "id": "fd3921e8396ce7b557d8318330b50edf",
+                "groups": {},
+                "checks": {
+                        "/api/payments/{payment} reached an authenticated API response": {
+                            "name": "/api/payments/{payment} reached an authenticated API response",
+                            "path": "::API route sweep /api/payments/{payment}::/api/payments/{payment} reached an authenticated API response",
+                            "id": "8bb82ffc19b2ef86a9b72df253727d7c",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    },
+                "name": "API route sweep /api/payments/{payment}"
+            },
+            "API route sweep /api/permissions": {
+                "name": "API route sweep /api/permissions",
+                "path": "::API route sweep /api/permissions",
+                "id": "b1e605a60a8dbbdb73b041753a7349ae",
+                "groups": {},
+                "checks": {
+                        "/api/permissions reached an authenticated API response": {
+                            "fails": 0,
+                            "name": "/api/permissions reached an authenticated API response",
+                            "path": "::API route sweep /api/permissions::/api/permissions reached an authenticated API response",
+                            "id": "e17fddd1d05a23dde00315e4195c2dcf",
+                            "passes": 1
+                        }
+                    }
+            },
+            "API route sweep /api/permissions/options": {
+                "name": "API route sweep /api/permissions/options",
+                "path": "::API route sweep /api/permissions/options",
+                "id": "ce1c62b58a9983902fb495cad080b035",
+                "groups": {},
+                "checks": {
+                        "/api/permissions/options reached an authenticated API response": {
+                            "name": "/api/permissions/options reached an authenticated API response",
+                            "path": "::API route sweep /api/permissions/options::/api/permissions/options reached an authenticated API response",
+                            "id": "4e3e6e05e46f04cde477b8f64a0ed9c0",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    }
+            },
+            "API route sweep /api/permissions/{permission}": {
+                "checks": {
+                    "/api/permissions/{permission} reached an authenticated API response": {
+                        "name": "/api/permissions/{permission} reached an authenticated API response",
+                        "path": "::API route sweep /api/permissions/{permission}::/api/permissions/{permission} reached an authenticated API response",
+                        "id": "b3986267c1fb9e936e75dac03adae908",
+                        "passes": 1,
+                        "fails": 0
+                    }
+                },
+                "name": "API route sweep /api/permissions/{permission}",
+                "path": "::API route sweep /api/permissions/{permission}",
+                "id": "e5eafe59d88c55d6efd699d5a9318102",
+                "groups": {}
+            },
+            "API route sweep /api/procurement/goods-receipts": {
+                "path": "::API route sweep /api/procurement/goods-receipts",
+                "id": "16f38127f885a59bf6305f6b3e419763",
+                "groups": {},
+                "checks": {
+                        "/api/procurement/goods-receipts reached an authenticated API response": {
+                            "id": "f7c1cab641fff978c0c14c573ef845fd",
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/api/procurement/goods-receipts reached an authenticated API response",
+                            "path": "::API route sweep /api/procurement/goods-receipts::/api/procurement/goods-receipts reached an authenticated API response"
+                        }
+                    },
+                "name": "API route sweep /api/procurement/goods-receipts"
+            },
+            "API route sweep /api/procurement/goods-receipts/{receipt}/pdf": {
+                "path": "::API route sweep /api/procurement/goods-receipts/{receipt}/pdf",
+                "id": "9464161b99b65a60bfcc142a1db427fe",
+                "groups": {},
+                "checks": {
+                        "/api/procurement/goods-receipts/{receipt}/pdf reached an authenticated API response": {
+                            "name": "/api/procurement/goods-receipts/{receipt}/pdf reached an authenticated API response",
+                            "path": "::API route sweep /api/procurement/goods-receipts/{receipt}/pdf::/api/procurement/goods-receipts/{receipt}/pdf reached an authenticated API response",
+                            "id": "68c08c02ddb31ace2cb0353cc54821bf",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    },
+                "name": "API route sweep /api/procurement/goods-receipts/{receipt}/pdf"
+            },
+            "API route sweep /api/procurement/purchase-orders": {
+                "name": "API route sweep /api/procurement/purchase-orders",
+                "path": "::API route sweep /api/procurement/purchase-orders",
+                "id": "277e5cec2cbb2a673390e570472897fb",
+                "groups": {},
+                "checks": {
+                        "/api/procurement/purchase-orders reached an authenticated API response": {
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/api/procurement/purchase-orders reached an authenticated API response",
+                            "path": "::API route sweep /api/procurement/purchase-orders::/api/procurement/purchase-orders reached an authenticated API response",
+                            "id": "93ff911fc0c59ea03ac21b2d2a901de2"
+                        }
+                    }
+            },
+            "API route sweep /api/procurement/purchase-orders/{order}/payments": {
+                "name": "API route sweep /api/procurement/purchase-orders/{order}/payments",
+                "path": "::API route sweep /api/procurement/purchase-orders/{order}/payments",
+                "id": "74f664d4a33965c74c59bf2dfa0a7ee7",
+                "groups": {},
+                "checks": {
+                        "/api/procurement/purchase-orders/{order}/payments reached an authenticated API response": {
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/api/procurement/purchase-orders/{order}/payments reached an authenticated API response",
+                            "path": "::API route sweep /api/procurement/purchase-orders/{order}/payments::/api/procurement/purchase-orders/{order}/payments reached an authenticated API response",
+                            "id": "dd3870cb0a4c344f2fce616ca4cf00f4"
+                        }
+                    }
+            },
+            "API route sweep /api/procurement/purchase-orders/{order}/pdf": {
+                "name": "API route sweep /api/procurement/purchase-orders/{order}/pdf",
+                "path": "::API route sweep /api/procurement/purchase-orders/{order}/pdf",
+                "id": "5c089944b37461374ff103e0e68ccdea",
+                "groups": {},
+                "checks": {
+                        "/api/procurement/purchase-orders/{order}/pdf reached an authenticated API response": {
+                            "path": "::API route sweep /api/procurement/purchase-orders/{order}/pdf::/api/procurement/purchase-orders/{order}/pdf reached an authenticated API response",
+                            "id": "c9c5fdb5f446bd94b89dfc18ac566a10",
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/api/procurement/purchase-orders/{order}/pdf reached an authenticated API response"
+                        }
+                    }
+            },
+            "API route sweep /api/procurement/suppliers": {
+                "name": "API route sweep /api/procurement/suppliers",
+                "path": "::API route sweep /api/procurement/suppliers",
+                "id": "f96d1d3a1eaf85fed4cbf5544b53aa17",
+                "groups": {},
+                "checks": {
+                        "/api/procurement/suppliers reached an authenticated API response": {
+                            "fails": 0,
+                            "name": "/api/procurement/suppliers reached an authenticated API response",
+                            "path": "::API route sweep /api/procurement/suppliers::/api/procurement/suppliers reached an authenticated API response",
+                            "id": "27aec945dcbfe29ab9fd5619482002cb",
+                            "passes": 1
+                        }
+                    }
+            },
+            "API route sweep /api/procurement/suppliers/{supplier}": {
+                "groups": {},
+                "checks": {
+                        "/api/procurement/suppliers/{supplier} reached an authenticated API response": {
+                            "name": "/api/procurement/suppliers/{supplier} reached an authenticated API response",
+                            "path": "::API route sweep /api/procurement/suppliers/{supplier}::/api/procurement/suppliers/{supplier} reached an authenticated API response",
+                            "id": "55d53ba38028d835767e4b99b7da0754",
+                            "passes": 0,
+                            "fails": 1
+                        }
+                    },
+                "name": "API route sweep /api/procurement/suppliers/{supplier}",
+                "path": "::API route sweep /api/procurement/suppliers/{supplier}",
+                "id": "5b9c0df0d5b1baebc4306adf274859ad"
+            },
+            "API route sweep /api/products": {
+                "name": "API route sweep /api/products",
+                "path": "::API route sweep /api/products",
+                "id": "ebaacf60773dd23eca824d5b84c38f11",
+                "groups": {},
+                "checks": {
+                        "/api/products reached an authenticated API response": {
+                            "id": "c5b568e23d5e041e831d5ff960a2bdd5",
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/api/products reached an authenticated API response",
+                            "path": "::API route sweep /api/products::/api/products reached an authenticated API response"
+                        }
+                    }
+            },
+            "API route sweep /api/products-search-api": {
+                "name": "API route sweep /api/products-search-api",
+                "path": "::API route sweep /api/products-search-api",
+                "id": "286b34e7a537cc21d09e131d0e67009a",
+                "groups": {},
+                "checks": {
+                        "/api/products-search-api reached an authenticated API response": {
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/api/products-search-api reached an authenticated API response",
+                            "path": "::API route sweep /api/products-search-api::/api/products-search-api reached an authenticated API response",
+                            "id": "734ecef71a033e8185f8175ee298a085"
+                        }
+                    }
+            },
+            "API route sweep /api/products/export": {
+                "path": "::API route sweep /api/products/export",
+                "id": "6e1516da105d15ac15a9b128ebdc2207",
+                "groups": {},
+                "checks": {
+                        "/api/products/export reached an authenticated API response": {
+                            "path": "::API route sweep /api/products/export::/api/products/export reached an authenticated API response",
+                            "id": "f72fad58d55ec0790bc3a3e236557d1e",
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/api/products/export reached an authenticated API response"
+                        }
+                    },
+                "name": "API route sweep /api/products/export"
+            },
+            "API route sweep /api/products/{product}": {
+                "path": "::API route sweep /api/products/{product}",
+                "id": "eebec21d7c9c7648d901ca2075e5d9b6",
+                "groups": {},
+                "checks": {
+                        "/api/products/{product} reached an authenticated API response": {
+                            "path": "::API route sweep /api/products/{product}::/api/products/{product} reached an authenticated API response",
+                            "id": "4d34f3b4a7ed30458acede04090321a9",
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/api/products/{product} reached an authenticated API response"
+                        }
+                    },
+                "name": "API route sweep /api/products/{product}"
+            },
+            "API route sweep /api/promotions/coupons": {
+                "path": "::API route sweep /api/promotions/coupons",
+                "id": "87c12edfa09d5b7b3d8df629059b98cc",
+                "groups": {},
+                "checks": {
+                        "/api/promotions/coupons reached an authenticated API response": {
+                            "path": "::API route sweep /api/promotions/coupons::/api/promotions/coupons reached an authenticated API response",
+                            "id": "9f556c14e98de731f8fc6ab549ff1ab4",
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/api/promotions/coupons reached an authenticated API response"
+                        }
+                    },
+                "name": "API route sweep /api/promotions/coupons"
+            },
+            "API route sweep /api/promotions/offers": {
+                "id": "3ca3cc8bdacaf2154e3b4e12ce60f7db",
+                "groups": {},
+                "checks": {
+                        "/api/promotions/offers reached an authenticated API response": {
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/api/promotions/offers reached an authenticated API response",
+                            "path": "::API route sweep /api/promotions/offers::/api/promotions/offers reached an authenticated API response",
+                            "id": "8cb7d0d6304f478f27aed356ca5244a2"
+                        }
+                    },
+                "name": "API route sweep /api/promotions/offers",
+                "path": "::API route sweep /api/promotions/offers"
+            },
+            "API route sweep /api/promotions/referral-programs": {
+                "id": "842fbc1eddb714a92f93be249ef2f73d",
+                "groups": {},
+                "checks": {
+                        "/api/promotions/referral-programs reached an authenticated API response": {
+                            "name": "/api/promotions/referral-programs reached an authenticated API response",
+                            "path": "::API route sweep /api/promotions/referral-programs::/api/promotions/referral-programs reached an authenticated API response",
+                            "id": "174c2cd2eaa03fb07cdd4db5224e50f5",
+                            "passes": 0,
+                            "fails": 1
+                        }
+                    },
+                "name": "API route sweep /api/promotions/referral-programs",
+                "path": "::API route sweep /api/promotions/referral-programs"
+            },
+            "API route sweep /api/refunds": {
+                "name": "API route sweep /api/refunds",
+                "path": "::API route sweep /api/refunds",
+                "id": "66e976cae094861f7e328836d773f6cb",
+                "groups": {},
+                "checks": {
+                        "/api/refunds reached an authenticated API response": {
+                            "name": "/api/refunds reached an authenticated API response",
+                            "path": "::API route sweep /api/refunds::/api/refunds reached an authenticated API response",
+                            "id": "6ef92b0ba1e3572a83d06e1a0d687a22",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    }
+            },
+            "API route sweep /api/refunds/{refund}": {
+                "id": "09f68a815713841b243e4057af067be1",
+                "groups": {},
+                "checks": {
+                        "/api/refunds/{refund} reached an authenticated API response": {
+                            "name": "/api/refunds/{refund} reached an authenticated API response",
+                            "path": "::API route sweep /api/refunds/{refund}::/api/refunds/{refund} reached an authenticated API response",
+                            "id": "1d262e6d1b427f659aca2b08b7e42a69",
+                            "passes": 0,
+                            "fails": 1
+                        }
+                    },
+                "name": "API route sweep /api/refunds/{refund}",
+                "path": "::API route sweep /api/refunds/{refund}"
+            },
+            "API route sweep /api/reports": {
+                "groups": {},
+                "checks": {
+                        "/api/reports reached an authenticated API response": {
+                            "fails": 0,
+                            "name": "/api/reports reached an authenticated API response",
+                            "path": "::API route sweep /api/reports::/api/reports reached an authenticated API response",
+                            "id": "6d15c5956c498f88545db8637e082988",
+                            "passes": 1
+                        }
+                    },
+                "name": "API route sweep /api/reports",
+                "path": "::API route sweep /api/reports",
+                "id": "4c36b3cb2d350e50ca24c97606719d19"
+            },
+            "API route sweep /api/returns": {
+                "name": "API route sweep /api/returns",
+                "path": "::API route sweep /api/returns",
+                "id": "7ffd7ad5689f99675cfc739ca5236876",
+                "groups": {},
+                "checks": {
+                        "/api/returns reached an authenticated API response": {
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/api/returns reached an authenticated API response",
+                            "path": "::API route sweep /api/returns::/api/returns reached an authenticated API response",
+                            "id": "221f44c18f6bc476bc570d92ae1b1d26"
+                        }
+                    }
+            },
+            "API route sweep /api/returns/{orderReturn}": {
+                "groups": {},
+                "checks": {
+                        "/api/returns/{orderReturn} reached an authenticated API response": {
+                            "name": "/api/returns/{orderReturn} reached an authenticated API response",
+                            "path": "::API route sweep /api/returns/{orderReturn}::/api/returns/{orderReturn} reached an authenticated API response",
+                            "id": "b9909011cd0a5041ac5cb899f11f3acb",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    },
+                "name": "API route sweep /api/returns/{orderReturn}",
+                "path": "::API route sweep /api/returns/{orderReturn}",
+                "id": "59eea1ef773e0f30b348171b1f9b46cc"
+            },
+            "API route sweep /api/roles": {
+                "name": "API route sweep /api/roles",
+                "path": "::API route sweep /api/roles",
+                "id": "dbb9fdc03ce5a4d73848b2a5306c2583",
+                "groups": {},
+                "checks": {
+                        "/api/roles reached an authenticated API response": {
+                            "name": "/api/roles reached an authenticated API response",
+                            "path": "::API route sweep /api/roles::/api/roles reached an authenticated API response",
+                            "id": "df02922c01afa0bf02a8313876affede",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    }
+            },
+            "API route sweep /api/roles/options": {
+                "checks": {
+                    "/api/roles/options reached an authenticated API response": {
+                        "passes": 1,
+                        "fails": 0,
+                        "name": "/api/roles/options reached an authenticated API response",
+                        "path": "::API route sweep /api/roles/options::/api/roles/options reached an authenticated API response",
+                        "id": "a966f36f356d8c652f8d6ccb9d081b31"
+                    }
+                },
+                "name": "API route sweep /api/roles/options",
+                "path": "::API route sweep /api/roles/options",
+                "id": "68d4506f7b46b56af49c21e4152ac50e",
+                "groups": {}
+            },
+            "API route sweep /api/roles/{role}": {
+                "groups": {},
+                "checks": {
+                        "/api/roles/{role} reached an authenticated API response": {
+                            "id": "66e5b391e401541c58e58c442acc1f9d",
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/api/roles/{role} reached an authenticated API response",
+                            "path": "::API route sweep /api/roles/{role}::/api/roles/{role} reached an authenticated API response"
+                        }
+                    },
+                "name": "API route sweep /api/roles/{role}",
+                "path": "::API route sweep /api/roles/{role}",
+                "id": "e5d9627a2062fe20f99b14a2c2ce4a6c"
+            },
+            "API route sweep /api/security/activity": {
+                "name": "API route sweep /api/security/activity",
+                "path": "::API route sweep /api/security/activity",
+                "id": "980a52c5ef0da0bebb00ae3af2d32cf9",
+                "groups": {},
+                "checks": {
+                        "/api/security/activity reached an authenticated API response": {
+                            "path": "::API route sweep /api/security/activity::/api/security/activity reached an authenticated API response",
+                            "id": "26d0c83f2fc988f0c39ad76ace82bb55",
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/api/security/activity reached an authenticated API response"
+                        }
+                    }
+            },
+            "API route sweep /api/security/sessions": {
+                "groups": {},
+                "checks": {
+                        "/api/security/sessions reached an authenticated API response": {
+                            "path": "::API route sweep /api/security/sessions::/api/security/sessions reached an authenticated API response",
+                            "id": "5add103ee265ccb0e8c6003853acfa5c",
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/api/security/sessions reached an authenticated API response"
+                        }
+                    },
+                "name": "API route sweep /api/security/sessions",
+                "path": "::API route sweep /api/security/sessions",
+                "id": "7e33c92e5efcc87a8d032bceac811dc0"
+            },
+            "API route sweep /api/shipping/awb-logs/{officeId}": {
+                "name": "API route sweep /api/shipping/awb-logs/{officeId}",
+                "path": "::API route sweep /api/shipping/awb-logs/{officeId}",
+                "id": "c9ac2ed1dd416d9f4a0faef25fd0efd0",
+                "groups": {},
+                "checks": {
+                        "/api/shipping/awb-logs/{officeId} reached an authenticated API response": {
+                            "id": "5a988b9fb2d24d29424e704e1e196e2b",
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/api/shipping/awb-logs/{officeId} reached an authenticated API response",
+                            "path": "::API route sweep /api/shipping/awb-logs/{officeId}::/api/shipping/awb-logs/{officeId} reached an authenticated API response"
+                        }
+                    }
+            },
+            "API route sweep /api/shipping/offices/{officeId}/ranges": {
+                "name": "API route sweep /api/shipping/offices/{officeId}/ranges",
+                "path": "::API route sweep /api/shipping/offices/{officeId}/ranges",
+                "id": "b813bb3a0026dda9cc1cf0bb81620c66",
+                "groups": {},
+                "checks": {
+                        "/api/shipping/offices/{officeId}/ranges reached an authenticated API response": {
+                            "name": "/api/shipping/offices/{officeId}/ranges reached an authenticated API response",
+                            "path": "::API route sweep /api/shipping/offices/{officeId}/ranges::/api/shipping/offices/{officeId}/ranges reached an authenticated API response",
+                            "id": "d305861bd1d606890c203c027fd92427",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    }
+            },
+            "API route sweep /api/shipping/services": {
+                "groups": {},
+                "checks": {
+                        "/api/shipping/services reached an authenticated API response": {
+                            "id": "e5a62c16b69a7307e2f3ac1d1ef2bed6",
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/api/shipping/services reached an authenticated API response",
+                            "path": "::API route sweep /api/shipping/services::/api/shipping/services reached an authenticated API response"
+                        }
+                    },
+                "name": "API route sweep /api/shipping/services",
+                "path": "::API route sweep /api/shipping/services",
+                "id": "830cb572a98b1448bfc11a16498b85c2"
+            },
+            "API route sweep /api/shipping/services/provider-options": {
+                "name": "API route sweep /api/shipping/services/provider-options",
+                "path": "::API route sweep /api/shipping/services/provider-options",
+                "id": "36c84b168118dfa9b41fe5d474215228",
+                "groups": {},
+                "checks": {
+                        "/api/shipping/services/provider-options reached an authenticated API response": {
+                            "id": "a53e0cca910806370e37a7928870c3ce",
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/api/shipping/services/provider-options reached an authenticated API response",
+                            "path": "::API route sweep /api/shipping/services/provider-options::/api/shipping/services/provider-options reached an authenticated API response"
+                        }
+                    }
+            },
+            "API route sweep /api/shipping/shipments": {
+                "id": "719ca32369a24e9160faa39cf7b15efc",
+                "groups": {},
+                "checks": {
+                        "/api/shipping/shipments reached an authenticated API response": {
+                            "name": "/api/shipping/shipments reached an authenticated API response",
+                            "path": "::API route sweep /api/shipping/shipments::/api/shipping/shipments reached an authenticated API response",
+                            "id": "f8939ddb6a0ebc6e6548b34176792eef",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    },
+                "name": "API route sweep /api/shipping/shipments",
+                "path": "::API route sweep /api/shipping/shipments"
+            },
+            "API route sweep /api/shipping/shipments/{shipment}/tracking": {
+                "name": "API route sweep /api/shipping/shipments/{shipment}/tracking",
+                "path": "::API route sweep /api/shipping/shipments/{shipment}/tracking",
+                "id": "fa55a4d22cb3f42fa7d325970fb35bed",
+                "groups": {},
+                "checks": {
+                        "/api/shipping/shipments/{shipment}/tracking reached an authenticated API response": {
+                            "name": "/api/shipping/shipments/{shipment}/tracking reached an authenticated API response",
+                            "path": "::API route sweep /api/shipping/shipments/{shipment}/tracking::/api/shipping/shipments/{shipment}/tracking reached an authenticated API response",
+                            "id": "88c82ea1120e7a09090ec2169e669368",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    }
+            },
+            "API route sweep /api/tax-rates": {
+                "name": "API route sweep /api/tax-rates",
+                "path": "::API route sweep /api/tax-rates",
+                "id": "6124cec8a23dba6d7b9a49a74d125498",
+                "groups": {},
+                "checks": {
+                        "/api/tax-rates reached an authenticated API response": {
+                            "name": "/api/tax-rates reached an authenticated API response",
+                            "path": "::API route sweep /api/tax-rates::/api/tax-rates reached an authenticated API response",
+                            "id": "d01c819172f1fa5239e38a9550523985",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    }
+            },
+            "API route sweep /api/tax-rates/{tax_rate}": {
+                "groups": {},
+                "checks": {
+                        "/api/tax-rates/{tax_rate} reached an authenticated API response": {
+                            "name": "/api/tax-rates/{tax_rate} reached an authenticated API response",
+                            "path": "::API route sweep /api/tax-rates/{tax_rate}::/api/tax-rates/{tax_rate} reached an authenticated API response",
+                            "id": "b7db42a07b4ca108ed9bfae14d7848ab",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    },
+                "name": "API route sweep /api/tax-rates/{tax_rate}",
+                "path": "::API route sweep /api/tax-rates/{tax_rate}",
+                "id": "dc710cbf254512730b663d780819bd1e"
+            },
+            "API route sweep /api/teams": {
+                "path": "::API route sweep /api/teams",
+                "id": "f05fac1598063a062037f25ac98d04f5",
+                "groups": {},
+                "checks": {
+                        "/api/teams reached an authenticated API response": {
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/api/teams reached an authenticated API response",
+                            "path": "::API route sweep /api/teams::/api/teams reached an authenticated API response",
+                            "id": "fa0e031ab81c91b753bcf0b25bca0c63"
+                        }
+                    },
+                "name": "API route sweep /api/teams"
+            },
+            "API route sweep /api/teams/{team}": {
+                "name": "API route sweep /api/teams/{team}",
+                "path": "::API route sweep /api/teams/{team}",
+                "id": "caaa62d9c9bc7793b443efe060477c96",
+                "groups": {},
+                "checks": {
+                        "/api/teams/{team} reached an authenticated API response": {
+                            "name": "/api/teams/{team} reached an authenticated API response",
+                            "path": "::API route sweep /api/teams/{team}::/api/teams/{team} reached an authenticated API response",
+                            "id": "4b4df0ac00dd3a179e97925ca708a883",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    }
+            },
+            "API route sweep /api/uom": {
+                "name": "API route sweep /api/uom",
+                "path": "::API route sweep /api/uom",
+                "id": "ed63e044302c3d087407e1545eda4d63",
+                "groups": {},
+                "checks": {
+                        "/api/uom reached an authenticated API response": {
+                            "name": "/api/uom reached an authenticated API response",
+                            "path": "::API route sweep /api/uom::/api/uom reached an authenticated API response",
+                            "id": "cb7b7ef821415b8e59011f4a1de96af3",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    }
+            },
+            "API route sweep /api/uom/{uom}": {
+                "name": "API route sweep /api/uom/{uom}",
+                "path": "::API route sweep /api/uom/{uom}",
+                "id": "72230bacbded7aee33440ac03c273256",
+                "groups": {},
+                "checks": {
+                        "/api/uom/{uom} reached an authenticated API response": {
+                            "path": "::API route sweep /api/uom/{uom}::/api/uom/{uom} reached an authenticated API response",
+                            "id": "bef21f0335ffec3eed88cecb4415dd89",
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/api/uom/{uom} reached an authenticated API response"
+                        }
+                    }
+            },
+            "API route sweep /api/users": {
+                "name": "API route sweep /api/users",
+                "path": "::API route sweep /api/users",
+                "id": "7c91abc61187c8c4344d46190cc840d8",
+                "groups": {},
+                "checks": {
+                        "/api/users reached an authenticated API response": {
+                            "id": "9f7a219d811e55ecfdbd4b2078031155",
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/api/users reached an authenticated API response",
+                            "path": "::API route sweep /api/users::/api/users reached an authenticated API response"
+                        }
+                    }
+            },
+            "API route sweep /api/users/{user}": {
+                "name": "API route sweep /api/users/{user}",
+                "path": "::API route sweep /api/users/{user}",
+                "id": "0874225a7aac448aa0e4cf26b799406f",
+                "groups": {},
+                "checks": {
+                        "/api/users/{user} reached an authenticated API response": {
+                            "name": "/api/users/{user} reached an authenticated API response",
+                            "path": "::API route sweep /api/users/{user}::/api/users/{user} reached an authenticated API response",
+                            "id": "dc1ff24574d4b1d21b6267add989d511",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    }
+            },
+            "API route sweep /api/users/{user}/login-history": {
+                "path": "::API route sweep /api/users/{user}/login-history",
+                "id": "cb03f07f63da7e5f1b2d8977fe82fca0",
+                "groups": {},
+                "checks": {
+                        "/api/users/{user}/login-history reached an authenticated API response": {
+                            "name": "/api/users/{user}/login-history reached an authenticated API response",
+                            "path": "::API route sweep /api/users/{user}/login-history::/api/users/{user}/login-history reached an authenticated API response",
+                            "id": "0e359b5253ef034aa1f2eb4d1c5cf08d",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    },
+                "name": "API route sweep /api/users/{user}/login-history"
+            },
+            "API route sweep /api/villages": {
+                "id": "3a2f743bcb2810e0d10dee8ff868baba",
+                "groups": {},
+                "checks": {
+                        "/api/villages reached an authenticated API response": {
+                            "name": "/api/villages reached an authenticated API response",
+                            "path": "::API route sweep /api/villages::/api/villages reached an authenticated API response",
+                            "id": "4a33ce1110339cdf77c9f06666375fc7",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    },
+                "name": "API route sweep /api/villages",
+                "path": "::API route sweep /api/villages"
+            },
+            "API route sweep /api/villages/export": {
+                "path": "::API route sweep /api/villages/export",
+                "id": "a4c4a61834cacf0de53fc20f382994b9",
+                "groups": {},
+                "checks": {
+                        "/api/villages/export reached an authenticated API response": {
+                            "id": "ad8674f7704c7878cf1de2163eee54ff",
+                            "passes": 0,
+                            "fails": 1,
+                            "name": "/api/villages/export reached an authenticated API response",
+                            "path": "::API route sweep /api/villages/export::/api/villages/export reached an authenticated API response"
+                        }
+                    },
+                "name": "API route sweep /api/villages/export"
+            },
+            "API route sweep /api/villages/import-template": {
+                "groups": {},
+                "checks": {
+                        "/api/villages/import-template reached an authenticated API response": {
+                            "id": "2cacfe0ebcdf2bcd68b390c52a41912d",
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/api/villages/import-template reached an authenticated API response",
+                            "path": "::API route sweep /api/villages/import-template::/api/villages/import-template reached an authenticated API response"
+                        }
+                    },
+                "name": "API route sweep /api/villages/import-template",
+                "path": "::API route sweep /api/villages/import-template",
+                "id": "21c717c2da219394afde757a66e998c6"
+            },
+            "API route sweep /api/villages/search": {
+                "name": "API route sweep /api/villages/search",
+                "path": "::API route sweep /api/villages/search",
+                "id": "2e7bddd2837180bf9b5be007ece36b2d",
+                "groups": {},
+                "checks": {
+                        "/api/villages/search reached an authenticated API response": {
+                            "name": "/api/villages/search reached an authenticated API response",
+                            "path": "::API route sweep /api/villages/search::/api/villages/search reached an authenticated API response",
+                            "id": "fbfebac5df64463cc975e0e68be549d5",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    }
+            },
+            "API route sweep /api/villages/services-options": {
+                "id": "88c9eccb405f61a1bd17f686ce043db8",
+                "groups": {},
+                "checks": {
+                        "/api/villages/services-options reached an authenticated API response": {
+                            "name": "/api/villages/services-options reached an authenticated API response",
+                            "path": "::API route sweep /api/villages/services-options::/api/villages/services-options reached an authenticated API response",
+                            "id": "11d25f90d7cc11b8e3bf13f8b5993ac0",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    },
+                "name": "API route sweep /api/villages/services-options",
+                "path": "::API route sweep /api/villages/services-options"
+            },
+            "API route sweep /api/villages/{village}": {
+                "name": "API route sweep /api/villages/{village}",
+                "path": "::API route sweep /api/villages/{village}",
+                "id": "2a691c25f6fa16c9567ec9be3fad7640",
+                "groups": {},
+                "checks": {
+                        "/api/villages/{village} reached an authenticated API response": {
+                            "fails": 0,
+                            "name": "/api/villages/{village} reached an authenticated API response",
+                            "path": "::API route sweep /api/villages/{village}::/api/villages/{village} reached an authenticated API response",
+                            "id": "36e2d27c9349608e4bf07724017e5991",
+                            "passes": 1
+                        }
+                    }
+            },
+            "API route sweep /api/warehouses": {
+                "name": "API route sweep /api/warehouses",
+                "path": "::API route sweep /api/warehouses",
+                "id": "42aa4d8250ab1b894c7636eeee53f9d2",
+                "groups": {},
+                "checks": {
+                        "/api/warehouses reached an authenticated API response": {
+                            "name": "/api/warehouses reached an authenticated API response",
+                            "path": "::API route sweep /api/warehouses::/api/warehouses reached an authenticated API response",
+                            "id": "16c7839f19ff9bc485d0b86acc29c2da",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    }
+            },
+            "API route sweep /api/warehouses/{warehouse}": {
+                "checks": {
+                    "/api/warehouses/{warehouse} reached an authenticated API response": {
+                        "name": "/api/warehouses/{warehouse} reached an authenticated API response",
+                        "path": "::API route sweep /api/warehouses/{warehouse}::/api/warehouses/{warehouse} reached an authenticated API response",
+                        "id": "325aa8800c48ecffd7076572802bd8c3",
+                        "passes": 1,
+                        "fails": 0
+                    }
+                },
+                "name": "API route sweep /api/warehouses/{warehouse}",
+                "path": "::API route sweep /api/warehouses/{warehouse}",
+                "id": "696f07f73e6d9f00af0fd4bf6a1be588",
+                "groups": {}
+            }
+        },
+        "checks": {
+            "/api/attendances/{attendance} reached an authenticated API response": {
+                "name": "/api/attendances/{attendance} reached an authenticated API response",
+                "path": "::/api/attendances/{attendance} reached an authenticated API response",
+                "id": "a161d329cea51d8732964d498cf3183a",
+                "passes": 4,
+                "fails": 0
+            },
+            "/api/attributes reached an authenticated API response": {
+                "id": "c212a211672e7fee1ea3fb27b9998ee5",
+                "passes": 5,
+                "fails": 0,
+                "name": "/api/attributes reached an authenticated API response",
+                "path": "::/api/attributes reached an authenticated API response"
+            },
+            "/api/attributes/{attribute} reached an authenticated API response": {
+                "name": "/api/attributes/{attribute} reached an authenticated API response",
+                "path": "::/api/attributes/{attribute} reached an authenticated API response",
+                "id": "973765b11c06b91c9ef690e46764f9cb",
+                "passes": 6,
+                "fails": 0
+            },
+            "/api/brands reached an authenticated API response": {
+                "name": "/api/brands reached an authenticated API response",
+                "path": "::/api/brands reached an authenticated API response",
+                "id": "90e94aa508acbec44cdbf3d81e1d1568",
+                "passes": 7,
+                "fails": 0
+            },
+            "/api/brands/{brand} reached an authenticated API response": {
+                "name": "/api/brands/{brand} reached an authenticated API response",
+                "path": "::/api/brands/{brand} reached an authenticated API response",
+                "id": "7e8f5b018422eec48c1aaef42e85d3f7",
+                "passes": 8,
+                "fails": 0
+            },
+            "/api/call-tags reached an authenticated API response": {
+                "name": "/api/call-tags reached an authenticated API response",
+                "path": "::/api/call-tags reached an authenticated API response",
+                "id": "cfb8c6f9caed27012c31fff0d3f8664c",
+                "passes": 9,
+                "fails": 0
+            },
+            "/api/call-tags-admin reached an authenticated API response": {
+                "name": "/api/call-tags-admin reached an authenticated API response",
+                "path": "::/api/call-tags-admin reached an authenticated API response",
+                "id": "2c4d712501b7cb56387e324ad6285446",
+                "passes": 10,
+                "fails": 0
+            },
+            "/api/call-tags/{tag}/form reached an authenticated API response": {
+                "name": "/api/call-tags/{tag}/form reached an authenticated API response",
+                "path": "::/api/call-tags/{tag}/form reached an authenticated API response",
+                "id": "e5e7e45d4b504d4c63f906f89d2fbe6a",
+                "passes": 11,
+                "fails": 0
+            },
+            "/api/categories reached an authenticated API response": {
+                "passes": 12,
+                "fails": 0,
+                "name": "/api/categories reached an authenticated API response",
+                "path": "::/api/categories reached an authenticated API response",
+                "id": "e1fa1dc3363ed1d4d4a4878a08493b04"
+            },
+            "/api/categories/{category} reached an authenticated API response": {
+                "path": "::/api/categories/{category} reached an authenticated API response",
+                "id": "0155f44c8c3734809c6921840726d005",
+                "passes": 0,
+                "fails": 13,
+                "name": "/api/categories/{category} reached an authenticated API response"
+            },
+            "/api/chat/active-status reached an authenticated API response": {
+                "name": "/api/chat/active-status reached an authenticated API response",
+                "path": "::/api/chat/active-status reached an authenticated API response",
+                "id": "c93911d24611d859368fcb51ddc5a037",
+                "passes": 14,
+                "fails": 0
+            },
+            "/api/chat/conversations reached an authenticated API response": {
+                "id": "b13ba19e96670876a82b0e6fbc558f24",
+                "passes": 15,
+                "fails": 0,
+                "name": "/api/chat/conversations reached an authenticated API response",
+                "path": "::/api/chat/conversations reached an authenticated API response"
+            },
+            "/api/chat/conversations/{conversation} reached an authenticated API response": {
+                "fails": 0,
+                "name": "/api/chat/conversations/{conversation} reached an authenticated API response",
+                "path": "::/api/chat/conversations/{conversation} reached an authenticated API response",
+                "id": "0eb17948985f4bd1705d678f39481c3a",
+                "passes": 16
+            },
+            "/api/chat/conversations/{conversation}/messages reached an authenticated API response": {
+                "name": "/api/chat/conversations/{conversation}/messages reached an authenticated API response",
+                "path": "::/api/chat/conversations/{conversation}/messages reached an authenticated API response",
+                "id": "71298040ec10365e8b05b2b46c71703a",
+                "passes": 17,
+                "fails": 0
+            },
+            "/api/chat/search reached an authenticated API response": {
+                "path": "::/api/chat/search reached an authenticated API response",
+                "id": "7d033bddc46c7bc6be71e0b4bd0c4fbc",
+                "passes": 16,
+                "fails": 0,
+                "name": "/api/chat/search reached an authenticated API response"
+            },
+            "/api/chat/unread-count reached an authenticated API response": {
+                "passes": 16,
+                "fails": 0,
+                "name": "/api/chat/unread-count reached an authenticated API response",
+                "path": "::/api/chat/unread-count reached an authenticated API response",
+                "id": "352abae39ff2a389b0cd4c3c0ed9cbec"
+            },
+            "/api/chat/users reached an authenticated API response": {
+                "path": "::/api/chat/users reached an authenticated API response",
+                "id": "b76f82d36ba04b5452deee08593a76b9",
+                "passes": 17,
+                "fails": 0,
+                "name": "/api/chat/users reached an authenticated API response"
+            },
+            "/api/complaints reached an authenticated API response": {
+                "name": "/api/complaints reached an authenticated API response",
+                "path": "::/api/complaints reached an authenticated API response",
+                "id": "18a49857b3e1d5ef56e37501979d376b",
+                "passes": 17,
+                "fails": 0
+            },
+            "/api/complaints/export reached an authenticated API response": {
+                "fails": 0,
+                "name": "/api/complaints/export reached an authenticated API response",
+                "path": "::/api/complaints/export reached an authenticated API response",
+                "id": "4b2469e4ff36541099951e8365f33732",
+                "passes": 13
+            },
+            "/api/complaints/stats reached an authenticated API response": {
+                "name": "/api/complaints/stats reached an authenticated API response",
+                "path": "::/api/complaints/stats reached an authenticated API response",
+                "id": "fc44e9945391a2d3f787bdad223fffd7",
+                "passes": 9,
+                "fails": 0
+            },
+            "/api/complaints/{complaint} reached an authenticated API response": {
+                "name": "/api/complaints/{complaint} reached an authenticated API response",
+                "path": "::/api/complaints/{complaint} reached an authenticated API response",
+                "id": "4da780876d98cb1221b71d6a9ba70250",
+                "passes": 9,
+                "fails": 0
+            },
+            "/api/credit-notes reached an authenticated API response": {
+                "name": "/api/credit-notes reached an authenticated API response",
+                "path": "::/api/credit-notes reached an authenticated API response",
+                "id": "48d057d60f714f90b8943bf0d9438813",
+                "passes": 8,
+                "fails": 0
+            },
+            "/api/admin/audit-logs reached an authenticated API response": {
+                "name": "/api/admin/audit-logs reached an authenticated API response",
+                "path": "::/api/admin/audit-logs reached an authenticated API response",
+                "id": "f43a754830847e86bb23cc696045d182",
+                "passes": 1,
+                "fails": 0
+            },
+            "/api/customer-settings/{type} reached an authenticated API response": {
+                "fails": 0,
+                "name": "/api/customer-settings/{type} reached an authenticated API response",
+                "path": "::/api/customer-settings/{type} reached an authenticated API response",
+                "id": "24c0113938d0ad29b23630abfd7e86c7",
+                "passes": 8
+            },
+            "/api/attendances reached an authenticated API response": {
+                "name": "/api/attendances reached an authenticated API response",
+                "path": "::/api/attendances reached an authenticated API response",
+                "id": "bc51cb5658220236c794dc5ff107e5c5",
+                "passes": 2,
+                "fails": 0
+            },
+            "/api/customers reached an authenticated API response": {
+                "passes": 8,
+                "fails": 0,
+                "name": "/api/customers reached an authenticated API response",
+                "path": "::/api/customers reached an authenticated API response",
+                "id": "e960f1f80c5c442a5cc72663da14c4b8"
+            },
+            "/api/attendances/export/detailed reached an authenticated API response": {
+                "passes": 3,
+                "fails": 0,
+                "name": "/api/attendances/export/detailed reached an authenticated API response",
+                "path": "::/api/attendances/export/detailed reached an authenticated API response",
+                "id": "7259c5c7b5d0cc886a2ce2959bf686a8"
+            },
+            "/api/customers/check-referral/{code} reached an authenticated API response": {
+                "name": "/api/customers/check-referral/{code} reached an authenticated API response",
+                "path": "::/api/customers/check-referral/{code} reached an authenticated API response",
+                "id": "d145b0fdc026f2a6c89cc0525b4af4b7",
+                "passes": 8,
+                "fails": 0
+            },
+            "/api/attendances/export/summary reached an authenticated API response": {
+                "passes": 3,
+                "fails": 0,
+                "name": "/api/attendances/export/summary reached an authenticated API response",
+                "path": "::/api/attendances/export/summary reached an authenticated API response",
+                "id": "5e629c7780011444c9a308e62632ac2b"
+            },
+            "/api/customers/{customer} reached an authenticated API response": {
+                "id": "e7318b925657521e217d34e7b2fc886d",
+                "passes": 8,
+                "fails": 0,
+                "name": "/api/customers/{customer} reached an authenticated API response",
+                "path": "::/api/customers/{customer} reached an authenticated API response"
+            },
+            "/api/dashboard reached an authenticated API response": {
+                "id": "c9b6e853e45d118a80dfeff3d0c5d38e",
+                "passes": 5,
+                "fails": 0,
+                "name": "/api/dashboard reached an authenticated API response",
+                "path": "::/api/dashboard reached an authenticated API response"
+            },
+            "/api/departments reached an authenticated API response": {
+                "name": "/api/departments reached an authenticated API response",
+                "path": "::/api/departments reached an authenticated API response",
+                "id": "47b33766fff94dbc56f2163046fca318",
+                "passes": 5,
+                "fails": 0
+            },
+            "/api/departments/{department} reached an authenticated API response": {
+                "name": "/api/departments/{department} reached an authenticated API response",
+                "path": "::/api/departments/{department} reached an authenticated API response",
+                "id": "702fcb0b9c3d8c40fb38dbe2b599ebea",
+                "passes": 4,
+                "fails": 0
+            },
+            "/api/files reached an authenticated API response": {
+                "name": "/api/files reached an authenticated API response",
+                "path": "::/api/files reached an authenticated API response",
+                "id": "2fe400840ee4633baabcced9ea2c4cd2",
+                "passes": 4,
+                "fails": 0
+            },
+            "/api/files/preview reached an authenticated API response": {
+                "name": "/api/files/preview reached an authenticated API response",
+                "path": "::/api/files/preview reached an authenticated API response",
+                "id": "9a8b751cd69650d1186d70867b362178",
+                "passes": 3,
+                "fails": 0
+            },
+            "/api/holidays reached an authenticated API response": {
+                "name": "/api/holidays reached an authenticated API response",
+                "path": "::/api/holidays reached an authenticated API response",
+                "id": "3f0a298dbcaa077f117ddc76bb9058e8",
+                "passes": 3,
+                "fails": 0
+            },
+            "/api/holidays/{holiday} reached an authenticated API response": {
+                "passes": 0,
+                "fails": 3,
+                "name": "/api/holidays/{holiday} reached an authenticated API response",
+                "path": "::/api/holidays/{holiday} reached an authenticated API response",
+                "id": "6d7473b046ff9636e3a9960a36fc308a"
+            },
+            "/api/hr-settings/{type} reached an authenticated API response": {
+                "passes": 3,
+                "fails": 0,
+                "name": "/api/hr-settings/{type} reached an authenticated API response",
+                "path": "::/api/hr-settings/{type} reached an authenticated API response",
+                "id": "c8144479e84277409628de1c7838a840"
+            },
+            "/api/hsn-codes reached an authenticated API response": {
+                "fails": 0,
+                "name": "/api/hsn-codes reached an authenticated API response",
+                "path": "::/api/hsn-codes reached an authenticated API response",
+                "id": "20e9b48424ffbf6847ecba4e64ce1fc7",
+                "passes": 3
+            },
+            "/api/hsn-codes/{hsn_code} reached an authenticated API response": {
+                "id": "8bf76ae3f543c0c2597072b6f37855e8",
+                "passes": 3,
+                "fails": 0,
+                "name": "/api/hsn-codes/{hsn_code} reached an authenticated API response",
+                "path": "::/api/hsn-codes/{hsn_code} reached an authenticated API response"
+            },
+            "/api/inventory/adjustments reached an authenticated API response": {
+                "name": "/api/inventory/adjustments reached an authenticated API response",
+                "path": "::/api/inventory/adjustments reached an authenticated API response",
+                "id": "3ac3986d09085d675c5d83e6831a850b",
+                "passes": 3,
+                "fails": 0
+            },
+            "/api/inventory/adjustments/options reached an authenticated API response": {
+                "name": "/api/inventory/adjustments/options reached an authenticated API response",
+                "path": "::/api/inventory/adjustments/options reached an authenticated API response",
+                "id": "7438d2f2d0fad4f06496dd231b9432f8",
+                "passes": 3,
+                "fails": 0
+            },
+            "/api/inventory/adjustments/{inventoryAdjustment} reached an authenticated API response": {
+                "name": "/api/inventory/adjustments/{inventoryAdjustment} reached an authenticated API response",
+                "path": "::/api/inventory/adjustments/{inventoryAdjustment} reached an authenticated API response",
+                "id": "496f6086d4ed836304dcc35ef8538558",
+                "passes": 3,
+                "fails": 0
+            },
+            "/api/inventory/stocks reached an authenticated API response": {
+                "passes": 2,
+                "fails": 0,
+                "name": "/api/inventory/stocks reached an authenticated API response",
+                "path": "::/api/inventory/stocks reached an authenticated API response",
+                "id": "a96bfb0d0908eddbc818f464f2016a84"
+            },
+            "/api/inventory/stocks/show reached an authenticated API response": {
+                "name": "/api/inventory/stocks/show reached an authenticated API response",
+                "path": "::/api/inventory/stocks/show reached an authenticated API response",
+                "id": "4c32b8ec40b43cc521a6b6094c37261a",
+                "passes": 2,
+                "fails": 0
+            },
+            "/api/inventory/stocks/warehouse-options reached an authenticated API response": {
+                "path": "::/api/inventory/stocks/warehouse-options reached an authenticated API response",
+                "id": "5fbe1bb63ea02099f37d043504537655",
+                "passes": 2,
+                "fails": 0,
+                "name": "/api/inventory/stocks/warehouse-options reached an authenticated API response"
+            },
+            "/api/inventory/transfers reached an authenticated API response": {
+                "passes": 2,
+                "fails": 0,
+                "name": "/api/inventory/transfers reached an authenticated API response",
+                "path": "::/api/inventory/transfers reached an authenticated API response",
+                "id": "f589fbb5578f85b317b510061e8bcbcf"
+            },
+            "/api/inventory/transfers/options reached an authenticated API response": {
+                "name": "/api/inventory/transfers/options reached an authenticated API response",
+                "path": "::/api/inventory/transfers/options reached an authenticated API response",
+                "id": "74fed784e7b3dee33d8ab671a161e02a",
+                "passes": 2,
+                "fails": 0
+            },
+            "/api/inventory/transfers/{transfer} reached an authenticated API response": {
+                "name": "/api/inventory/transfers/{transfer} reached an authenticated API response",
+                "path": "::/api/inventory/transfers/{transfer} reached an authenticated API response",
+                "id": "bd66877a46597255e370bd24b43369dd",
+                "passes": 1,
+                "fails": 0
+            },
+            "/api/invoices reached an authenticated API response": {
+                "name": "/api/invoices reached an authenticated API response",
+                "path": "::/api/invoices reached an authenticated API response",
+                "id": "d7da71af1fda82d89df8a29e8f751b1e",
+                "passes": 1,
+                "fails": 0
+            },
+            "/api/invoices/{invoice} reached an authenticated API response": {
+                "passes": 1,
+                "fails": 0,
+                "name": "/api/invoices/{invoice} reached an authenticated API response",
+                "path": "::/api/invoices/{invoice} reached an authenticated API response",
+                "id": "664a9d97c458feb7ae4081b9af13c58a"
+            },
+            "/api/invoices/{invoice}/pdf reached an authenticated API response": {
+                "id": "b7c2e49480c3ea5dd323da053d0dafc3",
+                "passes": 0,
+                "fails": 1,
+                "name": "/api/invoices/{invoice}/pdf reached an authenticated API response",
+                "path": "::/api/invoices/{invoice}/pdf reached an authenticated API response"
+            },
+            "/api/leave-balances reached an authenticated API response": {
+                "name": "/api/leave-balances reached an authenticated API response",
+                "path": "::/api/leave-balances reached an authenticated API response",
+                "id": "9e5b5bed1f81fe6865f37a11ecca0202",
+                "passes": 1,
+                "fails": 0
+            },
+            "/api/leave-balances/{leave_balance} reached an authenticated API response": {
+                "name": "/api/leave-balances/{leave_balance} reached an authenticated API response",
+                "path": "::/api/leave-balances/{leave_balance} reached an authenticated API response",
+                "id": "512d070bf63e5d5ba59e7feb475f2c0e",
+                "passes": 0,
+                "fails": 1
+            },
+            "/api/leaves reached an authenticated API response": {
+                "name": "/api/leaves reached an authenticated API response",
+                "path": "::/api/leaves reached an authenticated API response",
+                "id": "889d6b3e6a35c0270db32ba97e7c48c9",
+                "passes": 1,
+                "fails": 0
+            },
+            "/api/leaves/{leave} reached an authenticated API response": {
+                "name": "/api/leaves/{leave} reached an authenticated API response",
+                "path": "::/api/leaves/{leave} reached an authenticated API response",
+                "id": "fabe587436821bc70741e2d337ab6077",
+                "passes": 1,
+                "fails": 0
+            },
+            "/api/order-reasons/{type} reached an authenticated API response": {
+                "name": "/api/order-reasons/{type} reached an authenticated API response",
+                "path": "::/api/order-reasons/{type} reached an authenticated API response",
+                "id": "d4a2ebc816a6cc380ff13eef4ef7b1ed",
+                "passes": 1,
+                "fails": 0
+            },
+            "/api/orders reached an authenticated API response": {
+                "passes": 1,
+                "fails": 0,
+                "name": "/api/orders reached an authenticated API response",
+                "path": "::/api/orders reached an authenticated API response",
+                "id": "7dbafedfb0e26770fe510424fb2b0336"
+            },
+            "/api/orders/bulk-print reached an authenticated API response": {
+                "id": "9b7bf31a85abc8b8e1beba5c5556e51e",
+                "passes": 1,
+                "fails": 0,
+                "name": "/api/orders/bulk-print reached an authenticated API response",
+                "path": "::/api/orders/bulk-print reached an authenticated API response"
+            },
+            "/api/orders/export reached an authenticated API response": {
+                "passes": 1,
+                "fails": 0,
+                "name": "/api/orders/export reached an authenticated API response",
+                "path": "::/api/orders/export reached an authenticated API response",
+                "id": "b2b3b3ec31bc9fb6dfbb0f72c203c6a1"
+            },
+            "/api/orders/{order} reached an authenticated API response": {
+                "path": "::/api/orders/{order} reached an authenticated API response",
+                "id": "e506eba1412e2d7390837667b0235be1",
+                "passes": 1,
+                "fails": 0,
+                "name": "/api/orders/{order} reached an authenticated API response"
+            },
+            "/api/org-chart reached an authenticated API response": {
+                "name": "/api/org-chart reached an authenticated API response",
+                "path": "::/api/org-chart reached an authenticated API response",
+                "id": "23950ad166017c036571474536620d7a",
+                "passes": 1,
+                "fails": 0
+            },
+            "/api/payments reached an authenticated API response": {
+                "id": "da2aa4f748fd317165718e26d510e2b9",
+                "passes": 1,
+                "fails": 0,
+                "name": "/api/payments reached an authenticated API response",
+                "path": "::/api/payments reached an authenticated API response"
+            },
+            "/api/payments/{payment} reached an authenticated API response": {
+                "name": "/api/payments/{payment} reached an authenticated API response",
+                "path": "::/api/payments/{payment} reached an authenticated API response",
+                "id": "4de7464cddba5a5b9d268cbfc7625a0b",
+                "passes": 1,
+                "fails": 0
+            },
+            "/api/permissions reached an authenticated API response": {
+                "name": "/api/permissions reached an authenticated API response",
+                "path": "::/api/permissions reached an authenticated API response",
+                "id": "a13fba3d5d554171a4833f08f35c41b6",
+                "passes": 1,
+                "fails": 0
+            },
+            "/api/permissions/options reached an authenticated API response": {
+                "fails": 0,
+                "name": "/api/permissions/options reached an authenticated API response",
+                "path": "::/api/permissions/options reached an authenticated API response",
+                "id": "13df21c90ab122c6cca9221850a37550",
+                "passes": 1
+            },
+            "/api/permissions/{permission} reached an authenticated API response": {
+                "name": "/api/permissions/{permission} reached an authenticated API response",
+                "path": "::/api/permissions/{permission} reached an authenticated API response",
+                "id": "83f8834e713124b6c2616b424f24fec2",
+                "passes": 1,
+                "fails": 0
+            },
+            "/api/procurement/goods-receipts reached an authenticated API response": {
+                "name": "/api/procurement/goods-receipts reached an authenticated API response",
+                "path": "::/api/procurement/goods-receipts reached an authenticated API response",
+                "id": "9cd8a3a58f8bdbccd5e437fa23893ce1",
+                "passes": 1,
+                "fails": 0
+            },
+            "/api/procurement/goods-receipts/{receipt}/pdf reached an authenticated API response": {
+                "path": "::/api/procurement/goods-receipts/{receipt}/pdf reached an authenticated API response",
+                "id": "6e4735e23deb897201070da136ef4716",
+                "passes": 1,
+                "fails": 0,
+                "name": "/api/procurement/goods-receipts/{receipt}/pdf reached an authenticated API response"
+            },
+            "/api/procurement/purchase-orders reached an authenticated API response": {
+                "fails": 0,
+                "name": "/api/procurement/purchase-orders reached an authenticated API response",
+                "path": "::/api/procurement/purchase-orders reached an authenticated API response",
+                "id": "dd72bd2fa7d8a4eaf5d3604143d38303",
+                "passes": 1
+            },
+            "/api/procurement/purchase-orders/{order}/payments reached an authenticated API response": {
+                "name": "/api/procurement/purchase-orders/{order}/payments reached an authenticated API response",
+                "path": "::/api/procurement/purchase-orders/{order}/payments reached an authenticated API response",
+                "id": "ce9e695667f8e0ec37b04bef0f0f06fb",
+                "passes": 1,
+                "fails": 0
+            },
+            "/api/procurement/purchase-orders/{order}/pdf reached an authenticated API response": {
+                "name": "/api/procurement/purchase-orders/{order}/pdf reached an authenticated API response",
+                "path": "::/api/procurement/purchase-orders/{order}/pdf reached an authenticated API response",
+                "id": "b4423500f41b098d3112c12ea741de6f",
+                "passes": 1,
+                "fails": 0
+            },
+            "/api/procurement/suppliers reached an authenticated API response": {
+                "name": "/api/procurement/suppliers reached an authenticated API response",
+                "path": "::/api/procurement/suppliers reached an authenticated API response",
+                "id": "082aa54c264d05994ee9c8ce216d09f3",
+                "passes": 1,
+                "fails": 0
+            }
+        },
+        "name": ""
+    }
+}

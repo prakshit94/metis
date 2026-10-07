@@ -22,7 +22,7 @@ class ReferralProgramController extends Controller implements HasMiddleware
         ];
     }
 
-    public function index()
+    public function index(Request $request)
     {
         $programs = ReferralProgram::with('milestones')->latest()->get();
 
@@ -31,6 +31,10 @@ class ReferralProgramController extends Controller implements HasMiddleware
                 ->orderBy('name')
                 ->get(['id', 'name', 'sku']);
         });
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json(compact('programs', 'products'));
+        }
 
         return view('promotions.referrals.index', compact('programs', 'products'));
     }

@@ -5,6 +5,7 @@ namespace App\Modules\Orders\Controllers;
 use App\Modules\Core\Controllers\Controller;
 use App\Modules\Orders\Models\Invoice;
 use App\Modules\Orders\Models\Payment;
+use Barryvdh\DomPDF\Facade\Pdf;
 use App\Services\FinancialService;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
@@ -100,6 +101,20 @@ class InvoiceController extends Controller implements HasMiddleware
         ]);
 
         return response()->json(['invoice' => $invoice]);
+    }
+
+    public function downloadPdf(Invoice $invoice)
+    {
+        $invoice->load([
+            'order.party',
+            'order.items.product.taxRate',
+            'order.shippingAddress.village',
+            'order.billingAddress.village',
+        ]);
+
+        $pdf = Pdf::loadView('orders.pdf.invoice', compact('invoice'))->setPaper('a5', 'portrait');
+
+        return $pdf->download("invoice-{$invoice->invoice_no}.pdf");
     }
 
     public function bulkStatus(Request $request, FinancialService $financialService)

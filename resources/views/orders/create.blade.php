@@ -2935,6 +2935,13 @@ mapOrder(o) {
       };
 
       const shipment = Array.isArray(o.shipments) && o.shipments.length ? o.shipments[0] : null;
+      const shipmentEvents = shipment && Array.isArray(shipment.events)
+        ? shipment.events.map(event => ({
+            ...event,
+            status: event.status || event.event_name || '',
+            created_at: event.created_at || event.occurred_at || null,
+          }))
+        : [];
       const availableServices = (o.shipping_address?.village?.services || [])
         .filter(service => {
           const pivot = service.pivot || {};
@@ -3043,7 +3050,7 @@ mapOrder(o) {
           delivery_attempts: shipment.delivery_attempts || 0,
           next_followup_date: shipment.next_followup_date || null,
           reschedule_reason: shipment.reschedule_reason || null,
-          events: Array.isArray(shipment.events) ? shipment.events : [],
+          events: shipmentEvents,
         } : null,
         orderReturn: (o.order_returns && o.order_returns.length) ? {
           reason: o.order_returns[o.order_returns.length - 1].reason || 'N/A',
@@ -3110,7 +3117,7 @@ mapOrder(o) {
         isDraft: o.status === 'future_order',
         futureOrderDate: o.future_order_date || null,
         createdBy: {
-          name: o.creator ? (o.creator.name || '').trim() : 'N/A',
+          name: o.creator ? (o.creator.name || [o.creator.first_name, o.creator.last_name].filter(Boolean).join(' ')).trim() : 'N/A',
           email: o.creator ? (o.creator.email || '') : '',
           avatar: o.creator && (o.creator.avatar || o.creator.photo) ? (o.creator.avatar || o.creator.photo) : '/assets/images/default_avatar.jpeg',
         },
@@ -3130,14 +3137,34 @@ mapOrder(o) {
       const date = new Date(value);
       return Number.isNaN(date.getTime()) ? 'N/A' : date.toLocaleString();
     },
-        viewOrder(orderId) {
+        async viewOrder(orderId) {
             const order = this.historyOrders.find(o => String(o.id) === String(orderId)) || this.futureOrders.find(o => String(o.id) === String(orderId));
-            if (order) {
-                this.selectedOrder = this.mapOrder(order);
-                const modalEl = document.getElementById('orderDetailModal');
-                if (modalEl) {
-                    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
-                    modal.show();
+            if (!order) return;
+
+            this.selectedOrder = this.mapOrder(order);
+            const modalEl = document.getElementById('orderDetailModal');
+            if (modalEl) {
+                bootstrap.Modal.getOrCreateInstance(modalEl).show();
+            }
+
+            try {
+                const response = await fetch(`/orders/${encodeURIComponent(orderId)}?_t=${Date.now()}`, {
+                    headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                });
+                const data = await response.json();
+                if (!response.ok || !data.order) {
+                    throw new Error(data.error || data.message || 'Unable to load complete order details.');
+                }
+
+                // Ignore a late response if the user has opened a different order.
+                if (String(this.selectedOrder?.id) === String(orderId)) {
+                    this.selectedOrder = this.mapOrder(data.order);
+                }
+            } catch (error) {
+                if (String(this.selectedOrder?.id) === String(orderId)) {
+                    window.dispatchEvent(new CustomEvent('notify', {
+                        detail: { type: 'error', message: error.message || 'Unable to load complete order details.' },
+                    }));
                 }
             }
         },

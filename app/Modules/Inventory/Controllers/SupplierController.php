@@ -16,7 +16,7 @@ class SupplierController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:supplier-view', only: ['index']),
+            new Middleware('permission:supplier-view', only: ['index', 'show']),
             new Middleware('permission:supplier-create', only: ['store']),
             new Middleware('permission:supplier-edit', only: ['update']),
             new Middleware('permission:supplier-delete', only: ['destroy']),
@@ -56,6 +56,11 @@ class SupplierController extends Controller implements HasMiddleware
         ];
 
         return view('procurement.suppliers.index', compact('stats'));
+    }
+
+    public function show(Supplier $supplier): JsonResponse
+    {
+        return response()->json(['data' => $supplier->load('products:id,supplier_id,name,sku')]);
     }
 
     public function store(Request $request): JsonResponse

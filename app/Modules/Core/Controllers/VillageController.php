@@ -869,7 +869,10 @@ class VillageController extends Controller implements HasMiddleware
             }
         }
 
-        $villages = $query->with(['mappings.service'])->cursor();
+        // cursor() hydrates one model at a time and does not eager-load relations,
+        // so the CSV callback would issue relation queries for every village.
+        // lazyById() fetches bounded chunks and eager-loads mappings/services per chunk.
+        $villages = $query->with(['mappings.service'])->lazyById(500);
         $filename = 'villages-export-'.now()->format('Ymd_His').'.csv';
 
         return response()->streamDownload($this->generateCsvExportCallback($villages), $filename, [
@@ -886,7 +889,10 @@ class VillageController extends Controller implements HasMiddleware
             'ids' => 'required|array',
         ]);
 
-        $villages = Village::withTrashed()->with(['mappings.service'])->whereIn('id', $validated['ids'])->cursor();
+        // Keep selected exports bounded while eager-loading their related services.
+        $villages = Village::withTrashed()->with(['mappings.service'])
+            ->whereIn('id', $validated['ids'])
+            ->lazyById(500);
         $filename = 'villages-export-selected-'.now()->format('Ymd_His').'.csv';
 
         return response()->streamDownload($this->generateCsvExportCallback($villages), $filename, [

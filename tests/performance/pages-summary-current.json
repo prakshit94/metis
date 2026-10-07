@@ -1,0 +1,2411 @@
+{
+    "metrics": {
+        "http_req_waiting": {
+            "med": 1350.2934774999999,
+            "p(90)": 3106.8184305000004,
+            "p(95)": 3359.9676152499997,
+            "p(99)": 3665.0845470500003,
+            "max": 4594.058464,
+            "avg": 1496.6118032990291
+        },
+        "http_req_receiving": {
+            "avg": 5.527410906788793,
+            "med": 4.2077185,
+            "p(90)": 11.125386500000001,
+            "p(95)": 13.99927425,
+            "p(99)": 24.64814875000001,
+            "max": 43.110544
+        },
+        "data_received": {
+            "count": 653868814,
+            "rate": 3602730.5119094537
+        },
+        "http_req_duration": {
+            "p(95)": 3365.240511,
+            "p(99)": 3676.2966307,
+            "max": 4597.443781,
+            "avg": 1502.2273486131476,
+            "med": 1356.6739635,
+            "p(90)": 3113.484578,
+            "thresholds": {
+                "p(95)<2500": true,
+                "p(99)<5000": false
+            }
+        },
+        "checks": {
+            "passes": 3630,
+            "fails": 0,
+            "thresholds": {
+                "rate>0.99": false
+            },
+            "value": 1
+        },
+        "data_sent": {
+            "count": 1499012,
+            "rate": 8259.357465117482
+        },
+        "vus": {
+            "value": 1,
+            "min": 0,
+            "max": 40
+        },
+        "http_reqs": {
+            "count": 1856,
+            "rate": 10.226314035683533
+        },
+        "http_req_sending": {
+            "p(99)": 1.6600629500000021,
+            "max": 6.028536,
+            "avg": 0.08813440732758625,
+            "med": 0.0288695,
+            "p(90)": 0.1041185,
+            "p(95)": 0.26652125
+        },
+        "iteration_duration": {
+            "med": 1593.905304,
+            "p(90)": 3363.4821934000006,
+            "p(95)": 3617.9868389999997,
+            "p(99)": 3968.9351276799994,
+            "max": 7504.186868,
+            "avg": 1742.7373819393952
+        },
+        "http_req_tls_handshaking": {
+            "avg": 0,
+            "med": 0,
+            "p(90)": 0,
+            "p(95)": 0,
+            "p(99)": 0,
+            "max": 0
+        },
+        "iterations": {
+            "count": 1815,
+            "rate": 10.000409469162507
+        },
+        "group_duration": {
+            "avg": 223.61885393650795,
+            "med": 188.867817,
+            "p(90)": 314.7990768000001,
+            "p(95)": 428.25158839999983,
+            "p(99)": 746.2664038200004,
+            "max": 838.294609
+        },
+        "vus_max": {
+            "value": 41,
+            "min": 41,
+            "max": 41
+        },
+        "http_req_failed": {
+            "passes": 0,
+            "fails": 1856,
+            "thresholds": {
+                "rate<0.01": false
+            },
+            "value": 0
+        },
+        "http_req_blocked": {
+            "max": 23.290158,
+            "avg": 1.3290399881465507,
+            "med": 0.5663315,
+            "p(90)": 3.4840245000000003,
+            "p(95)": 5.16138275,
+            "p(99)": 9.6594154
+        },
+        "http_req_duration{expected_response:true}": {
+            "med": 1356.6739635,
+            "p(90)": 3113.484578,
+            "p(95)": 3365.240511,
+            "p(99)": 3676.2966307,
+            "max": 4597.443781,
+            "avg": 1502.2273486131476
+        },
+        "http_req_connecting": {
+            "med": 0.3533195,
+            "p(90)": 2.404008,
+            "p(95)": 4.17524025,
+            "p(99)": 8.086951150000004,
+            "max": 20.348562,
+            "avg": 0.9426705829741382
+        }
+    },
+    "setup_data": {
+        "cookieHeader": "XSRF-TOKEN=eyJpdiI6IkFRNHQxMFBHUVNBL2lrQXRSdWdXT2c9PSIsInZhbHVlIjoiaVY3TUZEMWZhOHM0OXFlc3ZVczhkUmg1YjdDWFJIM0V3cUtjWWZkc0IyMmN6RHhtbmpiUTJhMFlFUm82SCtVOGd2dngwVllraS9EU0NzQmJtc1NTQkg4aU56dDRqdmNpamlCNmxMSXhRcDNWWDQxTk16alQxaThyQlpyd0FtaXciLCJtYWMiOiJkNzJhZTU1OGMxMzNkMGQ1YjQzMTJhNTU4ZDEyMDE2YmZjOTJmMTE3MmUyY2VkMWQxZjYwMjhjZjg5Y2Q2NjVmIiwidGFnIjoiIn0%3D; laravel-session=eyJpdiI6IkZPUm5BSXNNeW5Fc2l0T2VyeUptaEE9PSIsInZhbHVlIjoibkZndXRiODNEQmxzT0ZmdTR4VENnMUw3d3MrWnJJcXpPU1BYczFHWktEeEVHWFRZUGtuZW5YT3J1QTQrRGJvNUJQZ0lPbjdWb0hXT0cyVm9jTGFpOUhVd2NCQ25qcStHZGk1N0JiN3NaeU90WU9MUm9QTGNSZ01uKzZWenYwVzkiLCJtYWMiOiI1MjhlNGUyZjhmNjNlNjdiMmVhZWFmZjA2OTRjOGVhNjVhMjBkOGQxNjczZTFkMGQzODUyZGE0YTI2MTQ4NzVhIiwidGFnIjoiIn0%3D",
+        "apiToken": ""
+    },
+    "root_group": {
+        "name": "",
+        "path": "",
+        "id": "d41d8cd98f00b204e9800998ecf8427e",
+        "groups": {
+            "page route sweep /": {
+                "name": "page route sweep /",
+                "path": "::page route sweep /",
+                "id": "df9db288111e7756fe97dc4062c70181",
+                "groups": {},
+                "checks": {
+                        "/ returns HTTP 200": {
+                            "path": "::page route sweep /::/ returns HTTP 200",
+                            "id": "af7e70cfc54b4c7b26f3b1876e9eb818",
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/ returns HTTP 200"
+                        },
+                        "/ returns HTML": {
+                            "name": "/ returns HTML",
+                            "path": "::page route sweep /::/ returns HTML",
+                            "id": "c34d8f6ca0afecd3e06ddb94c9895180",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    }
+            },
+            "page route sweep /admin/audit-logs": {
+                "id": "34248c16cc483a165d424868d17d49ac",
+                "groups": {},
+                "checks": {
+                        "/admin/audit-logs returns HTTP 200": {
+                            "name": "/admin/audit-logs returns HTTP 200",
+                            "path": "::page route sweep /admin/audit-logs::/admin/audit-logs returns HTTP 200",
+                            "id": "e9fae0cd222b7d4898ae61b984304d1d",
+                            "passes": 1,
+                            "fails": 0
+                        },
+                        "/admin/audit-logs returns HTML": {
+                            "name": "/admin/audit-logs returns HTML",
+                            "path": "::page route sweep /admin/audit-logs::/admin/audit-logs returns HTML",
+                            "id": "6a2333632107666844e3628fad7d2872",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    },
+                "name": "page route sweep /admin/audit-logs",
+                "path": "::page route sweep /admin/audit-logs"
+            },
+            "page route sweep /analytics": {
+                "checks": {
+                    "/analytics returns HTTP 200": {
+                        "name": "/analytics returns HTTP 200",
+                        "path": "::page route sweep /analytics::/analytics returns HTTP 200",
+                        "id": "2dc458d267522051819172e1f31049bf",
+                        "passes": 1,
+                        "fails": 0
+                    },
+                    "/analytics returns HTML": {
+                        "id": "4b3dbc340ac2ad1a17e5a0e4eeaf63fa",
+                        "passes": 1,
+                        "fails": 0,
+                        "name": "/analytics returns HTML",
+                        "path": "::page route sweep /analytics::/analytics returns HTML"
+                    }
+                },
+                "name": "page route sweep /analytics",
+                "path": "::page route sweep /analytics",
+                "id": "ae0517faf3183711e53182c5c1cff799",
+                "groups": {}
+            },
+            "page route sweep /attendances": {
+                "name": "page route sweep /attendances",
+                "path": "::page route sweep /attendances",
+                "id": "291edbdca1064b13ce7214cbb61202cf",
+                "groups": {},
+                "checks": {
+                        "/attendances returns HTTP 200": {
+                            "id": "b9af0974c1a391280758f00820054b46",
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/attendances returns HTTP 200",
+                            "path": "::page route sweep /attendances::/attendances returns HTTP 200"
+                        },
+                        "/attendances returns HTML": {
+                            "name": "/attendances returns HTML",
+                            "path": "::page route sweep /attendances::/attendances returns HTML",
+                            "id": "5a54df6d5311756408510d997986247d",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    }
+            },
+            "page route sweep /calendar": {
+                "name": "page route sweep /calendar",
+                "path": "::page route sweep /calendar",
+                "id": "10f0566d3d4ad6b9b811f14d3f826741",
+                "groups": {},
+                "checks": {
+                        "/calendar returns HTTP 200": {
+                            "name": "/calendar returns HTTP 200",
+                            "path": "::page route sweep /calendar::/calendar returns HTTP 200",
+                            "id": "214dceca9d092f249f40f2dca0f36e9b",
+                            "passes": 1,
+                            "fails": 0
+                        },
+                        "/calendar returns HTML": {
+                            "name": "/calendar returns HTML",
+                            "path": "::page route sweep /calendar::/calendar returns HTML",
+                            "id": "0f79b9146a51db92f3f3d3d68f67e8f5",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    }
+            },
+            "page route sweep /call-tags-admin": {
+                "groups": {},
+                "checks": {
+                        "/call-tags-admin returns HTTP 200": {
+                            "id": "27d124f78f4c73eaa25f3c6575d220f7",
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/call-tags-admin returns HTTP 200",
+                            "path": "::page route sweep /call-tags-admin::/call-tags-admin returns HTTP 200"
+                        },
+                        "/call-tags-admin returns HTML": {
+                            "name": "/call-tags-admin returns HTML",
+                            "path": "::page route sweep /call-tags-admin::/call-tags-admin returns HTML",
+                            "id": "bf64442cf3186f2f85ff98ae52c18e25",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    },
+                "name": "page route sweep /call-tags-admin",
+                "path": "::page route sweep /call-tags-admin",
+                "id": "8641c92d3c29a5dfd854bccf51575330"
+            },
+            "page route sweep /catalog/attributes": {
+                "path": "::page route sweep /catalog/attributes",
+                "id": "5f2254792aa4cf878ae6c85486360531",
+                "groups": {},
+                "checks": {
+                        "/catalog/attributes returns HTTP 200": {
+                            "name": "/catalog/attributes returns HTTP 200",
+                            "path": "::page route sweep /catalog/attributes::/catalog/attributes returns HTTP 200",
+                            "id": "8c14882edb439e791dc951748bb1f8df",
+                            "passes": 1,
+                            "fails": 0
+                        },
+                        "/catalog/attributes returns HTML": {
+                            "fails": 0,
+                            "name": "/catalog/attributes returns HTML",
+                            "path": "::page route sweep /catalog/attributes::/catalog/attributes returns HTML",
+                            "id": "492f813eae01259efd41f9574d7b0f8d",
+                            "passes": 1
+                        }
+                    },
+                "name": "page route sweep /catalog/attributes"
+            },
+            "page route sweep /catalog/brands": {
+                "name": "page route sweep /catalog/brands",
+                "path": "::page route sweep /catalog/brands",
+                "id": "b56953035886ca996fdf77e8a35df4c3",
+                "groups": {},
+                "checks": {
+                        "/catalog/brands returns HTTP 200": {
+                            "name": "/catalog/brands returns HTTP 200",
+                            "path": "::page route sweep /catalog/brands::/catalog/brands returns HTTP 200",
+                            "id": "400aeb7149c5fe0d98e51af3afa1c6d2",
+                            "passes": 1,
+                            "fails": 0
+                        },
+                        "/catalog/brands returns HTML": {
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/catalog/brands returns HTML",
+                            "path": "::page route sweep /catalog/brands::/catalog/brands returns HTML",
+                            "id": "d5346ad085dd98f98f31b788e78dca4a"
+                        }
+                    }
+            },
+            "page route sweep /catalog/categories": {
+                "id": "44a25474fcf68012fc4dd694bb981d03",
+                "groups": {},
+                "checks": {
+                        "/catalog/categories returns HTTP 200": {
+                            "fails": 0,
+                            "name": "/catalog/categories returns HTTP 200",
+                            "path": "::page route sweep /catalog/categories::/catalog/categories returns HTTP 200",
+                            "id": "f1aaae0b29dc571ff96d1bd3d1d1f74c",
+                            "passes": 1
+                        },
+                        "/catalog/categories returns HTML": {
+                            "name": "/catalog/categories returns HTML",
+                            "path": "::page route sweep /catalog/categories::/catalog/categories returns HTML",
+                            "id": "41c32bb7cd39dd54344484fcd67fbc9a",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    },
+                "name": "page route sweep /catalog/categories",
+                "path": "::page route sweep /catalog/categories"
+            },
+            "page route sweep /catalog/hsn-codes": {
+                "name": "page route sweep /catalog/hsn-codes",
+                "path": "::page route sweep /catalog/hsn-codes",
+                "id": "2585775fda017a508ed165e71d241cbf",
+                "groups": {},
+                "checks": {
+                        "/catalog/hsn-codes returns HTTP 200": {
+                            "id": "45ef3f1f717c674d57a3d7d8ba987b56",
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/catalog/hsn-codes returns HTTP 200",
+                            "path": "::page route sweep /catalog/hsn-codes::/catalog/hsn-codes returns HTTP 200"
+                        },
+                        "/catalog/hsn-codes returns HTML": {
+                            "path": "::page route sweep /catalog/hsn-codes::/catalog/hsn-codes returns HTML",
+                            "id": "f558910fbfd87027bda2fbf13768cb7f",
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/catalog/hsn-codes returns HTML"
+                        }
+                    }
+            },
+            "page route sweep /catalog/products": {
+                "path": "::page route sweep /catalog/products",
+                "id": "951beb81cfac0cfbfcb03e41bd3c3886",
+                "groups": {},
+                "checks": {
+                        "/catalog/products returns HTTP 200": {
+                            "name": "/catalog/products returns HTTP 200",
+                            "path": "::page route sweep /catalog/products::/catalog/products returns HTTP 200",
+                            "id": "cbf12300d7e5a915fed80eb29422dac5",
+                            "passes": 1,
+                            "fails": 0
+                        },
+                        "/catalog/products returns HTML": {
+                            "id": "658756634aaf708df1a71de06a3a8c0c",
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/catalog/products returns HTML",
+                            "path": "::page route sweep /catalog/products::/catalog/products returns HTML"
+                        }
+                    },
+                "name": "page route sweep /catalog/products"
+            },
+            "page route sweep /catalog/tax-rates": {
+                "id": "60c93115535e718152a39a84b9a4c451",
+                "groups": {},
+                "checks": {
+                        "/catalog/tax-rates returns HTTP 200": {
+                            "name": "/catalog/tax-rates returns HTTP 200",
+                            "path": "::page route sweep /catalog/tax-rates::/catalog/tax-rates returns HTTP 200",
+                            "id": "13d3ff05e4909182de93bbca0b2556a6",
+                            "passes": 1,
+                            "fails": 0
+                        },
+                        "/catalog/tax-rates returns HTML": {
+                            "path": "::page route sweep /catalog/tax-rates::/catalog/tax-rates returns HTML",
+                            "id": "0f366ac911e5aa9f8acb297d31ae395c",
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/catalog/tax-rates returns HTML"
+                        }
+                    },
+                "name": "page route sweep /catalog/tax-rates",
+                "path": "::page route sweep /catalog/tax-rates"
+            },
+            "page route sweep /catalog/uom": {
+                "checks": {
+                    "/catalog/uom returns HTTP 200": {
+                        "path": "::page route sweep /catalog/uom::/catalog/uom returns HTTP 200",
+                        "id": "cff62403b7083c6d0c3b2d97f12dbb56",
+                        "passes": 1,
+                        "fails": 0,
+                        "name": "/catalog/uom returns HTTP 200"
+                    },
+                    "/catalog/uom returns HTML": {
+                        "name": "/catalog/uom returns HTML",
+                        "path": "::page route sweep /catalog/uom::/catalog/uom returns HTML",
+                        "id": "fe437c016a972cda7747afbc720bf211",
+                        "passes": 1,
+                        "fails": 0
+                    }
+                },
+                "name": "page route sweep /catalog/uom",
+                "path": "::page route sweep /catalog/uom",
+                "id": "83825e719a0609a96bd8eb1bf8f925b9",
+                "groups": {}
+            },
+            "page route sweep /catalog/warehouses": {
+                "checks": {
+                    "/catalog/warehouses returns HTTP 200": {
+                        "fails": 0,
+                        "name": "/catalog/warehouses returns HTTP 200",
+                        "path": "::page route sweep /catalog/warehouses::/catalog/warehouses returns HTTP 200",
+                        "id": "dba6d4cb620189d7958ec9e1dfb03080",
+                        "passes": 1
+                    },
+                    "/catalog/warehouses returns HTML": {
+                        "fails": 0,
+                        "name": "/catalog/warehouses returns HTML",
+                        "path": "::page route sweep /catalog/warehouses::/catalog/warehouses returns HTML",
+                        "id": "e2c3455fe5a8311c4d727627fbc88013",
+                        "passes": 1
+                    }
+                },
+                "name": "page route sweep /catalog/warehouses",
+                "path": "::page route sweep /catalog/warehouses",
+                "id": "4d71ceafab077ff6ac9083b8e23326c2",
+                "groups": {}
+            },
+            "page route sweep /chat": {
+                "name": "page route sweep /chat",
+                "path": "::page route sweep /chat",
+                "id": "679032eec570045d12ae91c0b2905ad1",
+                "groups": {},
+                "checks": {
+                        "/chat returns HTTP 200": {
+                            "name": "/chat returns HTTP 200",
+                            "path": "::page route sweep /chat::/chat returns HTTP 200",
+                            "id": "0f2733f4e15b9dadfa7c6d160c6759f8",
+                            "passes": 1,
+                            "fails": 0
+                        },
+                        "/chat returns HTML": {
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/chat returns HTML",
+                            "path": "::page route sweep /chat::/chat returns HTML",
+                            "id": "799fe51429238676671b0e2ce9571473"
+                        }
+                    }
+            },
+            "page route sweep /complaints": {
+                "name": "page route sweep /complaints",
+                "path": "::page route sweep /complaints",
+                "id": "f3a9df3713589455585e05b63a735a2c",
+                "groups": {},
+                "checks": {
+                        "/complaints returns HTTP 200": {
+                            "name": "/complaints returns HTTP 200",
+                            "path": "::page route sweep /complaints::/complaints returns HTTP 200",
+                            "id": "c3924dbf335f4114fa1e60cd25f6adca",
+                            "passes": 1,
+                            "fails": 0
+                        },
+                        "/complaints returns HTML": {
+                            "name": "/complaints returns HTML",
+                            "path": "::page route sweep /complaints::/complaints returns HTML",
+                            "id": "aaf3964b234972e3e578d26cf0914ae7",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    }
+            },
+            "page route sweep /credit-notes": {
+                "id": "7d4029fc27c7db47b24095525d237d31",
+                "groups": {},
+                "checks": {
+                        "/credit-notes returns HTTP 200": {
+                            "name": "/credit-notes returns HTTP 200",
+                            "path": "::page route sweep /credit-notes::/credit-notes returns HTTP 200",
+                            "id": "21c47a94e08b267d9c32d0d966856261",
+                            "passes": 1,
+                            "fails": 0
+                        },
+                        "/credit-notes returns HTML": {
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/credit-notes returns HTML",
+                            "path": "::page route sweep /credit-notes::/credit-notes returns HTML",
+                            "id": "37878a32ce73d57072314461196cdf02"
+                        }
+                    },
+                "name": "page route sweep /credit-notes",
+                "path": "::page route sweep /credit-notes"
+            },
+            "page route sweep /customer-settings": {
+                "name": "page route sweep /customer-settings",
+                "path": "::page route sweep /customer-settings",
+                "id": "618cc5994e3643fd9738627d312fc7a6",
+                "groups": {},
+                "checks": {
+                        "/customer-settings returns HTTP 200": {
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/customer-settings returns HTTP 200",
+                            "path": "::page route sweep /customer-settings::/customer-settings returns HTTP 200",
+                            "id": "b2c5175d45d5796f550c4102dd1c9316"
+                        },
+                        "/customer-settings returns HTML": {
+                            "path": "::page route sweep /customer-settings::/customer-settings returns HTML",
+                            "id": "79570bc71c3ff5bc102121165845cde4",
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/customer-settings returns HTML"
+                        }
+                    }
+            },
+            "page route sweep /customers": {
+                "id": "01a0d989d53906387de4faa124d3c6b7",
+                "groups": {},
+                "checks": {
+                        "/customers returns HTTP 200": {
+                            "path": "::page route sweep /customers::/customers returns HTTP 200",
+                            "id": "70e2e31ec34b01a6ec95caa96297325d",
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/customers returns HTTP 200"
+                        },
+                        "/customers returns HTML": {
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/customers returns HTML",
+                            "path": "::page route sweep /customers::/customers returns HTML",
+                            "id": "ca8efe591a05625603f0a00c84daa8b4"
+                        }
+                    },
+                "name": "page route sweep /customers",
+                "path": "::page route sweep /customers"
+            },
+            "page route sweep /departments": {
+                "path": "::page route sweep /departments",
+                "id": "55c58406b071a0c2fde64383580dd4ad",
+                "groups": {},
+                "checks": {
+                        "/departments returns HTTP 200": {
+                            "name": "/departments returns HTTP 200",
+                            "path": "::page route sweep /departments::/departments returns HTTP 200",
+                            "id": "0ccb733eebbab7b1985cfdb6affd33f3",
+                            "passes": 1,
+                            "fails": 0
+                        },
+                        "/departments returns HTML": {
+                            "path": "::page route sweep /departments::/departments returns HTML",
+                            "id": "dde288eacc66fdb0bd0c43a8957916b0",
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/departments returns HTML"
+                        }
+                    },
+                "name": "page route sweep /departments"
+            },
+            "page route sweep /elements": {
+                "checks": {
+                    "/elements returns HTTP 200": {
+                        "path": "::page route sweep /elements::/elements returns HTTP 200",
+                        "id": "29e369b4ce6094f83aa5338b1cce22f5",
+                        "passes": 1,
+                        "fails": 0,
+                        "name": "/elements returns HTTP 200"
+                    },
+                    "/elements returns HTML": {
+                        "fails": 0,
+                        "name": "/elements returns HTML",
+                        "path": "::page route sweep /elements::/elements returns HTML",
+                        "id": "1d7f7e80d2599b1a5921c97cf867af7f",
+                        "passes": 1
+                    }
+                },
+                "name": "page route sweep /elements",
+                "path": "::page route sweep /elements",
+                "id": "6f6f6aa4fcd3c1e40112bd0e6edb3fd7",
+                "groups": {}
+            },
+            "page route sweep /elements/alerts": {
+                "id": "5a79f808f7b634debd4238e22fe280a8",
+                "groups": {},
+                "checks": {
+                        "/elements/alerts returns HTTP 200": {
+                            "name": "/elements/alerts returns HTTP 200",
+                            "path": "::page route sweep /elements/alerts::/elements/alerts returns HTTP 200",
+                            "id": "5e1937aab33556d60aeb29cb5fd6831d",
+                            "passes": 1,
+                            "fails": 0
+                        },
+                        "/elements/alerts returns HTML": {
+                            "name": "/elements/alerts returns HTML",
+                            "path": "::page route sweep /elements/alerts::/elements/alerts returns HTML",
+                            "id": "86973b5a7063a2645ea5434ad62a520e",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    },
+                "name": "page route sweep /elements/alerts",
+                "path": "::page route sweep /elements/alerts"
+            },
+            "page route sweep /elements/badges": {
+                "name": "page route sweep /elements/badges",
+                "path": "::page route sweep /elements/badges",
+                "id": "6cfd909b18e778c5a1c222fe5bccb61f",
+                "groups": {},
+                "checks": {
+                        "/elements/badges returns HTTP 200": {
+                            "path": "::page route sweep /elements/badges::/elements/badges returns HTTP 200",
+                            "id": "166eacd1c1614cb1713edafc0778ee18",
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/elements/badges returns HTTP 200"
+                        },
+                        "/elements/badges returns HTML": {
+                            "id": "af4492503e146b62c4647efaeacafb1f",
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/elements/badges returns HTML",
+                            "path": "::page route sweep /elements/badges::/elements/badges returns HTML"
+                        }
+                    }
+            },
+            "page route sweep /elements/buttons": {
+                "name": "page route sweep /elements/buttons",
+                "path": "::page route sweep /elements/buttons",
+                "id": "72a41338f9f8ff49285f87df8019e560",
+                "groups": {},
+                "checks": {
+                        "/elements/buttons returns HTTP 200": {
+                            "path": "::page route sweep /elements/buttons::/elements/buttons returns HTTP 200",
+                            "id": "cb470b09dd1b7d064c3246745c85b752",
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/elements/buttons returns HTTP 200"
+                        },
+                        "/elements/buttons returns HTML": {
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/elements/buttons returns HTML",
+                            "path": "::page route sweep /elements/buttons::/elements/buttons returns HTML",
+                            "id": "de0ccf98a38c72029d64266d6b1d624e"
+                        }
+                    }
+            },
+            "page route sweep /elements/cards": {
+                "name": "page route sweep /elements/cards",
+                "path": "::page route sweep /elements/cards",
+                "id": "0acad842e381e1b67e8157438b02257d",
+                "groups": {},
+                "checks": {
+                        "/elements/cards returns HTTP 200": {
+                            "name": "/elements/cards returns HTTP 200",
+                            "path": "::page route sweep /elements/cards::/elements/cards returns HTTP 200",
+                            "id": "bb9f1df6c0cf9b808a034606ae00d620",
+                            "passes": 1,
+                            "fails": 0
+                        },
+                        "/elements/cards returns HTML": {
+                            "name": "/elements/cards returns HTML",
+                            "path": "::page route sweep /elements/cards::/elements/cards returns HTML",
+                            "id": "33b2b95aeab25ce172f08000cee42e3d",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    }
+            },
+            "page route sweep /elements/forms": {
+                "name": "page route sweep /elements/forms",
+                "path": "::page route sweep /elements/forms",
+                "id": "e289e9c8fb61862b2d8009d6cc3365ab",
+                "groups": {},
+                "checks": {
+                        "/elements/forms returns HTTP 200": {
+                            "name": "/elements/forms returns HTTP 200",
+                            "path": "::page route sweep /elements/forms::/elements/forms returns HTTP 200",
+                            "id": "85f485feade4bc17bf90a9487ef73895",
+                            "passes": 1,
+                            "fails": 0
+                        },
+                        "/elements/forms returns HTML": {
+                            "name": "/elements/forms returns HTML",
+                            "path": "::page route sweep /elements/forms::/elements/forms returns HTML",
+                            "id": "1c6093bd7019d0cbc23eb156ee746ffe",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    }
+            },
+            "page route sweep /elements/modals": {
+                "groups": {},
+                "checks": {
+                        "/elements/modals returns HTTP 200": {
+                            "fails": 0,
+                            "name": "/elements/modals returns HTTP 200",
+                            "path": "::page route sweep /elements/modals::/elements/modals returns HTTP 200",
+                            "id": "ad29bcc50fcd84ab5192b72b0a173f8d",
+                            "passes": 1
+                        },
+                        "/elements/modals returns HTML": {
+                            "name": "/elements/modals returns HTML",
+                            "path": "::page route sweep /elements/modals::/elements/modals returns HTML",
+                            "id": "a923f82cff1054daf43188ca3334f497",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    },
+                "name": "page route sweep /elements/modals",
+                "path": "::page route sweep /elements/modals",
+                "id": "11acf2884e8f6e529a60aee1c7f9d495"
+            },
+            "page route sweep /elements/tables": {
+                "checks": {
+                    "/elements/tables returns HTTP 200": {
+                        "id": "a4b5a5de156e888930c1d5a0f1a79fc9",
+                        "passes": 1,
+                        "fails": 0,
+                        "name": "/elements/tables returns HTTP 200",
+                        "path": "::page route sweep /elements/tables::/elements/tables returns HTTP 200"
+                    },
+                    "/elements/tables returns HTML": {
+                        "fails": 0,
+                        "name": "/elements/tables returns HTML",
+                        "path": "::page route sweep /elements/tables::/elements/tables returns HTML",
+                        "id": "4f694e05524acf1a317f921c3dde1be3",
+                        "passes": 1
+                    }
+                },
+                "name": "page route sweep /elements/tables",
+                "path": "::page route sweep /elements/tables",
+                "id": "78cfae3054215e10b227869c401c5455",
+                "groups": {}
+            },
+            "page route sweep /files": {
+                "checks": {
+                    "/files returns HTTP 200": {
+                        "name": "/files returns HTTP 200",
+                        "path": "::page route sweep /files::/files returns HTTP 200",
+                        "id": "ae4288408607366fc714f992c26ae412",
+                        "passes": 1,
+                        "fails": 0
+                    },
+                    "/files returns HTML": {
+                        "name": "/files returns HTML",
+                        "path": "::page route sweep /files::/files returns HTML",
+                        "id": "5b932d2e46d0b7c07c571782474a452e",
+                        "passes": 1,
+                        "fails": 0
+                    }
+                },
+                "name": "page route sweep /files",
+                "path": "::page route sweep /files",
+                "id": "c9e2d803633cd89125db597d77254ef4",
+                "groups": {}
+            },
+            "page route sweep /forms": {
+                "name": "page route sweep /forms",
+                "path": "::page route sweep /forms",
+                "id": "f238c1e0f31120b509842ef3cf078a29",
+                "groups": {},
+                "checks": {
+                        "/forms returns HTTP 200": {
+                            "id": "cd9f48776fa315563d0e6f5a3f97a4f5",
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/forms returns HTTP 200",
+                            "path": "::page route sweep /forms::/forms returns HTTP 200"
+                        },
+                        "/forms returns HTML": {
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/forms returns HTML",
+                            "path": "::page route sweep /forms::/forms returns HTML",
+                            "id": "66dd4f49d38174132c44d53aa42c6e8f"
+                        }
+                    }
+            },
+            "page route sweep /help": {
+                "id": "17ecd2b4a4d5948d4cf8ed881ca61918",
+                "groups": {},
+                "checks": {
+                        "/help returns HTTP 200": {
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/help returns HTTP 200",
+                            "path": "::page route sweep /help::/help returns HTTP 200",
+                            "id": "088760a636ae5bfeef0616a3312b5520"
+                        },
+                        "/help returns HTML": {
+                            "name": "/help returns HTML",
+                            "path": "::page route sweep /help::/help returns HTML",
+                            "id": "cedaba752005c78767133b0fd2d449df",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    },
+                "name": "page route sweep /help",
+                "path": "::page route sweep /help"
+            },
+            "page route sweep /inventory/adjustments": {
+                "id": "5fac0e3b90743075dd31aa066112f4d9",
+                "groups": {},
+                "checks": {
+                        "/inventory/adjustments returns HTTP 200": {
+                            "name": "/inventory/adjustments returns HTTP 200",
+                            "path": "::page route sweep /inventory/adjustments::/inventory/adjustments returns HTTP 200",
+                            "id": "fee56102a2d9c1ff7b69196608b22fc8",
+                            "passes": 1,
+                            "fails": 0
+                        },
+                        "/inventory/adjustments returns HTML": {
+                            "name": "/inventory/adjustments returns HTML",
+                            "path": "::page route sweep /inventory/adjustments::/inventory/adjustments returns HTML",
+                            "id": "e05b1363fc528cbcffd3587a259a7b5d",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    },
+                "name": "page route sweep /inventory/adjustments",
+                "path": "::page route sweep /inventory/adjustments"
+            },
+            "page route sweep /inventory/dashboard": {
+                "name": "page route sweep /inventory/dashboard",
+                "path": "::page route sweep /inventory/dashboard",
+                "id": "9224e4678bbe8172c45c5f7e32b78f9d",
+                "groups": {},
+                "checks": {
+                        "/inventory/dashboard returns HTTP 200": {
+                            "id": "5c6fd4db568b7460bacd048ae91d7895",
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/inventory/dashboard returns HTTP 200",
+                            "path": "::page route sweep /inventory/dashboard::/inventory/dashboard returns HTTP 200"
+                        },
+                        "/inventory/dashboard returns HTML": {
+                            "name": "/inventory/dashboard returns HTML",
+                            "path": "::page route sweep /inventory/dashboard::/inventory/dashboard returns HTML",
+                            "id": "b8ab088c00df9835540b3d0db576463f",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    }
+            },
+            "page route sweep /inventory/dashboard/activities": {
+                "name": "page route sweep /inventory/dashboard/activities",
+                "path": "::page route sweep /inventory/dashboard/activities",
+                "id": "ae38d4d8cf332cf02ba391d0fd7f4e80",
+                "groups": {},
+                "checks": {
+                        "/inventory/dashboard/activities returns HTTP 200": {
+                            "name": "/inventory/dashboard/activities returns HTTP 200",
+                            "path": "::page route sweep /inventory/dashboard/activities::/inventory/dashboard/activities returns HTTP 200",
+                            "id": "a10a88ede2307e4d1c2de889d3756321",
+                            "passes": 1,
+                            "fails": 0
+                        },
+                        "/inventory/dashboard/activities returns HTML": {
+                            "path": "::page route sweep /inventory/dashboard/activities::/inventory/dashboard/activities returns HTML",
+                            "id": "03aa71f4aa09facfbaeaa29a25f996a2",
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/inventory/dashboard/activities returns HTML"
+                        }
+                    }
+            },
+            "page route sweep /inventory/stock-management": {
+                "checks": {
+                    "/inventory/stock-management returns HTTP 200": {
+                        "path": "::page route sweep /inventory/stock-management::/inventory/stock-management returns HTTP 200",
+                        "id": "e210500c4dd183045eedf0c908d9fffe",
+                        "passes": 1,
+                        "fails": 0,
+                        "name": "/inventory/stock-management returns HTTP 200"
+                    },
+                    "/inventory/stock-management returns HTML": {
+                        "name": "/inventory/stock-management returns HTML",
+                        "path": "::page route sweep /inventory/stock-management::/inventory/stock-management returns HTML",
+                        "id": "403753e6ad681c74b754b36ded4a8366",
+                        "passes": 1,
+                        "fails": 0
+                    }
+                },
+                "name": "page route sweep /inventory/stock-management",
+                "path": "::page route sweep /inventory/stock-management",
+                "id": "ad67f2abbe5f4874736d581167eeff88",
+                "groups": {}
+            },
+            "page route sweep /inventory/stock-transfers": {
+                "path": "::page route sweep /inventory/stock-transfers",
+                "id": "f55be90bd9e839d9b2802ac3241644e6",
+                "groups": {},
+                "checks": {
+                        "/inventory/stock-transfers returns HTTP 200": {
+                            "path": "::page route sweep /inventory/stock-transfers::/inventory/stock-transfers returns HTTP 200",
+                            "id": "bcb989b47b76babefe257608bbbff95a",
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/inventory/stock-transfers returns HTTP 200"
+                        },
+                        "/inventory/stock-transfers returns HTML": {
+                            "name": "/inventory/stock-transfers returns HTML",
+                            "path": "::page route sweep /inventory/stock-transfers::/inventory/stock-transfers returns HTML",
+                            "id": "65c30cc190962827b61a2dd3a5040bb4",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    },
+                "name": "page route sweep /inventory/stock-transfers"
+            },
+            "page route sweep /invoices": {
+                "name": "page route sweep /invoices",
+                "path": "::page route sweep /invoices",
+                "id": "5c2689c3f68dcb65871c42be0954d434",
+                "groups": {},
+                "checks": {
+                        "/invoices returns HTTP 200": {
+                            "fails": 0,
+                            "name": "/invoices returns HTTP 200",
+                            "path": "::page route sweep /invoices::/invoices returns HTTP 200",
+                            "id": "3a75f3a0c2aefd5eb42af8b962434369",
+                            "passes": 1
+                        },
+                        "/invoices returns HTML": {
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/invoices returns HTML",
+                            "path": "::page route sweep /invoices::/invoices returns HTML",
+                            "id": "694fd7f33e1b7f1fe48b8785d89a0203"
+                        }
+                    }
+            },
+            "page route sweep /leaves": {
+                "groups": {},
+                "checks": {
+                        "/leaves returns HTTP 200": {
+                            "name": "/leaves returns HTTP 200",
+                            "path": "::page route sweep /leaves::/leaves returns HTTP 200",
+                            "id": "19de11d59dc808153241fbd62f101d60",
+                            "passes": 1,
+                            "fails": 0
+                        },
+                        "/leaves returns HTML": {
+                            "name": "/leaves returns HTML",
+                            "path": "::page route sweep /leaves::/leaves returns HTML",
+                            "id": "5a6364c49248ae8e3a2bf4fad7d0bfe0",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    },
+                "name": "page route sweep /leaves",
+                "path": "::page route sweep /leaves",
+                "id": "b75fbed6196d46596a0114936f23d0ed"
+            },
+            "page route sweep /messages": {
+                "name": "page route sweep /messages",
+                "path": "::page route sweep /messages",
+                "id": "75d7b7308fe840712136a6ee59b5f9cb",
+                "groups": {},
+                "checks": {
+                        "/messages returns HTTP 200": {
+                            "name": "/messages returns HTTP 200",
+                            "path": "::page route sweep /messages::/messages returns HTTP 200",
+                            "id": "193548297cb7f4b1e13f792b869c645e",
+                            "passes": 1,
+                            "fails": 0
+                        },
+                        "/messages returns HTML": {
+                            "name": "/messages returns HTML",
+                            "path": "::page route sweep /messages::/messages returns HTML",
+                            "id": "6255e00745639db4aa5a7f9f0b346af8",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    }
+            },
+            "page route sweep /order-reasons": {
+                "path": "::page route sweep /order-reasons",
+                "id": "91cc72cf5de2ee87da5b314b4d23ee81",
+                "groups": {},
+                "checks": {
+                        "/order-reasons returns HTTP 200": {
+                            "fails": 0,
+                            "name": "/order-reasons returns HTTP 200",
+                            "path": "::page route sweep /order-reasons::/order-reasons returns HTTP 200",
+                            "id": "8b0dda1bbcd4dabd39e88059d04e3834",
+                            "passes": 1
+                        },
+                        "/order-reasons returns HTML": {
+                            "fails": 0,
+                            "name": "/order-reasons returns HTML",
+                            "path": "::page route sweep /order-reasons::/order-reasons returns HTML",
+                            "id": "3372a336ccc05ca6312e3a1fbc3b534f",
+                            "passes": 1
+                        }
+                    },
+                "name": "page route sweep /order-reasons"
+            },
+            "page route sweep /orders": {
+                "path": "::page route sweep /orders",
+                "id": "9119c8be50591ab89b6474373a0fecea",
+                "groups": {},
+                "checks": {
+                        "/orders returns HTTP 200": {
+                            "fails": 0,
+                            "name": "/orders returns HTTP 200",
+                            "path": "::page route sweep /orders::/orders returns HTTP 200",
+                            "id": "988202cbf4d25f19c658da67f5c6f218",
+                            "passes": 1
+                        },
+                        "/orders returns HTML": {
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/orders returns HTML",
+                            "path": "::page route sweep /orders::/orders returns HTML",
+                            "id": "21c3ea86f47b27093b5ae7107a135776"
+                        }
+                    },
+                "name": "page route sweep /orders"
+            },
+            "page route sweep /orders/create": {
+                "groups": {},
+                "checks": {
+                        "/orders/create returns HTTP 200": {
+                            "name": "/orders/create returns HTTP 200",
+                            "path": "::page route sweep /orders/create::/orders/create returns HTTP 200",
+                            "id": "cf0ec8c51031ad2eff6f9c6c1e7eb315",
+                            "passes": 1,
+                            "fails": 0
+                        },
+                        "/orders/create returns HTML": {
+                            "name": "/orders/create returns HTML",
+                            "path": "::page route sweep /orders/create::/orders/create returns HTML",
+                            "id": "af69e7cadb8d8976a29d8ecce6bff45c",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    },
+                "name": "page route sweep /orders/create",
+                "path": "::page route sweep /orders/create",
+                "id": "7dcce8b1b2d2d922ac6fac9912a384d7"
+            },
+            "page route sweep /payments": {
+                "path": "::page route sweep /payments",
+                "id": "3b412bdcb51cedaf92c6026f7576a9c2",
+                "groups": {},
+                "checks": {
+                        "/payments returns HTTP 200": {
+                            "fails": 0,
+                            "name": "/payments returns HTTP 200",
+                            "path": "::page route sweep /payments::/payments returns HTTP 200",
+                            "id": "1fd08a5cd35502c12c5cd82a9febda75",
+                            "passes": 1
+                        },
+                        "/payments returns HTML": {
+                            "name": "/payments returns HTML",
+                            "path": "::page route sweep /payments::/payments returns HTML",
+                            "id": "5049e435a2fa731aca9ebe9b1392a10f",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    },
+                "name": "page route sweep /payments"
+            },
+            "page route sweep /procurement/goods-receipts": {
+                "name": "page route sweep /procurement/goods-receipts",
+                "path": "::page route sweep /procurement/goods-receipts",
+                "id": "a71f0197389ddaa0a6ea34adb2bc24a7",
+                "groups": {},
+                "checks": {
+                        "/procurement/goods-receipts returns HTTP 200": {
+                            "name": "/procurement/goods-receipts returns HTTP 200",
+                            "path": "::page route sweep /procurement/goods-receipts::/procurement/goods-receipts returns HTTP 200",
+                            "id": "e13cbf3dc26e1306895b410455f585b7",
+                            "passes": 1,
+                            "fails": 0
+                        },
+                        "/procurement/goods-receipts returns HTML": {
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/procurement/goods-receipts returns HTML",
+                            "path": "::page route sweep /procurement/goods-receipts::/procurement/goods-receipts returns HTML",
+                            "id": "eb2224c010fe5421d1fd97b345d21a49"
+                        }
+                    }
+            },
+            "page route sweep /procurement/purchase-orders": {
+                "groups": {},
+                "checks": {
+                        "/procurement/purchase-orders returns HTTP 200": {
+                            "path": "::page route sweep /procurement/purchase-orders::/procurement/purchase-orders returns HTTP 200",
+                            "id": "0f7b65898bb85422a80fe9349a1f0635",
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/procurement/purchase-orders returns HTTP 200"
+                        },
+                        "/procurement/purchase-orders returns HTML": {
+                            "fails": 0,
+                            "name": "/procurement/purchase-orders returns HTML",
+                            "path": "::page route sweep /procurement/purchase-orders::/procurement/purchase-orders returns HTML",
+                            "id": "161bb7ddc5f01b9e04ff3c10f1b5ae87",
+                            "passes": 1
+                        }
+                    },
+                "name": "page route sweep /procurement/purchase-orders",
+                "path": "::page route sweep /procurement/purchase-orders",
+                "id": "1d3a6f6ea8683a2bf87e80fe46968e0f"
+            },
+            "page route sweep /procurement/suppliers": {
+                "checks": {
+                    "/procurement/suppliers returns HTTP 200": {
+                        "name": "/procurement/suppliers returns HTTP 200",
+                        "path": "::page route sweep /procurement/suppliers::/procurement/suppliers returns HTTP 200",
+                        "id": "fe70b87a9022b2e243ff830d14038fed",
+                        "passes": 1,
+                        "fails": 0
+                    },
+                    "/procurement/suppliers returns HTML": {
+                        "name": "/procurement/suppliers returns HTML",
+                        "path": "::page route sweep /procurement/suppliers::/procurement/suppliers returns HTML",
+                        "id": "571960f99fc8c94ed26906b1c39758ad",
+                        "passes": 1,
+                        "fails": 0
+                    }
+                },
+                "name": "page route sweep /procurement/suppliers",
+                "path": "::page route sweep /procurement/suppliers",
+                "id": "b2ade9b258a2226c13fe498f953e59ff",
+                "groups": {}
+            },
+            "page route sweep /promotions/coupons": {
+                "name": "page route sweep /promotions/coupons",
+                "path": "::page route sweep /promotions/coupons",
+                "id": "e17aadf610321f9722782e53ead32eb2",
+                "groups": {},
+                "checks": {
+                        "/promotions/coupons returns HTTP 200": {
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/promotions/coupons returns HTTP 200",
+                            "path": "::page route sweep /promotions/coupons::/promotions/coupons returns HTTP 200",
+                            "id": "e5e7c8ae28b3bcb75963deb0e9e6d023"
+                        },
+                        "/promotions/coupons returns HTML": {
+                            "name": "/promotions/coupons returns HTML",
+                            "path": "::page route sweep /promotions/coupons::/promotions/coupons returns HTML",
+                            "id": "845cf7448ae7a6c55a871603b4512e30",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    }
+            },
+            "page route sweep /promotions/offers": {
+                "name": "page route sweep /promotions/offers",
+                "path": "::page route sweep /promotions/offers",
+                "id": "74050d62a57bd37def7b537917d51eea",
+                "groups": {},
+                "checks": {
+                        "/promotions/offers returns HTTP 200": {
+                            "name": "/promotions/offers returns HTTP 200",
+                            "path": "::page route sweep /promotions/offers::/promotions/offers returns HTTP 200",
+                            "id": "fc0426b0e1f4fe2ab076e42241de7589",
+                            "passes": 1,
+                            "fails": 0
+                        },
+                        "/promotions/offers returns HTML": {
+                            "fails": 0,
+                            "name": "/promotions/offers returns HTML",
+                            "path": "::page route sweep /promotions/offers::/promotions/offers returns HTML",
+                            "id": "7be4131f805671b368f71ada525e8cae",
+                            "passes": 1
+                        }
+                    }
+            },
+            "page route sweep /promotions/referral-programs": {
+                "path": "::page route sweep /promotions/referral-programs",
+                "id": "520d30f2b0eb474b7b58afcabab0b789",
+                "groups": {},
+                "checks": {
+                        "/promotions/referral-programs returns HTTP 200": {
+                            "name": "/promotions/referral-programs returns HTTP 200",
+                            "path": "::page route sweep /promotions/referral-programs::/promotions/referral-programs returns HTTP 200",
+                            "id": "25fcbabfd84b00ab3b408998232de42f",
+                            "passes": 1,
+                            "fails": 0
+                        },
+                        "/promotions/referral-programs returns HTML": {
+                            "name": "/promotions/referral-programs returns HTML",
+                            "path": "::page route sweep /promotions/referral-programs::/promotions/referral-programs returns HTML",
+                            "id": "343faf19e7820bb311c682ffda5fd699",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    },
+                "name": "page route sweep /promotions/referral-programs"
+            },
+            "page route sweep /refunds": {
+                "path": "::page route sweep /refunds",
+                "id": "61f8a7af22dcaaf466cabe24eb7edf73",
+                "groups": {},
+                "checks": {
+                        "/refunds returns HTTP 200": {
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/refunds returns HTTP 200",
+                            "path": "::page route sweep /refunds::/refunds returns HTTP 200",
+                            "id": "0794572c2f59572a4ac4865347f103e1"
+                        },
+                        "/refunds returns HTML": {
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/refunds returns HTML",
+                            "path": "::page route sweep /refunds::/refunds returns HTML",
+                            "id": "11f3b30b19c86567f86ad3fdc79a14b4"
+                        }
+                    },
+                "name": "page route sweep /refunds"
+            },
+            "page route sweep /reports": {
+                "groups": {},
+                "checks": {
+                        "/reports returns HTTP 200": {
+                            "name": "/reports returns HTTP 200",
+                            "path": "::page route sweep /reports::/reports returns HTTP 200",
+                            "id": "b8236dda779ea343d49f944dd1660abe",
+                            "passes": 1,
+                            "fails": 0
+                        },
+                        "/reports returns HTML": {
+                            "fails": 0,
+                            "name": "/reports returns HTML",
+                            "path": "::page route sweep /reports::/reports returns HTML",
+                            "id": "447d6850171e32c3d70e808740cba9f4",
+                            "passes": 1
+                        }
+                    },
+                "name": "page route sweep /reports",
+                "path": "::page route sweep /reports",
+                "id": "59c71aca234e63b64030e1db36435bc2"
+            },
+            "page route sweep /returns": {
+                "name": "page route sweep /returns",
+                "path": "::page route sweep /returns",
+                "id": "4d2dd5ee3bbced30630da508517b55c8",
+                "groups": {},
+                "checks": {
+                        "/returns returns HTTP 200": {
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/returns returns HTTP 200",
+                            "path": "::page route sweep /returns::/returns returns HTTP 200",
+                            "id": "9999bb4304710eaff5a49fb50adf6dfe"
+                        },
+                        "/returns returns HTML": {
+                            "name": "/returns returns HTML",
+                            "path": "::page route sweep /returns::/returns returns HTML",
+                            "id": "2e1ead906c3258618d0f6b693d0297fa",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    }
+            },
+            "page route sweep /roles-permissions": {
+                "checks": {
+                    "/roles-permissions returns HTTP 200": {
+                        "name": "/roles-permissions returns HTTP 200",
+                        "path": "::page route sweep /roles-permissions::/roles-permissions returns HTTP 200",
+                        "id": "e3040be185b0a8b35dd7803a94fb0d19",
+                        "passes": 1,
+                        "fails": 0
+                    },
+                    "/roles-permissions returns HTML": {
+                        "fails": 0,
+                        "name": "/roles-permissions returns HTML",
+                        "path": "::page route sweep /roles-permissions::/roles-permissions returns HTML",
+                        "id": "f61ce8d137be8a694fa5c2ee57cac2b3",
+                        "passes": 1
+                    }
+                },
+                "name": "page route sweep /roles-permissions",
+                "path": "::page route sweep /roles-permissions",
+                "id": "eba033ad5b5b4217421957243566db8c",
+                "groups": {}
+            },
+            "page route sweep /security": {
+                "name": "page route sweep /security",
+                "path": "::page route sweep /security",
+                "id": "9d625e12109c04ec9acbbb5720a0c9ad",
+                "groups": {},
+                "checks": {
+                        "/security returns HTTP 200": {
+                            "path": "::page route sweep /security::/security returns HTTP 200",
+                            "id": "d0ba02d7d5805ab333673401d239e9e5",
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/security returns HTTP 200"
+                        },
+                        "/security returns HTML": {
+                            "name": "/security returns HTML",
+                            "path": "::page route sweep /security::/security returns HTML",
+                            "id": "17fc7f844fb54acaf3115316ed2139a2",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    }
+            },
+            "page route sweep /shipping/services": {
+                "name": "page route sweep /shipping/services",
+                "path": "::page route sweep /shipping/services",
+                "id": "7dac5bb9fad8c7769e6dcd4675d24fe2",
+                "groups": {},
+                "checks": {
+                        "/shipping/services returns HTTP 200": {
+                            "path": "::page route sweep /shipping/services::/shipping/services returns HTTP 200",
+                            "id": "b9f910e7ed09b28885d3e1d148430354",
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/shipping/services returns HTTP 200"
+                        },
+                        "/shipping/services returns HTML": {
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/shipping/services returns HTML",
+                            "path": "::page route sweep /shipping/services::/shipping/services returns HTML",
+                            "id": "296942075ca9cd4f28d5b98cee131b7c"
+                        }
+                    }
+            },
+            "page route sweep /shipping/settings": {
+                "name": "page route sweep /shipping/settings",
+                "path": "::page route sweep /shipping/settings",
+                "id": "0dd0da224b8538893dc336041c0eac90",
+                "groups": {},
+                "checks": {
+                        "/shipping/settings returns HTTP 200": {
+                            "name": "/shipping/settings returns HTTP 200",
+                            "path": "::page route sweep /shipping/settings::/shipping/settings returns HTTP 200",
+                            "id": "c3513cc5e2b3a37027ad4d3d9fd8e7ad",
+                            "passes": 1,
+                            "fails": 0
+                        },
+                        "/shipping/settings returns HTML": {
+                            "name": "/shipping/settings returns HTML",
+                            "path": "::page route sweep /shipping/settings::/shipping/settings returns HTML",
+                            "id": "22c3541fbb23503972a92ab123458f1d",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    }
+            },
+            "page route sweep /shipping/shipments": {
+                "id": "4b60aa876a9e08840dc31b0b27975889",
+                "groups": {},
+                "checks": {
+                        "/shipping/shipments returns HTTP 200": {
+                            "name": "/shipping/shipments returns HTTP 200",
+                            "path": "::page route sweep /shipping/shipments::/shipping/shipments returns HTTP 200",
+                            "id": "fe0cb23d9789e10c071addd6e541ee67",
+                            "passes": 1,
+                            "fails": 0
+                        },
+                        "/shipping/shipments returns HTML": {
+                            "name": "/shipping/shipments returns HTML",
+                            "path": "::page route sweep /shipping/shipments::/shipping/shipments returns HTML",
+                            "id": "550c75e2f077690c99f68427ef898a8c",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    },
+                "name": "page route sweep /shipping/shipments",
+                "path": "::page route sweep /shipping/shipments"
+            },
+            "page route sweep /targets": {
+                "path": "::page route sweep /targets",
+                "id": "72987f8277f52a1a7d40b9d3ac48f5f1",
+                "groups": {},
+                "checks": {
+                        "/targets returns HTTP 200": {
+                            "name": "/targets returns HTTP 200",
+                            "path": "::page route sweep /targets::/targets returns HTTP 200",
+                            "id": "2258e76d611f0c5e2a14207fbd565cf6",
+                            "passes": 1,
+                            "fails": 0
+                        },
+                        "/targets returns HTML": {
+                            "id": "f82684860eb67f547837cb10eb583721",
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/targets returns HTML",
+                            "path": "::page route sweep /targets::/targets returns HTML"
+                        }
+                    },
+                "name": "page route sweep /targets"
+            },
+            "page route sweep /targets/create": {
+                "checks": {
+                    "/targets/create returns HTTP 200": {
+                        "name": "/targets/create returns HTTP 200",
+                        "path": "::page route sweep /targets/create::/targets/create returns HTTP 200",
+                        "id": "d578719de1003b98818fd471d8d8ad0a",
+                        "passes": 1,
+                        "fails": 0
+                    },
+                    "/targets/create returns HTML": {
+                        "path": "::page route sweep /targets/create::/targets/create returns HTML",
+                        "id": "7064d240b1a4cf32fdb8ba09f33c28d7",
+                        "passes": 1,
+                        "fails": 0,
+                        "name": "/targets/create returns HTML"
+                    }
+                },
+                "name": "page route sweep /targets/create",
+                "path": "::page route sweep /targets/create",
+                "id": "39b17b7f61cd1559643158a5273a5cf7",
+                "groups": {}
+            },
+            "page route sweep /targets/import": {
+                "name": "page route sweep /targets/import",
+                "path": "::page route sweep /targets/import",
+                "id": "f0fc56ac26816fe235e53fbe63e8c2fd",
+                "groups": {},
+                "checks": {
+                        "/targets/import returns HTTP 200": {
+                            "fails": 0,
+                            "name": "/targets/import returns HTTP 200",
+                            "path": "::page route sweep /targets/import::/targets/import returns HTTP 200",
+                            "id": "bc65c9e61989719c933593e7edbe4e62",
+                            "passes": 1
+                        },
+                        "/targets/import returns HTML": {
+                            "name": "/targets/import returns HTML",
+                            "path": "::page route sweep /targets/import::/targets/import returns HTML",
+                            "id": "cfa512c1bc398bcc22d69785a27e5fef",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    }
+            },
+            "page route sweep /teams": {
+                "name": "page route sweep /teams",
+                "path": "::page route sweep /teams",
+                "id": "9054c49d0d8918c1334c3a5f65278723",
+                "groups": {},
+                "checks": {
+                        "/teams returns HTTP 200": {
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/teams returns HTTP 200",
+                            "path": "::page route sweep /teams::/teams returns HTTP 200",
+                            "id": "ebeb138e31e8f6cd5aebc5eaac879b62"
+                        },
+                        "/teams returns HTML": {
+                            "id": "3076bc5b711fccb245d5a24c5c38fc37",
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/teams returns HTML",
+                            "path": "::page route sweep /teams::/teams returns HTML"
+                        }
+                    }
+            },
+            "page route sweep /users": {
+                "name": "page route sweep /users",
+                "path": "::page route sweep /users",
+                "id": "68057eea28a103f8b89141aa8878f56e",
+                "groups": {},
+                "checks": {
+                        "/users returns HTTP 200": {
+                            "path": "::page route sweep /users::/users returns HTTP 200",
+                            "id": "ed3f0c971d9245565962e117caead5ad",
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/users returns HTTP 200"
+                        },
+                        "/users returns HTML": {
+                            "path": "::page route sweep /users::/users returns HTML",
+                            "id": "c454c3b563af1ff071b5494b09c663f0",
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/users returns HTML"
+                        }
+                    }
+            },
+            "page route sweep /villages": {
+                "name": "page route sweep /villages",
+                "path": "::page route sweep /villages",
+                "id": "220985eb5714d72fc6ffd22103a7e4b7",
+                "groups": {},
+                "checks": {
+                        "/villages returns HTTP 200": {
+                            "fails": 0,
+                            "name": "/villages returns HTTP 200",
+                            "path": "::page route sweep /villages::/villages returns HTTP 200",
+                            "id": "b914c7b06da53515676072361075bc6a",
+                            "passes": 1
+                        },
+                        "/villages returns HTML": {
+                            "name": "/villages returns HTML",
+                            "path": "::page route sweep /villages::/villages returns HTML",
+                            "id": "3549feb8cca88000df11002d886d2fb5",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    }
+            }
+        },
+        "checks": {
+            "/attendances returns HTTP 200": {
+                "path": "::/attendances returns HTTP 200",
+                "id": "79858972cc08cc1a1c2d384125a1139b",
+                "passes": 15,
+                "fails": 0,
+                "name": "/attendances returns HTTP 200"
+            },
+            "/attendances returns HTML": {
+                "name": "/attendances returns HTML",
+                "path": "::/attendances returns HTML",
+                "id": "1dfa7c72bfef272446b4eb9300917dd6",
+                "passes": 15,
+                "fails": 0
+            },
+            "/calendar returns HTTP 200": {
+                "passes": 16,
+                "fails": 0,
+                "name": "/calendar returns HTTP 200",
+                "path": "::/calendar returns HTTP 200",
+                "id": "54d8f3dfaa5390bcaa9e9380b5bf384c"
+            },
+            "/calendar returns HTML": {
+                "name": "/calendar returns HTML",
+                "path": "::/calendar returns HTML",
+                "id": "c7ae6fd66a1bf46e6bfca84a49d7402d",
+                "passes": 16,
+                "fails": 0
+            },
+            "/call-tags-admin returns HTTP 200": {
+                "name": "/call-tags-admin returns HTTP 200",
+                "path": "::/call-tags-admin returns HTTP 200",
+                "id": "c326137b0eb83c414b8f7308e83c97c1",
+                "passes": 17,
+                "fails": 0
+            },
+            "/call-tags-admin returns HTML": {
+                "name": "/call-tags-admin returns HTML",
+                "path": "::/call-tags-admin returns HTML",
+                "id": "02db594c9b70b134fa508e720b22d81f",
+                "passes": 17,
+                "fails": 0
+            },
+            "/catalog/attributes returns HTTP 200": {
+                "name": "/catalog/attributes returns HTTP 200",
+                "path": "::/catalog/attributes returns HTTP 200",
+                "id": "8d628e21094b8ea3d41e3fb3b98b4b4c",
+                "passes": 18,
+                "fails": 0
+            },
+            "/catalog/attributes returns HTML": {
+                "name": "/catalog/attributes returns HTML",
+                "path": "::/catalog/attributes returns HTML",
+                "id": "d50124ef1b15a1e47a7da6ccf3ba10a4",
+                "passes": 18,
+                "fails": 0
+            },
+            "/catalog/brands returns HTTP 200": {
+                "id": "63575deaccdc39a6d2c7ed6c1610ad68",
+                "passes": 19,
+                "fails": 0,
+                "name": "/catalog/brands returns HTTP 200",
+                "path": "::/catalog/brands returns HTTP 200"
+            },
+            "/catalog/brands returns HTML": {
+                "path": "::/catalog/brands returns HTML",
+                "id": "cc99b27adbab72d87c168728352c8b81",
+                "passes": 19,
+                "fails": 0,
+                "name": "/catalog/brands returns HTML"
+            },
+            "/catalog/categories returns HTTP 200": {
+                "path": "::/catalog/categories returns HTTP 200",
+                "id": "2e7fca724710891b9184284059f4ba8f",
+                "passes": 20,
+                "fails": 0,
+                "name": "/catalog/categories returns HTTP 200"
+            },
+            "/catalog/categories returns HTML": {
+                "name": "/catalog/categories returns HTML",
+                "path": "::/catalog/categories returns HTML",
+                "id": "590003ddf8ddf7903daf0635cb146880",
+                "passes": 20,
+                "fails": 0
+            },
+            "/catalog/hsn-codes returns HTTP 200": {
+                "id": "a8a236a807952200314625072e6f59ae",
+                "passes": 21,
+                "fails": 0,
+                "name": "/catalog/hsn-codes returns HTTP 200",
+                "path": "::/catalog/hsn-codes returns HTTP 200"
+            },
+            "/catalog/hsn-codes returns HTML": {
+                "fails": 0,
+                "name": "/catalog/hsn-codes returns HTML",
+                "path": "::/catalog/hsn-codes returns HTML",
+                "id": "631f3cd5fc289caf7b7c9ead41feb3f3",
+                "passes": 21
+            },
+            "/catalog/products returns HTTP 200": {
+                "name": "/catalog/products returns HTTP 200",
+                "path": "::/catalog/products returns HTTP 200",
+                "id": "873da68be4c4ebb145af48ffeb615006",
+                "passes": 21,
+                "fails": 0
+            },
+            "/catalog/products returns HTML": {
+                "fails": 0,
+                "name": "/catalog/products returns HTML",
+                "path": "::/catalog/products returns HTML",
+                "id": "66a5e87143d8a43355c54a5171101b81",
+                "passes": 21
+            },
+            "/catalog/tax-rates returns HTTP 200": {
+                "name": "/catalog/tax-rates returns HTTP 200",
+                "path": "::/catalog/tax-rates returns HTTP 200",
+                "id": "da51c0fd812f481bac1c7dc48b5cd197",
+                "passes": 22,
+                "fails": 0
+            },
+            "/catalog/tax-rates returns HTML": {
+                "name": "/catalog/tax-rates returns HTML",
+                "path": "::/catalog/tax-rates returns HTML",
+                "id": "042bbb3da0576efab66d1078f79505dc",
+                "passes": 22,
+                "fails": 0
+            },
+            "/catalog/uom returns HTTP 200": {
+                "passes": 22,
+                "fails": 0,
+                "name": "/catalog/uom returns HTTP 200",
+                "path": "::/catalog/uom returns HTTP 200",
+                "id": "15b5b70eef5740c0c79b3f31a514cf03"
+            },
+            "/catalog/uom returns HTML": {
+                "name": "/catalog/uom returns HTML",
+                "path": "::/catalog/uom returns HTML",
+                "id": "86ff3eb18adf1253e20d760a5494a537",
+                "passes": 22,
+                "fails": 0
+            },
+            "/catalog/warehouses returns HTTP 200": {
+                "name": "/catalog/warehouses returns HTTP 200",
+                "path": "::/catalog/warehouses returns HTTP 200",
+                "id": "6221123301f86048ca0e89545b02b34b",
+                "passes": 23,
+                "fails": 0
+            },
+            "/catalog/warehouses returns HTML": {
+                "name": "/catalog/warehouses returns HTML",
+                "path": "::/catalog/warehouses returns HTML",
+                "id": "4a336cef0cf491a608674c175e5feccc",
+                "passes": 23,
+                "fails": 0
+            },
+            "/chat returns HTTP 200": {
+                "name": "/chat returns HTTP 200",
+                "path": "::/chat returns HTTP 200",
+                "id": "f920df49129adbf85e2babb31dc5a1d3",
+                "passes": 24,
+                "fails": 0
+            },
+            "/chat returns HTML": {
+                "name": "/chat returns HTML",
+                "path": "::/chat returns HTML",
+                "id": "e29ab33cac0e2639b5f658e0c9459c6d",
+                "passes": 24,
+                "fails": 0
+            },
+            "/complaints returns HTTP 200": {
+                "name": "/complaints returns HTTP 200",
+                "path": "::/complaints returns HTTP 200",
+                "id": "5580228e20fee1ac9a3e5c75ffe10d5e",
+                "passes": 24,
+                "fails": 0
+            },
+            "/complaints returns HTML": {
+                "name": "/complaints returns HTML",
+                "path": "::/complaints returns HTML",
+                "id": "b90d0e6f7b68e6c2b00705902ee7efca",
+                "passes": 24,
+                "fails": 0
+            },
+            "/credit-notes returns HTTP 200": {
+                "passes": 25,
+                "fails": 0,
+                "name": "/credit-notes returns HTTP 200",
+                "path": "::/credit-notes returns HTTP 200",
+                "id": "d30cc6cf313a8c8945fa2be873b2071e"
+            },
+            "/credit-notes returns HTML": {
+                "fails": 0,
+                "name": "/credit-notes returns HTML",
+                "path": "::/credit-notes returns HTML",
+                "id": "4a1df494260f8d77110096a543ed3513",
+                "passes": 25
+            },
+            "/customer-settings returns HTTP 200": {
+                "name": "/customer-settings returns HTTP 200",
+                "path": "::/customer-settings returns HTTP 200",
+                "id": "c7d7f55885fbade39352e36a2d954683",
+                "passes": 26,
+                "fails": 0
+            },
+            "/customer-settings returns HTML": {
+                "name": "/customer-settings returns HTML",
+                "path": "::/customer-settings returns HTML",
+                "id": "8c21ee5337fe5a79975c17988910d9d4",
+                "passes": 26,
+                "fails": 0
+            },
+            "/customers returns HTTP 200": {
+                "name": "/customers returns HTTP 200",
+                "path": "::/customers returns HTTP 200",
+                "id": "56e2d8b1966e0431710049affd113643",
+                "passes": 27,
+                "fails": 0
+            },
+            "/customers returns HTML": {
+                "name": "/customers returns HTML",
+                "path": "::/customers returns HTML",
+                "id": "3542accb4929e05b11a498db9bc6ac96",
+                "passes": 27,
+                "fails": 0
+            },
+            "/departments returns HTTP 200": {
+                "path": "::/departments returns HTTP 200",
+                "id": "f6dc6b746e8c9962b32a3ddf1185c1e4",
+                "passes": 28,
+                "fails": 0,
+                "name": "/departments returns HTTP 200"
+            },
+            "/departments returns HTML": {
+                "id": "1e6c05014d40bd81c0d9ca2c0d39c2fb",
+                "passes": 28,
+                "fails": 0,
+                "name": "/departments returns HTML",
+                "path": "::/departments returns HTML"
+            },
+            "/elements returns HTTP 200": {
+                "name": "/elements returns HTTP 200",
+                "path": "::/elements returns HTTP 200",
+                "id": "f0017075343a54431eccc7e1e0bf8876",
+                "passes": 29,
+                "fails": 0
+            },
+            "/elements returns HTML": {
+                "name": "/elements returns HTML",
+                "path": "::/elements returns HTML",
+                "id": "70a14558609b11a2d89b9dfc0d1e0229",
+                "passes": 29,
+                "fails": 0
+            },
+            "/elements/alerts returns HTTP 200": {
+                "passes": 30,
+                "fails": 0,
+                "name": "/elements/alerts returns HTTP 200",
+                "path": "::/elements/alerts returns HTTP 200",
+                "id": "d0928ac378d547a4791417f8e2623690"
+            },
+            "/elements/alerts returns HTML": {
+                "name": "/elements/alerts returns HTML",
+                "path": "::/elements/alerts returns HTML",
+                "id": "dcdfd0faa794505f1cdd6311a18bee0d",
+                "passes": 30,
+                "fails": 0
+            },
+            "/elements/badges returns HTTP 200": {
+                "name": "/elements/badges returns HTTP 200",
+                "path": "::/elements/badges returns HTTP 200",
+                "id": "81cbbad9e58d57f945d0f02d45b0753c",
+                "passes": 31,
+                "fails": 0
+            },
+            "/elements/badges returns HTML": {
+                "id": "edfc31c1b483792eff8cea9eeb5a6393",
+                "passes": 31,
+                "fails": 0,
+                "name": "/elements/badges returns HTML",
+                "path": "::/elements/badges returns HTML"
+            },
+            "/elements/buttons returns HTTP 200": {
+                "name": "/elements/buttons returns HTTP 200",
+                "path": "::/elements/buttons returns HTTP 200",
+                "id": "3e8f0bd2f5e1180e922cbe623fe5c504",
+                "passes": 31,
+                "fails": 0
+            },
+            "/elements/buttons returns HTML": {
+                "name": "/elements/buttons returns HTML",
+                "path": "::/elements/buttons returns HTML",
+                "id": "d01e070de48bffeb52687960407f444c",
+                "passes": 31,
+                "fails": 0
+            },
+            "/elements/cards returns HTTP 200": {
+                "name": "/elements/cards returns HTTP 200",
+                "path": "::/elements/cards returns HTTP 200",
+                "id": "2798d834c76acaf576a68dc3f547178d",
+                "passes": 32,
+                "fails": 0
+            },
+            "/elements/cards returns HTML": {
+                "passes": 32,
+                "fails": 0,
+                "name": "/elements/cards returns HTML",
+                "path": "::/elements/cards returns HTML",
+                "id": "864c7742a17beb68d83ce9602129fba8"
+            },
+            "/elements/forms returns HTTP 200": {
+                "fails": 0,
+                "name": "/elements/forms returns HTTP 200",
+                "path": "::/elements/forms returns HTTP 200",
+                "id": "c203187544eb896365d80967a715bc11",
+                "passes": 33
+            },
+            "/elements/forms returns HTML": {
+                "id": "9c4f0cf2ba6c8fdc00138c9d45640c28",
+                "passes": 33,
+                "fails": 0,
+                "name": "/elements/forms returns HTML",
+                "path": "::/elements/forms returns HTML"
+            },
+            "/elements/modals returns HTTP 200": {
+                "name": "/elements/modals returns HTTP 200",
+                "path": "::/elements/modals returns HTTP 200",
+                "id": "86db3bf6f949c211bd271d618ce82dfb",
+                "passes": 34,
+                "fails": 0
+            },
+            "/elements/modals returns HTML": {
+                "name": "/elements/modals returns HTML",
+                "path": "::/elements/modals returns HTML",
+                "id": "bc8e801e7d5c5b9002b274575d3eed17",
+                "passes": 34,
+                "fails": 0
+            },
+            "/elements/tables returns HTTP 200": {
+                "name": "/elements/tables returns HTTP 200",
+                "path": "::/elements/tables returns HTTP 200",
+                "id": "1c4cf8c68961c3100931fbbdb23eb758",
+                "passes": 35,
+                "fails": 0
+            },
+            "/elements/tables returns HTML": {
+                "name": "/elements/tables returns HTML",
+                "path": "::/elements/tables returns HTML",
+                "id": "b19818e100244a02cc78a852065eb7ea",
+                "passes": 35,
+                "fails": 0
+            },
+            "/files returns HTTP 200": {
+                "id": "6758742bddfc5e979a45536f9250c760",
+                "passes": 36,
+                "fails": 0,
+                "name": "/files returns HTTP 200",
+                "path": "::/files returns HTTP 200"
+            },
+            "/files returns HTML": {
+                "fails": 0,
+                "name": "/files returns HTML",
+                "path": "::/files returns HTML",
+                "id": "7c2d69e38303ab5b97279b5bad2b2e15",
+                "passes": 36
+            },
+            "/forms returns HTTP 200": {
+                "name": "/forms returns HTTP 200",
+                "path": "::/forms returns HTTP 200",
+                "id": "e7a94b9f214a23969b54a7e580d24b06",
+                "passes": 37,
+                "fails": 0
+            },
+            "/forms returns HTML": {
+                "name": "/forms returns HTML",
+                "path": "::/forms returns HTML",
+                "id": "fc62268c0c7a4b0048b556b238596967",
+                "passes": 37,
+                "fails": 0
+            },
+            "/help returns HTTP 200": {
+                "name": "/help returns HTTP 200",
+                "path": "::/help returns HTTP 200",
+                "id": "2ef6ea14fb199f7cd3c22946315522f8",
+                "passes": 38,
+                "fails": 0
+            },
+            "/help returns HTML": {
+                "name": "/help returns HTML",
+                "path": "::/help returns HTML",
+                "id": "8183df431024e22b17788e75ac7cb753",
+                "passes": 38,
+                "fails": 0
+            },
+            "/inventory/adjustments returns HTTP 200": {
+                "name": "/inventory/adjustments returns HTTP 200",
+                "path": "::/inventory/adjustments returns HTTP 200",
+                "id": "04cd4ae0888626e7a47351b5a6ca7400",
+                "passes": 39,
+                "fails": 0
+            },
+            "/inventory/adjustments returns HTML": {
+                "name": "/inventory/adjustments returns HTML",
+                "path": "::/inventory/adjustments returns HTML",
+                "id": "0b33195f515bec141ad2820868493cd6",
+                "passes": 39,
+                "fails": 0
+            },
+            "/inventory/dashboard returns HTTP 200": {
+                "id": "223149d42c24e43b58b4e31f3d8eb22d",
+                "passes": 39,
+                "fails": 0,
+                "name": "/inventory/dashboard returns HTTP 200",
+                "path": "::/inventory/dashboard returns HTTP 200"
+            },
+            "/inventory/dashboard returns HTML": {
+                "name": "/inventory/dashboard returns HTML",
+                "path": "::/inventory/dashboard returns HTML",
+                "id": "4da89d5af34456fe8cc52eecf1b68436",
+                "passes": 39,
+                "fails": 0
+            },
+            "/inventory/dashboard/activities returns HTTP 200": {
+                "passes": 39,
+                "fails": 0,
+                "name": "/inventory/dashboard/activities returns HTTP 200",
+                "path": "::/inventory/dashboard/activities returns HTTP 200",
+                "id": "a9ac38c85c52fe9ebbd199bdfee9ee56"
+            },
+            "/inventory/dashboard/activities returns HTML": {
+                "passes": 39,
+                "fails": 0,
+                "name": "/inventory/dashboard/activities returns HTML",
+                "path": "::/inventory/dashboard/activities returns HTML",
+                "id": "201f4912f2a5476f6186dcac3ee47c26"
+            },
+            "/inventory/stock-management returns HTTP 200": {
+                "name": "/inventory/stock-management returns HTTP 200",
+                "path": "::/inventory/stock-management returns HTTP 200",
+                "id": "17e5253766149f8c688c0c850badde03",
+                "passes": 40,
+                "fails": 0
+            },
+            "/inventory/stock-management returns HTML": {
+                "name": "/inventory/stock-management returns HTML",
+                "path": "::/inventory/stock-management returns HTML",
+                "id": "edeefbbe3a1d4f7465e5d33fdf417a8f",
+                "passes": 40,
+                "fails": 0
+            },
+            "/inventory/stock-transfers returns HTTP 200": {
+                "name": "/inventory/stock-transfers returns HTTP 200",
+                "path": "::/inventory/stock-transfers returns HTTP 200",
+                "id": "fc94968f1fa7ac53f70197d20a2cdcfb",
+                "passes": 41,
+                "fails": 0
+            },
+            "/inventory/stock-transfers returns HTML": {
+                "name": "/inventory/stock-transfers returns HTML",
+                "path": "::/inventory/stock-transfers returns HTML",
+                "id": "e5fe5aa9559aefd689db6e1f88f6e2b7",
+                "passes": 41,
+                "fails": 0
+            },
+            "/invoices returns HTTP 200": {
+                "id": "880176aad64b0ccee5652f24a8f2dd04",
+                "passes": 41,
+                "fails": 0,
+                "name": "/invoices returns HTTP 200",
+                "path": "::/invoices returns HTTP 200"
+            },
+            "/invoices returns HTML": {
+                "fails": 0,
+                "name": "/invoices returns HTML",
+                "path": "::/invoices returns HTML",
+                "id": "492911d7fb59b52c279d0f6dacda5ebe",
+                "passes": 41
+            },
+            "/leaves returns HTTP 200": {
+                "name": "/leaves returns HTTP 200",
+                "path": "::/leaves returns HTTP 200",
+                "id": "cd048250b9ddc4d357010a9d61fc433d",
+                "passes": 42,
+                "fails": 0
+            },
+            "/leaves returns HTML": {
+                "id": "c47c67b6008508c6f7c0ca3c3621f223",
+                "passes": 42,
+                "fails": 0,
+                "name": "/leaves returns HTML",
+                "path": "::/leaves returns HTML"
+            },
+            "/messages returns HTTP 200": {
+                "name": "/messages returns HTTP 200",
+                "path": "::/messages returns HTTP 200",
+                "id": "1f3079910233e30f6aa3e94dac8a1717",
+                "passes": 43,
+                "fails": 0
+            },
+            "/messages returns HTML": {
+                "path": "::/messages returns HTML",
+                "id": "9b150356b2971923a25c451a16e07671",
+                "passes": 43,
+                "fails": 0,
+                "name": "/messages returns HTML"
+            },
+            "/order-reasons returns HTTP 200": {
+                "id": "27152fc093bff13b37fbd254c79d2b45",
+                "passes": 44,
+                "fails": 0,
+                "name": "/order-reasons returns HTTP 200",
+                "path": "::/order-reasons returns HTTP 200"
+            },
+            "/order-reasons returns HTML": {
+                "passes": 44,
+                "fails": 0,
+                "name": "/order-reasons returns HTML",
+                "path": "::/order-reasons returns HTML",
+                "id": "b2052867cf53ea931414aab1f507ec5c"
+            },
+            "/orders returns HTTP 200": {
+                "name": "/orders returns HTTP 200",
+                "path": "::/orders returns HTTP 200",
+                "id": "cc30a51936fad2d73890b63417c19ed3",
+                "passes": 44,
+                "fails": 0
+            },
+            "/orders returns HTML": {
+                "path": "::/orders returns HTML",
+                "id": "54fb3e32665016510429cd856c7a75b0",
+                "passes": 44,
+                "fails": 0,
+                "name": "/orders returns HTML"
+            },
+            "/orders/create returns HTTP 200": {
+                "name": "/orders/create returns HTTP 200",
+                "path": "::/orders/create returns HTTP 200",
+                "id": "57a2b7a902d4a94775ddf2ce88deb48e",
+                "passes": 45,
+                "fails": 0
+            },
+            "/orders/create returns HTML": {
+                "id": "2bb4a0876c279bbf564e18b6aaf3d047",
+                "passes": 45,
+                "fails": 0,
+                "name": "/orders/create returns HTML",
+                "path": "::/orders/create returns HTML"
+            },
+            "/payments returns HTTP 200": {
+                "name": "/payments returns HTTP 200",
+                "path": "::/payments returns HTTP 200",
+                "id": "2eceb6d90d5b9a00ff57fc13daa12b1f",
+                "passes": 41,
+                "fails": 0
+            },
+            "/payments returns HTML": {
+                "name": "/payments returns HTML",
+                "path": "::/payments returns HTML",
+                "id": "5c0a83311d8e99ce1119c60bb7d742e3",
+                "passes": 41,
+                "fails": 0
+            },
+            "/procurement/goods-receipts returns HTTP 200": {
+                "name": "/procurement/goods-receipts returns HTTP 200",
+                "path": "::/procurement/goods-receipts returns HTTP 200",
+                "id": "8291a08e56872329b8ff69fd4dcfdf63",
+                "passes": 34,
+                "fails": 0
+            },
+            "/procurement/goods-receipts returns HTML": {
+                "name": "/procurement/goods-receipts returns HTML",
+                "path": "::/procurement/goods-receipts returns HTML",
+                "id": "f147de1989d07542171c54dcecfe1d02",
+                "passes": 34,
+                "fails": 0
+            },
+            "/procurement/purchase-orders returns HTTP 200": {
+                "name": "/procurement/purchase-orders returns HTTP 200",
+                "path": "::/procurement/purchase-orders returns HTTP 200",
+                "id": "eaf3c1b175f14cae55a7b9340e941270",
+                "passes": 32,
+                "fails": 0
+            },
+            "/procurement/purchase-orders returns HTML": {
+                "path": "::/procurement/purchase-orders returns HTML",
+                "id": "730bd708bcbfe6c7a49fb6cf98c49967",
+                "passes": 32,
+                "fails": 0,
+                "name": "/procurement/purchase-orders returns HTML"
+            },
+            "/procurement/suppliers returns HTTP 200": {
+                "fails": 0,
+                "name": "/procurement/suppliers returns HTTP 200",
+                "path": "::/procurement/suppliers returns HTTP 200",
+                "id": "786cb78722f0cbe706c76c7ec612e3b3",
+                "passes": 31
+            },
+            "/procurement/suppliers returns HTML": {
+                "name": "/procurement/suppliers returns HTML",
+                "path": "::/procurement/suppliers returns HTML",
+                "id": "35d4d213ccdf556b5d70cbc43d35affb",
+                "passes": 31,
+                "fails": 0
+            },
+            "/promotions/coupons returns HTTP 200": {
+                "id": "8cbb56ac7e25b0462801c0e33a216646",
+                "passes": 29,
+                "fails": 0,
+                "name": "/promotions/coupons returns HTTP 200",
+                "path": "::/promotions/coupons returns HTTP 200"
+            },
+            "/promotions/coupons returns HTML": {
+                "id": "fc1fd20887ae49949d86ba6115d6ab6e",
+                "passes": 29,
+                "fails": 0,
+                "name": "/promotions/coupons returns HTML",
+                "path": "::/promotions/coupons returns HTML"
+            },
+            "/analytics returns HTTP 200": {
+                "passes": 14,
+                "fails": 0,
+                "name": "/analytics returns HTTP 200",
+                "path": "::/analytics returns HTTP 200",
+                "id": "f40dc9b6e90ac787ab60d5e853dc4e1e"
+            },
+            "/analytics returns HTML": {
+                "name": "/analytics returns HTML",
+                "path": "::/analytics returns HTML",
+                "id": "08e1741bc8d6c8512e6471a11558aeaa",
+                "passes": 14,
+                "fails": 0
+            },
+            "/promotions/offers returns HTTP 200": {
+                "name": "/promotions/offers returns HTTP 200",
+                "path": "::/promotions/offers returns HTTP 200",
+                "id": "9936761625e016803c6300497041228e",
+                "passes": 28,
+                "fails": 0
+            },
+            "/promotions/offers returns HTML": {
+                "path": "::/promotions/offers returns HTML",
+                "id": "158ec973d98950f68aac4fce49596024",
+                "passes": 28,
+                "fails": 0,
+                "name": "/promotions/offers returns HTML"
+            },
+            "/promotions/referral-programs returns HTTP 200": {
+                "name": "/promotions/referral-programs returns HTTP 200",
+                "path": "::/promotions/referral-programs returns HTTP 200",
+                "id": "a1ea3f261ea3e3ae7e518c01cf608070",
+                "passes": 26,
+                "fails": 0
+            },
+            "/promotions/referral-programs returns HTML": {
+                "passes": 26,
+                "fails": 0,
+                "name": "/promotions/referral-programs returns HTML",
+                "path": "::/promotions/referral-programs returns HTML",
+                "id": "09bb13fb52cb7e3ff48fcfd9a3019348"
+            },
+            "/refunds returns HTTP 200": {
+                "passes": 26,
+                "fails": 0,
+                "name": "/refunds returns HTTP 200",
+                "path": "::/refunds returns HTTP 200",
+                "id": "4a93aeb868def1e58efbe0554b5c475c"
+            },
+            "/refunds returns HTML": {
+                "name": "/refunds returns HTML",
+                "path": "::/refunds returns HTML",
+                "id": "90d8e584d4238e634d802c44a36849b7",
+                "passes": 26,
+                "fails": 0
+            },
+            "/reports returns HTTP 200": {
+                "name": "/reports returns HTTP 200",
+                "path": "::/reports returns HTTP 200",
+                "id": "ea06616e685650e8ca651d20f5449aa6",
+                "passes": 25,
+                "fails": 0
+            },
+            "/reports returns HTML": {
+                "name": "/reports returns HTML",
+                "path": "::/reports returns HTML",
+                "id": "9e2ab44fffe7ae8c6dab0c8cd9024f08",
+                "passes": 25,
+                "fails": 0
+            },
+            "/returns returns HTTP 200": {
+                "name": "/returns returns HTTP 200",
+                "path": "::/returns returns HTTP 200",
+                "id": "5c4c5508c38f006e33a3cc8820451b56",
+                "passes": 24,
+                "fails": 0
+            },
+            "/returns returns HTML": {
+                "passes": 24,
+                "fails": 0,
+                "name": "/returns returns HTML",
+                "path": "::/returns returns HTML",
+                "id": "d67205a1bf6a613ccf8c38ff01e2f489"
+            },
+            "/roles-permissions returns HTTP 200": {
+                "id": "f66d94ea5c2e05f80962c2a3c0935944",
+                "passes": 24,
+                "fails": 0,
+                "name": "/roles-permissions returns HTTP 200",
+                "path": "::/roles-permissions returns HTTP 200"
+            },
+            "/roles-permissions returns HTML": {
+                "name": "/roles-permissions returns HTML",
+                "path": "::/roles-permissions returns HTML",
+                "id": "b20aaf548da784b841d2d83d9e728208",
+                "passes": 24,
+                "fails": 0
+            },
+            "/security returns HTTP 200": {
+                "passes": 24,
+                "fails": 0,
+                "name": "/security returns HTTP 200",
+                "path": "::/security returns HTTP 200",
+                "id": "9d4e2525128e07022eedf1cfae62d786"
+            },
+            "/security returns HTML": {
+                "name": "/security returns HTML",
+                "path": "::/security returns HTML",
+                "id": "eeb50b462bcfb1ade3cca1282126a993",
+                "passes": 24,
+                "fails": 0
+            },
+            "/shipping/services returns HTTP 200": {
+                "id": "20f7f8c7cb1dfa6f598c8a7c26ffdb9b",
+                "passes": 23,
+                "fails": 0,
+                "name": "/shipping/services returns HTTP 200",
+                "path": "::/shipping/services returns HTTP 200"
+            },
+            "/shipping/services returns HTML": {
+                "name": "/shipping/services returns HTML",
+                "path": "::/shipping/services returns HTML",
+                "id": "1ef4fcbcea36036b581ec720e8759936",
+                "passes": 23,
+                "fails": 0
+            },
+            "/shipping/settings returns HTTP 200": {
+                "name": "/shipping/settings returns HTTP 200",
+                "path": "::/shipping/settings returns HTTP 200",
+                "id": "51c8fc8609a4b610d79a00f05b9194d5",
+                "passes": 23,
+                "fails": 0
+            },
+            "/shipping/settings returns HTML": {
+                "name": "/shipping/settings returns HTML",
+                "path": "::/shipping/settings returns HTML",
+                "id": "8bab1dffc5b12f96f6103cdcfae42ad1",
+                "passes": 23,
+                "fails": 0
+            },
+            "/shipping/shipments returns HTTP 200": {
+                "fails": 0,
+                "name": "/shipping/shipments returns HTTP 200",
+                "path": "::/shipping/shipments returns HTTP 200",
+                "id": "53039656d84810ccc37647588e9ec5cf",
+                "passes": 21
+            },
+            "/shipping/shipments returns HTML": {
+                "name": "/shipping/shipments returns HTML",
+                "path": "::/shipping/shipments returns HTML",
+                "id": "cd1a6a2bcf90e0127ad97d896dfeaea5",
+                "passes": 21,
+                "fails": 0
+            },
+            "/targets returns HTTP 200": {
+                "id": "f1ab7d9ea471cbe9f9559ce9a79d8bfd",
+                "passes": 20,
+                "fails": 0,
+                "name": "/targets returns HTTP 200",
+                "path": "::/targets returns HTTP 200"
+            },
+            "/targets returns HTML": {
+                "name": "/targets returns HTML",
+                "path": "::/targets returns HTML",
+                "id": "1b67bd35ee133bd52dbcfab31a2ec22c",
+                "passes": 20,
+                "fails": 0
+            },
+            "/targets/create returns HTTP 200": {
+                "name": "/targets/create returns HTTP 200",
+                "path": "::/targets/create returns HTTP 200",
+                "id": "a6a0ddab6fcebe72853b7f532c390c29",
+                "passes": 19,
+                "fails": 0
+            },
+            "/targets/create returns HTML": {
+                "name": "/targets/create returns HTML",
+                "path": "::/targets/create returns HTML",
+                "id": "ce35a4bc131dd54c17c6a9460d6fb1e7",
+                "passes": 19,
+                "fails": 0
+            },
+            "/targets/import returns HTTP 200": {
+                "name": "/targets/import returns HTTP 200",
+                "path": "::/targets/import returns HTTP 200",
+                "id": "15aa11a228f23f4f5ae382fb008e510e",
+                "passes": 17,
+                "fails": 0
+            },
+            "/targets/import returns HTML": {
+                "path": "::/targets/import returns HTML",
+                "id": "75722bda10846ee137a557756aef22c9",
+                "passes": 17,
+                "fails": 0,
+                "name": "/targets/import returns HTML"
+            },
+            "/teams returns HTTP 200": {
+                "name": "/teams returns HTTP 200",
+                "path": "::/teams returns HTTP 200",
+                "id": "8f25419d03f47f2667f0980bab09de59",
+                "passes": 17,
+                "fails": 0
+            },
+            "/teams returns HTML": {
+                "path": "::/teams returns HTML",
+                "id": "6041a5a35353d747cb162a79a242d16b",
+                "passes": 17,
+                "fails": 0,
+                "name": "/teams returns HTML"
+            },
+            "/users returns HTTP 200": {
+                "name": "/users returns HTTP 200",
+                "path": "::/users returns HTTP 200",
+                "id": "bb641da7c34732101d85ee4853ca9b28",
+                "passes": 17,
+                "fails": 0
+            },
+            "/users returns HTML": {
+                "passes": 17,
+                "fails": 0,
+                "name": "/users returns HTML",
+                "path": "::/users returns HTML",
+                "id": "4c08f136c8ef77bdf0b418c944fd6d6d"
+            },
+            "/villages returns HTTP 200": {
+                "name": "/villages returns HTTP 200",
+                "path": "::/villages returns HTTP 200",
+                "id": "f557b3326fb43baf3a46facbf6b31a17",
+                "passes": 16,
+                "fails": 0
+            },
+            "/villages returns HTML": {
+                "name": "/villages returns HTML",
+                "path": "::/villages returns HTML",
+                "id": "7e017a7de732547270a31cd2f6238d6f",
+                "passes": 16,
+                "fails": 0
+            },
+            "/ returns HTTP 200": {
+                "id": "21bcf26daf3c35f1015ff5fa3772d343",
+                "passes": 15,
+                "fails": 0,
+                "name": "/ returns HTTP 200",
+                "path": "::/ returns HTTP 200"
+            },
+            "/ returns HTML": {
+                "path": "::/ returns HTML",
+                "id": "5fd59595e93dd1c5cbaba5be5091945a",
+                "passes": 15,
+                "fails": 0,
+                "name": "/ returns HTML"
+            },
+            "/admin/audit-logs returns HTTP 200": {
+                "path": "::/admin/audit-logs returns HTTP 200",
+                "id": "54db6f344679bf1800840adbe8c98df9",
+                "passes": 15,
+                "fails": 0,
+                "name": "/admin/audit-logs returns HTTP 200"
+            },
+            "/admin/audit-logs returns HTML": {
+                "id": "c9594f4acc1ba0e87028c7c481ddb680",
+                "passes": 15,
+                "fails": 0,
+                "name": "/admin/audit-logs returns HTML",
+                "path": "::/admin/audit-logs returns HTML"
+            }
+        }
+    }
+}

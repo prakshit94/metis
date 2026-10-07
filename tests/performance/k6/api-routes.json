@@ -1,0 +1,462 @@
+[
+  {
+    "uri": "api/activities/recent",
+    "action": "App\\Http\\Controllers\\AuditLogController@recentActivities"
+  },
+  {
+    "uri": "api/admin/audit-logs",
+    "action": "App\\Http\\Controllers\\AuditLogController@index"
+  },
+  {
+    "uri": "api/attendances",
+    "action": "App\\Modules\\Users\\Controllers\\AttendanceController@index"
+  },
+  {
+    "uri": "api/attendances/export/detailed",
+    "action": "App\\Modules\\Users\\Controllers\\AttendanceController@exportDetailed"
+  },
+  {
+    "uri": "api/attendances/export/summary",
+    "action": "App\\Modules\\Users\\Controllers\\AttendanceController@exportSummary"
+  },
+  {
+    "uri": "api/attendances/{attendance}",
+    "action": "App\\Modules\\Users\\Controllers\\AttendanceController@show"
+  },
+  {
+    "uri": "api/attributes",
+    "action": "App\\Modules\\Catalog\\Controllers\\ProductAttributeController@index"
+  },
+  {
+    "uri": "api/attributes/{attribute}",
+    "action": "App\\Modules\\Catalog\\Controllers\\ProductAttributeController@show"
+  },
+  {
+    "uri": "api/brands",
+    "action": "App\\Modules\\Catalog\\Controllers\\BrandController@index"
+  },
+  {
+    "uri": "api/brands/{brand}",
+    "action": "App\\Modules\\Catalog\\Controllers\\BrandController@show"
+  },
+  {
+    "uri": "api/call-tags",
+    "action": "App\\Modules\\Orders\\Controllers\\CallTaggingController@getTags"
+  },
+  {
+    "uri": "api/call-tags-admin",
+    "action": "App\\Modules\\Orders\\Controllers\\CallTagAdminController@index"
+  },
+  {
+    "uri": "api/call-tags/{tag}/form",
+    "action": "App\\Modules\\Orders\\Controllers\\CallTaggingController@getFormFields"
+  },
+  {
+    "uri": "api/categories",
+    "action": "App\\Modules\\Catalog\\Controllers\\CategoryController@index"
+  },
+  {
+    "uri": "api/categories/{category}",
+    "action": "App\\Modules\\Catalog\\Controllers\\CategoryController@show"
+  },
+  {
+    "uri": "api/chat/active-status",
+    "action": "App\\Http\\Controllers\\Api\\Chat\\PresenceController@index"
+  },
+  {
+    "uri": "api/chat/conversations",
+    "action": "App\\Http\\Controllers\\Api\\Chat\\ConversationController@index"
+  },
+  {
+    "uri": "api/chat/conversations/{conversation}",
+    "action": "App\\Http\\Controllers\\Api\\Chat\\ConversationController@show"
+  },
+  {
+    "uri": "api/chat/conversations/{conversation}/messages",
+    "action": "App\\Http\\Controllers\\Api\\Chat\\MessageController@index"
+  },
+  {
+    "uri": "api/chat/search",
+    "action": "App\\Http\\Controllers\\Api\\Chat\\SearchController"
+  },
+  {
+    "uri": "api/chat/unread-count",
+    "action": "App\\Http\\Controllers\\Api\\Chat\\ConversationController@unreadCount"
+  },
+  {
+    "uri": "api/chat/users",
+    "action": "App\\Http\\Controllers\\Api\\Chat\\UserController@index"
+  },
+  {
+    "uri": "api/complaints",
+    "action": "App\\Modules\\Orders\\Controllers\\OrderComplaintController@index"
+  },
+  {
+    "uri": "api/complaints/export",
+    "action": "App\\Modules\\Orders\\Controllers\\OrderComplaintController@bulkExport"
+  },
+  {
+    "uri": "api/complaints/stats",
+    "action": "App\\Modules\\Orders\\Controllers\\OrderComplaintController@stats"
+  },
+  {
+    "uri": "api/complaints/{complaint}",
+    "action": "App\\Modules\\Orders\\Controllers\\OrderComplaintController@show"
+  },
+  {
+    "uri": "api/credit-notes",
+    "action": "App\\Modules\\Orders\\Controllers\\CreditNoteController@index"
+  },
+  {
+    "uri": "api/customer-settings/{type}",
+    "action": "App\\Modules\\Customers\\Controllers\\CustomerSettingsController@list"
+  },
+  {
+    "uri": "api/customers",
+    "action": "App\\Modules\\Customers\\Controllers\\CustomerController@index"
+  },
+  {
+    "uri": "api/customers/check-referral/{code}",
+    "action": "Closure"
+  },
+  {
+    "uri": "api/customers/{customer}",
+    "action": "App\\Modules\\Customers\\Controllers\\CustomerController@show"
+  },
+  {
+    "uri": "api/dashboard",
+    "action": "App\\Modules\\Core\\Controllers\\PageController@dashboard"
+  },
+  {
+    "uri": "api/departments",
+    "action": "App\\Modules\\Users\\Controllers\\DepartmentController@index"
+  },
+  {
+    "uri": "api/departments/{department}",
+    "action": "App\\Modules\\Users\\Controllers\\DepartmentController@show"
+  },
+  {
+    "uri": "api/files",
+    "action": "App\\Modules\\Core\\Controllers\\FileManagerController@index"
+  },
+  {
+    "uri": "api/files/preview",
+    "action": "App\\Modules\\Core\\Controllers\\FileManagerController@preview"
+  },
+  {
+    "uri": "api/holidays",
+    "action": "App\\Modules\\Users\\Controllers\\HolidayController@index"
+  },
+  {
+    "uri": "api/holidays/{holiday}",
+    "action": "App\\Modules\\Users\\Controllers\\HolidayController@show"
+  },
+  {
+    "uri": "api/hr-settings/{type}",
+    "action": "App\\Modules\\Users\\Controllers\\HrSettingController@list"
+  },
+  {
+    "uri": "api/hsn-codes",
+    "action": "App\\Modules\\Catalog\\Controllers\\HsnCodeController@index"
+  },
+  {
+    "uri": "api/hsn-codes/{hsn_code}",
+    "action": "App\\Modules\\Catalog\\Controllers\\HsnCodeController@show"
+  },
+  {
+    "uri": "api/inventory/adjustments",
+    "action": "App\\Modules\\Inventory\\Controllers\\InventoryAdjustmentController@index"
+  },
+  {
+    "uri": "api/inventory/adjustments/options",
+    "action": "App\\Modules\\Inventory\\Controllers\\InventoryAdjustmentController@options"
+  },
+  {
+    "uri": "api/inventory/adjustments/{inventoryAdjustment}",
+    "action": "App\\Modules\\Inventory\\Controllers\\InventoryAdjustmentController@show"
+  },
+  {
+    "uri": "api/inventory/stocks",
+    "action": "App\\Modules\\Inventory\\Controllers\\StockManagementController@index"
+  },
+  {
+    "uri": "api/inventory/stocks/show",
+    "action": "App\\Modules\\Inventory\\Controllers\\StockManagementController@show"
+  },
+  {
+    "uri": "api/inventory/stocks/warehouse-options",
+    "action": "App\\Modules\\Inventory\\Controllers\\StockManagementController@warehouseOptions"
+  },
+  {
+    "uri": "api/inventory/transfers",
+    "action": "App\\Modules\\Inventory\\Controllers\\StockTransferController@index"
+  },
+  {
+    "uri": "api/inventory/transfers/options",
+    "action": "App\\Modules\\Inventory\\Controllers\\StockTransferController@options"
+  },
+  {
+    "uri": "api/inventory/transfers/{transfer}",
+    "action": "App\\Modules\\Inventory\\Controllers\\StockTransferController@show"
+  },
+  {
+    "uri": "api/invoices",
+    "action": "App\\Modules\\Orders\\Controllers\\InvoiceController@index"
+  },
+  {
+    "uri": "api/invoices/{invoice}",
+    "action": "App\\Modules\\Orders\\Controllers\\InvoiceController@show"
+  },
+  {
+    "uri": "api/invoices/{invoice}/pdf",
+    "action": "App\\Modules\\Orders\\Controllers\\InvoiceController@downloadPdf"
+  },
+  {
+    "uri": "api/leave-balances",
+    "action": "App\\Modules\\Users\\Controllers\\LeaveBalanceController@index"
+  },
+  {
+    "uri": "api/leave-balances/{leave_balance}",
+    "action": "App\\Modules\\Users\\Controllers\\LeaveBalanceController@show"
+  },
+  {
+    "uri": "api/leaves",
+    "action": "App\\Modules\\Users\\Controllers\\LeaveController@index"
+  },
+  {
+    "uri": "api/leaves/{leave}",
+    "action": "App\\Modules\\Users\\Controllers\\LeaveController@show"
+  },
+  {
+    "uri": "api/order-reasons/{type}",
+    "action": "App\\Modules\\Orders\\Controllers\\OrderReasonController@list"
+  },
+  {
+    "uri": "api/orders",
+    "action": "App\\Modules\\Orders\\Controllers\\OrderController@index"
+  },
+  {
+    "uri": "api/orders/bulk-print",
+    "action": "App\\Modules\\Orders\\Controllers\\OrderController@bulkPrint"
+  },
+  {
+    "uri": "api/orders/export",
+    "action": "App\\Modules\\Orders\\Controllers\\OrderController@bulkExport"
+  },
+  {
+    "uri": "api/orders/{order}",
+    "action": "App\\Modules\\Orders\\Controllers\\OrderController@show"
+  },
+  {
+    "uri": "api/org-chart",
+    "action": "App\\Modules\\Users\\Controllers\\OrgChartController@index"
+  },
+  {
+    "uri": "api/payments",
+    "action": "App\\Modules\\Orders\\Controllers\\PaymentController@index"
+  },
+  {
+    "uri": "api/payments/{payment}",
+    "action": "App\\Modules\\Orders\\Controllers\\PaymentController@show"
+  },
+  {
+    "uri": "api/permissions",
+    "action": "App\\Modules\\Users\\Controllers\\PermissionController@index"
+  },
+  {
+    "uri": "api/permissions/options",
+    "action": "App\\Modules\\Users\\Controllers\\PermissionController@options"
+  },
+  {
+    "uri": "api/permissions/{permission}",
+    "action": "App\\Modules\\Users\\Controllers\\PermissionController@show"
+  },
+  {
+    "uri": "api/procurement/goods-receipts",
+    "action": "App\\Modules\\Inventory\\Controllers\\GoodsReceiptController@index"
+  },
+  {
+    "uri": "api/procurement/goods-receipts/{receipt}/pdf",
+    "action": "App\\Modules\\Inventory\\Controllers\\GoodsReceiptController@downloadPdf"
+  },
+  {
+    "uri": "api/procurement/purchase-orders",
+    "action": "App\\Modules\\Inventory\\Controllers\\PurchaseOrderController@index"
+  },
+  {
+    "uri": "api/procurement/purchase-orders/{order}/payments",
+    "action": "App\\Modules\\Inventory\\Controllers\\PurchaseOrderController@getPayments"
+  },
+  {
+    "uri": "api/procurement/purchase-orders/{order}/pdf",
+    "action": "App\\Modules\\Inventory\\Controllers\\PurchaseOrderController@downloadPdf"
+  },
+  {
+    "uri": "api/procurement/suppliers",
+    "action": "App\\Modules\\Inventory\\Controllers\\SupplierController@index"
+  },
+  {
+    "uri": "api/procurement/suppliers/{supplier}",
+    "action": "App\\Modules\\Inventory\\Controllers\\SupplierController@show"
+  },
+  {
+    "uri": "api/products",
+    "action": "App\\Modules\\Catalog\\Controllers\\ProductController@index"
+  },
+  {
+    "uri": "api/products-search-api",
+    "action": "App\\Modules\\Catalog\\Controllers\\ProductController@searchApi"
+  },
+  {
+    "uri": "api/products/export",
+    "action": "App\\Modules\\Catalog\\Controllers\\ProductController@export"
+  },
+  {
+    "uri": "api/products/{product}",
+    "action": "App\\Modules\\Catalog\\Controllers\\ProductController@show"
+  },
+  {
+    "uri": "api/promotions/coupons",
+    "action": "App\\Modules\\Orders\\Controllers\\PromotionsController@couponsIndex"
+  },
+  {
+    "uri": "api/promotions/offers",
+    "action": "App\\Modules\\Orders\\Controllers\\PromotionsController@offersIndex"
+  },
+  {
+    "uri": "api/promotions/referral-programs",
+    "action": "App\\Http\\Controllers\\ReferralProgramController@index"
+  },
+  {
+    "uri": "api/refunds",
+    "action": "App\\Modules\\Orders\\Controllers\\RefundController@index"
+  },
+  {
+    "uri": "api/refunds/{refund}",
+    "action": "App\\Modules\\Orders\\Controllers\\RefundController@show"
+  },
+  {
+    "uri": "api/reports",
+    "action": "App\\Modules\\Core\\Controllers\\PageController@reports"
+  },
+  {
+    "uri": "api/returns",
+    "action": "App\\Modules\\Orders\\Controllers\\OrderReturnController@index"
+  },
+  {
+    "uri": "api/returns/{orderReturn}",
+    "action": "App\\Modules\\Orders\\Controllers\\OrderReturnController@show"
+  },
+  {
+    "uri": "api/roles",
+    "action": "App\\Modules\\Users\\Controllers\\RoleController@index"
+  },
+  {
+    "uri": "api/roles/options",
+    "action": "App\\Modules\\Users\\Controllers\\RoleController@options"
+  },
+  {
+    "uri": "api/roles/{role}",
+    "action": "App\\Modules\\Users\\Controllers\\RoleController@show"
+  },
+  {
+    "uri": "api/security/activity",
+    "action": "App\\Modules\\Users\\Controllers\\SecurityController@activity"
+  },
+  {
+    "uri": "api/security/sessions",
+    "action": "App\\Modules\\Users\\Controllers\\SecurityController@sessions"
+  },
+  {
+    "uri": "api/shipping/awb-logs/{officeId}",
+    "action": "App\\Modules\\Core\\Controllers\\ShippingSettingsController@awbLogs"
+  },
+  {
+    "uri": "api/shipping/offices/{officeId}/ranges",
+    "action": "App\\Modules\\Core\\Controllers\\ShippingSettingsController@getRanges"
+  },
+  {
+    "uri": "api/shipping/services",
+    "action": "App\\Modules\\Core\\Controllers\\ShippingController@servicesIndex"
+  },
+  {
+    "uri": "api/shipping/services/provider-options",
+    "action": "App\\Modules\\Core\\Controllers\\ShippingController@providerOptions"
+  },
+  {
+    "uri": "api/shipping/shipments",
+    "action": "App\\Modules\\Core\\Controllers\\ShippingController@shipmentsIndex"
+  },
+  {
+    "uri": "api/shipping/shipments/{shipment}/tracking",
+    "action": "App\\Modules\\Core\\Controllers\\ShippingController@trackingEvents"
+  },
+  {
+    "uri": "api/tax-rates",
+    "action": "App\\Modules\\Catalog\\Controllers\\TaxRateController@index"
+  },
+  {
+    "uri": "api/tax-rates/{tax_rate}",
+    "action": "App\\Modules\\Catalog\\Controllers\\TaxRateController@show"
+  },
+  {
+    "uri": "api/teams",
+    "action": "App\\Modules\\Users\\Controllers\\TeamController@index"
+  },
+  {
+    "uri": "api/teams/{team}",
+    "action": "App\\Modules\\Users\\Controllers\\TeamController@show"
+  },
+  {
+    "uri": "api/uom",
+    "action": "App\\Modules\\Catalog\\Controllers\\UnitOfMeasureController@index"
+  },
+  {
+    "uri": "api/uom/{uom}",
+    "action": "App\\Modules\\Catalog\\Controllers\\UnitOfMeasureController@show"
+  },
+  {
+    "uri": "api/users",
+    "action": "App\\Modules\\Users\\Controllers\\UserController@index"
+  },
+  {
+    "uri": "api/users/{user}",
+    "action": "App\\Modules\\Users\\Controllers\\UserController@show"
+  },
+  {
+    "uri": "api/users/{user}/login-history",
+    "action": "App\\Modules\\Users\\Controllers\\UserController@loginHistory"
+  },
+  {
+    "uri": "api/villages",
+    "action": "App\\Modules\\Core\\Controllers\\VillageController@index"
+  },
+  {
+    "uri": "api/villages/export",
+    "action": "App\\Modules\\Core\\Controllers\\VillageController@export"
+  },
+  {
+    "uri": "api/villages/import-template",
+    "action": "App\\Modules\\Core\\Controllers\\VillageController@importTemplate"
+  },
+  {
+    "uri": "api/villages/search",
+    "action": "App\\Modules\\Core\\Controllers\\VillageController@search"
+  },
+  {
+    "uri": "api/villages/services-options",
+    "action": "App\\Modules\\Core\\Controllers\\VillageController@servicesOptions"
+  },
+  {
+    "uri": "api/villages/{village}",
+    "action": "App\\Modules\\Core\\Controllers\\VillageController@show"
+  },
+  {
+    "uri": "api/warehouses",
+    "action": "App\\Modules\\Catalog\\Controllers\\WarehouseController@index"
+  },
+  {
+    "uri": "api/warehouses/{warehouse}",
+    "action": "App\\Modules\\Catalog\\Controllers\\WarehouseController@show"
+  }
+]

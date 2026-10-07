@@ -88,6 +88,13 @@ class RefundController extends Controller implements HasMiddleware
         return view('orders.refunds.index', compact('refunds'));
     }
 
+    public function show(Refund $refund)
+    {
+        $refund->load(['order.party', 'invoice.payments', 'invoice.refunds', 'orderReturn', 'processedBy']);
+
+        return response()->json(['refund' => $refund]);
+    }
+
     public function bulkStatus(Request $request)
     {
         $validated = $request->validate([

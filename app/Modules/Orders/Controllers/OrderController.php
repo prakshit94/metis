@@ -119,10 +119,12 @@ class OrderController extends Controller implements HasMiddleware
             $hasUnfulfillable = in_array('unfulfillable', $requestedStatuses, true);
             $hasDeliveryAttempted = in_array('delivery_attempted', $requestedStatuses, true);
             $hasDispatched = in_array('dispatched', $requestedStatuses, true);
+            $hasReturnRequested = in_array('return_requested', $requestedStatuses, true);
+            $hasReturned = in_array('returned', $requestedStatuses, true);
 
-            $realStatuses = array_values(array_filter($requestedStatuses, fn ($s) => ! in_array($s, ['future_order', 'pending', 'unfulfillable', 'delivery_attempted', 'dispatched'])));
+            $realStatuses = array_values(array_filter($requestedStatuses, fn ($s) => ! in_array($s, ['future_order', 'pending', 'unfulfillable', 'delivery_attempted', 'dispatched', 'return_requested', 'returned'])));
 
-            $query->where(function ($q) use ($hasFutureOrder, $hasPending, $hasUnfulfillable, $realStatuses, $hasDispatched, $hasDeliveryAttempted) {
+            $query->where(function ($q) use ($hasFutureOrder, $hasPending, $hasUnfulfillable, $realStatuses, $hasDispatched, $hasDeliveryAttempted, $hasReturnRequested, $hasReturned) {
                 $first = true;
 
                 if ($hasFutureOrder) {
@@ -182,6 +184,52 @@ class OrderController extends Controller implements HasMiddleware
                            ->whereHas('shipments', function ($ssq) {
                                $ssq->where('delivery_attempts', '>', 0);
                            });
+                    });
+                    $first = false;
+                }
+
+                if ($hasReturnRequested) {
+                    $method = $first ? 'where' : 'orWhere';
+                    $q->$method(function ($sq) {
+                        $sq->whereHas('orderReturns', function ($returnQuery) {
+                            $returnQuery->whereNotIn('status', ['completed', 'rejected'])
+                                ->whereNotExists(function ($newerReturn) {
+                                    $newerReturn->select(DB::raw(1))
+                                        ->from('order_returns as newer_order_returns')
+                                        ->whereColumn('newer_order_returns.order_id', 'order_returns.order_id')
+                                        ->whereColumn('newer_order_returns.id', '>', 'order_returns.id');
+                                });
+                        });
+                    });
+                    $first = false;
+                }
+
+                if ($hasReturned) {
+                    $method = $first ? 'where' : 'orWhere';
+                    $q->$method(function ($sq) {
+                        $sq->whereHas('orderReturns', function ($returnQuery) {
+                            $returnQuery->where('status', 'completed')
+                                ->whereNotExists(function ($newerReturn) {
+                                    $newerReturn->select(DB::raw(1))
+                                        ->from('order_returns as newer_order_returns')
+                                        ->whereColumn('newer_order_returns.order_id', 'order_returns.order_id')
+                                        ->whereColumn('newer_order_returns.id', '>', 'order_returns.id');
+                                });
+                        })->orWhere(function ($legacyReturned) {
+                            $legacyReturned->where('orders.status', 'returned')
+                                ->where(function ($noActiveReturn) {
+                                    $noActiveReturn->whereDoesntHave('orderReturns')
+                                        ->orWhereHas('orderReturns', function ($returnQuery) {
+                                            $returnQuery->where('status', 'rejected')
+                                                ->whereNotExists(function ($newerReturn) {
+                                                    $newerReturn->select(DB::raw(1))
+                                                        ->from('order_returns as newer_order_returns')
+                                                        ->whereColumn('newer_order_returns.order_id', 'order_returns.order_id')
+                                                        ->whereColumn('newer_order_returns.id', '>', 'order_returns.id');
+                                                });
+                                        });
+                                });
+                        });
                     });
                     $first = false;
                 }

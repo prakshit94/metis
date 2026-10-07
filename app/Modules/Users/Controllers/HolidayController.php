@@ -28,6 +28,11 @@ class HolidayController extends Controller implements HasMiddleware
         return response()->json($holidays);
     }
 
+    public function show(Holiday $holiday): JsonResponse
+    {
+        return response()->json(['data' => $holiday]);
+    }
+
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([

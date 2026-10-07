@@ -1,0 +1,1879 @@
+{
+    "root_group": {
+        "name": "",
+        "path": "",
+        "id": "d41d8cd98f00b204e9800998ecf8427e",
+        "groups": {
+            "API route sweep /api/activities/recent": {
+                "name": "API route sweep /api/activities/recent",
+                "path": "::API route sweep /api/activities/recent",
+                "id": "0176199ff65e0b062df5aedaf4bc37c1",
+                "groups": {},
+                "checks": {
+                        "/api/activities/recent did not return a server error": {
+                            "name": "/api/activities/recent did not return a server error",
+                            "path": "::API route sweep /api/activities/recent::/api/activities/recent did not return a server error",
+                            "id": "2a29adbfd501d9e1c9539429ab959db3",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    }
+            },
+            "API route sweep /api/admin/audit-logs": {
+                "name": "API route sweep /api/admin/audit-logs",
+                "path": "::API route sweep /api/admin/audit-logs",
+                "id": "212eb5a6ccc66aed61289acd1682e774",
+                "groups": {},
+                "checks": {
+                        "/api/admin/audit-logs did not return a server error": {
+                            "name": "/api/admin/audit-logs did not return a server error",
+                            "path": "::API route sweep /api/admin/audit-logs::/api/admin/audit-logs did not return a server error",
+                            "id": "8f15777cce5093fd6cb3fca6e08670fb",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    }
+            },
+            "API route sweep /api/attendances": {
+                "id": "58cf4cd89ec7d99424433433a26dc35e",
+                "groups": {},
+                "checks": {
+                        "/api/attendances did not return a server error": {
+                            "name": "/api/attendances did not return a server error",
+                            "path": "::API route sweep /api/attendances::/api/attendances did not return a server error",
+                            "id": "69454902a47875f11ebc7e1abbd4a32c",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    },
+                "name": "API route sweep /api/attendances",
+                "path": "::API route sweep /api/attendances"
+            },
+            "API route sweep /api/attendances/export/detailed": {
+                "checks": {
+                    "/api/attendances/export/detailed did not return a server error": {
+                        "name": "/api/attendances/export/detailed did not return a server error",
+                        "path": "::API route sweep /api/attendances/export/detailed::/api/attendances/export/detailed did not return a server error",
+                        "id": "80f38a5ba0cb46c8cfbb8130b013b453",
+                        "passes": 1,
+                        "fails": 0
+                    }
+                },
+                "name": "API route sweep /api/attendances/export/detailed",
+                "path": "::API route sweep /api/attendances/export/detailed",
+                "id": "ea09a9c18bd664a047e2b2f9e29afbcf",
+                "groups": {}
+            },
+            "API route sweep /api/attendances/export/summary": {
+                "groups": {},
+                "checks": {
+                        "/api/attendances/export/summary did not return a server error": {
+                            "id": "740da1f0f9224d2c0b3d16c8ef9a09c6",
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/api/attendances/export/summary did not return a server error",
+                            "path": "::API route sweep /api/attendances/export/summary::/api/attendances/export/summary did not return a server error"
+                        }
+                    },
+                "name": "API route sweep /api/attendances/export/summary",
+                "path": "::API route sweep /api/attendances/export/summary",
+                "id": "638066832efe96256ac62e8fbcaf6013"
+            },
+            "API route sweep /api/attendances/{attendance}": {
+                "id": "a122e53e598f14b5906420045f1e8f9f",
+                "groups": {},
+                "checks": {
+                        "/api/attendances/{attendance} did not return a server error": {
+                            "fails": 0,
+                            "name": "/api/attendances/{attendance} did not return a server error",
+                            "path": "::API route sweep /api/attendances/{attendance}::/api/attendances/{attendance} did not return a server error",
+                            "id": "7b056befa8317773d8b92bebe2d94774",
+                            "passes": 1
+                        }
+                    },
+                "name": "API route sweep /api/attendances/{attendance}",
+                "path": "::API route sweep /api/attendances/{attendance}"
+            },
+            "API route sweep /api/attributes": {
+                "name": "API route sweep /api/attributes",
+                "path": "::API route sweep /api/attributes",
+                "id": "76966ccba85ad73f061ee5c10b51b784",
+                "groups": {},
+                "checks": {
+                        "/api/attributes did not return a server error": {
+                            "name": "/api/attributes did not return a server error",
+                            "path": "::API route sweep /api/attributes::/api/attributes did not return a server error",
+                            "id": "6839b676582c1f77c20515627e015d77",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    }
+            },
+            "API route sweep /api/attributes/{attribute}": {
+                "name": "API route sweep /api/attributes/{attribute}",
+                "path": "::API route sweep /api/attributes/{attribute}",
+                "id": "e93e36dbe00a86d75d4e42103382a76a",
+                "groups": {},
+                "checks": {
+                        "/api/attributes/{attribute} did not return a server error": {
+                            "name": "/api/attributes/{attribute} did not return a server error",
+                            "path": "::API route sweep /api/attributes/{attribute}::/api/attributes/{attribute} did not return a server error",
+                            "id": "8d83dc3a8bec6e22f62d62a97da911f7",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    }
+            },
+            "API route sweep /api/brands": {
+                "id": "c023218cb27d3a5c480281e7c4d8ab04",
+                "groups": {},
+                "checks": {
+                        "/api/brands did not return a server error": {
+                            "fails": 0,
+                            "name": "/api/brands did not return a server error",
+                            "path": "::API route sweep /api/brands::/api/brands did not return a server error",
+                            "id": "8bc6b7bdecf9df51cf7a896a1d7ef70d",
+                            "passes": 1
+                        }
+                    },
+                "name": "API route sweep /api/brands",
+                "path": "::API route sweep /api/brands"
+            },
+            "API route sweep /api/brands/{brand}": {
+                "name": "API route sweep /api/brands/{brand}",
+                "path": "::API route sweep /api/brands/{brand}",
+                "id": "54d28ab8a530c99f5a7096fe9bbe58ad",
+                "groups": {},
+                "checks": {
+                        "/api/brands/{brand} did not return a server error": {
+                            "name": "/api/brands/{brand} did not return a server error",
+                            "path": "::API route sweep /api/brands/{brand}::/api/brands/{brand} did not return a server error",
+                            "id": "73a953448eb3173a313e192aeb13adf3",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    }
+            },
+            "API route sweep /api/call-tags": {
+                "path": "::API route sweep /api/call-tags",
+                "id": "c0016e8f42afa1eab25984f8451518d5",
+                "groups": {},
+                "checks": {
+                        "/api/call-tags did not return a server error": {
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/api/call-tags did not return a server error",
+                            "path": "::API route sweep /api/call-tags::/api/call-tags did not return a server error",
+                            "id": "d79f7c29758e98e48454d4858ecb4f38"
+                        }
+                    },
+                "name": "API route sweep /api/call-tags"
+            },
+            "API route sweep /api/call-tags-admin": {
+                "groups": {},
+                "checks": {
+                        "/api/call-tags-admin did not return a server error": {
+                            "name": "/api/call-tags-admin did not return a server error",
+                            "path": "::API route sweep /api/call-tags-admin::/api/call-tags-admin did not return a server error",
+                            "id": "74bdb85b222346ecab6d76b48079f519",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    },
+                "name": "API route sweep /api/call-tags-admin",
+                "path": "::API route sweep /api/call-tags-admin",
+                "id": "7a18f1b7307113d79849cd96895777a2"
+            },
+            "API route sweep /api/call-tags/{tag}/form": {
+                "name": "API route sweep /api/call-tags/{tag}/form",
+                "path": "::API route sweep /api/call-tags/{tag}/form",
+                "id": "d6c39506050ffec3f83f697868358761",
+                "groups": {},
+                "checks": {
+                        "/api/call-tags/{tag}/form did not return a server error": {
+                            "fails": 0,
+                            "name": "/api/call-tags/{tag}/form did not return a server error",
+                            "path": "::API route sweep /api/call-tags/{tag}/form::/api/call-tags/{tag}/form did not return a server error",
+                            "id": "1c32d8c8bc950791ca9dddf0a049425e",
+                            "passes": 1
+                        }
+                    }
+            },
+            "API route sweep /api/categories": {
+                "name": "API route sweep /api/categories",
+                "path": "::API route sweep /api/categories",
+                "id": "df7ccc017606e6917c50afd66403a994",
+                "groups": {},
+                "checks": {
+                        "/api/categories did not return a server error": {
+                            "name": "/api/categories did not return a server error",
+                            "path": "::API route sweep /api/categories::/api/categories did not return a server error",
+                            "id": "fba38fc4a347e9136313b09c0f0fc9c4",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    }
+            },
+            "API route sweep /api/categories/{category}": {
+                "id": "92f02934ec885af9e955fe5271b01778",
+                "groups": {},
+                "checks": {
+                        "/api/categories/{category} did not return a server error": {
+                            "fails": 1,
+                            "name": "/api/categories/{category} did not return a server error",
+                            "path": "::API route sweep /api/categories/{category}::/api/categories/{category} did not return a server error",
+                            "id": "bdecb20b1f3b30be090d131d607bbe08",
+                            "passes": 0
+                        }
+                    },
+                "name": "API route sweep /api/categories/{category}",
+                "path": "::API route sweep /api/categories/{category}"
+            },
+            "API route sweep /api/chat/active-status": {
+                "groups": {},
+                "checks": {
+                        "/api/chat/active-status did not return a server error": {
+                            "id": "264fcf5a886a786c668b91120faf0251",
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/api/chat/active-status did not return a server error",
+                            "path": "::API route sweep /api/chat/active-status::/api/chat/active-status did not return a server error"
+                        }
+                    },
+                "name": "API route sweep /api/chat/active-status",
+                "path": "::API route sweep /api/chat/active-status",
+                "id": "177dda609495c493700f9e53238ff102"
+            },
+            "API route sweep /api/chat/conversations": {
+                "name": "API route sweep /api/chat/conversations",
+                "path": "::API route sweep /api/chat/conversations",
+                "id": "2ba3540f926bca6aac1dcad1402793e5",
+                "groups": {},
+                "checks": {
+                        "/api/chat/conversations did not return a server error": {
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/api/chat/conversations did not return a server error",
+                            "path": "::API route sweep /api/chat/conversations::/api/chat/conversations did not return a server error",
+                            "id": "ccf816f1e21bb9f4037f0d8796e6bf9f"
+                        }
+                    }
+            },
+            "API route sweep /api/chat/conversations/{conversation}": {
+                "name": "API route sweep /api/chat/conversations/{conversation}",
+                "path": "::API route sweep /api/chat/conversations/{conversation}",
+                "id": "b0d0f7342f0858ed01f03066a4efed3e",
+                "groups": {},
+                "checks": {
+                        "/api/chat/conversations/{conversation} did not return a server error": {
+                            "name": "/api/chat/conversations/{conversation} did not return a server error",
+                            "path": "::API route sweep /api/chat/conversations/{conversation}::/api/chat/conversations/{conversation} did not return a server error",
+                            "id": "7067ec99fc5ed969555bab68cc789325",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    }
+            },
+            "API route sweep /api/chat/conversations/{conversation}/messages": {
+                "id": "b52e7b5491e127ae735fcaeb5e0d53e4",
+                "groups": {},
+                "checks": {
+                        "/api/chat/conversations/{conversation}/messages did not return a server error": {
+                            "fails": 0,
+                            "name": "/api/chat/conversations/{conversation}/messages did not return a server error",
+                            "path": "::API route sweep /api/chat/conversations/{conversation}/messages::/api/chat/conversations/{conversation}/messages did not return a server error",
+                            "id": "2a2922aa662cc7a049a5463eaa9da2a8",
+                            "passes": 1
+                        }
+                    },
+                "name": "API route sweep /api/chat/conversations/{conversation}/messages",
+                "path": "::API route sweep /api/chat/conversations/{conversation}/messages"
+            },
+            "API route sweep /api/chat/search": {
+                "checks": {
+                    "/api/chat/search did not return a server error": {
+                        "name": "/api/chat/search did not return a server error",
+                        "path": "::API route sweep /api/chat/search::/api/chat/search did not return a server error",
+                        "id": "3796da9a4827ed270cd5b5c8efd0b8aa",
+                        "passes": 1,
+                        "fails": 0
+                    }
+                },
+                "name": "API route sweep /api/chat/search",
+                "path": "::API route sweep /api/chat/search",
+                "id": "470d163cd04d6f51f6083dd72664aa26",
+                "groups": {}
+            },
+            "API route sweep /api/chat/unread-count": {
+                "name": "API route sweep /api/chat/unread-count",
+                "path": "::API route sweep /api/chat/unread-count",
+                "id": "a71597874407da9fda9e40849d1d16b8",
+                "groups": {},
+                "checks": {
+                        "/api/chat/unread-count did not return a server error": {
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/api/chat/unread-count did not return a server error",
+                            "path": "::API route sweep /api/chat/unread-count::/api/chat/unread-count did not return a server error",
+                            "id": "bb349fecc45911dbf8db1ef5893238de"
+                        }
+                    }
+            },
+            "API route sweep /api/chat/users": {
+                "groups": {},
+                "checks": {
+                        "/api/chat/users did not return a server error": {
+                            "fails": 0,
+                            "name": "/api/chat/users did not return a server error",
+                            "path": "::API route sweep /api/chat/users::/api/chat/users did not return a server error",
+                            "id": "cc79db358fbb07453624ebfd8853ee67",
+                            "passes": 1
+                        }
+                    },
+                "name": "API route sweep /api/chat/users",
+                "path": "::API route sweep /api/chat/users",
+                "id": "ac0bc49aaeb113c86c88e0f2c1478905"
+            },
+            "API route sweep /api/complaints": {
+                "path": "::API route sweep /api/complaints",
+                "id": "2908d11c4695c1874a59ed7564774613",
+                "groups": {},
+                "checks": {
+                        "/api/complaints did not return a server error": {
+                            "name": "/api/complaints did not return a server error",
+                            "path": "::API route sweep /api/complaints::/api/complaints did not return a server error",
+                            "id": "056c002d5cc6b357860f591fbe5ed6de",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    },
+                "name": "API route sweep /api/complaints"
+            },
+            "API route sweep /api/complaints/export": {
+                "groups": {},
+                "checks": {
+                        "/api/complaints/export did not return a server error": {
+                            "name": "/api/complaints/export did not return a server error",
+                            "path": "::API route sweep /api/complaints/export::/api/complaints/export did not return a server error",
+                            "id": "50af00b777468a387d30b9ee939bfd6b",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    },
+                "name": "API route sweep /api/complaints/export",
+                "path": "::API route sweep /api/complaints/export",
+                "id": "719c9196c8e36514caa67e1252f010ca"
+            },
+            "API route sweep /api/complaints/stats": {
+                "name": "API route sweep /api/complaints/stats",
+                "path": "::API route sweep /api/complaints/stats",
+                "id": "dc3098aaeb556519fdd09a3a72f7f7b7",
+                "groups": {},
+                "checks": {
+                        "/api/complaints/stats did not return a server error": {
+                            "fails": 0,
+                            "name": "/api/complaints/stats did not return a server error",
+                            "path": "::API route sweep /api/complaints/stats::/api/complaints/stats did not return a server error",
+                            "id": "0d2d64a6c344d9e391cf1d5d6620d074",
+                            "passes": 1
+                        }
+                    }
+            },
+            "API route sweep /api/complaints/{complaint}": {
+                "name": "API route sweep /api/complaints/{complaint}",
+                "path": "::API route sweep /api/complaints/{complaint}",
+                "id": "117e9b759ca69f331c0fe2e8a2e0c93d",
+                "groups": {},
+                "checks": {
+                        "/api/complaints/{complaint} did not return a server error": {
+                            "id": "8379754e4f356e932e41636f2e2ddea1",
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/api/complaints/{complaint} did not return a server error",
+                            "path": "::API route sweep /api/complaints/{complaint}::/api/complaints/{complaint} did not return a server error"
+                        }
+                    }
+            },
+            "API route sweep /api/credit-notes": {
+                "name": "API route sweep /api/credit-notes",
+                "path": "::API route sweep /api/credit-notes",
+                "id": "65cbdb7a2e8d3b35e6991f53611c46b6",
+                "groups": {},
+                "checks": {
+                        "/api/credit-notes did not return a server error": {
+                            "name": "/api/credit-notes did not return a server error",
+                            "path": "::API route sweep /api/credit-notes::/api/credit-notes did not return a server error",
+                            "id": "04437c09d00e686c59ad7c2571ac7510",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    }
+            },
+            "API route sweep /api/customer-settings/{type}": {
+                "name": "API route sweep /api/customer-settings/{type}",
+                "path": "::API route sweep /api/customer-settings/{type}",
+                "id": "cec2e0f78eb0980ab337c57f78eb8d05",
+                "groups": {},
+                "checks": {
+                        "/api/customer-settings/{type} did not return a server error": {
+                            "name": "/api/customer-settings/{type} did not return a server error",
+                            "path": "::API route sweep /api/customer-settings/{type}::/api/customer-settings/{type} did not return a server error",
+                            "id": "55d3a156ff6802217a8f85567e94140c",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    }
+            },
+            "API route sweep /api/customers": {
+                "groups": {},
+                "checks": {
+                        "/api/customers did not return a server error": {
+                            "id": "2de1512648bd0d58d946832533897f7e",
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/api/customers did not return a server error",
+                            "path": "::API route sweep /api/customers::/api/customers did not return a server error"
+                        }
+                    },
+                "name": "API route sweep /api/customers",
+                "path": "::API route sweep /api/customers",
+                "id": "4d2f8b9b37531ff620b5c186b450e5ac"
+            },
+            "API route sweep /api/customers/check-referral/{code}": {
+                "name": "API route sweep /api/customers/check-referral/{code}",
+                "path": "::API route sweep /api/customers/check-referral/{code}",
+                "id": "12b707c214c640fd9c2eb471f32563b4",
+                "groups": {},
+                "checks": {
+                        "/api/customers/check-referral/{code} did not return a server error": {
+                            "name": "/api/customers/check-referral/{code} did not return a server error",
+                            "path": "::API route sweep /api/customers/check-referral/{code}::/api/customers/check-referral/{code} did not return a server error",
+                            "id": "39de0daaf4cd387be3e459131ebda8e4",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    }
+            },
+            "API route sweep /api/customers/{customer}": {
+                "groups": {},
+                "checks": {
+                        "/api/customers/{customer} did not return a server error": {
+                            "fails": 0,
+                            "name": "/api/customers/{customer} did not return a server error",
+                            "path": "::API route sweep /api/customers/{customer}::/api/customers/{customer} did not return a server error",
+                            "id": "4939a6cc7c55fdf7f6c515a87b8f6ec7",
+                            "passes": 1
+                        }
+                    },
+                "name": "API route sweep /api/customers/{customer}",
+                "path": "::API route sweep /api/customers/{customer}",
+                "id": "f0f966d45ed82ddaaaa3faaa8340f1e5"
+            },
+            "API route sweep /api/dashboard": {
+                "groups": {},
+                "checks": {
+                        "/api/dashboard did not return a server error": {
+                            "path": "::API route sweep /api/dashboard::/api/dashboard did not return a server error",
+                            "id": "23a3d856ae1d174db047f6e8b71a54d2",
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/api/dashboard did not return a server error"
+                        }
+                    },
+                "name": "API route sweep /api/dashboard",
+                "path": "::API route sweep /api/dashboard",
+                "id": "77e7bdf52fe7c749a0bd4a6077146039"
+            },
+            "API route sweep /api/departments": {
+                "name": "API route sweep /api/departments",
+                "path": "::API route sweep /api/departments",
+                "id": "851f58da59eeaacab2b175fc82b94f1c",
+                "groups": {},
+                "checks": {
+                        "/api/departments did not return a server error": {
+                            "fails": 0,
+                            "name": "/api/departments did not return a server error",
+                            "path": "::API route sweep /api/departments::/api/departments did not return a server error",
+                            "id": "ed399ae346138b6d81661deb49feacf9",
+                            "passes": 1
+                        }
+                    }
+            },
+            "API route sweep /api/departments/{department}": {
+                "name": "API route sweep /api/departments/{department}",
+                "path": "::API route sweep /api/departments/{department}",
+                "id": "71636391c9574302995f935407adb397",
+                "groups": {},
+                "checks": {
+                        "/api/departments/{department} did not return a server error": {
+                            "id": "49bd17bbb34916932684a8e61e3049ee",
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/api/departments/{department} did not return a server error",
+                            "path": "::API route sweep /api/departments/{department}::/api/departments/{department} did not return a server error"
+                        }
+                    }
+            },
+            "API route sweep /api/files": {
+                "name": "API route sweep /api/files",
+                "path": "::API route sweep /api/files",
+                "id": "b167ace0bfeb185468499a3a7c098a67",
+                "groups": {},
+                "checks": {
+                        "/api/files did not return a server error": {
+                            "fails": 0,
+                            "name": "/api/files did not return a server error",
+                            "path": "::API route sweep /api/files::/api/files did not return a server error",
+                            "id": "81f773ecda23f3a7d647a13a8f970448",
+                            "passes": 1
+                        }
+                    }
+            },
+            "API route sweep /api/files/preview": {
+                "path": "::API route sweep /api/files/preview",
+                "id": "eac00a3126edd822b7c081c5c40d31f2",
+                "groups": {},
+                "checks": {
+                        "/api/files/preview did not return a server error": {
+                            "name": "/api/files/preview did not return a server error",
+                            "path": "::API route sweep /api/files/preview::/api/files/preview did not return a server error",
+                            "id": "5ed12835436cc42dd23969d9750d4baf",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    },
+                "name": "API route sweep /api/files/preview"
+            },
+            "API route sweep /api/holidays": {
+                "checks": {
+                    "/api/holidays did not return a server error": {
+                        "name": "/api/holidays did not return a server error",
+                        "path": "::API route sweep /api/holidays::/api/holidays did not return a server error",
+                        "id": "6e1cb5891c5839b8188d9c01d21c8d5f",
+                        "passes": 1,
+                        "fails": 0
+                    }
+                },
+                "name": "API route sweep /api/holidays",
+                "path": "::API route sweep /api/holidays",
+                "id": "aaae5fe1a9c3ecfc3e904c40e2404995",
+                "groups": {}
+            },
+            "API route sweep /api/holidays/{holiday}": {
+                "name": "API route sweep /api/holidays/{holiday}",
+                "path": "::API route sweep /api/holidays/{holiday}",
+                "id": "f25ac1d8612b18063214e3f6e0e29f7a",
+                "groups": {},
+                "checks": {
+                        "/api/holidays/{holiday} did not return a server error": {
+                            "name": "/api/holidays/{holiday} did not return a server error",
+                            "path": "::API route sweep /api/holidays/{holiday}::/api/holidays/{holiday} did not return a server error",
+                            "id": "b76708e6787193a8eb55992efdb1ce57",
+                            "passes": 0,
+                            "fails": 1
+                        }
+                    }
+            },
+            "API route sweep /api/hr-settings/{type}": {
+                "path": "::API route sweep /api/hr-settings/{type}",
+                "id": "16ea03170211a0c4b3419323fcfe251c",
+                "groups": {},
+                "checks": {
+                        "/api/hr-settings/{type} did not return a server error": {
+                            "name": "/api/hr-settings/{type} did not return a server error",
+                            "path": "::API route sweep /api/hr-settings/{type}::/api/hr-settings/{type} did not return a server error",
+                            "id": "87b06f8641fa434dc83b5fbba7917f21",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    },
+                "name": "API route sweep /api/hr-settings/{type}"
+            },
+            "API route sweep /api/hsn-codes": {
+                "id": "f03930ee21119fcccbea516142af4f3f",
+                "groups": {},
+                "checks": {
+                        "/api/hsn-codes did not return a server error": {
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/api/hsn-codes did not return a server error",
+                            "path": "::API route sweep /api/hsn-codes::/api/hsn-codes did not return a server error",
+                            "id": "94f1223f4869a4875dc11063a76efd9f"
+                        }
+                    },
+                "name": "API route sweep /api/hsn-codes",
+                "path": "::API route sweep /api/hsn-codes"
+            },
+            "API route sweep /api/hsn-codes/{hsn_code}": {
+                "groups": {},
+                "checks": {
+                        "/api/hsn-codes/{hsn_code} did not return a server error": {
+                            "fails": 0,
+                            "name": "/api/hsn-codes/{hsn_code} did not return a server error",
+                            "path": "::API route sweep /api/hsn-codes/{hsn_code}::/api/hsn-codes/{hsn_code} did not return a server error",
+                            "id": "c5beee8cb8b263f8bc79f5cdca84e5bc",
+                            "passes": 1
+                        }
+                    },
+                "name": "API route sweep /api/hsn-codes/{hsn_code}",
+                "path": "::API route sweep /api/hsn-codes/{hsn_code}",
+                "id": "1b6434715de39c7233d2931908c71ada"
+            },
+            "API route sweep /api/inventory/adjustments": {
+                "id": "ab151edbd029858181706c5be60bf85c",
+                "groups": {},
+                "checks": {
+                        "/api/inventory/adjustments did not return a server error": {
+                            "name": "/api/inventory/adjustments did not return a server error",
+                            "path": "::API route sweep /api/inventory/adjustments::/api/inventory/adjustments did not return a server error",
+                            "id": "1bae4a0541a4b0d0b05c1511450e9003",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    },
+                "name": "API route sweep /api/inventory/adjustments",
+                "path": "::API route sweep /api/inventory/adjustments"
+            },
+            "API route sweep /api/inventory/adjustments/options": {
+                "path": "::API route sweep /api/inventory/adjustments/options",
+                "id": "8d3f0f3b29cd378dbc67575c8f6dcbd1",
+                "groups": {},
+                "checks": {
+                        "/api/inventory/adjustments/options did not return a server error": {
+                            "path": "::API route sweep /api/inventory/adjustments/options::/api/inventory/adjustments/options did not return a server error",
+                            "id": "37d9c5db43c74c55648993c8f06974a4",
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/api/inventory/adjustments/options did not return a server error"
+                        }
+                    },
+                "name": "API route sweep /api/inventory/adjustments/options"
+            },
+            "API route sweep /api/inventory/adjustments/{inventoryAdjustment}": {
+                "id": "2cc4141a165697e017da2645a4380af5",
+                "groups": {},
+                "checks": {
+                        "/api/inventory/adjustments/{inventoryAdjustment} did not return a server error": {
+                            "name": "/api/inventory/adjustments/{inventoryAdjustment} did not return a server error",
+                            "path": "::API route sweep /api/inventory/adjustments/{inventoryAdjustment}::/api/inventory/adjustments/{inventoryAdjustment} did not return a server error",
+                            "id": "b2980eefa9370852ad0d0560737e1822",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    },
+                "name": "API route sweep /api/inventory/adjustments/{inventoryAdjustment}",
+                "path": "::API route sweep /api/inventory/adjustments/{inventoryAdjustment}"
+            },
+            "API route sweep /api/inventory/stocks": {
+                "name": "API route sweep /api/inventory/stocks",
+                "path": "::API route sweep /api/inventory/stocks",
+                "id": "2237c22b4d7b76fa7b51eefecf339436",
+                "groups": {},
+                "checks": {
+                        "/api/inventory/stocks did not return a server error": {
+                            "name": "/api/inventory/stocks did not return a server error",
+                            "path": "::API route sweep /api/inventory/stocks::/api/inventory/stocks did not return a server error",
+                            "id": "8714ef53a9bf42c173d61bdce9f90aa4",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    }
+            },
+            "API route sweep /api/inventory/stocks/show": {
+                "name": "API route sweep /api/inventory/stocks/show",
+                "path": "::API route sweep /api/inventory/stocks/show",
+                "id": "6c7f6b42f05a8f104d2780b6edca2bbe",
+                "groups": {},
+                "checks": {
+                        "/api/inventory/stocks/show did not return a server error": {
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/api/inventory/stocks/show did not return a server error",
+                            "path": "::API route sweep /api/inventory/stocks/show::/api/inventory/stocks/show did not return a server error",
+                            "id": "3dbdd4fe3708c2938a9beeae57f2ae29"
+                        }
+                    }
+            },
+            "API route sweep /api/inventory/stocks/warehouse-options": {
+                "id": "e2d18a9b2dc6d6d9f5122e96ce8d008d",
+                "groups": {},
+                "checks": {
+                        "/api/inventory/stocks/warehouse-options did not return a server error": {
+                            "name": "/api/inventory/stocks/warehouse-options did not return a server error",
+                            "path": "::API route sweep /api/inventory/stocks/warehouse-options::/api/inventory/stocks/warehouse-options did not return a server error",
+                            "id": "808e4f85d7bf63fa43651eec793623c2",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    },
+                "name": "API route sweep /api/inventory/stocks/warehouse-options",
+                "path": "::API route sweep /api/inventory/stocks/warehouse-options"
+            },
+            "API route sweep /api/inventory/transfers": {
+                "groups": {},
+                "checks": {
+                        "/api/inventory/transfers did not return a server error": {
+                            "name": "/api/inventory/transfers did not return a server error",
+                            "path": "::API route sweep /api/inventory/transfers::/api/inventory/transfers did not return a server error",
+                            "id": "cc78c5eed849aeedacd839f3bbbcfe05",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    },
+                "name": "API route sweep /api/inventory/transfers",
+                "path": "::API route sweep /api/inventory/transfers",
+                "id": "fefc705d8cef34354cccf7ae435f86ee"
+            },
+            "API route sweep /api/inventory/transfers/options": {
+                "name": "API route sweep /api/inventory/transfers/options",
+                "path": "::API route sweep /api/inventory/transfers/options",
+                "id": "4a14c5aa3ef754e52e6b05a24308853e",
+                "groups": {},
+                "checks": {
+                        "/api/inventory/transfers/options did not return a server error": {
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/api/inventory/transfers/options did not return a server error",
+                            "path": "::API route sweep /api/inventory/transfers/options::/api/inventory/transfers/options did not return a server error",
+                            "id": "d9f9fbed3ed4975d78595611b0aa94d3"
+                        }
+                    }
+            },
+            "API route sweep /api/inventory/transfers/{transfer}": {
+                "name": "API route sweep /api/inventory/transfers/{transfer}",
+                "path": "::API route sweep /api/inventory/transfers/{transfer}",
+                "id": "cbb9b98d1c4fb772ab6fa483eb3842a1",
+                "groups": {},
+                "checks": {
+                        "/api/inventory/transfers/{transfer} did not return a server error": {
+                            "name": "/api/inventory/transfers/{transfer} did not return a server error",
+                            "path": "::API route sweep /api/inventory/transfers/{transfer}::/api/inventory/transfers/{transfer} did not return a server error",
+                            "id": "f4a8d6aef28c3032345cc98ff2f4b6ee",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    }
+            },
+            "API route sweep /api/invoices": {
+                "name": "API route sweep /api/invoices",
+                "path": "::API route sweep /api/invoices",
+                "id": "d7ad627bcd48aea37fa8c0a5d56c11b9",
+                "groups": {},
+                "checks": {
+                        "/api/invoices did not return a server error": {
+                            "name": "/api/invoices did not return a server error",
+                            "path": "::API route sweep /api/invoices::/api/invoices did not return a server error",
+                            "id": "8c0207ce3b5d9342d02b76988d2e9227",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    }
+            },
+            "API route sweep /api/invoices/{invoice}": {
+                "name": "API route sweep /api/invoices/{invoice}",
+                "path": "::API route sweep /api/invoices/{invoice}",
+                "id": "4781bbd23815b06091499ba184a8fed9",
+                "groups": {},
+                "checks": {
+                        "/api/invoices/{invoice} did not return a server error": {
+                            "path": "::API route sweep /api/invoices/{invoice}::/api/invoices/{invoice} did not return a server error",
+                            "id": "f6790d65fb958978131b6267ee859632",
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/api/invoices/{invoice} did not return a server error"
+                        }
+                    }
+            },
+            "API route sweep /api/invoices/{invoice}/pdf": {
+                "id": "c86d16ce1e676efaba6ebd7ad856e041",
+                "groups": {},
+                "checks": {
+                        "/api/invoices/{invoice}/pdf did not return a server error": {
+                            "name": "/api/invoices/{invoice}/pdf did not return a server error",
+                            "path": "::API route sweep /api/invoices/{invoice}/pdf::/api/invoices/{invoice}/pdf did not return a server error",
+                            "id": "bae777b2b7f0fa07a58b7e2eac472cf1",
+                            "passes": 0,
+                            "fails": 1
+                        }
+                    },
+                "name": "API route sweep /api/invoices/{invoice}/pdf",
+                "path": "::API route sweep /api/invoices/{invoice}/pdf"
+            },
+            "API route sweep /api/leave-balances": {
+                "path": "::API route sweep /api/leave-balances",
+                "id": "8adfbbb503be001e4918c4cd9a0f1bb6",
+                "groups": {},
+                "checks": {
+                        "/api/leave-balances did not return a server error": {
+                            "id": "77ff5946b828d0410690da4ae0a16a8b",
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/api/leave-balances did not return a server error",
+                            "path": "::API route sweep /api/leave-balances::/api/leave-balances did not return a server error"
+                        }
+                    },
+                "name": "API route sweep /api/leave-balances"
+            },
+            "API route sweep /api/leave-balances/{leave_balance}": {
+                "name": "API route sweep /api/leave-balances/{leave_balance}",
+                "path": "::API route sweep /api/leave-balances/{leave_balance}",
+                "id": "8d5f4d20cdde8a0bf467ac246319caf8",
+                "groups": {},
+                "checks": {
+                        "/api/leave-balances/{leave_balance} did not return a server error": {
+                            "id": "63ac88654378acb318fb88ab2d9f89e5",
+                            "passes": 0,
+                            "fails": 1,
+                            "name": "/api/leave-balances/{leave_balance} did not return a server error",
+                            "path": "::API route sweep /api/leave-balances/{leave_balance}::/api/leave-balances/{leave_balance} did not return a server error"
+                        }
+                    }
+            },
+            "API route sweep /api/leaves": {
+                "name": "API route sweep /api/leaves",
+                "path": "::API route sweep /api/leaves",
+                "id": "afc4e45107a794c4c40b304a5ec1a93b",
+                "groups": {},
+                "checks": {
+                        "/api/leaves did not return a server error": {
+                            "name": "/api/leaves did not return a server error",
+                            "path": "::API route sweep /api/leaves::/api/leaves did not return a server error",
+                            "id": "fc360e203023d39ce009d19b84718489",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    }
+            },
+            "API route sweep /api/leaves/{leave}": {
+                "name": "API route sweep /api/leaves/{leave}",
+                "path": "::API route sweep /api/leaves/{leave}",
+                "id": "38eb33e1eb8fba6c663361ea2ff1de8d",
+                "groups": {},
+                "checks": {
+                        "/api/leaves/{leave} did not return a server error": {
+                            "fails": 0,
+                            "name": "/api/leaves/{leave} did not return a server error",
+                            "path": "::API route sweep /api/leaves/{leave}::/api/leaves/{leave} did not return a server error",
+                            "id": "329790356af8d428b65201b695baefe7",
+                            "passes": 1
+                        }
+                    }
+            },
+            "API route sweep /api/order-reasons/{type}": {
+                "checks": {
+                    "/api/order-reasons/{type} did not return a server error": {
+                        "name": "/api/order-reasons/{type} did not return a server error",
+                        "path": "::API route sweep /api/order-reasons/{type}::/api/order-reasons/{type} did not return a server error",
+                        "id": "196bc089f15730321c0796d306b35b9f",
+                        "passes": 1,
+                        "fails": 0
+                    }
+                },
+                "name": "API route sweep /api/order-reasons/{type}",
+                "path": "::API route sweep /api/order-reasons/{type}",
+                "id": "7bf2f614019ec0e03ffa3447b39433a9",
+                "groups": {}
+            },
+            "API route sweep /api/orders": {
+                "name": "API route sweep /api/orders",
+                "path": "::API route sweep /api/orders",
+                "id": "965d51ba998a2eca69dce377d59de51f",
+                "groups": {},
+                "checks": {
+                        "/api/orders did not return a server error": {
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/api/orders did not return a server error",
+                            "path": "::API route sweep /api/orders::/api/orders did not return a server error",
+                            "id": "3156bc7af26acc9a25ebe0d3de963ca4"
+                        }
+                    }
+            },
+            "API route sweep /api/orders/bulk-print": {
+                "path": "::API route sweep /api/orders/bulk-print",
+                "id": "94837e747af580b0e0282ad4e58221a2",
+                "groups": {},
+                "checks": {
+                        "/api/orders/bulk-print did not return a server error": {
+                            "name": "/api/orders/bulk-print did not return a server error",
+                            "path": "::API route sweep /api/orders/bulk-print::/api/orders/bulk-print did not return a server error",
+                            "id": "85a3a7b005d9c63fbf66e9f383875e20",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    },
+                "name": "API route sweep /api/orders/bulk-print"
+            },
+            "API route sweep /api/orders/export": {
+                "groups": {},
+                "checks": {
+                        "/api/orders/export did not return a server error": {
+                            "name": "/api/orders/export did not return a server error",
+                            "path": "::API route sweep /api/orders/export::/api/orders/export did not return a server error",
+                            "id": "b1f6345a2377300df33384ffea2ef657",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    },
+                "name": "API route sweep /api/orders/export",
+                "path": "::API route sweep /api/orders/export",
+                "id": "e6217d492c384637507d1d818cdde774"
+            },
+            "API route sweep /api/orders/{order}": {
+                "path": "::API route sweep /api/orders/{order}",
+                "id": "b259f2a6eda8fff8cd1bfd0acde592fc",
+                "groups": {},
+                "checks": {
+                        "/api/orders/{order} did not return a server error": {
+                            "name": "/api/orders/{order} did not return a server error",
+                            "path": "::API route sweep /api/orders/{order}::/api/orders/{order} did not return a server error",
+                            "id": "d7a7e2d3b404f0b8eaad062f54a0b934",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    },
+                "name": "API route sweep /api/orders/{order}"
+            },
+            "API route sweep /api/org-chart": {
+                "name": "API route sweep /api/org-chart",
+                "path": "::API route sweep /api/org-chart",
+                "id": "70105759961a28e8a76e6e69fb86cbb4",
+                "groups": {},
+                "checks": {
+                        "/api/org-chart did not return a server error": {
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/api/org-chart did not return a server error",
+                            "path": "::API route sweep /api/org-chart::/api/org-chart did not return a server error",
+                            "id": "32ced5ce76efb128e95a9635af9ab3f8"
+                        }
+                    }
+            },
+            "API route sweep /api/payments": {
+                "name": "API route sweep /api/payments",
+                "path": "::API route sweep /api/payments",
+                "id": "b3fb12936ce1756db15cde0304c9a980",
+                "groups": {},
+                "checks": {
+                        "/api/payments did not return a server error": {
+                            "name": "/api/payments did not return a server error",
+                            "path": "::API route sweep /api/payments::/api/payments did not return a server error",
+                            "id": "13325d07ef64768a099005362866ac29",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    }
+            },
+            "API route sweep /api/payments/{payment}": {
+                "checks": {
+                    "/api/payments/{payment} did not return a server error": {
+                        "name": "/api/payments/{payment} did not return a server error",
+                        "path": "::API route sweep /api/payments/{payment}::/api/payments/{payment} did not return a server error",
+                        "id": "08a71cf88895559d0e51fb15573badcd",
+                        "passes": 1,
+                        "fails": 0
+                    }
+                },
+                "name": "API route sweep /api/payments/{payment}",
+                "path": "::API route sweep /api/payments/{payment}",
+                "id": "fd3921e8396ce7b557d8318330b50edf",
+                "groups": {}
+            },
+            "API route sweep /api/permissions": {
+                "id": "b1e605a60a8dbbdb73b041753a7349ae",
+                "groups": {},
+                "checks": {
+                        "/api/permissions did not return a server error": {
+                            "name": "/api/permissions did not return a server error",
+                            "path": "::API route sweep /api/permissions::/api/permissions did not return a server error",
+                            "id": "6b27da6a02557bfd7a34c8cc861990dc",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    },
+                "name": "API route sweep /api/permissions",
+                "path": "::API route sweep /api/permissions"
+            },
+            "API route sweep /api/permissions/options": {
+                "path": "::API route sweep /api/permissions/options",
+                "id": "ce1c62b58a9983902fb495cad080b035",
+                "groups": {},
+                "checks": {
+                        "/api/permissions/options did not return a server error": {
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/api/permissions/options did not return a server error",
+                            "path": "::API route sweep /api/permissions/options::/api/permissions/options did not return a server error",
+                            "id": "5b88970c4e692e0822338895b71a19d4"
+                        }
+                    },
+                "name": "API route sweep /api/permissions/options"
+            },
+            "API route sweep /api/permissions/{permission}": {
+                "name": "API route sweep /api/permissions/{permission}",
+                "path": "::API route sweep /api/permissions/{permission}",
+                "id": "e5eafe59d88c55d6efd699d5a9318102",
+                "groups": {},
+                "checks": {
+                        "/api/permissions/{permission} did not return a server error": {
+                            "id": "75da173f58647040b6a0ab16b1830c0d",
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/api/permissions/{permission} did not return a server error",
+                            "path": "::API route sweep /api/permissions/{permission}::/api/permissions/{permission} did not return a server error"
+                        }
+                    }
+            },
+            "API route sweep /api/procurement/goods-receipts": {
+                "groups": {},
+                "checks": {
+                        "/api/procurement/goods-receipts did not return a server error": {
+                            "path": "::API route sweep /api/procurement/goods-receipts::/api/procurement/goods-receipts did not return a server error",
+                            "id": "c3d0dec6879bd70c76152d1f33fbbb0e",
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/api/procurement/goods-receipts did not return a server error"
+                        }
+                    },
+                "name": "API route sweep /api/procurement/goods-receipts",
+                "path": "::API route sweep /api/procurement/goods-receipts",
+                "id": "16f38127f885a59bf6305f6b3e419763"
+            },
+            "API route sweep /api/procurement/goods-receipts/{receipt}/pdf": {
+                "checks": {
+                    "/api/procurement/goods-receipts/{receipt}/pdf did not return a server error": {
+                        "id": "1dabf4be718978bcfc88f90e9a2d8630",
+                        "passes": 1,
+                        "fails": 0,
+                        "name": "/api/procurement/goods-receipts/{receipt}/pdf did not return a server error",
+                        "path": "::API route sweep /api/procurement/goods-receipts/{receipt}/pdf::/api/procurement/goods-receipts/{receipt}/pdf did not return a server error"
+                    }
+                },
+                "name": "API route sweep /api/procurement/goods-receipts/{receipt}/pdf",
+                "path": "::API route sweep /api/procurement/goods-receipts/{receipt}/pdf",
+                "id": "9464161b99b65a60bfcc142a1db427fe",
+                "groups": {}
+            },
+            "API route sweep /api/procurement/purchase-orders": {
+                "id": "277e5cec2cbb2a673390e570472897fb",
+                "groups": {},
+                "checks": {
+                        "/api/procurement/purchase-orders did not return a server error": {
+                            "name": "/api/procurement/purchase-orders did not return a server error",
+                            "path": "::API route sweep /api/procurement/purchase-orders::/api/procurement/purchase-orders did not return a server error",
+                            "id": "88ebac1cb1b97f675ea85b0ab9967649",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    },
+                "name": "API route sweep /api/procurement/purchase-orders",
+                "path": "::API route sweep /api/procurement/purchase-orders"
+            },
+            "API route sweep /api/procurement/purchase-orders/{order}/payments": {
+                "groups": {},
+                "checks": {
+                        "/api/procurement/purchase-orders/{order}/payments did not return a server error": {
+                            "name": "/api/procurement/purchase-orders/{order}/payments did not return a server error",
+                            "path": "::API route sweep /api/procurement/purchase-orders/{order}/payments::/api/procurement/purchase-orders/{order}/payments did not return a server error",
+                            "id": "22d23dda09d81c05e9956906e2dd2ca2",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    },
+                "name": "API route sweep /api/procurement/purchase-orders/{order}/payments",
+                "path": "::API route sweep /api/procurement/purchase-orders/{order}/payments",
+                "id": "74f664d4a33965c74c59bf2dfa0a7ee7"
+            },
+            "API route sweep /api/procurement/purchase-orders/{order}/pdf": {
+                "id": "5c089944b37461374ff103e0e68ccdea",
+                "groups": {},
+                "checks": {
+                        "/api/procurement/purchase-orders/{order}/pdf did not return a server error": {
+                            "name": "/api/procurement/purchase-orders/{order}/pdf did not return a server error",
+                            "path": "::API route sweep /api/procurement/purchase-orders/{order}/pdf::/api/procurement/purchase-orders/{order}/pdf did not return a server error",
+                            "id": "b1e2d752b7c3435d823ee068c367d736",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    },
+                "name": "API route sweep /api/procurement/purchase-orders/{order}/pdf",
+                "path": "::API route sweep /api/procurement/purchase-orders/{order}/pdf"
+            },
+            "API route sweep /api/procurement/suppliers": {
+                "checks": {
+                    "/api/procurement/suppliers did not return a server error": {
+                        "name": "/api/procurement/suppliers did not return a server error",
+                        "path": "::API route sweep /api/procurement/suppliers::/api/procurement/suppliers did not return a server error",
+                        "id": "db25bbeefe3b03b3f9ca94d92e4f9709",
+                        "passes": 1,
+                        "fails": 0
+                    }
+                },
+                "name": "API route sweep /api/procurement/suppliers",
+                "path": "::API route sweep /api/procurement/suppliers",
+                "id": "f96d1d3a1eaf85fed4cbf5544b53aa17",
+                "groups": {}
+            },
+            "API route sweep /api/procurement/suppliers/{supplier}": {
+                "path": "::API route sweep /api/procurement/suppliers/{supplier}",
+                "id": "5b9c0df0d5b1baebc4306adf274859ad",
+                "groups": {},
+                "checks": {
+                        "/api/procurement/suppliers/{supplier} did not return a server error": {
+                            "path": "::API route sweep /api/procurement/suppliers/{supplier}::/api/procurement/suppliers/{supplier} did not return a server error",
+                            "id": "e650b3ae9675f14e450cdd0f9f39cd3e",
+                            "passes": 0,
+                            "fails": 1,
+                            "name": "/api/procurement/suppliers/{supplier} did not return a server error"
+                        }
+                    },
+                "name": "API route sweep /api/procurement/suppliers/{supplier}"
+            },
+            "API route sweep /api/products": {
+                "id": "ebaacf60773dd23eca824d5b84c38f11",
+                "groups": {},
+                "checks": {
+                        "/api/products did not return a server error": {
+                            "id": "6eb4e949e6cbb2f9eb9a3b5aca0c7ddb",
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/api/products did not return a server error",
+                            "path": "::API route sweep /api/products::/api/products did not return a server error"
+                        }
+                    },
+                "name": "API route sweep /api/products",
+                "path": "::API route sweep /api/products"
+            },
+            "API route sweep /api/products-search-api": {
+                "name": "API route sweep /api/products-search-api",
+                "path": "::API route sweep /api/products-search-api",
+                "id": "286b34e7a537cc21d09e131d0e67009a",
+                "groups": {},
+                "checks": {
+                        "/api/products-search-api did not return a server error": {
+                            "name": "/api/products-search-api did not return a server error",
+                            "path": "::API route sweep /api/products-search-api::/api/products-search-api did not return a server error",
+                            "id": "612af28eccb9422adc850da7446bbb09",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    }
+            },
+            "API route sweep /api/products/export": {
+                "name": "API route sweep /api/products/export",
+                "path": "::API route sweep /api/products/export",
+                "id": "6e1516da105d15ac15a9b128ebdc2207",
+                "groups": {},
+                "checks": {
+                        "/api/products/export did not return a server error": {
+                            "name": "/api/products/export did not return a server error",
+                            "path": "::API route sweep /api/products/export::/api/products/export did not return a server error",
+                            "id": "ea2d57611a1f822146417deadfb4fbb9",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    }
+            },
+            "API route sweep /api/products/{product}": {
+                "id": "eebec21d7c9c7648d901ca2075e5d9b6",
+                "groups": {},
+                "checks": {
+                        "/api/products/{product} did not return a server error": {
+                            "id": "714e538ec6d82a608e3685942af5685e",
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/api/products/{product} did not return a server error",
+                            "path": "::API route sweep /api/products/{product}::/api/products/{product} did not return a server error"
+                        }
+                    },
+                "name": "API route sweep /api/products/{product}",
+                "path": "::API route sweep /api/products/{product}"
+            },
+            "API route sweep /api/promotions/coupons": {
+                "name": "API route sweep /api/promotions/coupons",
+                "path": "::API route sweep /api/promotions/coupons",
+                "id": "87c12edfa09d5b7b3d8df629059b98cc",
+                "groups": {},
+                "checks": {
+                        "/api/promotions/coupons did not return a server error": {
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/api/promotions/coupons did not return a server error",
+                            "path": "::API route sweep /api/promotions/coupons::/api/promotions/coupons did not return a server error",
+                            "id": "81cc31683b8bf094ebc35b3c2221f4af"
+                        }
+                    }
+            },
+            "API route sweep /api/promotions/offers": {
+                "id": "3ca3cc8bdacaf2154e3b4e12ce60f7db",
+                "groups": {},
+                "checks": {
+                        "/api/promotions/offers did not return a server error": {
+                            "name": "/api/promotions/offers did not return a server error",
+                            "path": "::API route sweep /api/promotions/offers::/api/promotions/offers did not return a server error",
+                            "id": "7c6c833d9dc255d6466897d4c4188180",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    },
+                "name": "API route sweep /api/promotions/offers",
+                "path": "::API route sweep /api/promotions/offers"
+            },
+            "API route sweep /api/promotions/referral-programs": {
+                "name": "API route sweep /api/promotions/referral-programs",
+                "path": "::API route sweep /api/promotions/referral-programs",
+                "id": "842fbc1eddb714a92f93be249ef2f73d",
+                "groups": {},
+                "checks": {
+                        "/api/promotions/referral-programs did not return a server error": {
+                            "path": "::API route sweep /api/promotions/referral-programs::/api/promotions/referral-programs did not return a server error",
+                            "id": "bc79fd8f7a466f9275e2a7310176cf90",
+                            "passes": 0,
+                            "fails": 1,
+                            "name": "/api/promotions/referral-programs did not return a server error"
+                        }
+                    }
+            },
+            "API route sweep /api/refunds": {
+                "path": "::API route sweep /api/refunds",
+                "id": "66e976cae094861f7e328836d773f6cb",
+                "groups": {},
+                "checks": {
+                        "/api/refunds did not return a server error": {
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/api/refunds did not return a server error",
+                            "path": "::API route sweep /api/refunds::/api/refunds did not return a server error",
+                            "id": "88c571ae54b5dea22a7d5e657d9a59fb"
+                        }
+                    },
+                "name": "API route sweep /api/refunds"
+            },
+            "API route sweep /api/refunds/{refund}": {
+                "groups": {},
+                "checks": {
+                        "/api/refunds/{refund} did not return a server error": {
+                            "passes": 0,
+                            "fails": 1,
+                            "name": "/api/refunds/{refund} did not return a server error",
+                            "path": "::API route sweep /api/refunds/{refund}::/api/refunds/{refund} did not return a server error",
+                            "id": "3a2fe60039a99f13b71ad9b0f7972179"
+                        }
+                    },
+                "name": "API route sweep /api/refunds/{refund}",
+                "path": "::API route sweep /api/refunds/{refund}",
+                "id": "09f68a815713841b243e4057af067be1"
+            },
+            "API route sweep /api/reports": {
+                "name": "API route sweep /api/reports",
+                "path": "::API route sweep /api/reports",
+                "id": "4c36b3cb2d350e50ca24c97606719d19",
+                "groups": {},
+                "checks": {
+                        "/api/reports did not return a server error": {
+                            "name": "/api/reports did not return a server error",
+                            "path": "::API route sweep /api/reports::/api/reports did not return a server error",
+                            "id": "8891bc34bcaf1962f734673d46cb86f0",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    }
+            },
+            "API route sweep /api/returns": {
+                "groups": {},
+                "checks": {
+                        "/api/returns did not return a server error": {
+                            "name": "/api/returns did not return a server error",
+                            "path": "::API route sweep /api/returns::/api/returns did not return a server error",
+                            "id": "1659881d99f7324ef8a53a8c152cc1d4",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    },
+                "name": "API route sweep /api/returns",
+                "path": "::API route sweep /api/returns",
+                "id": "7ffd7ad5689f99675cfc739ca5236876"
+            },
+            "API route sweep /api/returns/{orderReturn}": {
+                "name": "API route sweep /api/returns/{orderReturn}",
+                "path": "::API route sweep /api/returns/{orderReturn}",
+                "id": "59eea1ef773e0f30b348171b1f9b46cc",
+                "groups": {},
+                "checks": {
+                        "/api/returns/{orderReturn} did not return a server error": {
+                            "name": "/api/returns/{orderReturn} did not return a server error",
+                            "path": "::API route sweep /api/returns/{orderReturn}::/api/returns/{orderReturn} did not return a server error",
+                            "id": "43fe83bc972c97c706249e780ad2d565",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    }
+            },
+            "API route sweep /api/roles": {
+                "name": "API route sweep /api/roles",
+                "path": "::API route sweep /api/roles",
+                "id": "dbb9fdc03ce5a4d73848b2a5306c2583",
+                "groups": {},
+                "checks": {
+                        "/api/roles did not return a server error": {
+                            "name": "/api/roles did not return a server error",
+                            "path": "::API route sweep /api/roles::/api/roles did not return a server error",
+                            "id": "274b7666fbcf84653f920bef09a308cc",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    }
+            },
+            "API route sweep /api/roles/options": {
+                "path": "::API route sweep /api/roles/options",
+                "id": "68d4506f7b46b56af49c21e4152ac50e",
+                "groups": {},
+                "checks": {
+                        "/api/roles/options did not return a server error": {
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/api/roles/options did not return a server error",
+                            "path": "::API route sweep /api/roles/options::/api/roles/options did not return a server error",
+                            "id": "6ba24cd817c4869b3f198e0b54254685"
+                        }
+                    },
+                "name": "API route sweep /api/roles/options"
+            },
+            "API route sweep /api/roles/{role}": {
+                "name": "API route sweep /api/roles/{role}",
+                "path": "::API route sweep /api/roles/{role}",
+                "id": "e5d9627a2062fe20f99b14a2c2ce4a6c",
+                "groups": {},
+                "checks": {
+                        "/api/roles/{role} did not return a server error": {
+                            "name": "/api/roles/{role} did not return a server error",
+                            "path": "::API route sweep /api/roles/{role}::/api/roles/{role} did not return a server error",
+                            "id": "9ac51c25a9414607d6030f7cfaceda0c",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    }
+            },
+            "API route sweep /api/security/activity": {
+                "groups": {},
+                "checks": {
+                        "/api/security/activity did not return a server error": {
+                            "name": "/api/security/activity did not return a server error",
+                            "path": "::API route sweep /api/security/activity::/api/security/activity did not return a server error",
+                            "id": "4873fd00009ee472082ca5ad938a0037",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    },
+                "name": "API route sweep /api/security/activity",
+                "path": "::API route sweep /api/security/activity",
+                "id": "980a52c5ef0da0bebb00ae3af2d32cf9"
+            },
+            "API route sweep /api/security/sessions": {
+                "name": "API route sweep /api/security/sessions",
+                "path": "::API route sweep /api/security/sessions",
+                "id": "7e33c92e5efcc87a8d032bceac811dc0",
+                "groups": {},
+                "checks": {
+                        "/api/security/sessions did not return a server error": {
+                            "name": "/api/security/sessions did not return a server error",
+                            "path": "::API route sweep /api/security/sessions::/api/security/sessions did not return a server error",
+                            "id": "fe1f26c5265e5c84657d57f94314154c",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    }
+            },
+            "API route sweep /api/shipping/awb-logs/{officeId}": {
+                "name": "API route sweep /api/shipping/awb-logs/{officeId}",
+                "path": "::API route sweep /api/shipping/awb-logs/{officeId}",
+                "id": "c9ac2ed1dd416d9f4a0faef25fd0efd0",
+                "groups": {},
+                "checks": {
+                        "/api/shipping/awb-logs/{officeId} did not return a server error": {
+                            "name": "/api/shipping/awb-logs/{officeId} did not return a server error",
+                            "path": "::API route sweep /api/shipping/awb-logs/{officeId}::/api/shipping/awb-logs/{officeId} did not return a server error",
+                            "id": "c8aaec462adbbe076aadfbc45dbc5d7f",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    }
+            },
+            "API route sweep /api/shipping/offices/{officeId}/ranges": {
+                "name": "API route sweep /api/shipping/offices/{officeId}/ranges",
+                "path": "::API route sweep /api/shipping/offices/{officeId}/ranges",
+                "id": "b813bb3a0026dda9cc1cf0bb81620c66",
+                "groups": {},
+                "checks": {
+                        "/api/shipping/offices/{officeId}/ranges did not return a server error": {
+                            "path": "::API route sweep /api/shipping/offices/{officeId}/ranges::/api/shipping/offices/{officeId}/ranges did not return a server error",
+                            "id": "80031dea1ffcc8cabc080e17e31f5694",
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/api/shipping/offices/{officeId}/ranges did not return a server error"
+                        }
+                    }
+            },
+            "API route sweep /api/shipping/services": {
+                "name": "API route sweep /api/shipping/services",
+                "path": "::API route sweep /api/shipping/services",
+                "id": "830cb572a98b1448bfc11a16498b85c2",
+                "groups": {},
+                "checks": {
+                        "/api/shipping/services did not return a server error": {
+                            "name": "/api/shipping/services did not return a server error",
+                            "path": "::API route sweep /api/shipping/services::/api/shipping/services did not return a server error",
+                            "id": "2b870a5a89fcecf3827cae99a1fdc8c2",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    }
+            },
+            "API route sweep /api/shipping/services/provider-options": {
+                "id": "36c84b168118dfa9b41fe5d474215228",
+                "groups": {},
+                "checks": {
+                        "/api/shipping/services/provider-options did not return a server error": {
+                            "fails": 0,
+                            "name": "/api/shipping/services/provider-options did not return a server error",
+                            "path": "::API route sweep /api/shipping/services/provider-options::/api/shipping/services/provider-options did not return a server error",
+                            "id": "f3d6b47d012305e1be1c6165a12dd266",
+                            "passes": 1
+                        }
+                    },
+                "name": "API route sweep /api/shipping/services/provider-options",
+                "path": "::API route sweep /api/shipping/services/provider-options"
+            },
+            "API route sweep /api/shipping/shipments": {
+                "path": "::API route sweep /api/shipping/shipments",
+                "id": "719ca32369a24e9160faa39cf7b15efc",
+                "groups": {},
+                "checks": {
+                        "/api/shipping/shipments did not return a server error": {
+                            "id": "788795d91341bbe107fa4d78570b87f9",
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/api/shipping/shipments did not return a server error",
+                            "path": "::API route sweep /api/shipping/shipments::/api/shipping/shipments did not return a server error"
+                        }
+                    },
+                "name": "API route sweep /api/shipping/shipments"
+            },
+            "API route sweep /api/shipping/shipments/{shipment}/tracking": {
+                "name": "API route sweep /api/shipping/shipments/{shipment}/tracking",
+                "path": "::API route sweep /api/shipping/shipments/{shipment}/tracking",
+                "id": "fa55a4d22cb3f42fa7d325970fb35bed",
+                "groups": {},
+                "checks": {
+                        "/api/shipping/shipments/{shipment}/tracking did not return a server error": {
+                            "path": "::API route sweep /api/shipping/shipments/{shipment}/tracking::/api/shipping/shipments/{shipment}/tracking did not return a server error",
+                            "id": "f83aebb193e9431928a5677da44d638f",
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/api/shipping/shipments/{shipment}/tracking did not return a server error"
+                        }
+                    }
+            },
+            "API route sweep /api/tax-rates": {
+                "name": "API route sweep /api/tax-rates",
+                "path": "::API route sweep /api/tax-rates",
+                "id": "6124cec8a23dba6d7b9a49a74d125498",
+                "groups": {},
+                "checks": {
+                        "/api/tax-rates did not return a server error": {
+                            "name": "/api/tax-rates did not return a server error",
+                            "path": "::API route sweep /api/tax-rates::/api/tax-rates did not return a server error",
+                            "id": "a658076764d2d49338f23443e3e3b7b0",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    }
+            },
+            "API route sweep /api/tax-rates/{tax_rate}": {
+                "name": "API route sweep /api/tax-rates/{tax_rate}",
+                "path": "::API route sweep /api/tax-rates/{tax_rate}",
+                "id": "dc710cbf254512730b663d780819bd1e",
+                "groups": {},
+                "checks": {
+                        "/api/tax-rates/{tax_rate} did not return a server error": {
+                            "id": "a6fdc2a63a2cb50830b598cc6933b7fc",
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/api/tax-rates/{tax_rate} did not return a server error",
+                            "path": "::API route sweep /api/tax-rates/{tax_rate}::/api/tax-rates/{tax_rate} did not return a server error"
+                        }
+                    }
+            },
+            "API route sweep /api/teams": {
+                "name": "API route sweep /api/teams",
+                "path": "::API route sweep /api/teams",
+                "id": "f05fac1598063a062037f25ac98d04f5",
+                "groups": {},
+                "checks": {
+                        "/api/teams did not return a server error": {
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/api/teams did not return a server error",
+                            "path": "::API route sweep /api/teams::/api/teams did not return a server error",
+                            "id": "f427991c69bf0c8b173e6e0a72ccb1b8"
+                        }
+                    }
+            },
+            "API route sweep /api/teams/{team}": {
+                "checks": {
+                    "/api/teams/{team} did not return a server error": {
+                        "name": "/api/teams/{team} did not return a server error",
+                        "path": "::API route sweep /api/teams/{team}::/api/teams/{team} did not return a server error",
+                        "id": "c56739967a8cdf6a6ab8694a7decaa20",
+                        "passes": 1,
+                        "fails": 0
+                    }
+                },
+                "name": "API route sweep /api/teams/{team}",
+                "path": "::API route sweep /api/teams/{team}",
+                "id": "caaa62d9c9bc7793b443efe060477c96",
+                "groups": {}
+            },
+            "API route sweep /api/uom": {
+                "groups": {},
+                "checks": {
+                        "/api/uom did not return a server error": {
+                            "name": "/api/uom did not return a server error",
+                            "path": "::API route sweep /api/uom::/api/uom did not return a server error",
+                            "id": "b7532472659597e28ef2cb009fccbf5f",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    },
+                "name": "API route sweep /api/uom",
+                "path": "::API route sweep /api/uom",
+                "id": "ed63e044302c3d087407e1545eda4d63"
+            },
+            "API route sweep /api/uom/{uom}": {
+                "name": "API route sweep /api/uom/{uom}",
+                "path": "::API route sweep /api/uom/{uom}",
+                "id": "72230bacbded7aee33440ac03c273256",
+                "groups": {},
+                "checks": {
+                        "/api/uom/{uom} did not return a server error": {
+                            "id": "5289a09c15756e4d51d68069240a428a",
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/api/uom/{uom} did not return a server error",
+                            "path": "::API route sweep /api/uom/{uom}::/api/uom/{uom} did not return a server error"
+                        }
+                    }
+            },
+            "API route sweep /api/users": {
+                "name": "API route sweep /api/users",
+                "path": "::API route sweep /api/users",
+                "id": "7c91abc61187c8c4344d46190cc840d8",
+                "groups": {},
+                "checks": {
+                        "/api/users did not return a server error": {
+                            "name": "/api/users did not return a server error",
+                            "path": "::API route sweep /api/users::/api/users did not return a server error",
+                            "id": "a1292490b7f029c04d561bab3b32d440",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    }
+            },
+            "API route sweep /api/users/{user}": {
+                "groups": {},
+                "checks": {
+                        "/api/users/{user} did not return a server error": {
+                            "id": "4203252614fcd8fb395a8c06dd3a3703",
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "/api/users/{user} did not return a server error",
+                            "path": "::API route sweep /api/users/{user}::/api/users/{user} did not return a server error"
+                        }
+                    },
+                "name": "API route sweep /api/users/{user}",
+                "path": "::API route sweep /api/users/{user}",
+                "id": "0874225a7aac448aa0e4cf26b799406f"
+            },
+            "API route sweep /api/users/{user}/login-history": {
+                "groups": {},
+                "checks": {
+                        "/api/users/{user}/login-history did not return a server error": {
+                            "name": "/api/users/{user}/login-history did not return a server error",
+                            "path": "::API route sweep /api/users/{user}/login-history::/api/users/{user}/login-history did not return a server error",
+                            "id": "20838fde95078fcd3e3681fa0a6c2399",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    },
+                "name": "API route sweep /api/users/{user}/login-history",
+                "path": "::API route sweep /api/users/{user}/login-history",
+                "id": "cb03f07f63da7e5f1b2d8977fe82fca0"
+            },
+            "API route sweep /api/villages": {
+                "checks": {
+                    "/api/villages did not return a server error": {
+                        "passes": 1,
+                        "fails": 0,
+                        "name": "/api/villages did not return a server error",
+                        "path": "::API route sweep /api/villages::/api/villages did not return a server error",
+                        "id": "204f6e8e2d10da9084faa644ac2e3876"
+                    }
+                },
+                "name": "API route sweep /api/villages",
+                "path": "::API route sweep /api/villages",
+                "id": "3a2f743bcb2810e0d10dee8ff868baba",
+                "groups": {}
+            },
+            "API route sweep /api/villages/export": {
+                "name": "API route sweep /api/villages/export",
+                "path": "::API route sweep /api/villages/export",
+                "id": "a4c4a61834cacf0de53fc20f382994b9",
+                "groups": {},
+                "checks": {
+                        "/api/villages/export did not return a server error": {
+                            "name": "/api/villages/export did not return a server error",
+                            "path": "::API route sweep /api/villages/export::/api/villages/export did not return a server error",
+                            "id": "cd8df1bcdc8989dc8b1814b9afae70b4",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    }
+            },
+            "API route sweep /api/villages/import-template": {
+                "id": "21c717c2da219394afde757a66e998c6",
+                "groups": {},
+                "checks": {
+                        "/api/villages/import-template did not return a server error": {
+                            "name": "/api/villages/import-template did not return a server error",
+                            "path": "::API route sweep /api/villages/import-template::/api/villages/import-template did not return a server error",
+                            "id": "ad58db0eb1f1f880e6e6fe3ed1122167",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    },
+                "name": "API route sweep /api/villages/import-template",
+                "path": "::API route sweep /api/villages/import-template"
+            },
+            "API route sweep /api/villages/search": {
+                "name": "API route sweep /api/villages/search",
+                "path": "::API route sweep /api/villages/search",
+                "id": "2e7bddd2837180bf9b5be007ece36b2d",
+                "groups": {},
+                "checks": {
+                        "/api/villages/search did not return a server error": {
+                            "name": "/api/villages/search did not return a server error",
+                            "path": "::API route sweep /api/villages/search::/api/villages/search did not return a server error",
+                            "id": "a90d5820ea02b35789e579060d2a1eb1",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    }
+            },
+            "API route sweep /api/villages/services-options": {
+                "name": "API route sweep /api/villages/services-options",
+                "path": "::API route sweep /api/villages/services-options",
+                "id": "88c9eccb405f61a1bd17f686ce043db8",
+                "groups": {},
+                "checks": {
+                        "/api/villages/services-options did not return a server error": {
+                            "name": "/api/villages/services-options did not return a server error",
+                            "path": "::API route sweep /api/villages/services-options::/api/villages/services-options did not return a server error",
+                            "id": "b45bdfa577955a5e21a62f66f0883bcc",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    }
+            },
+            "API route sweep /api/villages/{village}": {
+                "checks": {
+                    "/api/villages/{village} did not return a server error": {
+                        "name": "/api/villages/{village} did not return a server error",
+                        "path": "::API route sweep /api/villages/{village}::/api/villages/{village} did not return a server error",
+                        "id": "bca4c68a1ac50a2dba233b32353758f5",
+                        "passes": 1,
+                        "fails": 0
+                    }
+                },
+                "name": "API route sweep /api/villages/{village}",
+                "path": "::API route sweep /api/villages/{village}",
+                "id": "2a691c25f6fa16c9567ec9be3fad7640",
+                "groups": {}
+            },
+            "API route sweep /api/warehouses": {
+                "name": "API route sweep /api/warehouses",
+                "path": "::API route sweep /api/warehouses",
+                "id": "42aa4d8250ab1b894c7636eeee53f9d2",
+                "groups": {},
+                "checks": {
+                        "/api/warehouses did not return a server error": {
+                            "fails": 0,
+                            "name": "/api/warehouses did not return a server error",
+                            "path": "::API route sweep /api/warehouses::/api/warehouses did not return a server error",
+                            "id": "d795e2c043b3396de181f200a4020c94",
+                            "passes": 1
+                        }
+                    }
+            },
+            "API route sweep /api/warehouses/{warehouse}": {
+                "name": "API route sweep /api/warehouses/{warehouse}",
+                "path": "::API route sweep /api/warehouses/{warehouse}",
+                "id": "696f07f73e6d9f00af0fd4bf6a1be588",
+                "groups": {},
+                "checks": {
+                        "/api/warehouses/{warehouse} did not return a server error": {
+                            "fails": 0,
+                            "name": "/api/warehouses/{warehouse} did not return a server error",
+                            "path": "::API route sweep /api/warehouses/{warehouse}::/api/warehouses/{warehouse} did not return a server error",
+                            "id": "53573a62df683a61c09c0d004fe14d0e",
+                            "passes": 1
+                        }
+                    }
+            }
+        },
+        "checks": {}
+    },
+    "metrics": {
+        "http_req_tls_handshaking": {
+            "p(95)": 0,
+            "p(99)": 0,
+            "max": 0,
+            "avg": 0,
+            "med": 0,
+            "p(90)": 0
+        },
+        "data_sent": {
+            "count": 110345,
+            "rate": 1481.405047869637
+        },
+        "group_duration": {
+            "avg": 633.4475569478259,
+            "med": 66.375498,
+            "p(90)": 188.37420440000014,
+            "p(95)": 347.1977256999996,
+            "p(99)": 1157.94925058,
+            "max": 60004.391653
+        },
+        "http_req_sending": {
+            "avg": 0.04250798305084746,
+            "med": 0.0248405,
+            "p(90)": 0.06924369999999999,
+            "p(95)": 0.15984594999999982,
+            "p(99)": 0.24309744999999994,
+            "max": 0.361689
+        },
+        "iteration_duration": {
+            "avg": 633.4834828347824,
+            "med": 66.395999,
+            "p(90)": 188.39912620000013,
+            "p(95)": 347.21682059999955,
+            "p(99)": 1157.97499848,
+            "max": 60004.411364
+        },
+        "checks": {
+            "passes": 108,
+            "fails": 7,
+            "thresholds": {
+                "rate>0.99": true
+            },
+            "value": 0.9391304347826087
+        },
+        "http_req_failed": {
+            "fails": 110,
+            "passes": 8,
+            "thresholds": {
+                "rate<0.01": true
+            },
+            "value": 0.06779661016949153
+        },
+        "http_req_receiving": {
+            "med": 1.392929,
+            "p(90)": 2.6925654,
+            "p(95)": 3.1425031499999996,
+            "p(99)": 7.221434009999999,
+            "max": 59774.676585,
+            "avg": 508.1327451186441
+        },
+        "http_req_connecting": {
+            "max": 3.365152,
+            "avg": 0.5312618813559321,
+            "med": 0.39606399999999997,
+            "p(90)": 1.0217831999999998,
+            "p(95)": 1.3169352499999998,
+            "p(99)": 1.9919525799999993
+        },
+        "vus": {
+            "value": 1,
+            "min": 0,
+            "max": 1
+        },
+        "iterations": {
+            "count": 115,
+            "rate": 1.5438994109838076
+        },
+        "http_req_waiting": {
+            "p(99)": 1072.36910948,
+            "max": 1166.876243,
+            "avg": 121.6112463644068,
+            "med": 63.558775999999995,
+            "p(90)": 221.79840179999997,
+            "p(95)": 448.6898594499998
+        },
+        "api_route_duration": {
+            "p(95)": 345.3431636999996,
+            "p(99)": 1156.45682142,
+            "max": 60001.886743,
+            "avg": 632.2445085826085,
+            "med": 65.309775,
+            "p(90)": 186.2824746000001
+        },
+        "http_req_duration{expected_response:true}": {
+            "p(99)": 1074.6987608700001,
+            "max": 1169.560359,
+            "avg": 126.52211371818177,
+            "med": 66.82520099999999,
+            "p(90)": 222.5826705000002,
+            "p(95)": 460.10078754999995
+        },
+        "http_req_blocked": {
+            "med": 0.57743,
+            "p(90)": 1.1696036999999997,
+            "p(95)": 1.4397220499999994,
+            "p(99)": 3.498274349999999,
+            "max": 3.824973,
+            "avg": 0.6836689491525427
+        },
+        "vus_max": {
+            "value": 1,
+            "min": 1,
+            "max": 1
+        },
+        "api_route_statuses": {
+            "rate": 1.5438994109838076,
+            "count": 115
+        },
+        "http_req_duration": {
+            "avg": 629.7864994661015,
+            "med": 65.506954,
+            "p(90)": 227.45143749999994,
+            "p(95)": 505.55120379999806,
+            "p(99)": 1153.64892051,
+            "max": 60001.886743,
+            "thresholds": {
+                "p(95)<3000": false,
+                "p(99)<6000": false
+            }
+        },
+        "data_received": {
+            "count": 8430073,
+            "rate": 113175.51947174348
+        },
+        "http_reqs": {
+            "count": 118,
+            "rate": 1.5841750477920808
+        }
+    },
+    "setup_data": {
+        "apiToken": "",
+        "cookieHeader": "XSRF-TOKEN=eyJpdiI6ImtuSHhZMEtxOGgvUU1mSGZXQTlwTkE9PSIsInZhbHVlIjoiZ3cvc1lIdDA2VTRsRldBSTI4d01QK1lYVzF2bzVzdE5DQWs4YjZDc2ZWTlh1N01oaGtiYkg2dktWcjlpb3gvc3NEcVo3ZzZhSDVBOEVZN1R2a0xuWW9TU0FoWjAxQ1BGZ2J3M2dOTGFlUjZrMlVYS2d3V0VhVnR0V3ZSNUVTUnMiLCJtYWMiOiI0ZGQ4YzU4YzBkNGIxMDY2ZTVjMjZiMzFlYjQ5ZWM1MzE1YmUzYmU1YTVmMWI4OTM3NzExYmRhNTU5MTIwNGI5IiwidGFnIjoiIn0%3D; laravel-session=eyJpdiI6IlJpT1R3dU13S21jK1ZqSWc1dExNN1E9PSIsInZhbHVlIjoiY3plV2NNVXQwSVpSTytyT2c1RituT0U3dks3WGhhY2QwNDZDR3BPZGw4YTVHNzZBbUdPbmVDaFpmUWxwNldmREwzd1pHVHlYTm11aUJPTC9lcGRWQitFN1BoYTd5WjBjZU15ZVFsSzBvSnZ6V0FGcnhkNVpLWU5HeHhFd1FpRUMiLCJtYWMiOiIxYjg2YzFjMTRhOGMzYzZlNmEyYzE4OGYxNTA2NGY3OGVkYmFmMjAzZjA5MDYzZDllOTQwZTIzNWI2ZTk4ZjYyIiwidGFnIjoiIn0%3D"
+    }
+}
