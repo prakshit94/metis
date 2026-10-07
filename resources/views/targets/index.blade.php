@@ -3,6 +3,14 @@
 @section('page', 'targets.index')
 
 @section('content')
+@php
+    $exportDefaultYear = (int) date('n') < 4 ? (int) date('Y') - 1 : (int) date('Y');
+    $currentViewExportParams = array_merge([
+        'period_type' => 'daily',
+        'month' => date('n'),
+        'financial_year' => $exportDefaultYear,
+    ], request()->query());
+@endphp
 <div class="user-management" x-data="targetsModule()">
     <!-- Page Header -->
     <div class="d-flex justify-content-between align-items-center mb-4 mb-lg-5 mb-xl-6">
@@ -26,11 +34,11 @@
                 </button>
                 <ul class="dropdown-menu shadow border-0 rounded-3 mt-2">
                     <li><h6 class="dropdown-header">Export by Period</h6></li>
-                    <li><a class="dropdown-item d-flex align-items-center" href="{{ route('targets.export', array_merge(request()->query(), ['period_type' => 'daily'])) }}"><i class="bi bi-calendar-day me-2 text-primary"></i>Daily Targets</a></li>
-                    <li><a class="dropdown-item d-flex align-items-center" href="{{ route('targets.export', array_merge(request()->query(), ['period_type' => 'monthly'])) }}"><i class="bi bi-calendar-month me-2 text-primary"></i>Monthly Targets</a></li>
-                    <li><a class="dropdown-item d-flex align-items-center" href="{{ route('targets.export', array_merge(request()->query(), ['period_type' => 'yearly'])) }}"><i class="bi bi-calendar me-2 text-primary"></i>Yearly Targets</a></li>
+                    <li><a class="dropdown-item d-flex align-items-center" href="{{ route('targets.export', array_merge($currentViewExportParams, ['period_type' => 'daily'])) }}"><i class="bi bi-calendar-day me-2 text-primary"></i>Daily Targets</a></li>
+                    <li><a class="dropdown-item d-flex align-items-center" href="{{ route('targets.export', array_merge($currentViewExportParams, ['period_type' => 'monthly'])) }}"><i class="bi bi-calendar-month me-2 text-primary"></i>Monthly Targets</a></li>
+                    <li><a class="dropdown-item d-flex align-items-center" href="{{ route('targets.export', array_merge($currentViewExportParams, ['period_type' => 'yearly'])) }}"><i class="bi bi-calendar me-2 text-primary"></i>Yearly Targets</a></li>
                     <li><hr class="dropdown-divider opacity-50"></li>
-                    <li><a class="dropdown-item d-flex align-items-center fw-medium" href="{{ route('targets.export', request()->query()) }}"><i class="bi bi-filter me-2 text-primary"></i>Export Current View</a></li>
+                    <li><a class="dropdown-item d-flex align-items-center fw-medium" href="{{ route('targets.export', $currentViewExportParams) }}"><i class="bi bi-filter me-2 text-primary"></i>Export Current View</a></li>
                     <li><a class="dropdown-item d-flex align-items-center" href="{{ route('targets.export') }}"><i class="bi bi-asterisk me-2 text-primary"></i>Export All Data</a></li>
                 </ul>
             </div>
@@ -40,9 +48,18 @@
             {{-- Recalculate button: syncs achieved_amount from live order/payment/invoice data --}}
             <form method="POST" action="{{ route('targets.recalculate') }}" id="recalculate-form" class="m-0">
                 @csrf
-                {{-- Pass active filters so only the currently-viewed targets are recalculated --}}
+                @php
+                    $syncMonth = request('month', date('n'));
+                    $syncYear = request('financial_year', (int) date('n') < 4 ? (int) date('Y') - 1 : (int) date('Y'));
+                    $syncSearches = (array) request('search', []);
+                @endphp
                 <input type="hidden" name="metric_type" value="{{ request('metric_type') }}">
                 <input type="hidden" name="period_type" value="{{ request('period_type', 'daily') }}">
+                <input type="hidden" name="month" value="{{ $syncMonth }}">
+                <input type="hidden" name="financial_year" value="{{ $syncYear }}">
+                @foreach($syncSearches as $syncSearch)
+                    <input type="hidden" name="search[]" value="{{ $syncSearch }}">
+                @endforeach
                 <button type="submit" class="btn btn-outline-info"
                         onclick="this.disabled=true; this.innerHTML='<span class=\'spinner-border spinner-border-sm me-2\' role=\'status\'></span>Syncing…'; this.form.submit();">
                     <i class="bi bi-arrow-repeat me-2"></i>Sync Achieved
@@ -206,9 +223,9 @@
                             <option value="">All Metrics</option>
                             <option value="sales_revenue" {{ request('metric_type') == 'sales_revenue' ? 'selected' : '' }}>Sales Revenue</option>
                             <option value="orders_count" {{ request('metric_type') == 'orders_count' ? 'selected' : '' }}>Orders Count</option>
-                            <option value="invoice_collection" {{ request('metric_type') == 'invoice_collection' ? 'selected' : '' }}>Invoice Collection</option>
+                            <option value="invoice_collection" {{ request('metric_type') == 'invoice_collection' ? 'selected' : '' }}>Invoiced Amount</option>
                             <option value="payment_collection" {{ request('metric_type') == 'payment_collection' ? 'selected' : '' }}>Payment Collection</option>
-                            <option value="calls_made" {{ request('metric_type') == 'calls_made' ? 'selected' : '' }}>Calls Made</option>
+                            <option value="calls_made" {{ request('metric_type') == 'calls_made' ? 'selected' : '' }}>Outbound Call Attempts</option>
                         </select>
                         <select name="period_type" class="form-select form-select-sm border-secondary border-opacity-25 shadow-none" style="width: 120px; height: 36px; border-radius: 8px;" x-model="searchPeriodType" @change="filterTable($refs.searchForm)">
                             <option value="daily" {{ $selectedPeriod == 'daily' ? 'selected' : '' }}>Daily</option>
@@ -278,10 +295,23 @@
                                             'calls_made' => 'bi-telephone',
                                             default => 'bi-graph-up'
                                         };
+                                        $metricLabel = match($target->metric_type) {
+                                            'invoice_collection' => 'Invoiced Amount',
+                                            'calls_made' => 'Outbound Call Attempts',
+                                            default => ucwords(str_replace('_', ' ', $target->metric_type)),
+                                        };
+                                        $metricDefinition = match($target->metric_type) {
+                                            'sales_revenue' => 'Eligible order net amount for the period.',
+                                            'orders_count' => 'Eligible order count for the period.',
+                                            'invoice_collection' => 'Non-cancelled invoices issued in the period, including unpaid invoices.',
+                                            'payment_collection' => 'Gross completed payments; refunds are not deducted.',
+                                            'calls_made' => 'Outbound call attempts, including busy and failed attempts.',
+                                            default => $metricLabel,
+                                        };
                                     @endphp
-                                    <span class="badge rounded-pill px-3 py-2 fw-medium border bg-body-tertiary text-body-emphasis border-secondary-subtle shadow-sm">
+                                    <span class="badge rounded-pill px-3 py-2 fw-medium border bg-body-tertiary text-body-emphasis border-secondary-subtle shadow-sm" title="{{ $metricDefinition }}">
                                         <i class="bi {{ $metricIcon }} me-1 text-primary opacity-75"></i>
-                                        {{ ucwords(str_replace('_', ' ', $target->metric_type)) }}
+                                        {{ $metricLabel }}
                                     </span>
                                 </td>
                                 <td>
@@ -366,19 +396,39 @@
                                 <td>
                                     @php
                                         $gap = max(0, (float)$target->target_amount - (float)$target->achieved_amount);
+                                        $isCountMetric = in_array($target->metric_type, ['orders_count', 'calls_made'], true);
+                                        $amountDecimals = $isCountMetric ? 0 : 2;
+                                        $paceDecimals = $isCountMetric ? 1 : 2;
                                     @endphp
                                     <div class="d-flex align-items-baseline gap-1 mb-1">
                                         <span class="text-muted" style="font-size: 11px; min-width: 60px;">🎯 Target:</span>
-                                        <span class="fw-bold text-body-emphasis" style="font-size: 15px;">₹{{ number_format($target->target_amount, 0) }}</span>
+                                        <span class="fw-bold text-body-emphasis" style="font-size: 15px;">{{ $isCountMetric ? '' : '₹' }}{{ number_format($target->target_amount, $amountDecimals) }}</span>
                                     </div>
                                     <div class="d-flex align-items-baseline gap-1 mb-1">
                                         <span class="text-muted" style="font-size: 11px; min-width: 60px;">✅ Achieved:</span>
-                                        <span class="fw-bold {{ $target->achievement_percentage >= 100 ? 'text-success' : 'text-primary' }}" style="font-size: 13px;">₹{{ number_format($target->achieved_amount, 0) }}</span>
+                                        <span class="fw-bold {{ $target->achievement_percentage >= 100 ? 'text-success' : 'text-primary' }}" style="font-size: 13px;">{{ $isCountMetric ? '' : '₹' }}{{ number_format($target->achieved_amount, $amountDecimals) }}</span>
                                     </div>
                                     @if($gap > 0)
                                     <div class="d-flex align-items-baseline gap-1">
                                         <span class="text-muted" style="font-size: 11px; min-width: 60px;">⬜ Remaining:</span>
-                                        <span class="fw-semibold text-danger-emphasis" style="font-size: 12px;">₹{{ number_format($gap, 0) }}</span>
+                                        <span class="fw-semibold text-danger-emphasis" style="font-size: 12px;">{{ $isCountMetric ? '' : '₹' }}{{ number_format($gap, $amountDecimals) }}</span>
+                                    </div>
+                                    @if($target->remaining_workdays > 0)
+                                    <div class="small text-muted mt-1" title="Remaining amount divided by remaining weekdays; public holidays are not excluded">
+                                        Need {{ $isCountMetric ? '' : '₹' }}{{ number_format($target->required_per_workday, $paceDecimals) }}/weekday
+                                        · {{ $target->remaining_workdays }} weekday{{ $target->remaining_workdays === 1 ? '' : 's' }} left
+                                    </div>
+                                    @endif
+                                    @endif
+                                    @if($target->actual_per_workday !== null)
+                                    <div class="small text-muted mt-1" title="Average achieved amount per elapsed weekday; forecast assumes the same pace continues">
+                                        Pace: {{ $isCountMetric ? '' : '₹' }}{{ number_format($target->actual_per_workday, $paceDecimals) }}/weekday
+                                        @if($target->projected_amount !== null)
+                                            · Forecast {{ $isCountMetric ? '' : '₹' }}{{ number_format($target->projected_amount, $paceDecimals) }}
+                                            @if($target->projected_percentage !== null)
+                                                ({{ number_format($target->projected_percentage, 1) }}%)
+                                            @endif
+                                        @endif
                                     </div>
                                     @endif
                                 </td>
@@ -394,7 +444,7 @@
                                             {{ $target->achievement_percentage >= 100 ? 'bg-success' : ($target->achievement_percentage >= 75 ? 'bg-warning' : 'bg-primary') }}" 
                                              role="progressbar" 
                                              style="width: {{ min(100, $target->achievement_percentage) }}%; border-radius: 6px;" 
-                                             aria-valuenow="{{ number_format($target->achievement_percentage, 1) }}" 
+                                             aria-valuenow="{{ number_format(min(100, $target->achievement_percentage), 1) }}"
                                              aria-valuemin="0" 
                                              aria-valuemax="100"></div>
                                     </div>
@@ -594,9 +644,9 @@
                                                 <select name="metric_type" x-model="form.metric_type" class="form-select form-select-lg fw-semibold rounded-3 bg-body border-secondary border-opacity-25 shadow-none px-3" required style="font-size: 14px;" :disabled="isEdit">
                                                     <option value="sales_revenue">Sales Revenue</option>
                                                     <option value="orders_count">Orders Count</option>
-                                                    <option value="invoice_collection">Invoice Collection</option>
+                                                    <option value="invoice_collection">Invoiced Amount</option>
                                                     <option value="payment_collection">Payment Collection</option>
-                                                    <option value="calls_made">Calls Made</option>
+                                                    <option value="calls_made">Outbound Call Attempts</option>
                                                 </select>
                                                 <template x-if="isEdit">
                                                     <!-- Send value when disabled -->
@@ -606,14 +656,14 @@
                                             <div class="col-md-4">
                                                 <label class="form-label mb-2 fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.1em;">Target Amount *</label>
                                                 <div class="input-group input-group-lg bg-body border border-secondary border-opacity-25 rounded-3 overflow-hidden">
-                                                    <span class="input-group-text border-0 bg-transparent text-muted fw-bold">₹</span>
+                                                    <span x-show="!['orders_count', 'calls_made'].includes(form.metric_type)" class="input-group-text border-0 bg-transparent text-muted fw-bold">₹</span>
                                                     <input type="number" step="0.01" name="target_amount" x-model="form.target_amount" class="form-control fw-semibold border-0 bg-transparent shadow-none px-2" required placeholder="50000" style="font-size: 14px;">
                                                 </div>
                                             </div>
                                             <div class="col-md-4">
                                                 <label class="form-label mb-2 fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.1em;">Achieved Amount</label>
                                                 <div class="input-group input-group-lg bg-body-tertiary border border-secondary border-opacity-25 rounded-3 overflow-hidden" title="Achieved amount is calculated automatically">
-                                                    <span class="input-group-text border-0 bg-transparent text-muted fw-bold">₹</span>
+                                                    <span x-show="!['orders_count', 'calls_made'].includes(form.metric_type)" class="input-group-text border-0 bg-transparent text-muted fw-bold">₹</span>
                                                     <input type="number" step="0.01" name="achieved_amount" x-model="form.achieved_amount" class="form-control fw-semibold border-0 bg-transparent shadow-none px-2" placeholder="0" style="font-size: 14px; cursor: not-allowed;" readonly>
                                                 </div>
                                             </div>

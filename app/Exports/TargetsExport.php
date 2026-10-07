@@ -18,6 +18,8 @@ class TargetsExport implements FromCollection, WithHeadings, WithMapping, WithSt
         private ?string $periodType    = null,  // daily | monthly | yearly | null (all)
         private ?string $metricType    = null,
         private ?int    $financialYear = null,
+        private ?int    $month = null,
+        private array   $searches = [],
     ) {}
 
     public function collection(): \Illuminate\Support\Collection
@@ -25,7 +27,7 @@ class TargetsExport implements FromCollection, WithHeadings, WithMapping, WithSt
         $query = Target::with('targetable');
         
         $user = auth()->user();
-        if ($user && !$user->hasRole('Super Admin') && !$user->can('target-view-all')) {
+        if ($user && !$user->hasAnyRole(['Super Admin', 'Admin']) && !$user->can('target-view-all')) {
             $query->where('targetable_type', $user->getMorphClass())
                   ->where('targetable_id', $user->id);
         }
@@ -43,6 +45,25 @@ class TargetsExport implements FromCollection, WithHeadings, WithMapping, WithSt
             $fyStart = Carbon::create($this->financialYear, 4, 1)->startOfDay();
             $fyEnd   = Carbon::create($this->financialYear + 1, 3, 31)->endOfDay();
             $query->where('start_date', '>=', $fyStart)->where('end_date', '<=', $fyEnd);
+        }
+
+        if ($this->month && $this->periodType !== 'yearly') {
+            $query->whereMonth('start_date', $this->month);
+        }
+
+        if ($this->searches !== []) {
+            $query->whereHasMorph('targetable', '*', function ($q, $type) {
+                $q->where(function ($nested) use ($type) {
+                    foreach ($this->searches as $search) {
+                        if ($type === \App\Modules\Users\Models\User::class) {
+                            $nested->orWhere('name', 'like', "%{$search}%")
+                                ->orWhere('email', 'like', "%{$search}%");
+                        } elseif ($type === \App\Modules\Users\Models\Team::class || $type === \App\Modules\Users\Models\Department::class) {
+                            $nested->orWhere('name', 'like', "%{$search}%");
+                        }
+                    }
+                });
+            });
         }
 
         return $query->orderBy('period_type')->orderBy('start_date', 'desc')->get();
@@ -111,7 +132,11 @@ class TargetsExport implements FromCollection, WithHeadings, WithMapping, WithSt
             }
         }
 
-        $metricName = ucwords(str_replace('_', ' ', $target->metric_type));
+        $metricName = match ($target->metric_type) {
+            'invoice_collection' => 'Invoiced Amount',
+            'calls_made' => 'Outbound Call Attempts',
+            default => ucwords(str_replace('_', ' ', $target->metric_type)),
+        };
         $periodName = ucfirst($target->period_type);
 
         return [

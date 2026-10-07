@@ -6,6 +6,8 @@ use App\Models\Target;
 use App\Modules\Users\Models\User;
 use App\Modules\Users\Models\Team;
 use App\Modules\Users\Models\Department;
+use App\Services\TargetAchievementService;
+use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
@@ -32,6 +34,11 @@ class TargetsImport implements ToCollection, WithHeadingRow, SkipsEmptyRows
             // Convert UI metric name to enum
             $rawMetric = trim($row['metric_type'] ?? '');
             $metricType = strtolower(str_replace(' ', '_', $rawMetric));
+            $metricType = match ($metricType) {
+                'invoiced_amount' => 'invoice_collection',
+                'outbound_call_attempts' => 'calls_made',
+                default => $metricType,
+            };
 
             $periodType = strtolower(trim($row['period_type'] ?? ''));
             $startDate  = trim($row['start_date'] ?? '');
@@ -55,6 +62,24 @@ class TargetsImport implements ToCollection, WithHeadingRow, SkipsEmptyRows
                 continue;
             }
 
+            if (!is_numeric($targetAmt) || (float) $targetAmt < 0) {
+                $this->skippedRows[] = "Row {$rowNum}: target amount must be a non-negative number.";
+                continue;
+            }
+
+            try {
+                $parsedStart = Carbon::parse($startDate);
+                $parsedEnd = Carbon::parse($endDate);
+            } catch (\Throwable) {
+                $this->skippedRows[] = "Row {$rowNum}: start_date or end_date is invalid.";
+                continue;
+            }
+
+            if ($parsedEnd->lessThan($parsedStart)) {
+                $this->skippedRows[] = "Row {$rowNum}: end_date must be on or after start_date.";
+                continue;
+            }
+
             $targetable = $this->resolveTargetable($type, $identifier);
             if (!$targetable) {
                 $this->skippedRows[] = "Row {$rowNum}: could not find {$type} with identifier '{$identifier}'.";
@@ -62,19 +87,27 @@ class TargetsImport implements ToCollection, WithHeadingRow, SkipsEmptyRows
             }
 
             try {
-                Target::create([
+                $target = Target::withTrashed()->firstOrNew([
                     'targetable_id'   => $targetable->id,
                     'targetable_type' => get_class($targetable),
                     'metric_type'     => $metricType,
                     'period_type'     => $periodType,
                     'start_date'      => $startDate,
-                    'end_date'        => $endDate,
-                    'target_amount'   => (float) $targetAmt,
-                    'achieved_amount' => 0, // always start at 0; recalculated by observer/command
-                    'status'          => in_array(strtolower($row['status'] ?? ''), ['active', 'achieved', 'failed'])
-                                            ? strtolower($row['status'])
-                                            : 'active',
                 ]);
+                if ($target->exists && $target->trashed()) {
+                    $target->restore();
+                }
+
+                $target->end_date = $endDate;
+                $target->target_amount = (float) $targetAmt;
+                $target->status = in_array(strtolower($row['status'] ?? ''), ['active', 'achieved', 'failed'])
+                    ? strtolower($row['status'])
+                    : 'active';
+                if (!$target->exists) {
+                    $target->achieved_amount = 0;
+                }
+                $target->save();
+                app(TargetAchievementService::class)->recalculate($target);
             } catch (\Exception $e) {
                 $this->skippedRows[] = "Row {$rowNum}: failed to save — {$e->getMessage()}";
             }

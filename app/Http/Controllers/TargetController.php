@@ -10,6 +10,7 @@ use App\Services\TargetAchievementService;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Facades\Excel;
 
 class TargetController extends Controller implements HasMiddleware
@@ -27,6 +28,16 @@ class TargetController extends Controller implements HasMiddleware
 
     public function index(Request $request)
     {
+        $request->validate([
+            'metric_type' => 'nullable|in:sales_revenue,orders_count,invoice_collection,payment_collection,calls_made',
+            'period_type' => 'nullable|in:daily,monthly,yearly',
+            'month' => 'nullable|integer|between:1,12',
+            'financial_year' => 'nullable|integer|between:2000,2100',
+            'per_page' => 'nullable|in:10,20,50,100',
+            'search' => 'nullable|array',
+            'search.*' => 'string|max:100',
+        ]);
+
         $query = Target::with('targetable');
         
         $user = auth()->user();
@@ -83,8 +94,9 @@ class TargetController extends Controller implements HasMiddleware
 
         $baseStatsQuery = clone $query;
         
-        $perPage = $request->input('per_page', 20);
-        $targets = $query->orderByDesc('start_date')->paginate($perPage);
+        $perPage = $request->integer('per_page', 20);
+        $targets = $query->orderByDesc('start_date')->orderByDesc('id')->paginate($perPage);
+        $this->addPaceMetrics($targets->getCollection());
 
         $stats = [
             'total' => (clone $baseStatsQuery)->count(),
@@ -119,12 +131,19 @@ class TargetController extends Controller implements HasMiddleware
 
     public function store(Request $request)
     {
+        $targetableTable = match ($request->input('targetable_type')) {
+            'User' => 'users',
+            'Team' => 'teams',
+            'Department' => 'departments',
+            default => 'users',
+        };
+
         $rules = [
-            'targetable_type' => 'required|string',
-            'targetable_ids' => 'required|array',
-            'targetable_ids.*' => 'integer',
-            'metric_type' => 'required|string',
-            'period_type' => 'required|string',
+            'targetable_type' => 'required|string|in:User,Team,Department',
+            'targetable_ids' => 'required|array|min:1',
+            'targetable_ids.*' => 'required|integer|min:1|distinct|exists:'.$targetableTable.',id',
+            'metric_type' => 'required|string|in:sales_revenue,orders_count,invoice_collection,payment_collection,calls_made',
+            'period_type' => 'required|string|in:daily,monthly,yearly',
             'target_amount' => 'required|numeric|min:0',
             'achieved_amount' => 'nullable|numeric|min:0',
             'status' => 'nullable|string|in:active,achieved,failed',
@@ -157,9 +176,30 @@ class TargetController extends Controller implements HasMiddleware
             }
         }
 
-        foreach ($validated['targetable_ids'] as $id) {
-            $this->createTargetChain($validated, $id);
-        }
+        DB::transaction(function () use ($validated) {
+            foreach ($validated['targetable_ids'] as $id) {
+                $this->createTargetChain($validated, $id);
+
+                if ($validated['period_type'] === 'yearly') {
+                    $rangeStart = \Carbon\Carbon::createFromDate((int) $validated['target_year'], 4, 1)->startOfDay();
+                    $rangeEnd = $rangeStart->copy()->addYear()->subDay()->endOfDay();
+                } elseif ($validated['period_type'] === 'monthly') {
+                    $rangeStart = \Carbon\Carbon::createFromDate((int) $validated['target_year'], (int) $validated['target_month'], 1)->startOfDay();
+                    $rangeEnd = $rangeStart->copy()->endOfMonth()->endOfDay();
+                } else {
+                    $rangeStart = \Carbon\Carbon::parse($validated['start_date'])->startOfDay();
+                    $rangeEnd = \Carbon\Carbon::parse($validated['end_date'])->endOfDay();
+                }
+
+                $this->recalculateTargetsInRange(
+                    $validated['targetable_type'],
+                    (int) $id,
+                    $validated['metric_type'],
+                    $rangeStart,
+                    $rangeEnd
+                );
+            }
+        });
 
         return redirect()->route('targets.index')->with('success', 'Targets created successfully.');
     }
@@ -179,7 +219,7 @@ class TargetController extends Controller implements HasMiddleware
             $startDate = \Carbon\Carbon::createFromDate($startYear, 4, 1)->startOfDay();
             $endDate = \Carbon\Carbon::createFromDate($startYear + 1, 3, 31)->endOfDay();
             
-            $target = Target::firstOrNew([
+            $target = $this->firstOrRestoreTarget([
                 'targetable_type' => $baseData['targetable_type'],
                 'targetable_id' => $baseData['targetable_id'],
                 'metric_type' => $baseData['metric_type'],
@@ -194,15 +234,23 @@ class TargetController extends Controller implements HasMiddleware
             }
             $target->save();
 
-            $monthlyAmount = round($data['target_amount'] / 12, 2);
+            $monthPeriods = [];
+            for ($m = 0; $m < 12; $m++) {
+                $monthStart = $startDate->copy()->addMonths($m)->startOfDay();
+                $monthPeriods[] = [
+                    'start' => $monthStart,
+                    'end' => $monthStart->copy()->endOfMonth()->endOfDay(),
+                ];
+            }
+            $monthlyAmounts = $this->allocateAmountByWorkingDays($data['target_amount'], $monthPeriods);
             
             for ($m = 0; $m < 12; $m++) {
-                $monthDate = $startDate->copy()->addMonths($m);
+                $monthDate = $monthPeriods[$m]['start'];
                 $monthData = $data;
                 $monthData['period_type'] = 'monthly';
                 $monthData['target_month'] = $monthDate->month;
                 $monthData['target_year'] = $monthDate->year;
-                $monthData['target_amount'] = $monthlyAmount;
+                $monthData['target_amount'] = $monthlyAmounts[$m];
                 unset($monthData['achieved_amount']); // Don't pass achieved amount to children unless intended
                 $this->createTargetChain($monthData, $id);
             }
@@ -211,7 +259,7 @@ class TargetController extends Controller implements HasMiddleware
             $startDate = \Carbon\Carbon::createFromDate($data['target_year'], $data['target_month'], 1)->startOfDay();
             $endDate = $startDate->copy()->endOfMonth();
 
-            $target = Target::firstOrNew([
+            $target = $this->firstOrRestoreTarget([
                 'targetable_type' => $baseData['targetable_type'],
                 'targetable_id' => $baseData['targetable_id'],
                 'metric_type' => $baseData['metric_type'],
@@ -245,9 +293,9 @@ class TargetController extends Controller implements HasMiddleware
 
             $numDays = count($workingDays);
             if ($numDays > 0) {
-                $dailyAmount = round($data['target_amount'] / $numDays, 2);
-                foreach ($workingDays as $day) {
-                    $dTarget = Target::firstOrNew([
+                $dailyAmounts = $this->distributeAmount($data['target_amount'], $numDays);
+                foreach ($workingDays as $index => $day) {
+                    $dTarget = $this->firstOrRestoreTarget([
                         'targetable_type' => $baseData['targetable_type'],
                         'targetable_id' => $baseData['targetable_id'],
                         'metric_type' => $baseData['metric_type'],
@@ -255,7 +303,7 @@ class TargetController extends Controller implements HasMiddleware
                         'start_date' => $day->copy()->startOfDay(),
                         'end_date' => $day->copy()->endOfDay(),
                     ]);
-                    $dTarget->target_amount = $dailyAmount;
+                    $dTarget->target_amount = $dailyAmounts[$index];
                     $dTarget->status = $baseData['status'];
                     if (!$dTarget->exists || isset($data['achieved_amount'])) {
                         $dTarget->achieved_amount = $baseData['achieved_amount'];
@@ -287,9 +335,9 @@ class TargetController extends Controller implements HasMiddleware
 
                 $numDays = count($workingDays);
                 if ($numDays > 0) {
-                    $dailyAmount = round($data['target_amount'] / $numDays, 2);
-                    foreach ($workingDays as $day) {
-                        $dTarget = Target::firstOrNew([
+                    $dailyAmounts = $this->distributeAmount($data['target_amount'], $numDays);
+                    foreach ($workingDays as $index => $day) {
+                        $dTarget = $this->firstOrRestoreTarget([
                             'targetable_type' => $baseData['targetable_type'],
                             'targetable_id' => $baseData['targetable_id'],
                             'metric_type' => $baseData['metric_type'],
@@ -297,7 +345,7 @@ class TargetController extends Controller implements HasMiddleware
                             'start_date' => $day->copy()->startOfDay(),
                             'end_date' => $day->copy()->endOfDay(),
                         ]);
-                        $dTarget->target_amount = $dailyAmount;
+                        $dTarget->target_amount = $dailyAmounts[$index];
                         $dTarget->status = $baseData['status'];
                         if (!$dTarget->exists || isset($data['achieved_amount'])) {
                             $dTarget->achieved_amount = $baseData['achieved_amount'];
@@ -306,7 +354,7 @@ class TargetController extends Controller implements HasMiddleware
                     }
                 }
             } else {
-                $target = Target::firstOrNew([
+                $target = $this->firstOrRestoreTarget([
                     'targetable_type' => $baseData['targetable_type'],
                     'targetable_id' => $baseData['targetable_id'],
                     'metric_type' => $baseData['metric_type'],
@@ -408,6 +456,15 @@ class TargetController extends Controller implements HasMiddleware
 
     public function export(Request $request): \Symfony\Component\HttpFoundation\BinaryFileResponse
     {
+        $request->validate([
+            'period_type' => 'nullable|in:daily,monthly,yearly',
+            'metric_type' => 'nullable|in:sales_revenue,orders_count,invoice_collection,payment_collection,calls_made',
+            'financial_year' => 'nullable|integer|between:2000,2100',
+            'month' => 'nullable|integer|between:1,12',
+            'search' => 'nullable|array',
+            'search.*' => 'string|max:100',
+        ]);
+
         $periodType = $request->query('period_type');
         $metricType = $request->query('metric_type');
         $financialYear = $request->query('financial_year');
@@ -417,12 +474,23 @@ class TargetController extends Controller implements HasMiddleware
         return Excel::download(new TargetsExport(
             $periodType,
             $metricType,
-            $financialYear ? (int) $financialYear : null
+            $financialYear ? (int) $financialYear : null,
+            $request->filled('month') ? (int) $request->query('month') : null,
+            (array) $request->query('search', [])
         ), $fileName);
     }
 
     public function recalculate(Request $request, TargetAchievementService $service): \Illuminate\Http\RedirectResponse
     {
+        $request->validate([
+            'metric_type' => 'nullable|in:sales_revenue,orders_count,invoice_collection,payment_collection,calls_made',
+            'period_type' => 'required|in:daily,monthly,yearly',
+            'month' => 'nullable|integer|between:1,12',
+            'financial_year' => 'nullable|integer|between:2000,2100',
+            'search' => 'nullable|array',
+            'search.*' => 'string|max:100',
+        ]);
+
         $query = Target::query();
         
         $user = auth()->user();
@@ -431,12 +499,43 @@ class TargetController extends Controller implements HasMiddleware
                   ->where('targetable_id', $user->id);
         }
 
-        // Honour any active filters so the button recalculates only what the user is viewing
+        // Recalculate every target matching the active filters, across all pages.
         if ($request->filled('metric_type')) {
             $query->where('metric_type', $request->metric_type);
         }
-        if ($request->filled('period_type')) {
-            $query->where('period_type', $request->period_type);
+        $periodType = $request->input('period_type', 'daily');
+        $query->where('period_type', $periodType);
+
+        $month = $request->input('month', date('n'));
+        if ($month && $periodType !== 'yearly') {
+            $query->whereMonth('start_date', $month);
+        }
+
+        $financialYear = $request->input('financial_year');
+        if ($financialYear) {
+            $start = \Carbon\Carbon::createFromDate((int) $financialYear, 4, 1)->startOfDay();
+            $end = $start->copy()->addYear()->subDay()->endOfDay();
+            $query->whereBetween('start_date', [$start, $end]);
+        }
+
+        if ($periodType === 'daily') {
+            $query->where('start_date', '<=', \Carbon\Carbon::today()->endOfDay());
+        }
+
+        if ($request->filled('search')) {
+            $searches = (array) $request->input('search');
+            $query->whereHasMorph('targetable', '*', function ($q, $type) use ($searches) {
+                $q->where(function ($q2) use ($type, $searches) {
+                    foreach ($searches as $search) {
+                        if ($type === \App\Modules\Users\Models\User::class) {
+                            $q2->orWhere('name', 'like', "%{$search}%")
+                                ->orWhere('email', 'like', "%{$search}%");
+                        } elseif ($type === \App\Modules\Users\Models\Team::class || $type === \App\Modules\Users\Models\Department::class) {
+                            $q2->orWhere('name', 'like', "%{$search}%");
+                        }
+                    }
+                });
+            });
         }
 
         $count = 0;
@@ -464,65 +563,105 @@ class TargetController extends Controller implements HasMiddleware
 
         $validated = $request->validate([
             'target_amount' => 'required|numeric|min:0',
-            'achieved_amount' => 'nullable|numeric|min:0',
             'status' => 'required|string|in:active,achieved,failed',
         ]);
 
-        // Ensure achieved_amount defaults to 0 if not provided
-        $validated['achieved_amount'] = $validated['achieved_amount'] ?? $target->achieved_amount;
+        DB::transaction(function () use ($validated, $target) {
+            $oldAmount = (float) $target->target_amount;
+            $target->target_amount = $validated['target_amount'];
+            $target->save();
 
-        $oldAmount = $target->target_amount;
-        $target->update($validated);
-
-        if ($target->period_type === 'yearly' && $oldAmount != $validated['target_amount']) {
-            $months = Target::where('targetable_type', $target->targetable_type)
-                ->where('targetable_id', $target->targetable_id)
-                ->where('metric_type', $target->metric_type)
-                ->where('period_type', 'monthly')
-                ->whereBetween('start_date', [$target->start_date, $target->end_date])
-                ->get();
-
-            if ($months->count() > 0) {
-                $newAmountPerMonth = round($target->target_amount / $months->count(), 2);
-                foreach ($months as $month) {
-                    $month->update(['target_amount' => $newAmountPerMonth]);
-                    $this->syncDailyTargets($month);
-                }
-            }
-        } elseif ($target->period_type === 'monthly' && $oldAmount != $validated['target_amount']) {
-            $startYear = $target->start_date->month < 4 ? $target->start_date->year - 1 : $target->start_date->year;
-            
-            $yearlyTarget = Target::where('targetable_type', $target->targetable_type)
-                ->where('targetable_id', $target->targetable_id)
-                ->where('metric_type', $target->metric_type)
-                ->where('period_type', 'yearly')
-                ->whereYear('start_date', $startYear)
-                ->whereMonth('start_date', 4)
-                ->first();
-
-            if ($yearlyTarget) {
-                $otherMonths = Target::where('targetable_type', $target->targetable_type)
+            if ($target->period_type === 'yearly' && $oldAmount !== (float) $validated['target_amount']) {
+                $months = Target::where('targetable_type', $target->targetable_type)
                     ->where('targetable_id', $target->targetable_id)
                     ->where('metric_type', $target->metric_type)
                     ->where('period_type', 'monthly')
-                    ->where('id', '!=', $target->id)
-                    ->whereBetween('start_date', [$yearlyTarget->start_date, $yearlyTarget->end_date])
+                    ->whereBetween('start_date', [$target->start_date, $target->end_date])
+                    ->orderBy('start_date')
                     ->get();
 
-                if ($otherMonths->count() > 0) {
-                    $remainingYearlyAmount = $yearlyTarget->target_amount - $target->target_amount;
-                    if ($remainingYearlyAmount < 0) $remainingYearlyAmount = 0;
-                    
-                    $newAmountPerMonth = round($remainingYearlyAmount / $otherMonths->count(), 2);
-                    foreach ($otherMonths as $other) {
-                        $other->update(['target_amount' => $newAmountPerMonth]);
-                        $this->syncDailyTargets($other);
+                $amounts = $this->allocateAmountByWorkingDays($target->target_amount, $months->all());
+                foreach ($months as $index => $month) {
+                    $month->update(['target_amount' => $amounts[$index]]);
+                    $this->syncDailyTargets($month);
+                }
+            } elseif ($target->period_type === 'monthly' && $oldAmount !== (float) $validated['target_amount']) {
+                $startYear = $target->start_date->month < 4 ? $target->start_date->year - 1 : $target->start_date->year;
+            
+                $yearlyTarget = Target::where('targetable_type', $target->targetable_type)
+                    ->where('targetable_id', $target->targetable_id)
+                    ->where('metric_type', $target->metric_type)
+                    ->where('period_type', 'yearly')
+                    ->whereYear('start_date', $startYear)
+                    ->whereMonth('start_date', 4)
+                    ->first();
+
+                if ($yearlyTarget) {
+                    $monthlyTargetCents = (int) round((float) $target->target_amount * 100);
+                    $yearlyTargetCents = (int) round((float) $yearlyTarget->target_amount * 100);
+                    if ($monthlyTargetCents > $yearlyTargetCents) {
+                        throw \Illuminate\Validation\ValidationException::withMessages([
+                            'target_amount' => 'The monthly target cannot exceed its annual target. Increase the annual target first.',
+                        ]);
+                    }
+
+                    $otherMonths = Target::where('targetable_type', $target->targetable_type)
+                        ->where('targetable_id', $target->targetable_id)
+                        ->where('metric_type', $target->metric_type)
+                        ->where('period_type', 'monthly')
+                        ->where('id', '!=', $target->id)
+                        ->whereBetween('start_date', [$yearlyTarget->start_date, $yearlyTarget->end_date])
+                        ->orderBy('start_date')
+                        ->get();
+
+                    if ($otherMonths->count() > 0) {
+                        $remainingYearlyAmount = max(0, (float) $yearlyTarget->target_amount - (float) $target->target_amount);
+                        $amounts = $this->allocateAmountByWorkingDays($remainingYearlyAmount, $otherMonths->all());
+                        foreach ($otherMonths as $index => $other) {
+                            $other->update(['target_amount' => $amounts[$index]]);
+                            $this->syncDailyTargets($other);
+                        }
+                    } elseif ($monthlyTargetCents !== $yearlyTargetCents) {
+                        throw \Illuminate\Validation\ValidationException::withMessages([
+                            'target_amount' => 'This fiscal year has no other monthly target allocations to rebalance.',
+                        ]);
                     }
                 }
+
+                $this->syncDailyTargets($target);
             }
 
-            $this->syncDailyTargets($target);
-        }
+            app(TargetAchievementService::class)->recalculate($target);
+            if (isset($months)) {
+                foreach ($months as $month) {
+                    app(TargetAchievementService::class)->recalculate($month);
+                    Target::where('targetable_type', $month->targetable_type)
+                        ->where('targetable_id', $month->targetable_id)
+                        ->where('metric_type', $month->metric_type)
+                        ->where('period_type', 'daily')
+                        ->whereBetween('start_date', [$month->start_date, $month->end_date])
+                        ->each(fn (Target $day) => app(TargetAchievementService::class)->recalculate($day));
+                }
+            } elseif (isset($otherMonths)) {
+                foreach ($otherMonths as $month) {
+                    app(TargetAchievementService::class)->recalculate($month);
+                    Target::where('targetable_type', $month->targetable_type)
+                        ->where('targetable_id', $month->targetable_id)
+                        ->where('metric_type', $month->metric_type)
+                        ->where('period_type', 'daily')
+                        ->whereBetween('start_date', [$month->start_date, $month->end_date])
+                        ->each(fn (Target $day) => app(TargetAchievementService::class)->recalculate($day));
+                }
+            }
+            if ($target->period_type === 'monthly') {
+                Target::where('targetable_type', $target->targetable_type)
+                    ->where('targetable_id', $target->targetable_id)
+                    ->where('metric_type', $target->metric_type)
+                    ->where('period_type', 'daily')
+                    ->whereBetween('start_date', [$target->start_date, $target->end_date])
+                    ->each(fn (Target $day) => app(TargetAchievementService::class)->recalculate($day));
+            }
+        });
 
         return redirect()->route('targets.index')->with('success', 'Target updated successfully.');
     }
@@ -537,11 +676,131 @@ class TargetController extends Controller implements HasMiddleware
             ->get();
 
         if ($dailyTargets->count() > 0) {
-            $newDailyAmount = round($monthTarget->target_amount / $dailyTargets->count(), 2);
-            foreach ($dailyTargets as $daily) {
-                $daily->update(['target_amount' => $newDailyAmount]);
+            $amounts = $this->distributeAmount($monthTarget->target_amount, $dailyTargets->count());
+            foreach ($dailyTargets as $index => $daily) {
+                $daily->update(['target_amount' => $amounts[$index]]);
             }
         }
+    }
+
+    /** Split a currency amount into cent-accurate parts whose sum equals the source amount. */
+    private function distributeAmount(float|int|string $amount, int $parts): array
+    {
+        if ($parts <= 0) {
+            return [];
+        }
+
+        $totalCents = (int) round((float) $amount * 100);
+        $baseCents = intdiv($totalCents, $parts);
+        $remainderCents = $totalCents % $parts;
+
+        return array_map(
+            fn (int $index) => ($baseCents + ($index < $remainderCents ? 1 : 0)) / 100,
+            range(0, $parts - 1)
+        );
+    }
+
+    /** Allocate a total across periods in proportion to their working days, preserving every cent. */
+    private function allocateAmountByWorkingDays(float|int|string $amount, array $periods): array
+    {
+        if ($periods === []) {
+            return [];
+        }
+
+        $dayCounts = array_map(function ($period): int {
+            $start = $period instanceof Target
+                ? $period->start_date->copy()->startOfDay()
+                : $period['start']->copy()->startOfDay();
+            $end = $period instanceof Target
+                ? $period->end_date->copy()->startOfDay()
+                : $period['end']->copy()->startOfDay();
+
+            return $this->workingDaysBetween($start, $end);
+        }, $periods);
+        $dailyAmounts = $this->distributeAmount($amount, array_sum($dayCounts));
+        $allocations = [];
+        $offset = 0;
+
+        foreach ($dayCounts as $dayCount) {
+            $periodCents = 0;
+            foreach (array_slice($dailyAmounts, $offset, $dayCount) as $dailyAmount) {
+                $periodCents += (int) round($dailyAmount * 100);
+            }
+            $allocations[] = $periodCents / 100;
+            $offset += $dayCount;
+        }
+
+        return $allocations;
+    }
+
+    private function firstOrRestoreTarget(array $identity): Target
+    {
+        $target = Target::withTrashed()->firstOrNew($identity);
+        if ($target->exists && $target->trashed()) {
+            $target->restore();
+        }
+
+        return $target;
+    }
+
+    private function addPaceMetrics(\Illuminate\Support\Collection $targets): void
+    {
+        $today = \Carbon\Carbon::today();
+
+        foreach ($targets as $target) {
+            $start = $target->start_date->copy()->startOfDay();
+            $end = $target->end_date->copy()->startOfDay();
+            $remainingStart = $today->greaterThan($start) ? $today->copy() : $start->copy();
+            $remainingDays = $today->greaterThan($end) ? 0 : $this->workingDaysBetween($remainingStart, $end);
+            $elapsedEnd = $today->lessThan($end) ? $today->copy() : $end->copy();
+            $elapsedDays = $today->lessThan($start) ? 0 : $this->workingDaysBetween($start, $elapsedEnd);
+            $futureStart = $today->copy()->addDay();
+            $futureDays = $futureStart->greaterThan($end)
+                ? 0
+                : $this->workingDaysBetween($futureStart->greaterThan($start) ? $futureStart : $start, $end);
+            $gap = max(0, (float) $target->target_amount - (float) $target->achieved_amount);
+
+            $target->setAttribute('remaining_workdays', $remainingDays);
+            $target->setAttribute('required_per_workday', $remainingDays > 0 ? round($gap / $remainingDays, 2) : null);
+            $target->setAttribute('actual_per_workday', $elapsedDays > 0 ? round((float) $target->achieved_amount / $elapsedDays, 2) : null);
+            $target->setAttribute('projected_amount', $elapsedDays > 0
+                ? round(((float) $target->achieved_amount / $elapsedDays) * max(1, $elapsedDays + $futureDays), 2)
+                : null);
+            $target->setAttribute('projected_percentage', $elapsedDays > 0 && (float) $target->target_amount > 0
+                ? round(((float) $target->projected_amount / (float) $target->target_amount) * 100, 1)
+                : null);
+        }
+    }
+
+    private function workingDaysBetween(\Carbon\Carbon $start, \Carbon\Carbon $end): int
+    {
+        if ($end->lessThan($start)) {
+            return 0;
+        }
+
+        $count = 0;
+        $day = $start->copy();
+        while ($day->lessThanOrEqualTo($end)) {
+            if ($day->isWeekday()) {
+                $count++;
+            }
+            $day->addDay();
+        }
+
+        // Match target generation's fallback for periods containing only weekends.
+        return $count ?: $start->diffInDays($end) + 1;
+    }
+
+    private function recalculateTargetsInRange(string $targetableType, int $targetableId, string $metricType, $start, $end): void
+    {
+        $service = app(TargetAchievementService::class);
+
+        Target::where('targetable_type', $targetableType)
+            ->where('targetable_id', $targetableId)
+            ->where('metric_type', $metricType)
+            ->whereBetween('start_date', [$start, $end])
+            ->orderBy('start_date')
+            ->each(fn (Target $target) => $service->recalculate($target));
     }
 
     public function destroy(Target $target)

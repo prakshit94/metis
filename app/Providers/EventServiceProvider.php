@@ -40,5 +40,7 @@ class EventServiceProvider extends ServiceProvider
         \App\Modules\Orders\Models\Order::observe(\App\Modules\Orders\Observers\OrderObserver::class);
         \App\Modules\Orders\Models\Payment::observe(\App\Modules\Orders\Observers\PaymentObserver::class);
         \App\Modules\Orders\Models\Invoice::observe(\App\Modules\Orders\Observers\InvoiceObserver::class);
+        \App\Models\CallLog::observe(\App\Modules\Orders\Observers\CallLogObserver::class);
+        \App\Modules\Orders\Models\OrderReturn::observe(\App\Modules\Orders\Observers\OrderReturnObserver::class);
     }
 }

@@ -3,7 +3,9 @@
 namespace App\Modules\Orders\Observers;
 
 use App\Modules\Orders\Models\Order;
+use App\Modules\Users\Models\User;
 use App\Services\TargetAchievementService;
+use Carbon\Carbon;
 
 class OrderObserver
 {
@@ -11,6 +13,9 @@ class OrderObserver
 
     public function saved(Order $order): void
     {
+        if (!$order->wasRecentlyCreated && $order->wasChanged(['created_by', 'order_date'])) {
+            $this->recalculatePreviousScope($order);
+        }
         $this->updateTargets($order);
     }
 
@@ -49,6 +54,24 @@ class OrderObserver
             teamId:       $teamId,
             date:         \Carbon\Carbon::parse($orderDate),
             metricTypes:  ['sales_revenue', 'orders_count'],
+        );
+    }
+
+    private function recalculatePreviousScope(Order $order): void
+    {
+        $user = User::withTrashed()->find($order->getRawOriginal('created_by'));
+        $date = $order->getRawOriginal('order_date') ?: $order->getRawOriginal('created_at');
+
+        if (!$user || !$date) {
+            return;
+        }
+
+        $this->service->recalculateForUser(
+            userId: $user->id,
+            departmentId: $user->department_id,
+            teamId: $this->service->resolveLobTeamId($user),
+            date: Carbon::parse($date),
+            metricTypes: ['sales_revenue', 'orders_count'],
         );
     }
 }

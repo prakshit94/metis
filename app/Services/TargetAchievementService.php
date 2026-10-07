@@ -92,7 +92,7 @@ class TargetAchievementService
         return (float) $count;
     }
 
-    /** Sum of invoice net_amount (regardless of payment status) within the date range. */
+    /** Sum of issued invoice value; unpaid invoices count, cancelled invoices do not. */
     private function calcInvoiceCollection(Target $target): float
     {
         $userIds = $this->resolveUserIds($target);
@@ -100,7 +100,8 @@ class TargetAchievementService
             return 0.0;
         }
 
-        return (float) Invoice::whereHas('order', fn ($q) => $q->whereIn('created_by', $userIds))
+        return (float) Invoice::where('status', '!=', 'cancelled')
+            ->whereHas('order', fn ($q) => $q->whereIn('created_by', $userIds))
             ->whereBetween('invoice_date', [
                 $target->start_date->copy()->startOfDay(),
                 $target->end_date->copy()->endOfDay(),
@@ -136,6 +137,7 @@ class TargetAchievementService
         }
 
         return (float) \App\Models\CallLog::whereIn('agent_id', $userIds)
+            ->where('direction', 'outbound')
             ->whereBetween('created_at', [
                 $target->start_date->copy()->startOfDay(),
                 $target->end_date->copy()->endOfDay(),
