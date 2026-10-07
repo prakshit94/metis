@@ -468,7 +468,7 @@
                                         </thead>
                                         <tbody>
                                             <template x-for="user in paginatedUsers" :key="user.id">
-                                                <tr :class="{ 'table-active': selectedUsers.includes(String(user.id)), 'user-row-active': user.status === 'active' }">
+                                                <tr :class="{ 'table-active': selectedUsers.includes(String(user.id)), 'user-row-active': user.status === 'active' && !user.is_suspended }">
                                                     <td class="ps-3">
                                                         <input type="checkbox"
                                                                class="user-select-checkbox"
@@ -525,13 +525,20 @@
                                                         </div>
                                                     </td>
                                                     <td>
-                                                        <span class="badge px-3 py-2" 
-                                                              :class="{
-                                                                  'bg-danger-subtle text-danger-emphasis': user.status === 'deleted',
-                                                                  'bg-success-subtle text-success-emphasis': user.status === 'active',
-                                                                  'bg-secondary-subtle text-secondary-emphasis': user.status === 'inactive',
-                                                              }"
-                                                              x-text="user.status"></span>
+                                                        <div class="d-flex flex-column align-items-start gap-1">
+                                                            <span class="badge px-3 py-2"
+                                                                  :class="{
+                                                                      'bg-danger-subtle text-danger-emphasis': user.status === 'deleted',
+                                                                      'bg-success-subtle text-success-emphasis': user.status === 'active' && !user.is_suspended,
+                                                                      'bg-secondary-subtle text-secondary-emphasis': user.status === 'inactive' && !user.is_suspended,
+                                                                      'bg-warning-subtle text-warning-emphasis': user.is_suspended && user.status !== 'deleted',
+                                                                  }"
+                                                                  x-text="user.status === 'deleted' ? 'deleted' : (user.is_suspended ? 'suspended' : user.status)"></span>
+                                                            <small class="text-warning-emphasis" x-show="user.is_suspended">
+                                                                <i class="bi bi-clock me-1"></i>Suspended until
+                                                                <span x-text="user.suspendedUntilDateTime"></span>
+                                                            </small>
+                                                        </div>
                                                     </td>
                                                     <td>
                                                         <div class="d-flex flex-column gap-1">
@@ -549,6 +556,16 @@
                                                     </td>
                                                     <td>
                                                         <div class="dropdown">
+                                                            @canany(['user-activate', 'user-edit'])
+                                                            <button class="btn btn-sm btn-outline-success me-1"
+                                                                    type="button"
+                                                                    title="Lift temporary login suspension"
+                                                                    aria-label="Lift temporary login suspension"
+                                                                    @click="liftSuspension(user)"
+                                                                    x-show="!user.isDeleted && user.is_suspended">
+                                                                <i class="bi bi-unlock me-1"></i>Clear
+                                                            </button>
+                                                            @endcanany
                                                             <button class="btn btn-sm btn-outline-secondary dropdown-toggle"
                                                                     type="button"
                                                                     data-bs-toggle="dropdown"
@@ -581,6 +598,13 @@
                                                                     </a>
                                                                 </li>
                                                                 @endcan
+                                                                @canany(['user-activate', 'user-edit'])
+                                                                <li x-show="!user.isDeleted && user.is_suspended">
+                                                                    <a class="dropdown-item text-success" href="#" @click.prevent="liftSuspension(user)">
+                                                                        <i class="bi bi-unlock me-2"></i>Lift Suspension
+                                                                    </a>
+                                                                </li>
+                                                                @endcanany
                                                                 <li><hr class="dropdown-divider"></li>
                                                                 @can('user-delete')
                                                                 <li>
@@ -1382,5 +1406,3 @@
 </style>
 
 @endsection
-
-

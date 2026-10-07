@@ -14,6 +14,8 @@ use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
 
 /**
  * Full CRUD for Users, including role/permission syncing, account activation
@@ -176,6 +178,7 @@ class UserController extends Controller implements HasMiddleware
             $latestLogin = $latestLoginHistories[$user->id] ?? null;
             $user->last_login_at = $latestLogin ? $latestLogin->attempted_at : null;
             $user->device_type = $latestLogin ? ucfirst($latestLogin->device_type) : 'Web';
+            $user->setAttribute('is_suspended', $user->isSuspended());
 
             // Expose allRoles under the standard 'roles' key for frontend compatibility
             $user->setRelation('roles', $user->allRoles);
@@ -582,6 +585,44 @@ class UserController extends Controller implements HasMiddleware
             'is_active' => $newState,
             'user_id'   => $user->id,
             'status'    => $status,
+        ]);
+    }
+
+    /** Lift a temporary login suspension without changing the active account flag. */
+    public function unsuspend(Request $request, User $user): JsonResponse
+    {
+        abort_unless(
+            $request->user()?->can('user-activate') || $request->user()?->can('user-edit'),
+            403
+        );
+
+        if ($this->hasSuperAdminRole($user) && ! $request->user()?->hasRole('Super Admin')) {
+            return response()->json(['message' => 'You cannot modify a Super Admin user.'], 403);
+        }
+
+        if ($user->suspended_until === null) {
+            return response()->json([
+                'message' => 'This user has no suspension timer to clear.',
+                'is_suspended' => false,
+                'suspended_until' => null,
+                'is_active' => $user->is_active,
+            ]);
+        }
+
+        $user->unsuspend();
+        // Reset this account's failed-login threshold so the next valid login
+        // does not immediately recreate the same suspension. Keep the shared
+        // IP limiter intact so this action cannot remove protection for others.
+        RateLimiter::clear('login_email:'.Str::lower($user->email));
+
+        $displayName = trim(implode(' ', array_filter([$user->first_name, $user->last_name]))) ?: $user->name;
+
+        return response()->json([
+            'message' => "The suspension for user \"{$displayName}\" ({$user->email}) has been lifted.",
+            'is_suspended' => false,
+            'suspended_until' => null,
+            'is_active' => $user->is_active,
+            'user_id' => $user->id,
         ]);
     }
 

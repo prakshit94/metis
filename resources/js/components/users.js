@@ -540,6 +540,9 @@ document.addEventListener('alpine:init', () => {
         roles: u.roles ?? [],
         status: u.deleted_at ? 'deleted' : u.is_active ? 'active' : 'inactive',
         is_active: u.is_active,
+        is_suspended: Boolean(u.is_suspended),
+        suspended_until: u.suspended_until ?? null,
+        suspendedUntilDateTime: u.suspended_until ? formatDateTime(u.suspended_until) : '',
         isDeleted: Boolean(u.deleted_at),
         deleted_at: u.deleted_at ?? null,
         lastActive: formatDate(u.updated_at),
@@ -795,6 +798,28 @@ document.addEventListener('alpine:init', () => {
         const res = await apiFetch(`/api/users/${user.id}/toggle-active`, { method: 'PATCH' });
         const toastType = res.is_active ? 'success' : 'warning';
         showToast(res.message, toastType);
+        await this.loadUsers();
+
+        const profileEl = document.querySelector('[x-data="userProfile"]');
+        const profile = profileEl ? Alpine.$data(profileEl) : null;
+        if (profile?.user?.id === user.id) {
+          const refreshed = this.users.find((u) => u.id === user.id);
+          if (refreshed) profile.user = refreshed;
+        }
+      } catch (err) {
+        showToast(err.message, 'danger');
+      }
+    },
+
+    async liftSuspension(user) {
+      if (user.isDeleted) {
+        showToast('Restore this user before changing account status.', 'warning');
+        return;
+      }
+
+      try {
+        const res = await apiFetch(`/api/users/${user.id}/unsuspend`, { method: 'PATCH' });
+        showToast(res.message || 'Suspension lifted.', 'success');
         await this.loadUsers();
 
         const profileEl = document.querySelector('[x-data="userProfile"]');

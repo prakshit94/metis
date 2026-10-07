@@ -64,31 +64,23 @@ class AuthController extends Controller
         $ipKey = 'login_ip:'.$ip;
 
         // ── 1. Check rate limit BEFORE attempting auth ──────────────────────
-        $tooManyAttempts = RateLimiter::tooManyAttempts($emailKey, self::MAX_ATTEMPTS) ||
-                           RateLimiter::tooManyAttempts($ipKey, self::MAX_ATTEMPTS);
-
-        if ($tooManyAttempts) {
-            // Suspend any matching active user account
+        $emailTooManyAttempts = RateLimiter::tooManyAttempts($emailKey, self::MAX_ATTEMPTS);
+        $ipTooManyAttempts = RateLimiter::tooManyAttempts($ipKey, self::MAX_ATTEMPTS);
+        // An account-specific threshold blocks this account before checking
+        // credentials. An IP threshold is enforced against failed guesses
+        // below, so a valid user behind a shared IP can still sign in.
+        if ($emailTooManyAttempts) {
+            // Only an account-specific threshold should suspend an account.
+            // An IP-only threshold may be shared by multiple people and must
+            // not lock whichever account name happens to be submitted next.
             $target = User::where('email', $email)->first();
-            if ($target !== null) {
+            if ($emailTooManyAttempts && $target !== null && ! $target->isSuspended()) {
                 $target->suspend(self::SUSPENSION_MIN);
             }
 
-            // Log the throttled attempt directly (no Auth::attempt needed)
-            LoginHistory::create([
-                'user_id' => $target?->id,
-                'email_attempted' => $email,
-                'ip_address' => $ip,
-                'user_agent' => $request->userAgent(),
-                'device_type' => $this->deviceType($request),
-                'status' => 'failed',
-                'failure_reason' => 'throttled',
-                'attempted_at' => Carbon::now(),
-            ]);
+            $this->recordThrottledAttempt($request, $email, $ip, $target);
 
-            return $this->isMobileRequest($request)
-                ? response()->json(['message' => 'Too many login attempts. Please try again later.'], 429)
-                : back()->withErrors(['email' => 'Too many login attempts. Please try again later.'])->withInput();
+            return $this->throttledFailure($request, $emailKey, $ipKey, $target);
         }
 
         // ── 2. Attempt authentication ────────────────────────────────────────
@@ -118,13 +110,19 @@ class AuthController extends Controller
         }
 
         if ($user === null || ! $isValid) {
+            if ($ipTooManyAttempts) {
+                $this->recordThrottledAttempt($request, $email, $ip, $user);
+
+                return $this->throttledFailure($request, $emailKey, $ipKey);
+            }
+
             RateLimiter::hit($emailKey, self::LOCKOUT_WINDOW_MIN * 60);
             RateLimiter::hit($ipKey, self::LOCKOUT_WINDOW_MIN * 60);
 
             // Fire the native Failed event so our listener captures it
             Event::dispatch(new Failed('web', $user, ['email' => $email]));
 
-            return $this->genericFailure($request);
+            return $this->credentialFailureWithAttempts($request, $emailKey, $ipKey);
         }
 
         // ── 3. Guard: suspended or inactive accounts ─────────────────────────
@@ -134,7 +132,12 @@ class AuthController extends Controller
 
             Event::dispatch(new Failed('web', $user, ['email' => $email]));
 
-            return $this->genericFailure($request);
+            $until = $user->suspended_until
+                ->timezone(config('app.timezone'))
+                ->format('M j, Y g:i A');
+            $message = "This account is temporarily locked until {$until}. ".$this->loginAttemptDetails($emailKey, $ipKey);
+
+            return $this->suspensionFailure($request, $message);
         }
 
         if (! $user->isActive()) {
@@ -156,6 +159,78 @@ class AuthController extends Controller
         }
 
         return $this->issueWebSession($request, $user);
+    }
+
+    private function recordThrottledAttempt(Request $request, string $email, string $ip, ?User $user): void
+    {
+        LoginHistory::create([
+            'user_id' => $user?->id,
+            'email_attempted' => $email,
+            'ip_address' => $ip,
+            'user_agent' => $request->userAgent(),
+            'device_type' => $this->deviceType($request),
+            'status' => 'failed',
+            'failure_reason' => 'throttled',
+            'attempted_at' => Carbon::now(),
+        ]);
+    }
+
+    private function throttledFailure(
+        Request $request,
+        string $emailKey,
+        string $ipKey,
+        ?User $user = null
+    ): JsonResponse|RedirectResponse
+    {
+        $message = 'Sign in is temporarily blocked because a login attempt limit was reached. '
+            .$this->loginAttemptDetails($emailKey, $ipKey);
+
+        if ($user?->isSuspended()) {
+            $until = $user->suspended_until
+                ->timezone(config('app.timezone'))
+                ->format('M j, Y g:i A');
+            $message .= " Account unlock time: {$until}.";
+        }
+
+        return $this->isMobileRequest($request)
+            ? response()->json(['message' => $message], 429)
+            : back()->with('error', $message)->withInput();
+    }
+
+    private function credentialFailureWithAttempts(
+        Request $request,
+        string $emailKey,
+        string $ipKey
+    ): JsonResponse|RedirectResponse {
+        $message = self::GENERIC_ERROR.' '.$this->loginAttemptDetails($emailKey, $ipKey);
+
+        return $this->isMobileRequest($request)
+            ? response()->json(['message' => $message], 401)
+            : back()->with('error', $message)->withInput();
+    }
+
+    private function loginAttemptDetails(string $emailKey, string $ipKey): string
+    {
+        $details = [];
+
+        foreach ([
+            'email' => $emailKey,
+            'network' => $ipKey,
+        ] as $label => $key) {
+            $attempts = RateLimiter::attempts($key);
+            $remaining = max(0, self::MAX_ATTEMPTS - $attempts);
+            $details[] = ucfirst($label)." attempts remaining: {$remaining}/".self::MAX_ATTEMPTS;
+
+            if ($attempts > 0) {
+                $resetAt = now()
+                    ->addSeconds(max(1, RateLimiter::availableIn($key)))
+                    ->timezone(config('app.timezone'))
+                    ->format('M j, Y g:i:s A');
+                $details[] = ucfirst($label)." counter resets at {$resetAt}";
+            }
+        }
+
+        return implode('. ', $details).'.';
     }
 
     // ─── Logout ───────────────────────────────────────────────────────────────
@@ -330,6 +405,16 @@ class AuthController extends Controller
         throw ValidationException::withMessages([
             'email' => [self::GENERIC_ERROR],
         ]);
+    }
+
+    /** Return a clear lockout notice after the submitted password was verified. */
+    private function suspensionFailure(Request $request, string $message): JsonResponse|RedirectResponse
+    {
+        if ($this->isMobileRequest($request)) {
+            return response()->json(['message' => $message], 423);
+        }
+
+        return back()->with('error', $message)->withInput();
     }
 
     /**
