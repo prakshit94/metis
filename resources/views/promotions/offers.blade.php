@@ -498,7 +498,7 @@
                                                         </div>
                                                     </div>
                                                     <hr class="dropdown-divider my-0 border-secondary border-opacity-25">
-                                                    <template x-for="c in allCategories.filter(c => c.name.toLowerCase().includes(categorySearch.toLowerCase()))" :key="c.id">
+                                                    <template x-for="c in allCategories.filter(c => String(c.name || '').toLowerCase().includes(categorySearch.toLowerCase()))" :key="c.id">
                                                         <div class="px-4 py-3 cursor-pointer custom-hover-bg d-flex align-items-center transition-all" @click.stop="form.applicable_categories.includes(c.id) ? form.applicable_categories = form.applicable_categories.filter(id => id != c.id) : form.applicable_categories.push(c.id)">
                                                             <div class="form-check m-0 d-flex align-items-center w-100">
                                                                 <input type="checkbox" :checked="form.applicable_categories.includes(c.id)" class="form-check-input border-secondary border-opacity-50 bg-body-tertiary me-3" style="cursor: pointer; transform: scale(1.2);">
@@ -508,6 +508,7 @@
                                                             </div>
                                                         </div>
                                                     </template>
+                                                    <div x-show="!allCategories.some(c => String(c.name || '').toLowerCase().includes(categorySearch.toLowerCase()))" class="px-4 py-3 text-muted small">No matching categories.</div>
                                                 </div>
                                             </div>
                                             <small class="text-muted d-block mt-2" style="font-size: 11px;">Select categories that trigger the offer.</small>
@@ -548,7 +549,7 @@
                                                         </div>
                                                     </div>
                                                     <hr class="dropdown-divider my-0 border-secondary border-opacity-25">
-                                                    <template x-for="p in allProducts.filter(p => p.name.toLowerCase().includes(productSearch.toLowerCase()) || (p.sku && p.sku.toLowerCase().includes(productSearch.toLowerCase())))" :key="p.id">
+                                                    <template x-for="p in allProducts.filter(p => String(p.name || '').toLowerCase().includes(productSearch.toLowerCase()) || String(p.sku || '').toLowerCase().includes(productSearch.toLowerCase()))" :key="p.id">
                                                         <div class="px-4 py-3 cursor-pointer custom-hover-bg d-flex align-items-center transition-all" @click.stop="form.product_ids.includes(p.id) ? form.product_ids = form.product_ids.filter(id => id != p.id) : form.product_ids.push(p.id)">
                                                             <div class="form-check m-0 d-flex align-items-center w-100">
                                                                 <input type="checkbox" :checked="form.product_ids.includes(p.id)" class="form-check-input border-secondary border-opacity-50 bg-body-tertiary me-3" style="cursor: pointer; transform: scale(1.2);">
@@ -559,18 +560,38 @@
                                                             </div>
                                                         </div>
                                                     </template>
+                                                    <div x-show="!allProducts.some(p => String(p.name || '').toLowerCase().includes(productSearch.toLowerCase()) || String(p.sku || '').toLowerCase().includes(productSearch.toLowerCase()))" class="px-4 py-3 text-muted small">No matching products.</div>
                                                 </div>
                                             </div>
                                             <small class="text-muted d-block mt-2" style="font-size: 11px;">Select specific products, or leave empty for a global offer.</small>
                                             
-                                            <div class="col-12 mt-4" x-show="form.type === 'free_product'" style="display: none;">
+                                            <div class="col-12 mt-4" x-show="form.type === 'free_product'" style="display: none;" @click.away="showGiftProductDropdown = false">
                                                 <label class="form-label mb-2 fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.1em;">Gift Product (Free Item) *</label>
-                                                <select class="form-select form-select-lg fw-semibold rounded-3 bg-body border-secondary border-opacity-25 shadow-none px-3" x-model="form.product_id" style="font-size: 14px;">
-                                                    <option value="">Select Free Product...</option>
-                                                    <template x-for="p in allProducts" :key="p.id">
-                                                        <option :value="p.id" x-text="p.name + ' (' + p.sku + ')'"></option>
-                                                    </template>
-                                                </select>
+                                                <div class="position-relative">
+                                                    <div class="form-control form-control-lg d-flex flex-wrap align-items-center gap-2 bg-body border border-secondary border-opacity-25 shadow-none rounded-3 px-3 py-2" style="min-height: 48px; cursor: text;" @click="showGiftProductDropdown = true; $refs.giftProductSearch.focus()">
+                                                        <template x-if="form.product_id">
+                                                            <div class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 d-flex align-items-center gap-2 rounded-pill px-3 py-2">
+                                                                <span x-text="(allProducts.find(p => String(p.id) === String(form.product_id)) || {}).name || 'Selected product'" style="font-size: 12px; font-weight: 600;"></span>
+                                                                <button type="button" class="btn btn-link p-0 text-primary" @click.stop="form.product_id = ''; giftProductSearch = ''; showGiftProductDropdown = true; $nextTick(() => $refs.giftProductSearch.focus())" aria-label="Remove gift product"><i class="bi bi-x-circle-fill" style="font-size: 14px;"></i></button>
+                                                            </div>
+                                                        </template>
+                                                        <div class="flex-grow-1" style="min-width: 150px;">
+                                                            <input x-ref="giftProductSearch" type="text" x-model="giftProductSearch" @focus="showGiftProductDropdown = true" @keydown.escape="showGiftProductDropdown = false" placeholder="Search product name or SKU..." class="border-0 w-100 outline-none bg-transparent fw-semibold text-body" style="font-size: 14px; outline: none !important; box-shadow: none;">
+                                                        </div>
+                                                    </div>
+                                                    <div x-show="showGiftProductDropdown" x-transition.opacity class="position-absolute w-100 bg-body border border-secondary border-opacity-25 rounded-4 shadow-sm mt-2 overflow-auto" style="max-height: 350px; z-index: 1060; top: 100%; left: 0; display: none;">
+                                                        <template x-for="p in allProducts.filter(p => String(p.name || '').toLowerCase().includes(giftProductSearch.toLowerCase()) || String(p.sku || '').toLowerCase().includes(giftProductSearch.toLowerCase()))" :key="p.id">
+                                                            <button type="button" class="dropdown-item px-4 py-3 d-flex align-items-center transition-all" :class="String(form.product_id) === String(p.id) ? 'bg-primary bg-opacity-10' : ''" @click="form.product_id = String(p.id); giftProductSearch = ''; showGiftProductDropdown = false">
+                                                                <span class="me-3 text-primary"><i class="bi" :class="String(form.product_id) === String(p.id) ? 'bi-check-circle-fill' : 'bi-circle'"></i></span>
+                                                                <span class="text-start">
+                                                                    <span class="d-block fw-semibold" x-text="p.name || 'Unnamed product'"></span>
+                                                                    <small class="text-muted" x-text="'SKU: ' + (p.sku || 'N/A')"></small>
+                                                                </span>
+                                                            </button>
+                                                        </template>
+                                                        <div x-show="!allProducts.some(p => String(p.name || '').toLowerCase().includes(giftProductSearch.toLowerCase()) || String(p.sku || '').toLowerCase().includes(giftProductSearch.toLowerCase()))" class="px-4 py-3 text-muted small">No matching products.</div>
+                                                    </div>
+                                                </div>
                                                 <small class="text-muted d-block mt-2" style="font-size: 11px;">The specific product given away for free.</small>
                                             </div>
                                         </div>
@@ -674,6 +695,7 @@ function offersModule() {
         allCategories: INITIAL_CATEGORIES || [],
         showProductsDropdown: false, productSearch: '',
         showCategoriesDropdown: false, categorySearch: '',
+        showGiftProductDropdown: false, giftProductSearch: '',
         offers: [], loading: false, saving: false,
         search: '', filterType: '', filterStatus: '', page: 1, lastPage: 1,
         total: 0, from: 0, to: 0, _fetchRequestId: 0,
@@ -724,6 +746,15 @@ function offersModule() {
         },
 
         get allSelected() { return this.offers.length > 0 && this.selected.length === this.offers.length; },
+
+        parseIdArray(value) {
+            try {
+                const parsed = typeof value === 'string' ? JSON.parse(value) : value;
+                return Array.isArray(parsed) ? parsed.map(Number).filter(Number.isFinite) : [];
+            } catch (e) {
+                return [];
+            }
+        },
 
         async init() { await this.fetchOffers(); },
 
@@ -777,6 +808,12 @@ function offersModule() {
 
         openModal(o = null) {
             this.formError = null;
+            this.showProductsDropdown = false;
+            this.showCategoriesDropdown = false;
+            this.showGiftProductDropdown = false;
+            this.productSearch = '';
+            this.categorySearch = '';
+            this.giftProductSearch = '';
             if (o) {
                 let cType = 'none';
                 let cVal = '';
@@ -793,7 +830,7 @@ function offersModule() {
                     dType = 'none';
                 }
 
-                this.form = { id: o.id, name: o.name, type: o.type, discount_type: o.discount_type, display_discount_type: dType, value: o.value, min_spend: o.min_spend || '', max_discount: o.max_discount || '', cashback_type: cType, cashback_val: cVal, product_ids: typeof o.applicable_products === 'string' ? JSON.parse(o.applicable_products) : (o.applicable_products || []), product_id: o.type === 'free_product' ? o.product_id : '', applicable_categories: typeof o.applicable_categories === 'string' ? JSON.parse(o.applicable_categories) : (o.applicable_categories || []), buy_qty: o.buy_qty || 1, get_qty: o.get_qty || 1, starts_at: o.starts_at ? o.starts_at.substring(0,16) : '', ends_at: o.ends_at ? o.ends_at.substring(0,16) : '', priority: o.priority || 0, is_active: o.is_active };
+                this.form = { id: o.id, name: o.name, type: o.type, discount_type: o.discount_type, display_discount_type: dType, value: o.value, min_spend: o.min_spend || '', max_discount: o.max_discount || '', cashback_type: cType, cashback_val: cVal, product_ids: this.parseIdArray(o.applicable_products), product_id: o.type === 'free_product' && o.product_id ? String(o.product_id) : '', applicable_categories: this.parseIdArray(o.applicable_categories), buy_qty: o.buy_qty || 1, get_qty: o.get_qty || 1, starts_at: o.starts_at ? o.starts_at.substring(0,16) : '', ends_at: o.ends_at ? o.ends_at.substring(0,16) : '', priority: o.priority || 0, is_active: o.is_active };
             } else {
                 this.form = { id: null, name: '', type: 'order_discount', discount_type: 'percentage', display_discount_type: 'percentage', value: '', min_spend: '', max_discount: '', cashback_type: 'none', cashback_val: '', product_ids: [], product_id: '', applicable_categories: [], buy_qty: 1, get_qty: 1, starts_at: '', ends_at: '', priority: 0, is_active: true };
             }

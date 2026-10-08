@@ -364,14 +364,33 @@
                                             </div>
                                             <small class="text-muted d-block mt-1" style="font-size: 10px;">Numeric value of the discount.</small>
                                         </div>
-                                        <div class="col-md-4" x-show="form.display_type === 'free_product'" style="display: none;">
+                                        <div class="col-md-4" x-show="form.display_type === 'free_product'" style="display: none;" @click.away="showFreeProductDropdown = false">
                                             <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Free Product *</label>
-                                            <select class="form-select form-select-sm fw-semibold" x-model="form.free_product_id">
-                                                <option value="">Select Product...</option>
-                                                <template x-for="p in allProducts" :key="p.id">
-                                                    <option :value="p.id" x-text="p.name + ' (' + p.sku + ')'"></option>
-                                                </template>
-                                            </select>
+                                            <div class="position-relative">
+                                                <div class="form-control form-control-lg d-flex flex-wrap align-items-center gap-2 bg-body border border-secondary border-opacity-25 shadow-none rounded-3 px-3 py-2" style="min-height: 48px; cursor: text;" @click="showFreeProductDropdown = true; $refs.freeProductSearch.focus()">
+                                                    <template x-if="form.free_product_id">
+                                                        <div class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 d-flex align-items-center gap-2 rounded-pill px-3 py-2">
+                                                            <span x-text="(allProducts.find(p => String(p.id) === String(form.free_product_id)) || {}).name || 'Selected product'" style="font-size: 12px; font-weight: 600;"></span>
+                                                            <button type="button" class="btn btn-link p-0 text-primary" @click.stop="form.free_product_id = ''; freeProductSearch = ''; showFreeProductDropdown = true; $nextTick(() => $refs.freeProductSearch.focus())" aria-label="Remove free product"><i class="bi bi-x-circle-fill" style="font-size: 14px;"></i></button>
+                                                        </div>
+                                                    </template>
+                                                    <div class="flex-grow-1" style="min-width: 150px;">
+                                                        <input x-ref="freeProductSearch" type="text" x-model="freeProductSearch" @focus="showFreeProductDropdown = true" @keydown.escape="showFreeProductDropdown = false" placeholder="Search product name or SKU..." class="border-0 w-100 outline-none bg-transparent fw-semibold text-body" style="font-size: 14px; outline: none !important; box-shadow: none;">
+                                                    </div>
+                                                </div>
+                                                <div x-show="showFreeProductDropdown" x-transition.opacity class="position-absolute w-100 bg-body border border-secondary border-opacity-25 rounded-4 shadow-sm mt-2 overflow-auto" style="max-height: 350px; z-index: 1060; top: 100%; left: 0; display: none;">
+                                                    <template x-for="p in allProducts.filter(p => String(p.name || '').toLowerCase().includes(freeProductSearch.toLowerCase()) || String(p.sku || '').toLowerCase().includes(freeProductSearch.toLowerCase()))" :key="p.id">
+                                                        <button type="button" class="dropdown-item px-4 py-3 d-flex align-items-center transition-all" :class="String(form.free_product_id) === String(p.id) ? 'bg-primary bg-opacity-10' : ''" @click="form.free_product_id = String(p.id); freeProductSearch = ''; showFreeProductDropdown = false">
+                                                            <span class="me-3 text-primary"><i class="bi" :class="String(form.free_product_id) === String(p.id) ? 'bi-check-circle-fill' : 'bi-circle'"></i></span>
+                                                            <span class="text-start">
+                                                                <span class="d-block fw-semibold" x-text="p.name || 'Unnamed product'"></span>
+                                                                <small class="text-muted" x-text="'SKU: ' + (p.sku || 'N/A')"></small>
+                                                            </span>
+                                                        </button>
+                                                    </template>
+                                                    <div x-show="!allProducts.some(p => String(p.name || '').toLowerCase().includes(freeProductSearch.toLowerCase()) || String(p.sku || '').toLowerCase().includes(freeProductSearch.toLowerCase()))" class="px-4 py-3 text-muted small">No matching products.</div>
+                                                </div>
+                                            </div>
                                             <small class="text-muted d-block mt-1" style="font-size: 10px;">Product to give away.</small>
                                         </div>
                                         <div class="col-md-4">
@@ -495,6 +514,7 @@ const INITIAL_PRODUCTS = @json($products ?? []);
 function couponsModule() {
     return {
         allProducts: INITIAL_PRODUCTS || [],
+        showFreeProductDropdown: false, freeProductSearch: '',
         coupons: [], loading: false, saving: false,
         search: '', filterType: '', filterStatus: '', page: 1, lastPage: 1,
         total: 0, from: 0, to: 0, _fetchRequestId: 0,
@@ -594,6 +614,8 @@ function couponsModule() {
 
         openModal(c = null) {
             this.formError = null;
+            this.showFreeProductDropdown = false;
+            this.freeProductSearch = '';
             if (c) {
                 let cType = 'none';
                 let cVal = '';
@@ -608,7 +630,7 @@ function couponsModule() {
                 if ((c.type === 'percentage' || c.type === 'fixed') && parseFloat(c.value) === 0) {
                     dType = 'none';
                 }
-                this.form = { id: c.id, code: c.code, type: c.type, display_type: dType, value: c.value, min_spend: c.min_spend || '', max_discount: c.max_discount || '', cashback_type: cType, cashback_val: cVal, free_product_id: c.free_product_id || '', free_qty: c.free_qty || 1, expiry_date: c.expiry_date || '', usage_limit: c.usage_limit || '', is_active: c.is_active };
+                this.form = { id: c.id, code: c.code, type: c.type, display_type: dType, value: c.value, min_spend: c.min_spend || '', max_discount: c.max_discount || '', cashback_type: cType, cashback_val: cVal, free_product_id: c.free_product_id ? String(c.free_product_id) : '', free_qty: c.free_qty || 1, expiry_date: c.expiry_date || '', usage_limit: c.usage_limit || '', is_active: c.is_active };
             } else {
                 this.form = { id: null, code: '', type: 'percentage', display_type: 'percentage', value: '', min_spend: '', max_discount: '', cashback_type: 'none', cashback_val: '', free_product_id: '', free_qty: 1, expiry_date: '', usage_limit: '', is_active: true };
             }
