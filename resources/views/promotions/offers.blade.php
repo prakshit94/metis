@@ -472,7 +472,7 @@
                                                     <template x-for="cId in form.applicable_categories" :key="cId">
                                                         <div class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 d-flex align-items-center gap-2 rounded-pill px-3 py-2 shadow-sm transition-all">
                                                             <span x-text="(allCategories.find(c => c.id == cId) || {}).name || 'Unknown Category'" style="font-size: 12px; font-weight: 600;"></span>
-                                                            <i class="bi bi-x-circle-fill cursor-pointer opacity-75 custom-hover-opacity" @click.stop="form.applicable_categories = form.applicable_categories.filter(id => id != cId)" style="font-size: 14px;"></i>
+                                                            <i class="bi bi-x-circle-fill cursor-pointer opacity-75 custom-hover-opacity" @click.stop="form.applicable_categories = form.applicable_categories.filter(id => id != cId); categorySearch = ''; showCategoriesDropdown = true; $nextTick(() => $refs.categorySearch.focus())" style="font-size: 14px;"></i>
                                                         </div>
                                                     </template>
 
@@ -491,7 +491,7 @@
                                                 
                                                 <!-- Dropdown List -->
                                                 <div x-show="showCategoriesDropdown" x-transition.opacity.duration.200ms class="position-absolute w-100 bg-body border border-secondary border-opacity-25 rounded-4 shadow-sm mt-2 overflow-auto" style="max-height: 350px; z-index: 1050; top: 100%; left: 0; display: none;">
-                                                    <div class="px-4 py-3 cursor-pointer custom-hover-bg d-flex align-items-center transition-all" @click.stop="form.applicable_categories = []">
+                                                    <div class="px-4 py-3 cursor-pointer custom-hover-bg d-flex align-items-center transition-all" @click.stop="form.applicable_categories = []; categorySearch = ''; showCategoriesDropdown = true; $nextTick(() => $refs.categorySearch.focus())">
                                                         <div class="form-check m-0 d-flex align-items-center w-100">
                                                             <input type="checkbox" :checked="form.applicable_categories.length === 0" class="form-check-input border-secondary border-opacity-50 bg-body-tertiary me-3" style="cursor: pointer; transform: scale(1.2);">
                                                             <span class="text-muted fw-bold" style="font-size: 13px;">Any Category (Global)</span>
@@ -499,7 +499,7 @@
                                                     </div>
                                                     <hr class="dropdown-divider my-0 border-secondary border-opacity-25">
                                                     <template x-for="c in allCategories.filter(c => String(c.name || '').toLowerCase().includes(categorySearch.toLowerCase()))" :key="c.id">
-                                                        <div class="px-4 py-3 cursor-pointer custom-hover-bg d-flex align-items-center transition-all" @click.stop="form.applicable_categories.includes(c.id) ? form.applicable_categories = form.applicable_categories.filter(id => id != c.id) : form.applicable_categories.push(c.id)">
+                                                        <div class="px-4 py-3 cursor-pointer custom-hover-bg d-flex align-items-center transition-all" @click.stop="form.applicable_categories.includes(c.id) ? form.applicable_categories = form.applicable_categories.filter(id => id != c.id) : form.applicable_categories.push(c.id); categorySearch = ''; showCategoriesDropdown = true; $nextTick(() => $refs.categorySearch.focus())">
                                                             <div class="form-check m-0 d-flex align-items-center w-100">
                                                                 <input type="checkbox" :checked="form.applicable_categories.includes(c.id)" class="form-check-input border-secondary border-opacity-50 bg-body-tertiary me-3" style="cursor: pointer; transform: scale(1.2);">
                                                                 <div>
@@ -523,7 +523,7 @@
                                                     <template x-for="pId in form.product_ids" :key="pId">
                                                         <div class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 d-flex align-items-center gap-2 rounded-pill px-3 py-2 shadow-sm transition-all">
                                                             <span x-text="(allProducts.find(p => p.id == pId) || {}).name || 'Unknown Product'" style="font-size: 12px; font-weight: 600;"></span>
-                                                            <i class="bi bi-x-circle-fill cursor-pointer opacity-75 custom-hover-opacity" @click.stop="form.product_ids = form.product_ids.filter(id => id != pId)" style="font-size: 14px;"></i>
+                                                            <i class="bi bi-x-circle-fill cursor-pointer opacity-75 custom-hover-opacity" @click.stop="form.product_ids = form.product_ids.filter(id => id != pId); productSearch = ''; showProductsDropdown = true; $nextTick(() => $refs.productSearch.focus())" style="font-size: 14px;"></i>
                                                         </div>
                                                     </template>
 
@@ -542,7 +542,7 @@
                                                 
                                                 <!-- Dropdown List -->
                                                 <div x-show="showProductsDropdown" x-transition.opacity.duration.200ms class="position-absolute w-100 bg-body border border-secondary border-opacity-25 rounded-4 shadow-sm mt-2 overflow-auto" style="max-height: 350px; z-index: 1050; top: 100%; left: 0; display: none;">
-                                                    <div class="px-4 py-3 cursor-pointer custom-hover-bg d-flex align-items-center transition-all" @click.stop="form.product_ids = []">
+                                                    <div class="px-4 py-3 cursor-pointer custom-hover-bg d-flex align-items-center transition-all" @click.stop="form.product_ids = []; productSearch = ''; showProductsDropdown = true; $nextTick(() => $refs.productSearch.focus())">
                                                         <div class="form-check m-0 d-flex align-items-center w-100">
                                                             <input type="checkbox" :checked="form.product_ids.length === 0" class="form-check-input border-secondary border-opacity-50 bg-body-tertiary me-3" style="cursor: pointer; transform: scale(1.2);">
                                                             <span class="text-muted fw-bold" style="font-size: 13px;">Any Product (Global)</span>
@@ -550,7 +550,7 @@
                                                     </div>
                                                     <hr class="dropdown-divider my-0 border-secondary border-opacity-25">
                                                     <template x-for="p in allProducts.filter(p => String(p.name || '').toLowerCase().includes(productSearch.toLowerCase()) || String(p.sku || '').toLowerCase().includes(productSearch.toLowerCase()))" :key="p.id">
-                                                        <div class="px-4 py-3 cursor-pointer custom-hover-bg d-flex align-items-center transition-all" @click.stop="form.product_ids.includes(p.id) ? form.product_ids = form.product_ids.filter(id => id != p.id) : form.product_ids.push(p.id)">
+                                                        <div class="px-4 py-3 cursor-pointer custom-hover-bg d-flex align-items-center transition-all" @click.stop="form.product_ids.includes(p.id) ? form.product_ids = form.product_ids.filter(id => id != p.id) : form.product_ids.push(p.id); productSearch = ''; showProductsDropdown = true; $nextTick(() => $refs.productSearch.focus())">
                                                             <div class="form-check m-0 d-flex align-items-center w-100">
                                                                 <input type="checkbox" :checked="form.product_ids.includes(p.id)" class="form-check-input border-secondary border-opacity-50 bg-body-tertiary me-3" style="cursor: pointer; transform: scale(1.2);">
                                                                 <div>
