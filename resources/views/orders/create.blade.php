@@ -1102,6 +1102,10 @@
                                             </p>
                                         </div>
                                     </div>
+                                    <button type="button" class="btn btn-sm btn-outline-danger rounded-pill flex-shrink-0"
+                                            @click.stop="removeCoupon()" aria-label="Remove applied coupon">
+                                        <i class="bi bi-x-circle me-1" aria-hidden="true"></i>Remove
+                                    </button>
                                 </div>
                             </template>
 
@@ -1664,8 +1668,14 @@
                                             </div>
                                             <div class="flex-shrink-0 align-self-center">
                                                 <template x-if="couponApplied && couponCode === c.code">
-                                                    <div class="bg-success text-white rounded-circle d-flex align-items-center justify-content-center shadow-sm" style="width: 28px; height: 28px;">
-                                                        <i class="bi bi-check fs-5"></i>
+                                                    <div class="d-flex flex-column align-items-end gap-2">
+                                                        <span class="bg-success text-white rounded-circle d-flex align-items-center justify-content-center shadow-sm" style="width: 28px; height: 28px;">
+                                                            <i class="bi bi-check fs-5"></i>
+                                                        </span>
+                                                        <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3"
+                                                                @click.stop="removeCoupon()">
+                                                            Remove
+                                                        </button>
                                                     </div>
                                                 </template>
                                                 <template x-if="!(couponApplied && couponCode === c.code) && couponIsApplicable(c)">
