@@ -86,7 +86,9 @@
         <div class="card-header">
             <div class="row align-items-center">
                 <div class="col">
-                    <h2 class="h5 card-title mb-0">Coupons Directory</h2>
+                    <h2 class="h5 card-title mb-0">Coupons Directory
+                        <span class="badge bg-danger-subtle text-danger-emphasis border border-danger-subtle ms-1">Expired: <span x-text="stats.expired"></span></span>
+                    </h2>
                 </div>
                 <div class="col-auto">
                     <div class="d-flex flex-wrap gap-2 justify-content-end">
@@ -103,8 +105,9 @@
                         </select>
                         <select class="form-select form-select-sm" x-model="filterStatus" @change="applyFilters()" style="width: 150px;">
                             <option value="">All Status</option>
-                            <option value="active">Active</option>
+                            <option value="active">Enabled (manual)</option>
                             <option value="inactive">Inactive</option>
+                            <option value="expired">Expired</option>
                         </select>
                     </div>
                 </div>
@@ -235,6 +238,8 @@
                                     </div>
                                 </td>
                                 <td>
+                                    <div class="d-flex flex-column align-items-start gap-1">
+                                    <span class="badge bg-danger-subtle text-danger-emphasis border border-danger-subtle" x-show="c.is_expired" x-cloak><i class="bi bi-calendar-x me-1"></i>Expired</span>
                                     <span class="badge rounded-pill px-3 py-2 fw-medium border cursor-pointer"
                                           :class="c.is_active ? 'bg-success-subtle text-success-emphasis border-success-subtle' : 'bg-secondary-subtle text-secondary-emphasis border-secondary-subtle'"
                                           @click="toggleStatus(c)">
@@ -243,6 +248,7 @@
                                               style="width: 6px; height: 6px; vertical-align: middle;"></span>
                                         <span x-text="c.is_active ? 'Active' : 'Inactive'"></span>
                                     </span>
+                                    </div>
                                 </td>
                                 <td class="text-end">
                                     <div class="dropdown">
@@ -518,7 +524,7 @@ function couponsModule() {
         coupons: [], loading: false, saving: false,
         search: '', filterType: '', filterStatus: '', page: 1, lastPage: 1,
         total: 0, from: 0, to: 0, _fetchRequestId: 0,
-        selected: [], stats: { total: 0, active: 0, inactive: 0, expiring_soon: 0 },
+        selected: [], stats: { total: 0, active: 0, inactive: 0, expired: 0, expiring_soon: 0 },
         form: { id: null, code: '', type: 'percentage', display_type: 'percentage', value: '', min_spend: '', max_discount: '', cashback_type: 'none', cashback_val: '', free_product_id: '', free_qty: 1, expiry_date: '', usage_limit: '', is_active: true },
         formError: null,
 
@@ -598,11 +604,13 @@ function couponsModule() {
                     this.stats.total = json.stats.total || 0;
                     this.stats.active = json.stats.active || 0;
                     this.stats.inactive = json.stats.inactive || 0;
+                    this.stats.expired = json.stats.expired || 0;
                     this.stats.expiring_soon = json.stats.expiring_soon || 0;
                 } else {
                     this.stats.total = this.total;
                     this.stats.active = this.coupons.filter(c => c.is_active).length;
                     this.stats.inactive = this.coupons.filter(c => !c.is_active).length;
+                    this.stats.expired = this.coupons.filter(c => c.is_expired).length;
                     this.stats.expiring_soon = this.coupons.filter(c => { if (!c.expiry_date) return false; const d = new Date(c.expiry_date); const n = new Date(); return d > n && (d - n) / 86400000 <= 7; }).length;
                 }
             } catch (e) {

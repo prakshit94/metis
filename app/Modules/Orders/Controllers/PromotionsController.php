@@ -54,7 +54,7 @@ class PromotionsController extends Controller implements HasMiddleware
     {
         $filters = $request->validate([
             'type' => 'nullable|in:percentage,fixed,free_shipping,free_product',
-            'status' => 'nullable|in:active,inactive',
+            'status' => 'nullable|in:active,inactive,expired',
             'page' => 'sometimes|integer|min:1',
             'per_page' => 'sometimes|integer|min:1|max:100',
         ]);
@@ -69,17 +69,27 @@ class PromotionsController extends Controller implements HasMiddleware
             $query->where('type', $filters['type']);
         }
         if (! empty($filters['status'])) {
-            $query->where('is_active', $filters['status'] === 'active');
+            if ($filters['status'] === 'expired') {
+                $query->whereNotNull('expiry_date')->whereDate('expiry_date', '<', today());
+            } else {
+                $query->where('is_active', $filters['status'] === 'active');
+            }
         }
 
         $perPage = (int) ($filters['per_page'] ?? 15);
         $coupons = $query->paginate($perPage);
+        $coupons->getCollection()->transform(function (Coupon $coupon) {
+            $coupon->setAttribute('is_expired', $coupon->expiry_date !== null && $coupon->expiry_date->lt(today()));
+
+            return $coupon;
+        });
 
         $today = today();
         $stats = [
             'total' => Coupon::count(),
             'active' => Coupon::where('is_active', true)->count(),
             'inactive' => Coupon::where('is_active', false)->count(),
+            'expired' => Coupon::whereNotNull('expiry_date')->whereDate('expiry_date', '<', $today)->count(),
             'expiring_soon' => Coupon::where('is_active', true)
                 ->whereNotNull('expiry_date')
                 ->whereDate('expiry_date', '>=', $today)
@@ -251,7 +261,7 @@ class PromotionsController extends Controller implements HasMiddleware
     {
         $filters = $request->validate([
             'type' => 'nullable|in:order_discount,bogo,free_product,category_discount',
-            'status' => 'nullable|in:active,inactive',
+            'status' => 'nullable|in:active,inactive,expired,scheduled',
             'page' => 'sometimes|integer|min:1',
             'per_page' => 'sometimes|integer|min:1|max:100',
         ]);
@@ -266,7 +276,11 @@ class PromotionsController extends Controller implements HasMiddleware
             $query->where('type', $filters['type']);
         }
         if (! empty($filters['status'])) {
-            if ($filters['status'] === 'active') {
+            if ($filters['status'] === 'expired') {
+                $query->whereNotNull('ends_at')->where('ends_at', '<', now());
+            } elseif ($filters['status'] === 'scheduled') {
+                $query->whereNotNull('starts_at')->where('starts_at', '>', now());
+            } elseif ($filters['status'] === 'active') {
                 $query->where('is_active', true);
             } elseif ($filters['status'] === 'inactive') {
                 $query->where('is_active', false);
@@ -275,10 +289,19 @@ class PromotionsController extends Controller implements HasMiddleware
 
         $perPage = (int) ($filters['per_page'] ?? 15);
         $offers = $query->paginate($perPage);
+        $currentTime = now();
+        $offers->getCollection()->transform(function (Offer $offer) use ($currentTime) {
+            $offer->setAttribute('is_expired', $offer->ends_at !== null && $offer->ends_at->lt($currentTime));
+            $offer->setAttribute('is_scheduled', $offer->starts_at !== null && $offer->starts_at->gt($currentTime));
+
+            return $offer;
+        });
 
         $stats = [
             'total'          => Offer::count(),
             'active'         => Offer::where('is_active', true)->count(),
+            'expired'        => Offer::whereNotNull('ends_at')->where('ends_at', '<', $currentTime)->count(),
+            'scheduled'      => Offer::whereNotNull('starts_at')->where('starts_at', '>', $currentTime)->count(),
             'bogo'           => Offer::where('type', 'bogo')->count(),
             'order_discount' => Offer::where('type', 'order_discount')->count(),
         ];

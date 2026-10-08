@@ -45,7 +45,7 @@
                         </div>
                         <div>
                             <p class="h6 mb-0 text-muted">Total Programs</p>
-                            <div class="h3 mb-0 fw-bold">{{ $programs->count() }}</div>
+                            <div class="h3 mb-0 fw-bold">{{ $programStats['total'] }}</div>
                         </div>
                     </div>
                 </div>
@@ -60,7 +60,7 @@
                         </div>
                         <div>
                             <p class="h6 mb-0 text-muted">Active</p>
-                            <div class="h3 mb-0 fw-bold">{{ $programs->where('is_active', true)->count() }}</div>
+                            <div class="h3 mb-0 fw-bold">{{ $programStats['active'] }}</div>
                         </div>
                     </div>
                 </div>
@@ -75,7 +75,7 @@
                         </div>
                         <div>
                             <p class="h6 mb-0 text-muted">Permanent</p>
-                            <div class="h3 mb-0 fw-bold">{{ $programs->whereNull('start_date')->whereNull('end_date')->count() }}</div>
+                            <div class="h3 mb-0 fw-bold">{{ $programStats['permanent'] }}</div>
                         </div>
                     </div>
                 </div>
@@ -90,7 +90,7 @@
                         </div>
                         <div>
                             <p class="h6 mb-0 text-muted">Time-Bound</p>
-                            <div class="h3 mb-0 fw-bold">{{ $programs->filter(fn ($program) => $program->start_date !== null || $program->end_date !== null)->count() }}</div>
+                            <div class="h3 mb-0 fw-bold">{{ $programStats['time_bound'] }}</div>
                         </div>
                     </div>
                 </div>
@@ -103,7 +103,20 @@
         <div class="card-header border-bottom py-3">
             <div class="row align-items-center">
                 <div class="col">
-                    <h2 class="h5 card-title mb-0 fw-bold">Programs Directory</h2>
+                    <h2 class="h5 card-title mb-0 fw-bold">Programs Directory <span class="badge bg-danger-subtle text-danger-emphasis border border-danger-subtle ms-1">Expired: {{ $programStats['expired'] }}</span></h2>
+                    <small class="text-muted">Expired programs remain listed for history; Active/Inactive is the manual setting.</small>
+                </div>
+                <div class="col-auto">
+                    <form method="GET" action="{{ route('referrals.programs.index') }}" class="d-flex align-items-center gap-2">
+                        <label for="referral-status-filter" class="small text-muted mb-0">Status</label>
+                        <select id="referral-status-filter" name="status" class="form-select form-select-sm" onchange="this.form.submit()">
+                            <option value="" @selected(request('status') === null || request('status') === '')>All statuses</option>
+                            <option value="active" @selected(request('status') === 'active')>Enabled (manual)</option>
+                            <option value="inactive" @selected(request('status') === 'inactive')>Inactive</option>
+                            <option value="expired" @selected(request('status') === 'expired')>Expired</option>
+                            <option value="scheduled" @selected(request('status') === 'scheduled')>Scheduled</option>
+                        </select>
+                    </form>
                 </div>
             </div>
         </div>
@@ -158,7 +171,12 @@
                                     </div>
                                 </td>
                                 <td>
-                                    <div class="d-flex flex-column gap-1">
+                                    <div class="d-flex flex-column align-items-start gap-1">
+                                        @if($program->end_date && $program->end_date->toDateString() < today()->toDateString())
+                                            <span class="badge bg-danger-subtle text-danger-emphasis border border-danger-subtle"><i class="bi bi-calendar-x me-1"></i>Expired</span>
+                                        @elseif($program->start_date && $program->start_date->toDateString() > today()->toDateString())
+                                            <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle"><i class="bi bi-calendar-event me-1"></i>Scheduled</span>
+                                        @endif
                                         @if(!$program->start_date && !$program->end_date)
                                             <span class="badge bg-success-subtle text-success-emphasis border border-success-subtle px-2 py-1 align-self-start">
                                                 <i class="bi bi-infinity me-1"></i>Always Active

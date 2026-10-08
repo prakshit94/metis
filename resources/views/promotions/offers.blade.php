@@ -86,7 +86,10 @@
         <div class="card-header">
             <div class="row align-items-center">
                 <div class="col">
-                    <h2 class="h5 card-title mb-0">Offers Directory</h2>
+                    <h2 class="h5 card-title mb-0">Offers Directory
+                        <span class="badge bg-danger-subtle text-danger-emphasis border border-danger-subtle ms-1">Expired: <span x-text="stats.expired"></span></span>
+                        <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle ms-1">Scheduled: <span x-text="stats.scheduled"></span></span>
+                    </h2>
                 </div>
                 <div class="col-auto">
                     <div class="d-flex flex-wrap gap-2 justify-content-end">
@@ -103,8 +106,10 @@
                         </select>
                         <select class="form-select form-select-sm" x-model="filterStatus" @change="applyFilters()" style="width: 150px;">
                             <option value="">All Statuses</option>
-                            <option value="active">Active</option>
+                            <option value="active">Enabled (manual)</option>
                             <option value="inactive">Inactive</option>
+                            <option value="expired">Expired</option>
+                            <option value="scheduled">Scheduled</option>
                         </select>
                     </div>
                 </div>
@@ -251,6 +256,9 @@
                                     </div>
                                 </td>
                                 <td>
+                                    <div class="d-flex flex-column align-items-start gap-1">
+                                        <span class="badge bg-danger-subtle text-danger-emphasis border border-danger-subtle" x-show="o.is_expired" x-cloak><i class="bi bi-calendar-x me-1"></i>Expired</span>
+                                        <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle" x-show="o.is_scheduled && !o.is_expired" x-cloak><i class="bi bi-calendar-event me-1"></i>Scheduled</span>
                                     <span class="badge rounded-pill px-3 py-2 fw-medium border cursor-pointer"
                                           :class="o.is_active ? 'bg-success-subtle text-success-emphasis border-success-subtle' : 'bg-secondary-subtle text-secondary-emphasis border-secondary-subtle'"
                                           @click="toggleStatus(o)">
@@ -259,6 +267,7 @@
                                               style="width: 6px; height: 6px; vertical-align: middle;"></span>
                                         <span x-text="o.is_active ? 'Active' : 'Inactive'"></span>
                                     </span>
+                                    </div>
                                 </td>
                                 <td class="text-end">
                                     <div class="dropdown">
@@ -699,7 +708,7 @@ function offersModule() {
         offers: [], loading: false, saving: false,
         search: '', filterType: '', filterStatus: '', page: 1, lastPage: 1,
         total: 0, from: 0, to: 0, _fetchRequestId: 0,
-        selected: [], stats: { total: 0, active: 0, bogo: 0, order_discount: 0 },
+        selected: [], stats: { total: 0, active: 0, expired: 0, scheduled: 0, bogo: 0, order_discount: 0 },
         form: { id: null, name: '', type: 'order_discount', discount_type: 'percentage', display_discount_type: 'percentage', value: '', min_spend: '', max_discount: '', cashback_type: 'none', cashback_val: '', product_ids: [], product_id: '', applicable_categories: [], buy_qty: 1, get_qty: 1, starts_at: '', ends_at: '', priority: 0, is_active: true },
         formError: null,
 
@@ -791,11 +800,15 @@ function offersModule() {
                 if (json.stats) {
                     this.stats.total = json.stats.total || 0;
                     this.stats.active = json.stats.active || 0;
+                    this.stats.expired = json.stats.expired || 0;
+                    this.stats.scheduled = json.stats.scheduled || 0;
                     this.stats.bogo = json.stats.bogo || 0;
                     this.stats.order_discount = json.stats.order_discount || 0;
                 } else {
                     this.stats.total = this.total;
                     this.stats.active = this.offers.filter(o => o.is_active).length;
+                    this.stats.expired = this.offers.filter(o => o.is_expired).length;
+                    this.stats.scheduled = this.offers.filter(o => o.is_scheduled).length;
                     this.stats.bogo = this.offers.filter(o => o.type === 'bogo').length;
                     this.stats.order_discount = this.offers.filter(o => o.type === 'order_discount').length;
                 }

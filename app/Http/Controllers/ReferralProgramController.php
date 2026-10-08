@@ -25,7 +25,29 @@ class ReferralProgramController extends Controller implements HasMiddleware
 
     public function index(Request $request)
     {
-        $programs = ReferralProgram::with('milestones')->latest()->get();
+        $filters = $request->validate([
+            'status' => 'nullable|in:active,inactive,expired,scheduled',
+        ]);
+        $allPrograms = ReferralProgram::with('milestones')->latest()->get();
+        $today = today()->toDateString();
+        $programs = $allPrograms->filter(function (ReferralProgram $program) use ($filters, $today) {
+            return match ($filters['status'] ?? '') {
+                'active' => $program->is_active,
+                'inactive' => ! $program->is_active,
+                'expired' => $program->end_date !== null && $program->end_date->toDateString() < $today,
+                'scheduled' => $program->start_date !== null && $program->start_date->toDateString() > $today,
+                default => true,
+            };
+        })->values();
+        $programStats = [
+            'total' => $allPrograms->count(),
+            'active' => $allPrograms->where('is_active', true)->count(),
+            'inactive' => $allPrograms->where('is_active', false)->count(),
+            'permanent' => $allPrograms->whereNull('start_date')->whereNull('end_date')->count(),
+            'time_bound' => $allPrograms->filter(fn (ReferralProgram $program) => $program->start_date !== null || $program->end_date !== null)->count(),
+            'expired' => $allPrograms->filter(fn (ReferralProgram $program) => $program->end_date !== null && $program->end_date->toDateString() < $today)->count(),
+            'scheduled' => $allPrograms->filter(fn (ReferralProgram $program) => $program->start_date !== null && $program->start_date->toDateString() > $today)->count(),
+        ];
 
         $products = cache()->remember('referral_products_list', now()->addMinutes(60), function () {
             return Product::where('status', '!=', 'draft')
@@ -34,10 +56,10 @@ class ReferralProgramController extends Controller implements HasMiddleware
         });
 
         if ($request->wantsJson() || $request->ajax()) {
-            return response()->json(compact('programs', 'products'));
+            return response()->json(compact('programs', 'products', 'programStats'));
         }
 
-        return view('promotions.referrals.index', compact('programs', 'products'));
+        return view('promotions.referrals.index', compact('programs', 'products', 'programStats'));
     }
 
     public function store(Request $request)
