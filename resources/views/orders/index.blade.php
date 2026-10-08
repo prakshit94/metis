@@ -655,7 +655,7 @@
     </div>
 
     <!-- Collapsible Advanced Filters Drawer -->
-    <div class="collapse" id="advancedFilters" x-init="if (hasActiveAdvancedFilters()) { $el.classList.add('show'); $nextTick(() => { const btn = document.querySelector('[data-bs-target=\'#advancedFilters\']'); if(btn) btn.setAttribute('aria-expanded', 'true'); }); }">
+    <div class="collapse" id="advancedFilters">
         <div class="p-3 bg-body-tertiary border-top border-bottom border-secondary-subtle">
             <div class="row g-3">
                 <!-- Product Filter -->

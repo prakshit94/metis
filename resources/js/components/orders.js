@@ -412,6 +412,7 @@ document.addEventListener('alpine:init', () => {
       } else this.statusFilter = this.defaultStatusFilters();
 
       if (params.has('date')) this.dateFilter = params.get('date');
+      else if (!params.has('from_date') && !params.has('to_date')) this.dateFilter = '30d';
       if (params.has('fulfillment')) this.fulfillmentFilter = params.get('fulfillment');
       if (params.has('state')) this.stateFilter = params.get('state').split(',').filter(Boolean);
       if (params.has('district'))
@@ -592,6 +593,7 @@ document.addEventListener('alpine:init', () => {
       let activeToDate = this.toDate;
 
       if (this.dateFilter) {
+        params.append('date', this.dateFilter);
         const today = new Date();
         const formatDate = (date) => {
           const y = date.getFullYear();
@@ -1248,7 +1250,7 @@ document.addEventListener('alpine:init', () => {
     clearFilters() {
       this.searchQuery = '';
       this.statusFilter = this.defaultStatusFilters();
-      this.dateFilter = '';
+      this.dateFilter = '30d';
       this.productFilter = [];
       this.fulfillmentFilter = '';
       this.stateFilter = [];
