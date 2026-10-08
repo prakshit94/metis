@@ -112,7 +112,9 @@ class OrderController extends Controller implements HasMiddleware
             });
         }
 
-        if ($request->filled('status')) {
+        if ($request->input('status') === '__no_status_selected__') {
+            $query->whereRaw('1 = 0');
+        } elseif ($request->filled('status')) {
             $requestedStatuses = array_filter(array_map('trim', explode(',', $request->status)));
             $hasFutureOrder = in_array('future_order', $requestedStatuses, true);
             $hasPending = in_array('pending', $requestedStatuses, true);

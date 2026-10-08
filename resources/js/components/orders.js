@@ -9,6 +9,15 @@ import { createSearchComponent } from '../utils/search-component.js';
 const orderLoadControllers = new WeakMap();
 let orderApexChartsPromise;
 let OrderApexCharts;
+const DEFAULT_ORDER_FILTER_STATUSES = [
+  'pending',
+  'unfulfillable',
+  'pending_confirmation',
+  'confirmed',
+  'processing',
+  'ready_to_ship',
+];
+const NO_STATUS_FILTER_SENTINEL = '__no_status_selected__';
 
 // ─── CSRF helper ─────────────────────────────────────────────────────────────
 function getCsrfToken() {
@@ -133,6 +142,7 @@ document.addEventListener('alpine:init', () => {
     _loadRequestId: 0,
     _searchDebounce: null,
     _analyticsToggleHandler: null,
+    _normalizeInitialFullStatusSelection: false,
 
     // ApexCharts settings
     charts: {},
@@ -390,8 +400,16 @@ document.addEventListener('alpine:init', () => {
       const params = new URLSearchParams(window.location.search);
 
       if (params.has('search')) this.searchQuery = params.get('search');
-      if (params.has('status')) this.statusFilter = params.get('status').split(',').filter(Boolean);
-      else this.statusFilter = [...(this.allowedFilterStatuses || [])];
+      if (params.has('status')) {
+        const requestedStatuses = params.get('status').split(',').filter(Boolean);
+        this._normalizeInitialFullStatusSelection =
+          !(requestedStatuses.length === 1 && requestedStatuses[0] === NO_STATUS_FILTER_SENTINEL);
+        this.statusFilter = requestedStatuses.length === 1 && requestedStatuses[0] === NO_STATUS_FILTER_SENTINEL
+          ? []
+          : this.isFullStatusSelection(requestedStatuses)
+            ? this.defaultStatusFilters()
+            : requestedStatuses;
+      } else this.statusFilter = this.defaultStatusFilters();
 
       if (params.has('date')) this.dateFilter = params.get('date');
       if (params.has('fulfillment')) this.fulfillmentFilter = params.get('fulfillment');
@@ -553,7 +571,10 @@ document.addEventListener('alpine:init', () => {
       const params = new URLSearchParams();
 
       if (this.searchQuery) params.append('search', this.searchQuery);
-      if (this.statusFilter.length) params.append('status', this.statusFilter.join(','));
+      params.append(
+        'status',
+        this.statusFilter.length ? this.statusFilter.join(',') : NO_STATUS_FILTER_SENTINEL
+      );
       if (this.productFilter && this.productFilter.length)
         params.append('product', this.productFilter.join(','));
       if (this.fulfillmentFilter) params.append('fulfillment', this.fulfillmentFilter);
@@ -774,8 +795,19 @@ document.addEventListener('alpine:init', () => {
           if (data.districts) this.districtsList = data.districts;
           if (data.talukas) this.talukasList = data.talukas;
           if (data.villages) this.villagesList = data.villages;
-          if (data.allowed_filter_statuses)
+          if (data.allowed_filter_statuses) {
             this.allowedFilterStatuses = data.allowed_filter_statuses;
+            if (this._normalizeInitialFullStatusSelection) {
+              this._normalizeInitialFullStatusSelection = false;
+              if (this.isFullStatusSelection(this.statusFilter)) {
+                const defaultStatuses = this.defaultStatusFilters();
+                if (JSON.stringify(this.statusFilter) !== JSON.stringify(defaultStatuses)) {
+                  this.statusFilter = defaultStatuses;
+                  this.filterOrders();
+                }
+              }
+            }
+          }
           if (data.carrierProvidersMap) {
             this.carrierProvidersMap = data.carrierProvidersMap;
           }
@@ -1215,7 +1247,7 @@ document.addEventListener('alpine:init', () => {
 
     clearFilters() {
       this.searchQuery = '';
-      this.statusFilter = [...(this.allowedFilterStatuses || [])];
+      this.statusFilter = this.defaultStatusFilters();
       this.dateFilter = '';
       this.productFilter = [];
       this.fulfillmentFilter = '';
@@ -1227,10 +1259,40 @@ document.addEventListener('alpine:init', () => {
       this.warehouseFilter = [];
       this.fromDate = '';
       this.toDate = '';
+      this.stateSearch = '';
+      this.districtSearch = '';
+      this.talukaSearch = '';
+      this.villageSearch = '';
+      this.productSearch = '';
+      this.carrierSearch = '';
+      this.warehouseSearch = '';
+      this.showStatusDropdown = false;
+      this.showStateDropdown = false;
+      this.showDistrictDropdown = false;
+      this.showTalukaDropdown = false;
+      this.showVillageDropdown = false;
+      this.showProductDropdown = false;
+      this.showCarrierDropdown = false;
+      this.showWarehouseDropdown = false;
+      this.visibleWarehouseStat = '';
+      this.itemsPerPage = 25;
       this.sortField = 'id';
       this.sortDirection = 'desc';
       this.currentPage = 1;
       this.loadOrders();
+    },
+
+    defaultStatusFilters() {
+      const allowedStatuses = this.allowedFilterStatuses || [];
+      if (!allowedStatuses.length) return [...DEFAULT_ORDER_FILTER_STATUSES];
+      return DEFAULT_ORDER_FILTER_STATUSES.filter((status) => allowedStatuses.includes(status));
+    },
+
+    isFullStatusSelection(statuses) {
+      const allowedStatuses = this.allowedFilterStatuses || [];
+      if (!allowedStatuses.length) return false;
+      const requested = new Set(statuses);
+      return allowedStatuses.every((status) => requested.has(status));
     },
 
     hasActiveAdvancedFilters() {

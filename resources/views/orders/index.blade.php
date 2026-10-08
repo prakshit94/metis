@@ -574,7 +574,7 @@
                     <div class="position-relative" @click.away="showStatusDropdown = false" :style="showStatusDropdown ? 'z-index: 1050;' : ''">
                         <div class="form-control form-control-sm d-flex flex-nowrap align-items-center gap-1" style="min-height: 31px; cursor: pointer; width: 150px; overflow: hidden;" @click="showStatusDropdown = !showStatusDropdown">
                             <template x-if="statusFilter.length === 0">
-                                <span class="text-body-secondary" style="font-size: 13px;">All Statuses</span>
+                                <span class="text-body-secondary" style="font-size: 13px;">No Statuses</span>
                             </template>
                             <template x-if="statusFilter.length > 0">
                                 <div class="d-flex flex-nowrap align-items-center gap-1 w-100" style="padding-right: 15px;">

@@ -191,7 +191,7 @@ document.addEventListener('alpine:init', () => {
     searchQuery: '',
     categoryFilter: '',
     stockFilter: 'in-stock',
-    skuFilter: '',         // '' = all, 'sku-on' = SKU enabled only, 'sku-off' = SKU disabled only
+    skuFilter: 'sku-on',   // Default to SKU-enabled products; users can still choose another SKU filter.
     warehouseFilter: window.userContext?.warehouseId
       ? String(window.userContext.warehouseId)
       : '',
@@ -621,7 +621,7 @@ document.addEventListener('alpine:init', () => {
       this.searchQuery = '';
       this.categoryFilter = '';
       this.stockFilter = '';
-      this.skuFilter = '';
+      this.skuFilter = 'sku-on';
       this.warehouseFilter = window.userContext?.warehouseId
         ? String(window.userContext.warehouseId)
         : (this.options.warehouses?.length > 0 ? String(this.options.warehouses[0].id) : '');
