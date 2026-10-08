@@ -25,7 +25,7 @@ class VillageController extends Controller implements HasMiddleware
             new Middleware('permission:village-view', only: ['index', 'show', 'servicesOptions', 'search']),
             new Middleware('permission:village-create', only: ['store']),
             new Middleware('permission:village-import', only: ['import', 'importTemplate']),
-            new Middleware('permission:village-edit', only: ['update', 'bulkAction', 'syncIndiaPostPincodes']),
+            new Middleware('permission:village-edit', only: ['update', 'syncIndiaPostPincodes']),
             new Middleware('permission:village-delete', only: ['destroy']),
             new Middleware('permission:village-export', only: ['export', 'exportSelected']),
         ];
@@ -215,9 +215,9 @@ class VillageController extends Controller implements HasMiddleware
             $statesList = Village::distinct()->pluck('state_name')->filter()->sort()->values();
         }
 
-        $targetStates = $request->filled('state') 
-            ? array_map('trim', explode(',', (string) $request->state)) 
-            : ($lobStateName ? [$lobStateName] : []);
+        $targetStates = $lobStateName
+            ? [$lobStateName]
+            : ($request->filled('state') ? array_map('trim', explode(',', (string) $request->state)) : []);
 
         $districtsList = Village::when(!empty($targetStates), function ($q) use ($targetStates) {
             $q->whereIn('state_name', $targetStates);
@@ -238,7 +238,8 @@ class VillageController extends Controller implements HasMiddleware
         })->whereIn('taluka_name', $targetTalukas)
             ->distinct()->pluck('village_name')->filter()->sort()->values() : [];
 
-        $officeTypesList = Village::distinct()->pluck('office_type_code')->filter()->sort()->values();
+        $officeTypesList = Village::when($lobStateName, fn ($q) => $q->where('state_name', $lobStateName))
+            ->distinct()->pluck('office_type_code')->filter()->sort()->values();
 
         return response()->json([
             'pagination' => $villages,
@@ -280,8 +281,10 @@ class VillageController extends Controller implements HasMiddleware
     /**
      * Display a single village.
      */
-    public function show(Village $village): JsonResponse
+    public function show(Request $request, Village $village): JsonResponse
     {
+        $this->assertVillageStateAccess($village, $request);
+
         return response()->json([
             'data' => $village->load(['services', 'mappings.service']),
         ]);
@@ -292,6 +295,8 @@ class VillageController extends Controller implements HasMiddleware
      */
     public function update(Request $request, Village $village): JsonResponse
     {
+        $this->assertVillageStateAccess($village, $request);
+
         $validated = $request->validate([
             'village_name' => ['required', 'string', 'max:255'],
             'pincode' => ['required', 'string', 'max:10'],
@@ -338,8 +343,10 @@ class VillageController extends Controller implements HasMiddleware
     /**
      * Delete a village.
      */
-    public function destroy(Village $village): JsonResponse
+    public function destroy(Request $request, Village $village): JsonResponse
     {
+        $this->assertVillageStateAccess($village, $request);
+
         $name = $village->village_name;
         $village->delete();
 
@@ -591,6 +598,16 @@ class VillageController extends Controller implements HasMiddleware
 
         $ids = $validated['ids'];
         $action = $validated['action'];
+        $lobStateName = $request->user()?->lob_state_name;
+        if ($lobStateName) {
+            $accessibleIds = Village::withTrashed()
+                ->whereIn('id', $ids)
+                ->where('state_name', $lobStateName)
+                ->pluck('id')
+                ->map(fn ($id) => (int) $id)
+                ->all();
+            abort_unless(count(array_unique($accessibleIds)) === count(array_unique(array_map('intval', $ids))), 404);
+        }
 
         if ($action === 'delete') {
             abort_unless($request->user()?->can('village-delete'), 403);
@@ -623,6 +640,7 @@ class VillageController extends Controller implements HasMiddleware
         }
 
         if ($action === 'service-update') {
+            abort_unless($request->user()?->can('village-edit'), 403);
             $serviceId = (int) $validated['service_id'];
             $isAvailable = $validated['status'] === 'available';
 
@@ -855,6 +873,13 @@ class VillageController extends Controller implements HasMiddleware
             });
         }
 
+        if ($request->filled('office_type_code')) {
+            $officeTypes = array_filter(array_map('trim', explode(',', (string) $request->input('office_type_code'))));
+            if (! empty($officeTypes)) {
+                $query->whereIn('office_type_code', $officeTypes);
+            }
+        }
+
         // LOB/State scoping: restrict export to the user's assigned state
         if ($lobStateName = $request->user()?->lob_state_name) {
             $query->where('state_name', $lobStateName);
@@ -892,6 +917,7 @@ class VillageController extends Controller implements HasMiddleware
         // Keep selected exports bounded while eager-loading their related services.
         $villages = Village::withTrashed()->with(['mappings.service'])
             ->whereIn('id', $validated['ids'])
+            ->when($request->user()?->lob_state_name, fn ($q, $state) => $q->where('state_name', $state))
             ->lazyById(500);
         $filename = 'villages-export-selected-'.now()->format('Ymd_His').'.csv';
 
@@ -951,5 +977,11 @@ class VillageController extends Controller implements HasMiddleware
 
             fclose($file);
         };
+    }
+
+    private function assertVillageStateAccess(Village $village, Request $request): void
+    {
+        $lobStateName = $request->user()?->lob_state_name;
+        abort_if($lobStateName && $village->state_name !== $lobStateName, 404);
     }
 }

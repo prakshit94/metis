@@ -383,6 +383,7 @@ document.addEventListener('alpine:init', () => {
     },
 
     get pageTo() {
+      if (this.itemsPerPage === -1) return this.totalVillages;
       return Math.min(this.currentPage * this.itemsPerPage, this.totalVillages);
     },
 
@@ -510,8 +511,12 @@ document.addEventListener('alpine:init', () => {
 
     async restoreVillage(v) {
       try {
-        const res = await apiFetch(`/api/villages/${v.id}/restore`, { method: 'PATCH' });
+        const res = await apiFetch('/api/villages/bulk-action', {
+          method: 'POST',
+          body: JSON.stringify({ action: 'restore', ids: [String(v.id)] }),
+        });
         showToast(res.message || 'Village restored.', 'success');
+        this.selectedVillages = this.selectedVillages.filter((id) => id !== String(v.id));
         this.loadVillages();
       } catch (err) {
         showToast(err.message, 'danger');
@@ -527,8 +532,12 @@ document.addEventListener('alpine:init', () => {
       if (!confirmed) return;
 
       try {
-        const res = await apiFetch(`/api/villages/${v.id}/force-delete`, { method: 'DELETE' });
+        const res = await apiFetch('/api/villages/bulk-action', {
+          method: 'POST',
+          body: JSON.stringify({ action: 'force-delete', ids: [String(v.id)] }),
+        });
         showToast(res.message || 'Village permanently deleted.', 'success');
+        this.selectedVillages = this.selectedVillages.filter((id) => id !== String(v.id));
         this.loadVillages();
       } catch (err) {
         showToast(err.message, 'danger');
@@ -581,9 +590,7 @@ document.addEventListener('alpine:init', () => {
     },
 
     initCharts(serverStats) {
-      if (serverStats.total) {
-        this.stats = serverStats;
-      }
+      this.stats = serverStats;
       this._initDistributionChart();
       this._initAnalyticsCharts();
     },
@@ -703,6 +710,7 @@ document.addEventListener('alpine:init', () => {
       if (this.districtFilter.length) params.set('district', this.districtFilter.join(','));
       if (this.talukaFilter.length) params.set('taluka', this.talukaFilter.join(','));
       if (this.villageFilter.length) params.set('village', this.villageFilter.join(','));
+      if (this.officeTypeFilter.length) params.set('office_type_code', this.officeTypeFilter.join(','));
       window.open(`/api/villages/export?${params.toString()}`, '_blank');
     },
 
