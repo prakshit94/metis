@@ -8,7 +8,7 @@
         window.__INITIAL_ORDER_TO_EDIT__ = @json($initialOrder ? $initialOrder->toArray() : null);
     </script>
 
-    <div x-data="createOrderApp(window.__INITIAL_ORDER_CUSTOMER__, window.__INITIAL_ORDER_TO_EDIT__)"
+    <div class="order-create-page" x-data="createOrderApp(window.__INITIAL_ORDER_CUSTOMER__, window.__INITIAL_ORDER_TO_EDIT__)"
          @call-log-added.window="if(customerDetails) { clearCartCache(); isCallLoggedOrClosed = true; window.location.href = '{{ route('dashboard') }}'; }"
          @complaint-saved.window="loadAddresses()">
     
@@ -147,7 +147,7 @@
                                             <template x-if="computedTags.length > 0">
                                                 <div class="d-flex gap-1 flex-wrap">
                                                     <template x-for="tag in computedTags" :key="tag.name">
-                                                        <span class="badge d-inline-flex align-items-center gap-1 shadow-sm border border-black border-opacity-10" 
+                                                        <span class="badge d-inline-flex align-items-center gap-1 shadow-sm border border-secondary border-opacity-25"
                                                               :class="tag.color" 
                                                               style="font-size: 10px;">
                                                             <i class="bi" :class="tag.icon" style="font-size: 9px;"></i>
@@ -156,7 +156,7 @@
                                                     </template>
                                                 </div>
                                             </template>
-                                            <i class="bi bi-info-circle-fill text-black-50 cursor-help ms-1" 
+                                            <i class="bi bi-info-circle-fill text-body-secondary cursor-help ms-1"
                                                style="font-size: 11px;" 
                                                title="Smart Tags Criteria:&#10;👤 New Customer: 0 Orders&#10;🥈 Silver: 1-5 Orders&#10;🥇 Gold: 6-9 Orders&#10;⭐ VIP: 10+ Orders&#10;💵 High Spender: Delivered Revenue > ₹50,000&#10;💳 Wallet Cash: Wallet Balance > 0&#10;⚠️ High Return Risk: Returns > 30% of total orders&#10;🚫 Blacklisted: Customer is blocked"></i>
                                         </div>
@@ -456,7 +456,7 @@
                             </template>
                             <template x-if="addresses.length === 0">
                                 <div class="col-12">
-                                    <div class="alert alert-light border border-secondary border-opacity-25 rounded-4 d-flex align-items-center mb-0 p-4 shadow-sm bg-body-tertiary">
+                                    <div class="alert border border-secondary border-opacity-25 rounded-4 d-flex align-items-center mb-0 p-4 shadow-sm bg-body-tertiary text-body">
                                         <div class="bg-secondary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-4" style="width: 50px; height: 50px;">
                                             <i class="bi bi-info-circle text-body-secondary fs-4"></i>
                                         </div>
@@ -529,7 +529,7 @@
                                 </template>
                                 <template x-if="addresses.length === 0">
                                     <div class="col-12">
-                                        <div class="alert alert-light border border-secondary border-opacity-25 rounded-4 d-flex align-items-center mb-0 p-4 shadow-sm bg-body-tertiary">
+                                        <div class="alert border border-secondary border-opacity-25 rounded-4 d-flex align-items-center mb-0 p-4 shadow-sm bg-body-tertiary text-body">
                                             <div class="bg-secondary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-4" style="width: 50px; height: 50px;">
                                                 <i class="bi bi-info-circle text-body-secondary fs-4"></i>
                                             </div>
@@ -613,7 +613,7 @@
                                                 <div x-show="p.grade" 
                                                      class="badge border shadow-sm rounded-2 d-flex flex-column align-items-center justify-content-center flex-shrink-0" 
                                                      style="width: 28px; height: 34px; font-size: 11px; padding: 2px;"
-                                                     :class="{'bg-success-subtle text-success-emphasis border-success': p.grade === 'A', 'bg-warning-subtle text-warning-emphasis border-warning': p.grade === 'B', 'bg-danger-subtle text-danger-emphasis border-danger': p.grade === 'C', 'bg-dark-subtle text-body-emphasis-emphasis border-dark': !['A','B','C'].includes(p.grade)}"
+                                                     :class="{'bg-success-subtle text-success-emphasis border-success': p.grade === 'A', 'bg-warning-subtle text-warning-emphasis border-warning': p.grade === 'B', 'bg-danger-subtle text-danger-emphasis border-danger': p.grade === 'C', 'bg-secondary-subtle text-secondary-emphasis border-secondary': !['A','B','C'].includes(p.grade)}"
                                                      :title="'Grade ' + p.grade"
                                                      x-cloak>
                                                     <i class="bi bi-star-fill text-warning" style="font-size: 10px; line-height: 1; margin-bottom: 2px;"></i>
@@ -703,7 +703,7 @@
                         {{-- Table View --}}
                         <div class="table-responsive" x-show="viewMode === 'table'">
                             <table class="table table-hover mb-0">
-                                <thead class="table-light">
+                                <thead class="order-themed-table-head">
                                     <tr>
                                         <th scope="col">Product Details</th>
                                         <th scope="col" style="min-width: 150px;">Pricing & Offers</th>
@@ -725,7 +725,7 @@
                                                         <div x-show="p.grade" 
                                                              class="position-absolute top-100 start-50 translate-middle badge border shadow-sm rounded-pill px-2 d-flex align-items-center" 
                                                              style="font-size: 9px; padding-top: 2px; padding-bottom: 2px;"
-                                                             :class="{'bg-success-subtle text-success-emphasis border-success': p.grade === 'A', 'bg-warning-subtle text-warning-emphasis border-warning': p.grade === 'B', 'bg-danger-subtle text-danger-emphasis border-danger': p.grade === 'C', 'bg-dark-subtle text-body-emphasis-emphasis border-dark': !['A','B','C'].includes(p.grade)}"
+                                                             :class="{'bg-success-subtle text-success-emphasis border-success': p.grade === 'A', 'bg-warning-subtle text-warning-emphasis border-warning': p.grade === 'B', 'bg-danger-subtle text-danger-emphasis border-danger': p.grade === 'C', 'bg-secondary-subtle text-secondary-emphasis border-secondary': !['A','B','C'].includes(p.grade)}"
                                                              :title="'Grade ' + p.grade"
                                                              x-cloak>
                                                             <i class="bi bi-star-fill text-warning me-1" style="font-size: 8px;"></i><span x-text="p.grade" style="font-weight: 800;"></span>
@@ -975,8 +975,8 @@
                         <template x-for="(item, idx) in cart" :key="item.id + '_' + (item.is_gift ? item.gift_source : 'paid')">
                             <div class="card border shadow-sm mb-3">
                                 <div class="d-flex align-items-start gap-3 p-3">
-                                    <div class="rounded-3 bg-body-tertiary border flex-shrink-0 d-flex align-items-center justify-content-center overflow-hidden" style="width: 70px; height: 70px;">
-                                        <img :src="item.image_url || '/assets/images/product-placeholder.svg'" class="w-100 h-100 object-fit-cover" x-on:error="$el.src='/assets/images/product-placeholder.svg'">
+                                    <div class="rounded-3 bg-body-secondary border flex-shrink-0 d-flex align-items-center justify-content-center overflow-hidden" style="width: 70px; height: 70px;">
+                                        <img :src="item.image_url || '/assets/images/product-placeholder.svg'" class="w-100 h-100 object-fit-contain bg-body-secondary" x-on:error="$el.src='/assets/images/product-placeholder.svg'">
                                     </div>
                                     <div class="flex-grow-1" style="min-width: 0;">
                                         <div class="d-flex align-items-start justify-content-between gap-2">
@@ -1061,7 +1061,7 @@
                             <template x-if="bestOrderOffer">
                                 <div class="d-flex align-items-center justify-content-between gap-3 px-3 py-2 rounded-4 bg-success bg-opacity-10 border border-success border-opacity-25 shadow-sm transition-all hover-shadow">
                                     <div class="d-flex align-items-center gap-3">
-                                        <div class="text-bg-success-subtle text-success-emphasis-emphasis rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 32px; height: 32px;">
+                                        <div class="bg-success-subtle text-success-emphasis rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 32px; height: 32px;">
                                             <i class="bi bi-check-lg fs-5"></i>
                                         </div>
                                         <div>
@@ -1081,7 +1081,7 @@
                             <template x-if="couponApplied">
                                 <div class="d-flex align-items-center justify-content-between gap-3 px-3 py-2 rounded-4 bg-success bg-opacity-10 border border-success border-opacity-25 shadow-sm transition-all hover-shadow">
                                     <div class="d-flex align-items-center gap-3">
-                                        <div class="text-bg-success-subtle text-success-emphasis-emphasis rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 32px; height: 32px;">
+                                        <div class="bg-success-subtle text-success-emphasis rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 32px; height: 32px;">
                                             <i class="bi bi-ticket-perforated fs-5"></i>
                                         </div>
                                         <div>
@@ -1113,7 +1113,7 @@
                             <template x-if="bogoDiscount > 0">
                                 <div class="d-flex align-items-center justify-content-between gap-3 px-3 py-2 rounded-4 bg-info bg-opacity-10 border border-info border-opacity-25 shadow-sm transition-all hover-shadow">
                                     <div class="d-flex align-items-center gap-3">
-                                        <div class="text-bg-info-subtle text-info-emphasis-emphasis rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 32px; height: 32px;">
+                                        <div class="text-bg-info-subtle text-info-emphasis rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 32px; height: 32px;">
                                             <i class="bi bi-lightning-charge-fill fs-5"></i>
                                         </div>
                                         <div>
@@ -1259,7 +1259,7 @@
                             </div>
                             
                             <button type="button" @click.prevent="submitConfirmation()" :disabled="placing || cart.length === 0 || !partyId || !warehouseId || (confirmAction === 'schedule' && (!scheduleReason || !scheduledConfirmDate))"
-                                class="btn btn-info text-white w-100 py-3 fw-bold text-uppercase shadow-sm position-relative overflow-hidden" style="letter-spacing: 1px;">
+                                class="btn btn-info w-100 py-3 fw-bold text-uppercase shadow-sm position-relative overflow-hidden" style="letter-spacing: 1px;">
                                 <span x-show="placing" class="spinner-border spinner-border-sm me-2"></span>
                                 <i x-show="!placing" class="bi bi-check2-all me-2 fs-5 align-middle"></i>
                                 <span x-text="confirmAction === 'schedule' ? 'Save Schedule' : 'Submit Confirmation'" class="align-middle"></span>
@@ -1273,7 +1273,7 @@
                         </button>
                         
                         <template x-if="formErrors.length">
-                            <div class="alert alert-danger mt-3 mb-0 p-3 shadow-sm small border-0 text-bg-danger-subtle text-danger-emphasis-emphasis">
+                            <div class="alert mt-3 mb-0 p-3 shadow-sm small border border-danger-subtle bg-danger-subtle text-danger-emphasis">
                                 <div class="d-flex align-items-center gap-2 mb-2 fw-bold"><i class="bi bi-exclamation-triangle-fill"></i> Please fix the following errors:</div>
                                 <ul class="mb-0 ps-3">
                                     <template x-for="e in formErrors" :key="e"><li x-text="e"></li></template>
@@ -1306,7 +1306,7 @@
                     <template x-if="historyOrders && historyOrders.length > 0">
                         <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
                             <table class="table table-hover table-sm align-middle mb-0" style="font-size: 0.85rem;">
-                                <thead class="table-secondary sticky-top" style="z-index: 1;">
+                                <thead class="order-themed-table-head sticky-top" style="z-index: 1;">
                                     <tr>
                                         <th scope="col" class="text-nowrap ps-4 py-2 border-bottom-0">Order #</th>
                                         <th scope="col" class="text-nowrap py-2 border-bottom-0">Date & Time</th>
@@ -1367,7 +1367,7 @@
                     <template x-if="futureOrders && futureOrders.length > 0">
                         <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
                             <table class="table table-hover table-sm align-middle mb-0" style="font-size: 0.85rem;">
-                                <thead class="table-secondary sticky-top" style="z-index: 1;">
+                                <thead class="order-themed-table-head sticky-top" style="z-index: 1;">
                                     <tr>
                                         <th scope="col" class="text-nowrap ps-4 py-2 border-bottom-0">Order #</th>
                                         <th scope="col" class="text-nowrap py-2 border-bottom-0">Future Date</th>
@@ -1428,7 +1428,7 @@
                         <template x-if="customerDetails && customerDetails.call_logs && customerDetails.call_logs.length > 0">
                             <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
                                 <table class="table table-hover table-sm align-middle mb-0" style="font-size: 0.85rem;">
-                                    <thead class="table-light sticky-top" style="z-index: 1;">
+                                    <thead class="order-themed-table-head sticky-top" style="z-index: 1;">
                                         <tr>
                                             <th scope="col" class="text-nowrap ps-4 py-2 border-bottom-0">Date & Time</th>
                                             <th scope="col" class="text-nowrap py-2 border-bottom-0">Agent</th>
@@ -1714,14 +1714,14 @@
                     <div class="row g-0" style="min-height: 100%;">
                         <!-- Left: Image & Meta (fixed panel) -->
                         <div class="col-md-4 bg-body-tertiary border-end p-3" style="position: sticky; top: 0; height: fit-content; align-self: flex-start;">
-                            <div class="card border border-secondary border-opacity-25 mb-3 rounded-4 overflow-hidden position-relative" style="aspect-ratio:1;width:100%;">
-                            <img :src="selectedProductForModal ? (selectedProductForModal.image_url || '/assets/images/product-placeholder.svg') : ''" class="w-100 h-100 object-fit-cover" x-on:error="$el.src='/assets/images/product-placeholder.svg'">
+                            <div class="card border border-secondary border-opacity-25 mb-3 rounded-4 overflow-hidden position-relative bg-body-secondary" style="aspect-ratio:1;width:100%;">
+                                <img :src="selectedProductForModal ? (selectedProductForModal.image_url || '/assets/images/product-placeholder.svg') : ''" class="w-100 h-100 object-fit-contain bg-body-secondary" x-on:error="$el.src='/assets/images/product-placeholder.svg'">
                                 <span class="position-absolute top-0 end-0 m-2 badge bg-success shadow-sm" x-show="selectedProductForModal && selectedProductForModal.default_discount > 0" x-text="selectedProductForModal ? selectedProductForModal.default_discount + (selectedProductForModal.default_discount_type === 'percent' ? '%' : '') + ' OFF' : ''"></span>
                             </div>
                             <div x-show="selectedProductForModal">
                                 <div class="d-flex flex-wrap gap-2 mb-3">
                                     <span x-show="selectedProductForModal && selectedProductForModal.category" class="badge text-bg-primary-subtle text-primary-emphasis border-opacity-25 py-2 px-3"><i class="bi bi-tag-fill me-1"></i><span x-text="selectedProductForModal ? selectedProductForModal.category : ''"></span></span>
-                                    <span x-show="selectedProductForModal && selectedProductForModal.brand" class="badge text-bg-dark-subtle text-body-emphasis-emphasis border py-2 px-3"><i class="bi bi-award-fill me-1"></i><span x-text="selectedProductForModal ? selectedProductForModal.brand : ''"></span></span>
+                                    <span x-show="selectedProductForModal && selectedProductForModal.brand" class="badge bg-secondary-subtle text-secondary-emphasis border py-2 px-3"><i class="bi bi-award-fill me-1"></i><span x-text="selectedProductForModal ? selectedProductForModal.brand : ''"></span></span>
                                 </div>
                                 <div class="table-responsive">
                                     <table class="table table-sm table-borderless small mb-0 text-body-secondary">
@@ -1914,7 +1914,7 @@
                             <div class="p-3 bg-body-tertiary rounded h-100 border shadow-sm">
                                 <h6 class="fw-bold text-body-secondary mb-3" style="font-size:11px; text-transform:uppercase; letter-spacing:1px;"><i class="bi bi-person me-1"></i> Customer</h6>
                                 <div class="d-flex gap-3 align-items-center mb-3">
-                                    <div class="rounded-circle overflow-hidden shadow-sm flex-shrink-0 bg-white border" style="width: 48px; height: 48px;">
+                                    <div class="rounded-circle overflow-hidden shadow-sm flex-shrink-0 bg-body-secondary border" style="width: 48px; height: 48px;">
                                         <template x-if="customerDetails?.avatar">
                                             <img :src="'/storage/' + customerDetails.avatar" class="w-100 h-100 object-fit-cover" :alt="customerDisplayName">
                                         </template>
@@ -1990,7 +1990,7 @@
                         <h6 class="fw-bold text-body-secondary mb-3" style="font-size:11px; text-transform:uppercase; letter-spacing:1px;"><i class="bi bi-cart me-1"></i> Order Items</h6>
                         <div class="table-responsive border rounded shadow-sm" style="max-height: 250px; overflow-y: auto;">
                             <table class="table table-sm table-borderless table-striped mb-0 text-center align-middle" style="font-size:12px;">
-                                <thead class="table-light border-bottom position-sticky top-0 z-1">
+                                <thead class="order-themed-table-head border-bottom position-sticky top-0 z-1">
                                     <tr>
                                         <th class="text-start ps-3 py-2">Item</th>
                                         <th class="py-2">Qty</th>
@@ -2003,7 +2003,7 @@
                                         <tr>
                                             <td class="text-start ps-3 py-2">
                                                 <div class="d-flex align-items-center gap-2">
-                                                    <div class="rounded border shadow-sm overflow-hidden flex-shrink-0 bg-white" style="width: 32px; height: 32px;">
+                                                    <div class="rounded border shadow-sm overflow-hidden flex-shrink-0 bg-body-secondary" style="width: 32px; height: 32px;">
                                                         <img :src="item.image_url || '/assets/images/product-placeholder.svg'" class="w-100 h-100 object-fit-contain" x-on:error="$el.src='/assets/images/product-placeholder.svg'" :alt="item.name">
                                                     </div>
                                                     <div>
@@ -2383,7 +2383,7 @@
                                                         <td class="ps-4 py-3">
                                                             <div class="d-flex align-items-center gap-3">
                                                                 <img :src="item.image || '/assets/images/product-placeholder.svg'"
-                                                                     class="rounded-3 shadow-sm object-fit-cover"
+                                                                     class="rounded-3 shadow-sm object-fit-contain bg-body-secondary"
                                                                      width="48"
                                                                      height="48"
                                                                      :alt="item.name"
@@ -2731,7 +2731,7 @@
                     <template x-if="customerDetails?.wallet_transactions?.length > 0">
                         <div class="table-responsive">
                             <table class="table table-hover align-middle mb-0">
-                                <thead class="table-light sticky-top">
+                                <thead class="order-themed-table-head sticky-top">
                                     <tr>
                                         <th>Date</th>
                                         <th>Description</th>
@@ -2773,6 +2773,17 @@
     </div>
 
 <style>
+    html[data-bs-theme="dark"] .order-create-page img[src$="/product-placeholder.svg"] {
+        filter: invert(1) hue-rotate(180deg);
+    }
+
+    .order-create-page .order-themed-table-head {
+        --bs-table-bg: var(--bs-tertiary-bg);
+        --bs-table-color: var(--bs-emphasis-color);
+        --bs-table-border-color: var(--bs-border-color);
+        color: var(--bs-emphasis-color);
+    }
+
     /* Hide number input spin buttons */
     .no-spinners::-webkit-inner-spin-button,
     .no-spinners::-webkit-outer-spin-button {

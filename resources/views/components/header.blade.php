@@ -471,7 +471,7 @@
                                 <template x-for="(item, idx) in items" :key="idx">
                                     <div class="d-flex align-items-center px-3 py-3 border-bottom position-relative hover-bg-secondary transition-all">
                                         <div class="bg-body-secondary border rounded-3 d-flex align-items-center justify-content-center overflow-hidden me-3 flex-shrink-0" style="width: 48px; height: 48px;">
-                                            <img :src="item.image_url || '{{ asset('assets/images/product-placeholder.svg') }}'" class="w-100 h-100 object-fit-cover" alt="Product" x-on:error="$el.src='{{ asset('assets/images/product-placeholder.svg') }}'">
+                                            <img :src="item.image_url || '{{ asset('assets/images/product-placeholder.svg') }}'" class="header-cart-product-image w-100 h-100 object-fit-contain bg-body-secondary" alt="Product" x-on:error="$el.src='{{ asset('assets/images/product-placeholder.svg') }}'">
                                         </div>
                                         <div class="flex-grow-1" style="min-width: 0;">
                                             <h6 class="mb-1 fw-bold text-body text-truncate fs-6" x-text="item.name"></h6>
@@ -1165,6 +1165,7 @@
 <x-profile-modal />
 
 <style>
+html[data-bs-theme="dark"] .header-cart-product-image[src$="/product-placeholder.svg"] { filter: invert(1) hue-rotate(180deg); }
 .hover-bg-secondary:hover { background-color: var(--bs-secondary-bg) !important; }
 .hover-bg-danger-subtle:hover { background-color: rgba(var(--bs-danger-rgb), 0.1) !important; }
 .hover-scale { transition: transform 0.2s ease, box-shadow 0.2s ease; }
