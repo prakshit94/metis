@@ -1628,7 +1628,7 @@
                             </template>
 
                             <div class="d-grid gap-3">
-                                <template x-for="c in activeCoupons" :key="c.id">
+                                <template x-for="c in couponsSortedByEligibility" :key="c.id">
                                     <div class="card border-2 rounded-4 transition-all" :class="couponIsApplicable(c) ? 'border-success border-opacity-50 bg-success bg-opacity-10 hover-shadow cursor-pointer' : 'border-secondary border-opacity-10 bg-body-tertiary opacity-75'" @click="if (couponIsApplicable(c)) applyCoupon(c.code)">
                                         <div class="card-body p-3 d-flex align-items-start justify-content-between gap-3">
                                             <div class="d-flex align-items-start gap-3 flex-grow-1" style="min-width: 0;">
@@ -4570,9 +4570,25 @@ mapOrder(o) {
             return ids;
         },
         get sortedActiveOffers() {
+            const eligibleOfferIds = new Set(this.offerCandidates.map(offer => String(offer.id)));
             return [...this.activeOffers].sort((a,b) => {
+                const aEligible = eligibleOfferIds.has(String(a.id));
+                const bEligible = eligibleOfferIds.has(String(b.id));
+                if (aEligible !== bEligible) return aEligible ? -1 : 1;
                 if (a.type !== b.type) return (a.type === 'bogo' || a.type === 'free_product') ? -1 : 1;
                 return (b.priority - a.priority) || (a.id - b.id);
+            });
+        },
+        get couponsSortedByEligibility() {
+            const eligibleCouponIds = new Set(
+                this.activeCoupons
+                    .filter(coupon => this.couponIsApplicable(coupon))
+                    .map(coupon => String(coupon.id))
+            );
+            return [...this.activeCoupons].sort((a, b) => {
+                const aEligible = eligibleCouponIds.has(String(a.id));
+                const bEligible = eligibleCouponIds.has(String(b.id));
+                return aEligible === bEligible ? 0 : (aEligible ? -1 : 1);
             });
         },
         get availableOrderOffers() {
