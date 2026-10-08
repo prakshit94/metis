@@ -692,24 +692,14 @@
                 <form @submit.prevent="saveVillage()">
                     <div class="row g-3">
                         <div class="col-md-12">
-                            <label class="form-label fw-semibold">Village Name <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" x-model="form.village_name" placeholder="e.g. Kawatha" required>
+                            <label class="form-label fw-semibold">Village Name <span class="text-danger" x-show="editingVillageId">*</span></label>
+                            <input type="text" class="form-control" x-model="form.village_name" placeholder="e.g. Kawatha" :required="!!editingVillageId">
+                            <div class="form-text" x-show="!editingVillageId">Required only when India Post has no matching office for this pincode.</div>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">Pincode <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" x-model="form.pincode" @input.debounce.500ms="lookupPincode()" placeholder="e.g. 440001" inputmode="numeric" maxlength="10" required>
-                            <div class="form-text" x-show="pincodeLookupLoading" aria-live="polite">
-                                <span class="spinner-border spinner-border-sm me-1" role="status"></span>Looking up India Post details…
-                            </div>
-                            <div class="form-text" x-show="pincodeLookupMessage" x-text="pincodeLookupMessage" aria-live="polite"></div>
-                            <div class="list-group mt-2" x-show="pincodeLookupResults.length > 1">
-                                <template x-for="(office, index) in pincodeLookupResults" :key="`${office.office_id || office.post_so_name}-${index}`">
-                                    <button type="button" class="list-group-item list-group-item-action small" @click="applyPincodeOffice(office)">
-                                        <span class="fw-semibold" x-text="office.village_name"></span>
-                                        <span class="text-body-secondary" x-text="[office.post_so_name, office.taluka_name, office.district_name, office.state_name].filter(Boolean).join(' · ')"></span>
-                                    </button>
-                                </template>
-                            </div>
+                            <input type="text" class="form-control" x-model="form.pincode" placeholder="e.g. 440001" inputmode="numeric" maxlength="10" required>
+                            <div class="form-text">Matching India Post offices are added automatically when you create this village.</div>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">Post SO Name</label>

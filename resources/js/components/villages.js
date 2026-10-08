@@ -936,11 +936,6 @@ document.addEventListener('alpine:init', () => {
   Alpine.data('villageForm', () => ({
     editingVillageId: null,
     saving: false,
-    pincodeLookupLoading: false,
-    pincodeLookupMessage: '',
-    pincodeLookupResults: [],
-    pincodeLookupCache: {},
-    pincodeLookupRequest: 0,
     form: {
       village_name: '',
       pincode: '',
@@ -956,10 +951,6 @@ document.addEventListener('alpine:init', () => {
 
     loadVillage(v) {
       this.editingVillageId = v.id;
-      this.pincodeLookupRequest += 1;
-      this.pincodeLookupLoading = false;
-      this.pincodeLookupMessage = '';
-      this.pincodeLookupResults = [];
       this.form = {
         village_name: v.village_name ?? '',
         pincode: v.pincode ?? '',
@@ -976,11 +967,6 @@ document.addEventListener('alpine:init', () => {
 
     resetForm() {
       this.editingVillageId = null;
-      this.pincodeLookupLoading = false;
-      this.pincodeLookupMessage = '';
-      this.pincodeLookupResults = [];
-      this.pincodeLookupCache = {};
-      this.pincodeLookupRequest += 1;
       this.form = {
         village_name: '',
         pincode: '',
@@ -993,79 +979,6 @@ document.addEventListener('alpine:init', () => {
         delivery_office_flag: false,
         is_rolled_out: false,
       };
-    },
-
-    async lookupPincode() {
-      const pincode = String(this.form.pincode ?? '').trim();
-      if (!/^\d{6}$/.test(pincode)) {
-        this.pincodeLookupRequest += 1;
-        this.pincodeLookupLoading = false;
-        this.pincodeLookupResults = [];
-        this.pincodeLookupMessage = '';
-        return;
-      }
-
-      const cached = this.pincodeLookupCache[pincode];
-      if (cached) {
-        this.pincodeLookupResults = cached;
-        if (cached.length === 1) {
-          this.applyPincodeOffice(cached[0]);
-          this.pincodeLookupMessage = 'Village and post office details filled from India Post.';
-        } else {
-          this.pincodeLookupMessage = cached.length
-            ? 'Select the matching post office to fill its details.'
-            : 'No India Post offices found. You can enter the details manually.';
-        }
-        return;
-      }
-
-      const requestId = ++this.pincodeLookupRequest;
-      this.pincodeLookupResults = [];
-      this.pincodeLookupMessage = '';
-      this.pincodeLookupLoading = true;
-
-      try {
-        const params = new URLSearchParams({ pincode });
-        const result = await apiFetch(`/api/villages/pincode-lookup?${params.toString()}`);
-        if (requestId !== this.pincodeLookupRequest || String(this.form.pincode).trim() !== pincode) return;
-
-        const offices = Array.isArray(result.data) ? result.data : [];
-        this.pincodeLookupCache[pincode] = offices;
-        this.pincodeLookupResults = offices;
-
-        if (offices.length === 1) {
-          this.applyPincodeOffice(offices[0]);
-          this.pincodeLookupMessage = 'Village and post office details filled from India Post.';
-        } else {
-          this.pincodeLookupMessage = offices.length
-            ? 'Multiple post offices use this pincode. Select the matching office below.'
-            : 'No India Post offices found. You can enter the details manually.';
-        }
-      } catch (err) {
-        if (requestId === this.pincodeLookupRequest) {
-          this.pincodeLookupMessage = err.message || 'India Post lookup failed. You can enter the details manually.';
-        }
-      } finally {
-        if (requestId === this.pincodeLookupRequest) this.pincodeLookupLoading = false;
-      }
-    },
-
-    applyPincodeOffice(office) {
-      if (String(this.form.pincode).trim() !== String(office.pincode)) return;
-      this.form = {
-        ...this.form,
-        village_name: office.village_name || this.form.village_name,
-        pincode: office.pincode || this.form.pincode,
-        post_so_name: office.post_so_name ?? '',
-        taluka_name: office.taluka_name ?? '',
-        district_name: office.district_name ?? '',
-        state_name: office.state_name ?? '',
-        office_id: office.office_id ?? '',
-        office_type_code: office.office_type_code ?? '',
-        delivery_office_flag: !!office.delivery_office_flag,
-        is_rolled_out: !!office.is_rolled_out,
-      };
-      this.pincodeLookupMessage = 'Village and post office details filled from India Post.';
     },
 
     async saveVillage() {

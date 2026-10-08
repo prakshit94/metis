@@ -23,7 +23,6 @@ class VillageController extends Controller implements HasMiddleware
     {
         return [
             new Middleware('permission:village-view', only: ['index', 'show', 'servicesOptions', 'search']),
-            new Middleware('permission:village-create|village-edit', only: ['lookupPincode']),
             new Middleware('permission:village-create', only: ['store']),
             new Middleware('permission:village-import', only: ['import', 'importTemplate']),
             new Middleware('permission:village-edit', only: ['update', 'syncIndiaPostPincodes']),
@@ -256,10 +255,10 @@ class VillageController extends Controller implements HasMiddleware
     /**
      * Store a new village.
      */
-    public function store(Request $request): JsonResponse
+    public function store(Request $request, IndiaPostProvider $indiaPostProvider): JsonResponse
     {
         $validated = $request->validate([
-            'village_name' => ['required', 'string', 'max:255'],
+            'village_name' => ['nullable', 'string', 'max:255'],
             'pincode' => ['required', 'string', 'max:10'],
             'post_so_name' => ['nullable', 'string', 'max:255'],
             'taluka_name' => ['nullable', 'string', 'max:255'],
@@ -271,11 +270,91 @@ class VillageController extends Controller implements HasMiddleware
             'is_rolled_out' => ['nullable', 'boolean'],
         ]);
 
-        $village = Village::create($validated);
+        $offices = [];
+        if (preg_match('/^\d{6}$/', $validated['pincode'])) {
+            try {
+                $offices = $this->indiaPostOfficesForPincode($validated['pincode'], $indiaPostProvider);
+                if ($lobStateName = $request->user()?->lob_state_name) {
+                    $offices = array_values(array_filter($offices, fn (array $office) =>
+                        strcasecmp((string) $office['state_name'], $lobStateName) === 0
+                    ));
+                }
+            } catch (\Throwable $exception) {
+                Log::warning('India Post village auto-import failed.', [
+                    'pincode' => $validated['pincode'],
+                    'error' => $exception->getMessage(),
+                ]);
+            }
+        }
+
+        if ($offices === []) {
+            if (blank($validated['village_name'] ?? null)) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'village_name' => 'No matching India Post records were found. Enter a village name to create the village manually.',
+                ]);
+            }
+
+            $village = Village::create($validated);
+
+            return response()->json([
+                'message' => "Village [{$village->village_name}] created successfully.",
+                'data' => $village,
+            ], 201);
+        }
+
+        $createdVillages = [];
+        $existingCount = 0;
+        DB::transaction(function () use ($offices, &$createdVillages, &$existingCount): void {
+            $processedVillageIds = [];
+            foreach ($offices as $officeData) {
+                $existingQuery = Village::where('pincode', $officeData['pincode']);
+                if ($officeData['office_id']) {
+                    $existingQuery->where('office_id', $officeData['office_id']);
+                } else {
+                    $existingQuery->where('normalized_name', strtolower(trim($officeData['village_name'])));
+                    if ($officeData['post_so_name']) {
+                        $existingQuery->where('post_so_name', $officeData['post_so_name']);
+                    }
+                }
+                $existing = $existingQuery->first();
+
+                if ($existing) {
+                    $existingCount++;
+                    $processedVillageIds[] = (int) $existing->id;
+                    continue;
+                }
+
+                // Reuse an existing unsynced stub instead of creating a duplicate.
+                $stub = Village::where('pincode', $officeData['pincode'])
+                    ->where(function ($query): void {
+                        $query->whereNull('office_id')
+                            ->orWhereNull('office_type_code')
+                            ->orWhereIn('office_type_code', ['INVALID', 'FAILED', 'API_ERROR', '']);
+                    })
+                    ->when($processedVillageIds !== [], fn ($query) => $query->whereNotIn('id', $processedVillageIds))
+                    ->first();
+
+                if ($stub) {
+                    $stub->update($officeData);
+                    $savedVillage = $stub->fresh();
+                } else {
+                    $savedVillage = Village::create($officeData);
+                }
+                $createdVillages[] = $savedVillage;
+                $processedVillageIds[] = (int) $savedVillage->id;
+            }
+        });
+
+        $createdCount = count($createdVillages);
+        $message = $createdCount > 0
+            ? "Added {$createdCount} India Post office record(s) for pincode {$validated['pincode']}."
+            : "All matching India Post office records for pincode {$validated['pincode']} already exist; no duplicates were added.";
 
         return response()->json([
-            'message' => "Village [{$village->village_name}] created successfully.",
-            'data' => $village,
+            'message' => $message,
+            'data' => $createdVillages,
+            'created' => $createdCount,
+            'already_existing' => $existingCount,
         ], 201);
     }
 
@@ -686,72 +765,40 @@ class VillageController extends Controller implements HasMiddleware
         return response()->json($services);
     }
 
-    /**
-     * Look up post office details for the village form without writing to the database.
-     */
-    public function lookupPincode(Request $request, IndiaPostProvider $indiaPostProvider): JsonResponse
+    private function indiaPostOfficesForPincode(string $pincode, IndiaPostProvider $indiaPostProvider): array
     {
-        $validated = $request->validate([
-            'pincode' => ['required', 'regex:/^\\d{6}$/'],
-        ]);
+        return Cache::remember('india_post_pincode_lookup_'.$pincode, now()->addHour(), function () use ($indiaPostProvider, $pincode): array {
+            $response = $indiaPostProvider->getPincodeDetails($pincode);
+            $items = isset($response['data']) && is_array($response['data']) ? $response['data'] : $response;
 
-        $pincode = $validated['pincode'];
+            return collect($items)
+                ->filter(fn ($office) => is_array($office))
+                ->map(function (array $office) use ($pincode): array {
+                    $isTruthy = static fn ($value): bool => in_array(
+                        strtolower(trim((string) $value)),
+                        ['1', 'true', 'yes', 'y'],
+                        true
+                    );
 
-        try {
-            $offices = Cache::remember('india_post_pincode_lookup_'.$pincode, now()->addHour(), function () use ($indiaPostProvider, $pincode): array {
-                $response = $indiaPostProvider->getPincodeDetails($pincode);
-                $items = isset($response['data']) && is_array($response['data']) ? $response['data'] : $response;
-
-                return collect($items)
-                    ->filter(fn ($office) => is_array($office))
-                    ->map(function (array $office) use ($pincode): array {
-                        $isTruthy = static fn ($value): bool => in_array(
-                            strtolower(trim((string) $value)),
-                            ['1', 'true', 'yes', 'y'],
-                            true
-                        );
-
-                        return [
-                            'village_name' => ! empty($office['village_name']) && $office['village_name'] !== 'Choose an option'
-                                ? $office['village_name']
-                                : ($office['office_name'] ?? ''),
-                            'pincode' => (string) ($office['pincode'] ?? $pincode),
-                            'post_so_name' => $office['office_name'] ?? null,
-                            'taluka_name' => $office['taluk_name'] ?? null,
-                            'district_name' => $office['city_name'] ?? null,
-                            'state_name' => $office['state_name'] ?? null,
-                            'office_id' => isset($office['office_id']) ? (string) $office['office_id'] : null,
-                            'office_type_code' => $office['office_type_code'] ?? null,
-                            'delivery_office_flag' => $isTruthy($office['delivery_office_flag'] ?? false),
-                            'is_rolled_out' => $isTruthy($office['is_rolled_out'] ?? false),
-                        ];
-                    })
-                    ->filter(fn (array $office) => $office['village_name'] !== '')
-                    ->values()
-                    ->all();
-            });
-        } catch (\Throwable $exception) {
-            Log::warning('India Post pincode lookup failed.', [
-                'pincode' => $pincode,
-                'error' => $exception->getMessage(),
-            ]);
-
-            return response()->json([
-                'message' => 'India Post lookup is temporarily unavailable. You can still enter the village details manually.',
-                'data' => [],
-            ], 502);
-        }
-
-        if ($lobStateName = $request->user()?->lob_state_name) {
-            $offices = array_values(array_filter($offices, fn (array $office) =>
-                strcasecmp((string) $office['state_name'], $lobStateName) === 0
-            ));
-        }
-
-        return response()->json([
-            'message' => count($offices) ? 'India Post details found.' : 'No India Post offices found for this pincode.',
-            'data' => $offices,
-        ]);
+                    return [
+                        'village_name' => ! empty($office['village_name']) && $office['village_name'] !== 'Choose an option'
+                            ? $office['village_name']
+                            : ($office['office_name'] ?? ''),
+                        'pincode' => (string) ($office['pincode'] ?? $pincode),
+                        'post_so_name' => $office['office_name'] ?? null,
+                        'taluka_name' => $office['taluk_name'] ?? null,
+                        'district_name' => $office['city_name'] ?? null,
+                        'state_name' => $office['state_name'] ?? null,
+                        'office_id' => isset($office['office_id']) ? (string) $office['office_id'] : null,
+                        'office_type_code' => $office['office_type_code'] ?? null,
+                        'delivery_office_flag' => $isTruthy($office['delivery_office_flag'] ?? false),
+                        'is_rolled_out' => $isTruthy($office['is_rolled_out'] ?? false),
+                    ];
+                })
+                ->filter(fn (array $office) => trim($office['village_name']) !== '')
+                ->values()
+                ->all();
+        });
     }
 
     /**

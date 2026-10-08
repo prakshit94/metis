@@ -450,7 +450,6 @@ Route::middleware('auth:sanctum')->group(function (): void {
         ->name('api.villages.sync-indiapost');
     Route::post('/villages/bulk-action', [VillageController::class, 'bulkAction'])->name('api.villages.bulk');
     Route::get('/villages/services-options', [VillageController::class, 'servicesOptions'])->name('api.villages.services-options');
-    Route::get('/villages/pincode-lookup', [VillageController::class, 'lookupPincode'])->name('api.villages.pincode-lookup');
     Route::get('/villages/search', [VillageController::class, 'search'])->name('api.villages.search');
     Route::post('/villages/import', [VillageController::class, 'import'])->name('api.villages.import');
     Route::get('/villages/import-template', [VillageController::class, 'importTemplate'])->name('api.villages.import-template');
