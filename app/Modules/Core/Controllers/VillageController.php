@@ -23,6 +23,7 @@ class VillageController extends Controller implements HasMiddleware
     {
         return [
             new Middleware('permission:village-view', only: ['index', 'show', 'servicesOptions', 'search']),
+            new Middleware('permission:village-create|village-edit', only: ['lookupPincode']),
             new Middleware('permission:village-create', only: ['store']),
             new Middleware('permission:village-import', only: ['import', 'importTemplate']),
             new Middleware('permission:village-edit', only: ['update', 'syncIndiaPostPincodes']),
@@ -683,6 +684,74 @@ class VillageController extends Controller implements HasMiddleware
         $services = Service::active()->get();
 
         return response()->json($services);
+    }
+
+    /**
+     * Look up post office details for the village form without writing to the database.
+     */
+    public function lookupPincode(Request $request, IndiaPostProvider $indiaPostProvider): JsonResponse
+    {
+        $validated = $request->validate([
+            'pincode' => ['required', 'regex:/^\\d{6}$/'],
+        ]);
+
+        $pincode = $validated['pincode'];
+
+        try {
+            $offices = Cache::remember('india_post_pincode_lookup_'.$pincode, now()->addHour(), function () use ($indiaPostProvider, $pincode): array {
+                $response = $indiaPostProvider->getPincodeDetails($pincode);
+                $items = isset($response['data']) && is_array($response['data']) ? $response['data'] : $response;
+
+                return collect($items)
+                    ->filter(fn ($office) => is_array($office))
+                    ->map(function (array $office) use ($pincode): array {
+                        $isTruthy = static fn ($value): bool => in_array(
+                            strtolower(trim((string) $value)),
+                            ['1', 'true', 'yes', 'y'],
+                            true
+                        );
+
+                        return [
+                            'village_name' => ! empty($office['village_name']) && $office['village_name'] !== 'Choose an option'
+                                ? $office['village_name']
+                                : ($office['office_name'] ?? ''),
+                            'pincode' => (string) ($office['pincode'] ?? $pincode),
+                            'post_so_name' => $office['office_name'] ?? null,
+                            'taluka_name' => $office['taluk_name'] ?? null,
+                            'district_name' => $office['city_name'] ?? null,
+                            'state_name' => $office['state_name'] ?? null,
+                            'office_id' => isset($office['office_id']) ? (string) $office['office_id'] : null,
+                            'office_type_code' => $office['office_type_code'] ?? null,
+                            'delivery_office_flag' => $isTruthy($office['delivery_office_flag'] ?? false),
+                            'is_rolled_out' => $isTruthy($office['is_rolled_out'] ?? false),
+                        ];
+                    })
+                    ->filter(fn (array $office) => $office['village_name'] !== '')
+                    ->values()
+                    ->all();
+            });
+        } catch (\Throwable $exception) {
+            Log::warning('India Post pincode lookup failed.', [
+                'pincode' => $pincode,
+                'error' => $exception->getMessage(),
+            ]);
+
+            return response()->json([
+                'message' => 'India Post lookup is temporarily unavailable. You can still enter the village details manually.',
+                'data' => [],
+            ], 502);
+        }
+
+        if ($lobStateName = $request->user()?->lob_state_name) {
+            $offices = array_values(array_filter($offices, fn (array $office) =>
+                strcasecmp((string) $office['state_name'], $lobStateName) === 0
+            ));
+        }
+
+        return response()->json([
+            'message' => count($offices) ? 'India Post details found.' : 'No India Post offices found for this pincode.',
+            'data' => $offices,
+        ]);
     }
 
     /**
