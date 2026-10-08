@@ -91,10 +91,17 @@
                 <div class="col-auto">
                     <div class="d-flex flex-wrap gap-2 justify-content-end">
                         <div class="position-relative">
-                            <input type="search" class="form-control form-control-sm" placeholder="Search code..." x-model="search" @input.debounce.400ms="fetchCoupons()" style="width: 200px;">
+                            <input type="search" class="form-control form-control-sm" placeholder="Search code..." x-model="search" @input.debounce.400ms="applyFilters()" style="width: 200px;">
                             <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-2 text-muted"></i>
                         </div>
-                        <select class="form-select form-select-sm" x-model="filterStatus" @change="fetchCoupons()" style="width: 150px;">
+                        <select class="form-select form-select-sm" x-model="filterType" @change="applyFilters()" style="width: 160px;">
+                            <option value="">All Types</option>
+                            <option value="percentage">Percentage</option>
+                            <option value="fixed">Fixed Amount</option>
+                            <option value="free_shipping">Free Shipping</option>
+                            <option value="free_product">Free Product</option>
+                        </select>
+                        <select class="form-select form-select-sm" x-model="filterStatus" @change="applyFilters()" style="width: 150px;">
                             <option value="">All Status</option>
                             <option value="active">Active</option>
                             <option value="inactive">Inactive</option>
@@ -142,10 +149,10 @@
                     </thead>
                     <tbody>
                         <template x-if="loading">
-                            <tr><td colspan="9" class="text-center py-5"><div class="spinner-border text-primary"></div></td></tr>
+                            <tr><td colspan="10" class="text-center py-5"><div class="spinner-border text-primary"></div></td></tr>
                         </template>
                         <template x-if="!loading && coupons.length === 0">
-                            <tr><td colspan="9" class="text-center py-5 text-muted"><i class="bi bi-ticket-perforated fs-1 d-block mb-2"></i>No coupons found</td></tr>
+                            <tr><td colspan="10" class="text-center py-5 text-muted"><i class="bi bi-ticket-perforated fs-1 d-block mb-2"></i>No coupons found</td></tr>
                         </template>
                         <template x-for="c in coupons" :key="c.id">
                             <tr :class="{ 'selected': selected.includes(c.id), 'coupon-row-active': c.is_active }">
@@ -271,10 +278,10 @@
                 <nav>
                     <ul class="pagination pagination-sm mb-0">
                         <li class="page-item" :class="{ 'disabled': page <= 1 }">
-                            <a class="page-link" href="#" @click.prevent="page--; fetchCoupons()">Previous</a>
+                            <a class="page-link" href="#" @click.prevent="goToPage(page - 1)">Previous</a>
                         </li>
                         <li class="page-item" :class="{ 'disabled': page >= lastPage }">
-                            <a class="page-link" href="#" @click.prevent="page++; fetchCoupons()">Next</a>
+                            <a class="page-link" href="#" @click.prevent="goToPage(page + 1)">Next</a>
                         </li>
                     </ul>
                 </nav>
@@ -489,8 +496,8 @@ function couponsModule() {
     return {
         allProducts: INITIAL_PRODUCTS || [],
         coupons: [], loading: false, saving: false,
-        search: '', filterStatus: '', page: 1, lastPage: 1,
-        total: 0, from: 0, to: 0,
+        search: '', filterType: '', filterStatus: '', page: 1, lastPage: 1,
+        total: 0, from: 0, to: 0, _fetchRequestId: 0,
         selected: [], stats: { total: 0, active: 0, inactive: 0, expiring_soon: 0 },
         form: { id: null, code: '', type: 'percentage', display_type: 'percentage', value: '', min_spend: '', max_discount: '', cashback_type: 'none', cashback_val: '', free_product_id: '', free_qty: 1, expiry_date: '', usage_limit: '', is_active: true },
         formError: null,
@@ -537,13 +544,34 @@ function couponsModule() {
 
         async init() { await this.fetchCoupons(); },
 
+        applyFilters() {
+            this.page = 1;
+            this.selected = [];
+            this.fetchCoupons();
+        },
+
+        goToPage(page) {
+            const nextPage = Math.max(1, Math.min(Number(page) || 1, this.lastPage));
+            if (nextPage === this.page) return;
+            this.page = nextPage;
+            this.fetchCoupons();
+        },
+
         async fetchCoupons() {
+            const requestId = ++this._fetchRequestId;
             this.loading = true;
             try {
-                const params = new URLSearchParams({ search: this.search, status: this.filterStatus, per_page: 15, page: this.page });
+                const params = new URLSearchParams({ search: this.search, type: this.filterType, status: this.filterStatus, per_page: 15, page: this.page });
                 const res = await fetch(`/api/promotions/coupons?${params}`, { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
+                if (!res.ok) throw new Error(`Failed to load coupons (${res.status}).`);
                 const json = await res.json();
+                if (requestId !== this._fetchRequestId) return;
                 const d = json.data || {};
+                const responseLastPage = Math.max(Number(d.last_page) || 1, 1);
+                if (this.page > responseLastPage) {
+                    this.page = responseLastPage;
+                    return await this.fetchCoupons();
+                }
                 this.coupons = d.data || [];
                 this.total = d.total || 0; this.from = d.from || 0; this.to = d.to || 0; this.lastPage = d.last_page || 1;
                 if (json.stats) {
@@ -557,7 +585,11 @@ function couponsModule() {
                     this.stats.inactive = this.coupons.filter(c => !c.is_active).length;
                     this.stats.expiring_soon = this.coupons.filter(c => { if (!c.expiry_date) return false; const d = new Date(c.expiry_date); const n = new Date(); return d > n && (d - n) / 86400000 <= 7; }).length;
                 }
-            } catch (e) { console.error(e); } finally { this.loading = false; }
+            } catch (e) {
+                if (requestId === this._fetchRequestId) console.error(e);
+            } finally {
+                if (requestId === this._fetchRequestId) this.loading = false;
+            }
         },
 
         openModal(c = null) {

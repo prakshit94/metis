@@ -52,17 +52,27 @@ class PromotionsController extends Controller implements HasMiddleware
 
     public function couponsIndex(Request $request): JsonResponse
     {
+        $filters = $request->validate([
+            'type' => 'nullable|in:percentage,fixed,free_shipping,free_product',
+            'status' => 'nullable|in:active,inactive',
+            'page' => 'sometimes|integer|min:1',
+            'per_page' => 'sometimes|integer|min:1|max:100',
+        ]);
+
         $query = Coupon::with(['creator', 'updater', 'freeProduct'])->latest();
 
         if ($request->filled('search')) {
             $s = $request->search;
             $query->where('code', 'like', "%$s%");
         }
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
+        if (! empty($filters['type'])) {
+            $query->where('type', $filters['type']);
+        }
+        if (! empty($filters['status'])) {
+            $query->where('is_active', $filters['status'] === 'active');
         }
 
-        $perPage = min((int) $request->input('per_page', 15), 100);
+        $perPage = (int) ($filters['per_page'] ?? 15);
         $coupons = $query->paginate($perPage);
 
         $today = today();
@@ -239,24 +249,31 @@ class PromotionsController extends Controller implements HasMiddleware
 
     public function offersIndex(Request $request): JsonResponse
     {
+        $filters = $request->validate([
+            'type' => 'nullable|in:order_discount,bogo,free_product,category_discount',
+            'status' => 'nullable|in:active,inactive',
+            'page' => 'sometimes|integer|min:1',
+            'per_page' => 'sometimes|integer|min:1|max:100',
+        ]);
+
         $query = Offer::with(['product', 'creator', 'updater'])->latest();
 
         if ($request->filled('search')) {
             $s = $request->search;
             $query->where('name', 'like', "%$s%");
         }
-        if ($request->filled('type')) {
-            $query->where('type', $request->type);
+        if (! empty($filters['type'])) {
+            $query->where('type', $filters['type']);
         }
-        if ($request->filled('status')) {
-            if ($request->status === 'active') {
+        if (! empty($filters['status'])) {
+            if ($filters['status'] === 'active') {
                 $query->where('is_active', true);
-            } elseif ($request->status === 'inactive') {
+            } elseif ($filters['status'] === 'inactive') {
                 $query->where('is_active', false);
             }
         }
 
-        $perPage = min((int) $request->input('per_page', 15), 100);
+        $perPage = (int) ($filters['per_page'] ?? 15);
         $offers = $query->paginate($perPage);
 
         $stats = [

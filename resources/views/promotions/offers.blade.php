@@ -91,15 +91,17 @@
                 <div class="col-auto">
                     <div class="d-flex flex-wrap gap-2 justify-content-end">
                         <div class="position-relative">
-                            <input type="search" class="form-control form-control-sm" placeholder="Search offers..." x-model="search" @input.debounce.400ms="fetchOffers()" style="width: 200px;">
+                            <input type="search" class="form-control form-control-sm" placeholder="Search offers..." x-model="search" @input.debounce.400ms="applyFilters()" style="width: 200px;">
                             <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-2 text-muted"></i>
                         </div>
-                        <select class="form-select form-select-sm" x-model="filterType" @change="fetchOffers()" style="width: 150px;">
+                        <select class="form-select form-select-sm" x-model="filterType" @change="applyFilters()" style="width: 150px;">
                             <option value="">All Types</option>
                             <option value="order_discount">Order Discount</option>
                             <option value="bogo">BOGO</option>
+                            <option value="free_product">Free Product</option>
+                            <option value="category_discount">Category Discount</option>
                         </select>
-                        <select class="form-select form-select-sm" x-model="filterStatus" @change="fetchOffers()" style="width: 150px;">
+                        <select class="form-select form-select-sm" x-model="filterStatus" @change="applyFilters()" style="width: 150px;">
                             <option value="">All Statuses</option>
                             <option value="active">Active</option>
                             <option value="inactive">Inactive</option>
@@ -149,10 +151,10 @@
                     </thead>
                     <tbody>
                         <template x-if="loading">
-                            <tr><td colspan="11" class="text-center py-5"><div class="spinner-border text-primary"></div></td></tr>
+                            <tr><td colspan="12" class="text-center py-5"><div class="spinner-border text-primary"></div></td></tr>
                         </template>
                         <template x-if="!loading && offers.length === 0">
-                            <tr><td colspan="11" class="text-center py-5 text-muted"><i class="bi bi-star fs-1 d-block mb-2"></i>No offers found</td></tr>
+                            <tr><td colspan="12" class="text-center py-5 text-muted"><i class="bi bi-star fs-1 d-block mb-2"></i>No offers found</td></tr>
                         </template>
                         <template x-for="o in offers" :key="o.id">
                             <tr :class="{ 'selected': selected.includes(o.id), 'offer-row-active': o.is_active }">
@@ -292,10 +294,10 @@
                 <nav>
                     <ul class="pagination pagination-sm mb-0">
                         <li class="page-item" :class="{ 'disabled': page <= 1 }">
-                            <a class="page-link" href="#" @click.prevent="page--; fetchOffers()">Previous</a>
+                            <a class="page-link" href="#" @click.prevent="goToPage(page - 1)">Previous</a>
                         </li>
                         <li class="page-item" :class="{ 'disabled': page >= lastPage }">
-                            <a class="page-link" href="#" @click.prevent="page++; fetchOffers()">Next</a>
+                            <a class="page-link" href="#" @click.prevent="goToPage(page + 1)">Next</a>
                         </li>
                     </ul>
                 </nav>
@@ -674,7 +676,7 @@ function offersModule() {
         showCategoriesDropdown: false, categorySearch: '',
         offers: [], loading: false, saving: false,
         search: '', filterType: '', filterStatus: '', page: 1, lastPage: 1,
-        total: 0, from: 0, to: 0,
+        total: 0, from: 0, to: 0, _fetchRequestId: 0,
         selected: [], stats: { total: 0, active: 0, bogo: 0, order_discount: 0 },
         form: { id: null, name: '', type: 'order_discount', discount_type: 'percentage', display_discount_type: 'percentage', value: '', min_spend: '', max_discount: '', cashback_type: 'none', cashback_val: '', product_ids: [], product_id: '', applicable_categories: [], buy_qty: 1, get_qty: 1, starts_at: '', ends_at: '', priority: 0, is_active: true },
         formError: null,
@@ -725,13 +727,34 @@ function offersModule() {
 
         async init() { await this.fetchOffers(); },
 
+        applyFilters() {
+            this.page = 1;
+            this.selected = [];
+            this.fetchOffers();
+        },
+
+        goToPage(page) {
+            const nextPage = Math.max(1, Math.min(Number(page) || 1, this.lastPage));
+            if (nextPage === this.page) return;
+            this.page = nextPage;
+            this.fetchOffers();
+        },
+
         async fetchOffers() {
+            const requestId = ++this._fetchRequestId;
             this.loading = true;
             try {
                 const params = new URLSearchParams({ search: this.search, type: this.filterType, status: this.filterStatus, per_page: 15, page: this.page });
                 const res = await fetch(`/api/promotions/offers?${params}`, { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
+                if (!res.ok) throw new Error(`Failed to load offers (${res.status}).`);
                 const json = await res.json();
+                if (requestId !== this._fetchRequestId) return;
                 const d = json.data || {};
+                const responseLastPage = Math.max(Number(d.last_page) || 1, 1);
+                if (this.page > responseLastPage) {
+                    this.page = responseLastPage;
+                    return await this.fetchOffers();
+                }
                 this.offers = d.data || [];
                 this.total = d.total || 0; this.from = d.from || 0; this.to = d.to || 0; this.lastPage = d.last_page || 1;
                 if (json.stats) {
@@ -745,7 +768,11 @@ function offersModule() {
                     this.stats.bogo = this.offers.filter(o => o.type === 'bogo').length;
                     this.stats.order_discount = this.offers.filter(o => o.type === 'order_discount').length;
                 }
-            } catch (e) { console.error(e); } finally { this.loading = false; }
+            } catch (e) {
+                if (requestId === this._fetchRequestId) console.error(e);
+            } finally {
+                if (requestId === this._fetchRequestId) this.loading = false;
+            }
         },
 
         openModal(o = null) {
