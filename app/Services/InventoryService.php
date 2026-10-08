@@ -1210,7 +1210,21 @@ class InventoryService
      */
     public function deliverOrder(Order $order): void
     {
-        DB::transaction(function () use ($order) {
+        $orderId = $order->id;
+
+        DB::transaction(function () use ($orderId) {
+            // Serialize repeated delivery callbacks so stock, cashback, and
+            // referral rewards are applied only once per order transition.
+            $order = Order::with('items')->lockForUpdate()->findOrFail($orderId);
+            if ($order->status === 'delivered') {
+                return;
+            }
+            if (! in_array($order->status, Order::inTransitStatuses(), true)) {
+                throw ValidationException::withMessages([
+                    'status' => 'Only dispatched orders can be marked as delivered.',
+                ]);
+            }
+
             $wasPhysical = $order->type === 'sale'
                 && in_array($order->status, Order::inTransitStatuses(), true);
 
@@ -1233,14 +1247,22 @@ class InventoryService
             $this->creditOrderCashback($order);
 
             // Advanced Referral Reward Logic
-            $party = Party::find($order->party_id);
+            $party = $order->party_id
+                ? Party::whereKey($order->party_id)->lockForUpdate()->first()
+                : null;
             if ($party && $party->referred_by) {
                 // If it's 1, it means the current one is the only delivered order.
                 $deliveredCount = Order::where('party_id', $party->id)->where('status', 'delivered')->count();
                 if ($deliveredCount === 1) {
-                    $alreadyRewarded = DB::table('referral_rewards')->where('referred_id', $party->id)->exists();
+                    $alreadyRewarded = DB::table('referral_rewards')
+                        ->where('referred_id', $party->id)
+                        ->where('status', '!=', 'revoked')
+                        ->exists();
                     if (! $alreadyRewarded) {
-                        $referrer = Party::find($party->referred_by);
+                        // Different referred customers can be delivered at the
+                        // same time. Lock their shared referrer's wallet before
+                        // calculating milestones and applying wallet rewards.
+                        $referrer = Party::whereKey($party->referred_by)->lockForUpdate()->first();
 
                         if ($referrer) {
                             // Calculate referrer's total successful referrals
@@ -1254,10 +1276,12 @@ class InventoryService
                             $activeProgram = ReferralProgram::with('milestones')
                                 ->where('is_active', true)
                                 ->where(function ($q) {
-                                    $q->whereNull('start_date')->orWhere('start_date', '<=', now());
+                                    $q->whereNull('start_date')->orWhereDate('start_date', '<=', today());
                                 })
                                 ->where(function ($q) {
-                                    $q->whereNull('end_date')->orWhere('end_date', '>=', now());
+                                    // Referral dates are configured as calendar dates. Treat the end date
+                                    // as inclusive for the full day instead of expiring at midnight.
+                                    $q->whereNull('end_date')->orWhereDate('end_date', '>=', today());
                                 })->first();
 
                             $rewardGranted = false;
@@ -1315,6 +1339,10 @@ class InventoryService
                                             'is_active' => true,
                                             'status' => 'active',
                                         ]);
+                                        DB::table('referral_rewards')->where('id', $rewardId)->update([
+                                            'coupon_code' => $couponCode,
+                                            'updated_at' => now(),
+                                        ]);
                                     } elseif ($milestone->reward_type === 'product') {
                                         $couponCode = 'GIFT-'.strtoupper(Str::random(8));
                                         Coupon::create([
@@ -1326,6 +1354,10 @@ class InventoryService
                                             'applicable_products' => [$milestone->reward_value],
                                             'is_active' => true,
                                             'status' => 'active',
+                                        ]);
+                                        DB::table('referral_rewards')->where('id', $rewardId)->update([
+                                            'coupon_code' => $couponCode,
+                                            'updated_at' => now(),
                                         ]);
                                     }
 
@@ -1352,6 +1384,8 @@ class InventoryService
                 ]);
             }
         }, 3);
+
+        $order->refresh();
     }
 
     /**
@@ -1509,7 +1543,7 @@ class InventoryService
 
         foreach ($rewards as $reward) {
             if ($reward->reward_type === 'wallet') {
-                $referrer = Party::find($reward->referrer_id);
+                $referrer = Party::whereKey($reward->referrer_id)->lockForUpdate()->first();
                 if ($referrer) {
                     $balanceBefore = (float) $referrer->wallet_balance;
                     $balanceAfter = max(0, $balanceBefore - $reward->reward_amount);
@@ -1529,17 +1563,13 @@ class InventoryService
                     ]);
                 }
             } elseif (in_array($reward->reward_type, ['coupon', 'product'])) {
-                // Deactivate the auto-generated referral/gift coupon so it can no longer be used
-                Coupon::where('order_id', $order->id)
-                    ->orWhere(function ($q) use ($reward) {
-                        // Match by prefix since we don't store the coupon code on the reward row
-                        $prefix = $reward->reward_type === 'coupon' ? 'REF-' : 'GIFT-';
-                        $q->where('code', 'like', $prefix.'%')
-                            ->where('is_active', true)
-                            ->where('usage_limit', 1)
-                            ->where('used_count', 0);
-                    })
-                    ->update(['is_active' => false, 'status' => 'inactive']);
+                // Revoke only the coupon issued for this specific reward.
+                // Older rows have no linked code; leave unrelated coupons active.
+                if (! empty($reward->coupon_code)) {
+                    Coupon::where('code', $reward->coupon_code)
+                        ->where('used_count', 0)
+                        ->update(['is_active' => false, 'status' => 'inactive']);
+                }
             }
 
             DB::table('referral_rewards')->where('id', $reward->id)->update([
@@ -1599,7 +1629,7 @@ class InventoryService
             $amountToCredit = $order->cashback_earned - $netCredited;
 
             if ($amountToCredit > 0) {
-                $party = Party::find($order->party_id);
+                $party = Party::whereKey($order->party_id)->lockForUpdate()->first();
                 if ($party) {
                     $balanceBefore = (float) $party->wallet_balance;
                     $balanceAfter = $balanceBefore + $amountToCredit;
@@ -1641,7 +1671,7 @@ class InventoryService
             $netCredited = $credits - $debits;
 
             if ($netCredited > 0) {
-                $party = Party::find($order->party_id);
+                $party = Party::whereKey($order->party_id)->lockForUpdate()->first();
                 if ($party) {
                     // Prevent negative balance, cap at 0
                     $clawbackAmount = min((float) $party->wallet_balance, (float) $netCredited);

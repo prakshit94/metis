@@ -28,8 +28,53 @@
   }
 }
 
+.admin-header .header-floating-menu {
+  max-height: calc(100vh - var(--header-height) - 1.5rem);
+  max-height: calc(100dvh - var(--header-height) - 1.5rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
 // Compact header buttons on mobile
 @media (max-width: 575.98px) {
+  .admin-header .navbar > .container-fluid {
+    gap: 0.25rem;
+    padding-inline: 0.5rem !important;
+  }
+
+  .admin-header .header-left-section {
+    gap: 0.35rem !important;
+  }
+
+  .admin-header .header-left-section .navbar-brand {
+    gap: 0.5rem !important;
+  }
+
+  .admin-header .header-left-section .brand-logo-container {
+    width: 36px !important;
+    height: 36px !important;
+  }
+
+  .admin-header .header-right-actions {
+    gap: 0.2rem !important;
+  }
+
+  .admin-header .header-icon-control {
+    width: 36px !important;
+    height: 36px !important;
+    padding: 0.25rem !important;
+  }
+
+  .admin-header #userMenuBtn {
+    padding: 0.1rem !important;
+    gap: 0 !important;
+  }
+
+  .admin-header #userMenuBtn > div:first-child {
+    width: 34px !important;
+    height: 34px !important;
+  }
+
   .admin-header .btn-outline-secondary {
     padding-left: 0.4rem;
     padding-right: 0.4rem;

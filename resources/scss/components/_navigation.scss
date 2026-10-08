@@ -886,6 +886,19 @@
 // Mobile Responsive (< 992px)
 // ==========================================================================
 @media (max-width: 991.98px) {
+  // A desktop-collapsed state must not keep the mobile off-canvas sidebar hidden.
+  .admin-wrapper.sidebar-collapsed .admin-sidebar {
+    width: var(--sidebar-width) !important;
+    min-width: var(--sidebar-width) !important;
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateX(-100%);
+  }
+
+  .admin-wrapper.sidebar-collapsed .admin-sidebar.show {
+    transform: translateX(0);
+  }
+
   // On mobile, collapse state should not affect main/footer margins
   .admin-wrapper.sidebar-collapsed {
     .admin-main,

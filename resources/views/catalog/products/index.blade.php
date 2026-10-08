@@ -76,7 +76,7 @@
                             <h1 class="h3 mb-0">Product Management</h1>
                             <p class="text-muted mb-0">Manage your product catalog and inventory</p>
                         </div>
-                        <div class="d-flex gap-2">
+                        <div class="d-flex flex-wrap gap-2 justify-content-end">
                             @can('product-export')
                             <button type="button" class="btn btn-outline-secondary" @click="exportProducts()">
                                 <i class="bi bi-download me-2"></i>Export
@@ -179,7 +179,7 @@
                             <div class="card-header">
                                 <div class="row align-items-center">
                                     <div class="col">
-                                        <h2 class="h5 card-title mb-0">Product Catalog</h2>
+                                        <h2 class="h5 card-title mb-0" x-text="showDeletedProducts ? 'Deleted Products' : 'Product Catalog'"></h2>
                                     </div>
                                     <div class="col-auto">
                                         <div class="d-flex flex-wrap gap-2 justify-content-end">
@@ -224,7 +224,8 @@
                                             </select>
                                             
                                             <!-- Stock Filter -->
-                                            <select class="form-select form-select-sm shadow-none border-secondary border-opacity-25" 
+                                            <select class="form-select form-select-sm shadow-none border-secondary border-opacity-25"
+                                                    x-show="!showDeletedProducts"
                                                     x-model="stockFilter" 
                                                     @change="filterProducts()"
                                                     style="width: 150px;">
@@ -236,6 +237,7 @@
 
                                             <!-- SKU Status Filter -->
                                             <select class="form-select form-select-sm shadow-none border-opacity-25"
+                                                    x-show="!showDeletedProducts"
                                                     :class="skuFilter ? 'border-primary border-2 text-primary fw-semibold' : 'border-secondary'"
                                                     x-model="skuFilter"
                                                     @change="filterProducts()"
@@ -260,13 +262,22 @@
                                             <button class="btn btn-sm btn-outline-secondary" type="button" @click="resetFilters()">
                                                 <i class="bi bi-arrow-counterclockwise me-1"></i>Reset
                                             </button>
+                                            @can('product-view')
+                                            <button class="btn btn-sm" type="button"
+                                                    :class="showDeletedProducts ? 'btn-outline-danger' : 'btn-outline-secondary'"
+                                                    @click="toggleDeletedProducts()"
+                                                    :aria-pressed="showDeletedProducts.toString()">
+                                                <i class="bi me-1" :class="showDeletedProducts ? 'bi-box-seam' : 'bi-trash3'"></i>
+                                                <span x-text="showDeletedProducts ? 'View active products' : 'Deleted products'"></span>
+                                            </button>
+                                            @endcan
                                         </div>
                                     </div>
                                 </div>
                             </div>
                             <div class="card-body p-0">
                                 <!-- Bulk Actions Bar -->
-                                <div class="bulk-actions-bar p-3 bg-primary bg-opacity-10 border-bottom border-primary border-opacity-25" x-show="selectedProducts.length > 0 && warehouseFilter !== ''" x-transition>
+                                <div class="bulk-actions-bar p-3 bg-primary bg-opacity-10 border-bottom border-primary border-opacity-25" x-show="selectedProducts.length > 0" x-transition>
                                     <div class="d-flex justify-content-between align-items-center">
                                         <div class="d-flex align-items-center">
                                             <i class="bi bi-check-circle-fill text-primary me-2"></i>
@@ -275,31 +286,51 @@
                                             </span>
                                         </div>
                                         <div class="d-flex gap-2">
+                                            <button class="btn btn-sm btn-outline-secondary bg-body" type="button"
+                                                    @click="selectedProducts = []" :disabled="bulkActionLoading">
+                                                Clear selection
+                                            </button>
                                             @can('product-edit')
                                             <button class="btn btn-sm btn-outline-secondary bg-body" 
-                                                    x-show="filteredProducts.filter(p => selectedProducts.includes(p.id)).some(p => p.status !== 'published' && p.status !== 'active')" 
+                                                    :disabled="bulkActionLoading"
+                                                    x-show="!showDeletedProducts && filteredProducts.filter(p => selectedProducts.includes(p.id)).some(p => p.status !== 'published' && p.status !== 'active')"
                                                     @click="bulkAction('publish')">
                                                 <i class="bi bi-eye me-1"></i>Publish
                                             </button>
                                             <button class="btn btn-sm btn-outline-secondary bg-body" 
-                                                    x-show="filteredProducts.filter(p => selectedProducts.includes(p.id)).some(p => p.status === 'published' || p.status === 'active')" 
+                                                    :disabled="bulkActionLoading"
+                                                    x-show="!showDeletedProducts && filteredProducts.filter(p => selectedProducts.includes(p.id)).some(p => p.status === 'published' || p.status === 'active')"
                                                     @click="bulkAction('unpublish')">
                                                 <i class="bi bi-eye-slash me-1"></i>Unpublish
                                             </button>
                                             <button class="btn btn-sm btn-outline-secondary bg-body" 
-                                                    x-show="filteredProducts.filter(p => selectedProducts.includes(p.id)).some(p => isSkuEnabled(p))" 
+                                                    :disabled="bulkActionLoading"
+                                                    x-show="!showDeletedProducts && filteredProducts.filter(p => selectedProducts.includes(p.id)).some(p => isSkuEnabled(p))"
                                                     @click="bulkAction('disable_sku')">
                                                 <i class="bi bi-tags me-1"></i>Disable SKU
                                             </button>
                                             <button class="btn btn-sm btn-outline-secondary bg-body" 
-                                                    x-show="filteredProducts.filter(p => selectedProducts.includes(p.id)).some(p => !isSkuEnabled(p))" 
+                                                    :disabled="bulkActionLoading"
+                                                    x-show="!showDeletedProducts && filteredProducts.filter(p => selectedProducts.includes(p.id)).some(p => !isSkuEnabled(p))"
                                                     @click="bulkAction('enable_sku')">
                                                 <i class="bi bi-tags-fill me-1"></i>Enable SKU
                                             </button>
                                             @endcan
                                             @can('product-delete')
-                                            <button class="btn btn-sm btn-outline-danger bg-body" @click="bulkAction('delete')">
-                                                <i class="bi bi-trash me-1"></i>Delete
+                                            <button class="btn btn-sm btn-outline-danger bg-body" @click="bulkAction('delete')" :disabled="bulkActionLoading" x-show="!showDeletedProducts">
+                                                <i class="bi bi-trash me-1"></i>Move to deleted
+                                            </button>
+                                            @endcan
+                                            @can('product-restore')
+                                            <button class="btn btn-sm btn-outline-secondary bg-body" type="button"
+                                                    @click="bulkAction('restore')" :disabled="bulkActionLoading" x-show="showDeletedProducts">
+                                                <i class="bi bi-arrow-counterclockwise me-1"></i>Restore
+                                            </button>
+                                            @endcan
+                                            @can('product-permanent-delete')
+                                            <button class="btn btn-sm btn-outline-danger bg-body" type="button"
+                                                    @click="bulkAction('force_delete')" :disabled="bulkActionLoading" x-show="showDeletedProducts">
+                                                <i class="bi bi-trash3 me-1"></i>Permanently delete
                                             </button>
                                             @endcan
                                         </div>
@@ -320,7 +351,7 @@
                                                 <th>Product Details</th>
                                                 <th @click="sortBy('price')" class="sortable">Pricing & Inventory</th>
                                                 <th>Status & Tracking</th>
-                                                <th style="width: 80px;" class="text-end pe-4" x-show="warehouseFilter !== ''">Actions</th>
+                                                <th style="width: 80px;" class="text-end pe-4" x-show="warehouseFilter !== '' || showDeletedProducts">Actions</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -363,6 +394,7 @@
                                                                 <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
                                                                     <small class="text-muted" style="font-size: 11px;" x-text="'SKU: ' + product.sku"></small>
                                                                     <span class="badge bg-secondary bg-opacity-10 text-secondary-emphasis border border-secondary border-opacity-25" style="font-size: 9px; padding: 0.25em 0.5em;" x-text="product.category"></span>
+                                                                    <span class="badge bg-danger-subtle text-danger-emphasis border border-danger-subtle" x-show="showDeletedProducts">Deleted <span x-text="product.deleted_at"></span></span>
                                                                 </div>
                                                                 <div x-data="{ promos: window.getApplicablePromotions(product) }" x-show="promos.offers.length > 0 || promos.coupons.length > 0 || promos.referrals.length > 0">
                                                                     <button type="button" class="btn btn-sm btn-outline-success rounded-pill py-0 px-2 d-inline-flex align-items-center gap-1 bg-body" style="font-size: 10px;" data-bs-toggle="modal" data-bs-target="#offersModal" @click="$dispatch('set-promos', promos)">
@@ -420,7 +452,7 @@
                                                             </div>
                                                         </div>
                                                     </td>
-                                                    <td class="text-end pe-4" x-show="warehouseFilter !== ''">
+                                                    <td class="text-end pe-4" x-show="warehouseFilter !== '' || showDeletedProducts">
                                                         <div class="dropdown">
                                                             <button class="btn btn-sm btn-outline-secondary dropdown-toggle" 
                                                                     type="button" 
@@ -429,22 +461,27 @@
                                                             </button>
                                                             <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" style="z-index: 1050;">
                                                                 @can('product-edit')
-                                                                <li><a class="dropdown-item" href="#" @click.prevent="editProduct(product)">
+                                                                <template x-if="!showDeletedProducts"><li><a class="dropdown-item" href="#" @click.prevent="editProduct(product)">
                                                                     <i class="bi bi-pencil me-2"></i>Edit
-                                                                </a></li>
+                                                                </a></li></template>
                                                                 @endcan
 
                                                                 @can('product-create')
-                                                                <li><a class="dropdown-item" href="#" @click.prevent="cloneProduct(product)">
+                                                                <template x-if="!showDeletedProducts"><li><a class="dropdown-item" href="#" @click.prevent="cloneProduct(product)">
                                                                     <i class="bi bi-copy me-2"></i>Clone
-                                                                </a></li>
+                                                                </a></li></template>
                                                                 @endcan
 
                                                                 @can('product-delete')
-                                                                <li><hr class="dropdown-divider"></li>
-                                                                <li><a class="dropdown-item text-danger" href="#" @click.prevent="deleteProduct(product)">
+                                                                <template x-if="!showDeletedProducts"><li><a class="dropdown-item text-danger" href="#" @click.prevent="deleteProduct(product)">
                                                                     <i class="bi bi-trash me-2"></i>Delete
-                                                                </a></li>
+                                                                </a></li></template>
+                                                                @endcan
+                                                                @can('product-restore')
+                                                                <template x-if="showDeletedProducts"><li><a class="dropdown-item" href="#" @click.prevent="restoreProduct(product)"><i class="bi bi-arrow-counterclockwise me-2"></i>Restore</a></li></template>
+                                                                @endcan
+                                                                @can('product-permanent-delete')
+                                                                <template x-if="showDeletedProducts"><li><a class="dropdown-item text-danger" href="#" @click.prevent="permanentlyDeleteProduct(product)"><i class="bi bi-trash3 me-2"></i>Permanently delete</a></li></template>
                                                                 @endcan
                                                             </ul>
                                                         </div>

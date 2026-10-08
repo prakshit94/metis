@@ -8,6 +8,7 @@
   left: 0;
   width: var(--sidebar-width);
   height: calc(100vh - var(--header-height));
+  height: calc(100dvh - var(--header-height));
   background: rgba(var(--bs-body-bg-rgb, 255, 255, 255), 0.85);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);

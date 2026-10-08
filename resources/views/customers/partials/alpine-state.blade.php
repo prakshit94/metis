@@ -534,7 +534,12 @@
             },
             body: JSON.stringify({
                 code: code,
-                subtotal: this.subtotal
+                subtotal: this.subtotal,
+                items: this.cart.map(item => ({
+                    product_id: item.id,
+                    quantity: item.quantity,
+                    is_gift: Boolean(item.is_gift)
+                }))
             })
         })
         .then(res => res.json())

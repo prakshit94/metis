@@ -10,13 +10,13 @@
                     <i class="bi bi-hdd-network text-success me-1"></i> System Status: Online
                 </span>
             </div>
-            <div class="col-md-6 text-center text-md-end" 
+            <div class="footer-clock-group col-md-6 d-flex flex-wrap align-items-center justify-content-center justify-content-md-end gap-2"
                  x-data="{ currentTime: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }), currentDate: new Date().toLocaleDateString('en-IN', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' }) }" 
                  x-init="setInterval(() => { const d = new Date(); currentTime = d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }); currentDate = d.toLocaleDateString('en-IN', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' }); }, 1000)">
-                <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 px-2 py-1 shadow-sm fw-medium">
+                <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 px-2 py-1 shadow-sm fw-medium text-nowrap">
                     <i class="bi bi-calendar3 me-1"></i> <span x-text="currentDate"></span>
                 </span>
-                <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-2 py-1 shadow-sm fw-medium ms-2" style="min-width: 90px; display: inline-block;">
+                <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-2 py-1 shadow-sm fw-medium" style="min-width: 90px; display: inline-block; font-variant-numeric: tabular-nums;">
                     <i class="bi bi-clock me-1"></i> <span x-text="currentTime"></span>
                 </span>
             </div>

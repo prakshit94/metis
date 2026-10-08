@@ -89,6 +89,7 @@ class StoreOrderRequest extends FormRequest
             'future_order_date' => 'nullable|date',
             'coupon_code' => 'nullable|string',
             'applied_offer_id' => 'nullable|integer|exists:offers,id',
+            'selected_offer_id' => 'nullable|integer|exists:offers,id',
             'applied_bogo_ids' => 'nullable|array',
             'applied_bogo_ids.*' => 'integer|exists:offers,id',
             'total_amount' => 'required|numeric',

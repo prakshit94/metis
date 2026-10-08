@@ -65,15 +65,15 @@ class PromotionsController extends Controller implements HasMiddleware
         $perPage = min((int) $request->input('per_page', 15), 100);
         $coupons = $query->paginate($perPage);
 
-        $now = now();
+        $today = today();
         $stats = [
             'total' => Coupon::count(),
             'active' => Coupon::where('is_active', true)->count(),
             'inactive' => Coupon::where('is_active', false)->count(),
             'expiring_soon' => Coupon::where('is_active', true)
                 ->whereNotNull('expiry_date')
-                ->where('expiry_date', '<=', $now->copy()->addDays(7))
-                ->where('expiry_date', '>', $now)
+                ->whereDate('expiry_date', '>=', $today)
+                ->whereDate('expiry_date', '<=', $today->copy()->addDays(7))
                 ->count(),
         ];
 

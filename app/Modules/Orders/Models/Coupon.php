@@ -80,6 +80,15 @@ class Coupon extends Model implements Auditable
         return $this->belongsTo(\App\Modules\Catalog\Models\Product::class, "free_product_id");
     }
 
+    public function scopeActive($query)
+    {
+        return $query
+            ->where('is_active', true)
+            ->where(function ($q) {
+                $q->whereNull('expiry_date')->orWhereDate('expiry_date', '>=', today());
+            });
+    }
+
     public function creator()
     {
         return $this->belongsTo(User::class, 'created_by');

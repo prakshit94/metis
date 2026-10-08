@@ -40,7 +40,7 @@ class OrderController extends Controller implements HasMiddleware
     {
         return [
             new Middleware('permission:orders.view', only: ['index', 'show']),
-            new Middleware('permission:orders.create', only: ['store']),
+            new Middleware('permission:orders.create', only: ['store', 'preview']),
             new Middleware('permission:orders.edit', only: ['edit', 'update']),
             new Middleware('permission:orders.delete', only: ['destroy']),
             new Middleware('permission:orders.confirm', only: ['confirm']),
@@ -661,9 +661,11 @@ class OrderController extends Controller implements HasMiddleware
 
         
         $activeOffers = Offer::with('product')->active()->orderByDesc('priority')->orderBy('id')->get();
-        $activeCoupons = Coupon::where('is_active', true)
+        $activeCoupons = Coupon::active()
             ->where(function ($query) {
-                $query->whereNull('expiry_date')->orWhere('expiry_date', '>=', now()->startOfDay());
+                $query->whereNull('usage_limit')
+                    ->orWhere('usage_limit', 0)
+                    ->orWhereColumn('used_count', '<', 'usage_limit');
             })
             ->get();
         $categories = Category::whereNull('parent_id')->with('children')->orderBy('name')->get();
@@ -858,22 +860,43 @@ class OrderController extends Controller implements HasMiddleware
         return view('orders.create', compact('warehouses', 'activeOffers', 'activeCoupons', 'categories', 'hideSidebar', 'lockSearch', 'initialCustomer', 'initialOrder', 'rescheduleReasons', 'cancelReasons'));
     }
 
+    /**
+     * Calculate the server-authoritative order totals for the mobile review step.
+     * This does not persist an order or consume offer/coupon usage.
+     */
+    public function preview(StoreOrderRequest $request, OrderService $orderService)
+    {
+        $quote = DB::transaction(function () use ($request, $orderService) {
+            return $orderService->recalculateAndValidate($request->validated());
+        }, 3);
+
+        return response()->json([
+            'success' => true,
+            'quote' => $quote,
+        ]);
+    }
+
     public function store(StoreOrderRequest $request, OrderService $orderService)
     {
-        $validated = $request->validated();
+        // Keep pricing/coupon validation and persistence in one transaction.
+        // recalculateAndValidate() locks coupon usage rows; that lock must remain
+        // held until the new order and usage counters commit.
+        $order = DB::transaction(function () use ($request, $orderService) {
+            $validated = $request->validated();
 
-        $calc = $orderService->recalculateAndValidate($validated);
-        $validated['items'] = $calc['items'];
-        $validated['total_amount'] = $calc['subtotal'];
-        $validated['tax_amount'] = $calc['tax_amount'];
-        $validated['discount_amount'] = $calc['total_discount'];
-        $validated['coupon_code'] = $calc['coupon_code'];
-        $validated['applied_offer_id'] = $calc['applied_offer_id'];
-        $validated['net_amount'] = $calc['grand_total'];
-        $validated['applied_bogo_ids'] = $calc['applied_bogo_ids'];
-        $validated['cashback_earned'] = $calc['cashback_earned'] ?? 0;
+            $calc = $orderService->recalculateAndValidate($validated);
+            $validated['items'] = $calc['items'];
+            $validated['total_amount'] = $calc['subtotal'];
+            $validated['tax_amount'] = $calc['tax_amount'];
+            $validated['discount_amount'] = $calc['total_discount'];
+            $validated['coupon_code'] = $calc['coupon_code'];
+            $validated['applied_offer_id'] = $calc['applied_offer_id'];
+            $validated['net_amount'] = $calc['grand_total'];
+            $validated['applied_bogo_ids'] = $calc['applied_bogo_ids'];
+            $validated['cashback_earned'] = $calc['cashback_earned'] ?? 0;
 
-        $order = $orderService->createOrder($validated);
+            return $orderService->createOrder($validated);
+        }, 3);
 
         if ($request->wantsJson() || $request->ajax()) {
             return response()->json([
@@ -958,9 +981,13 @@ class OrderController extends Controller implements HasMiddleware
         $categories = Category::where('is_active', true)->orderBy('name')->get();
 
         $activeOffers = Offer::active()->orderByDesc('priority')->get();
-        $activeCoupons = Coupon::active()->where(function ($q) {
-            $q->whereNull('expiry_date')->orWhere('expiry_date', '>=', now()->startOfDay());
-        })->get();
+        $activeCoupons = Coupon::active()
+            ->where(function ($query) {
+                $query->whereNull('usage_limit')
+                    ->orWhere('usage_limit', 0)
+                    ->orWhereColumn('used_count', '<', 'usage_limit');
+            })
+            ->get();
 
         $initialCustomer = $order->party;
         $initialOrder = $order;

@@ -16,6 +16,7 @@ use App\Modules\Users\Models\User;
 use App\Notifications\OrderCreatedNotification;
 use App\Notifications\OrderStatusChangedNotification;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Validation\ValidationException;
@@ -93,18 +94,7 @@ class OrderService
     {
         return DB::transaction(function () use ($data) {
             $orderNo = $data['order_no'] ?? null;
-            if (!$orderNo) {
-                // Generate order number: {daily_seq}-{MMDDYYYY}-{HHMM}
-                $today = now();
-                $datePart = $today->format('dmY');   // DDMMYYYY
-                $todayStart = $today->copy()->startOfDay();
-                $todayEnd = $today->copy()->endOfDay();
-                $orderNo = \Illuminate\Support\Facades\Cache::lock('order_seq_' . $datePart, 10)->block(5, function () use ($datePart, $todayStart, $todayEnd) {
-                    $dailyCount = Order::whereBetween('created_at', [$todayStart, $todayEnd])->count() + 1;
-                    $seq = str_pad((string) $dailyCount, 2, '0', STR_PAD_LEFT);
-                    return "ORD-{$datePart}-{$seq}";
-                });
-            }
+            $generateOrderNo = ! $orderNo;
 
             $shippingAddressFields = [];
             if (! empty($data['shipping_address_id'])) {
@@ -135,13 +125,7 @@ class OrderService
                 'updated_by' => auth()->id(),
             ], $shippingAddressFields, $billingAddressFields);
 
-            // Instantiate and disable Spatie's automatic activity log for Order creation.
-            // We fire one consolidated log at the end instead.
-            // Using new + save() (not ::create()) ensures all boot hooks still run
-            // (status timestamp, cache busting) while suppressing the auto-log.
-            $order = new Order($orderPayload);
-            $order->disableLogging();
-            $order->save();
+            $order = $this->persistOrderWithUniqueNumber($orderPayload, $generateOrderNo);
 
             // Suppress per-item activity logs during initial order creation —
             // we will fire a single consolidated log for the whole order below.
@@ -276,6 +260,73 @@ class OrderService
         }, 3);
     }
 
+    /**
+     * Persist a newly-created order while reserving an auto-generated number
+     * against concurrent order submissions. The sequence is based on the largest
+     * existing suffix for today's prefix, never the number of rows created today.
+     */
+    private function persistOrderWithUniqueNumber(array $payload, bool $generateOrderNo): Order
+    {
+        $lockName = null;
+        $datePart = null;
+        $cacheLock = null;
+
+        if ($generateOrderNo) {
+            $datePart = now()->format('dmY');
+            $databaseKey = substr(hash('sha256', (string) DB::connection()->getDatabaseName()), 0, 12);
+            $lockName = 'metis_order_no_'.$databaseKey.'_'.$datePart;
+
+            if (DB::connection()->getDriverName() === 'mysql') {
+                $lock = DB::selectOne('SELECT GET_LOCK(?, 10) AS acquired', [$lockName]);
+                if ((int) ($lock?->acquired ?? 0) !== 1) {
+                    throw new \RuntimeException('Could not reserve a unique order number. Please retry the order.');
+                }
+            } else {
+                $cacheLock = Cache::lock('order_seq_'.$datePart, 30);
+                $cacheLock->block(10);
+            }
+        }
+
+        try {
+            if ($generateOrderNo) {
+                $prefix = 'ORD-'.$datePart.'-';
+                $existingNumbers = DB::table('orders')
+                    ->where('order_no', 'like', $prefix.'%')
+                    ->lockForUpdate()
+                    ->pluck('order_no');
+
+                $sequence = $existingNumbers->reduce(function (int $highest, string $existing) use ($prefix): int {
+                    $suffix = substr($existing, strlen($prefix));
+
+                    return ctype_digit($suffix) ? max($highest, (int) $suffix) : $highest;
+                }, 0) + 1;
+
+                do {
+                    $payload['order_no'] = $prefix.str_pad((string) $sequence, 2, '0', STR_PAD_LEFT);
+                    $alreadyUsed = DB::table('orders')
+                        ->where('order_no', $payload['order_no'])
+                        ->lockForUpdate()
+                        ->exists();
+                    $sequence++;
+                } while ($alreadyUsed);
+            }
+
+            // Keep model events and status timestamps, while suppressing the
+            // duplicate per-model activity entry as before.
+            $order = new Order($payload);
+            $order->disableLogging();
+            $order->save();
+
+            return $order;
+        } finally {
+            if ($lockName !== null && DB::connection()->getDriverName() === 'mysql') {
+                DB::select('SELECT RELEASE_LOCK(?) AS released', [$lockName]);
+            } elseif ($cacheLock !== null) {
+                $cacheLock->release();
+            }
+        }
+    }
+
     // ─────────────────────────────────────────────────────────────────────────
     //  Customer "Place Order" (cart-based)
     // ─────────────────────────────────────────────────────────────────────────
@@ -364,8 +415,91 @@ class OrderService
         $bogoOffers = $activeOffers->where('type', 'bogo')->values();
         $freeProductOffers = $activeOffers->where('type', 'free_product')->whereNotNull('product_id');
 
+        $eligibleOrderOffers = $orderOffers->filter(function ($offer) use ($cart, $products, $regularSubtotal, $isPurchase) {
+            if ($regularSubtotal < (float) $offer->min_spend) return false;
+            $apps = is_string($offer->applicable_products) ? json_decode($offer->applicable_products, true) : $offer->applicable_products;
+            $cats = is_string($offer->applicable_categories) ? json_decode($offer->applicable_categories, true) : $offer->applicable_categories;
+            $eligibleSubtotal = 0.0;
+            foreach ($cart as $item) {
+                if (! empty($item['is_gift'])) continue;
+                $productId = $item['product_id'] ?? $item['id'] ?? null;
+                $product = $products->get($productId);
+                if (! $product) continue;
+                $matches = true;
+                if ($offer->type === 'category_discount' && ! empty($cats)) {
+                    $matches = in_array($product->category_id, $cats) || in_array((string) $product->category_id, $cats);
+                } elseif ($offer->product_id) {
+                    $matches = (int) $productId === (int) $offer->product_id;
+                } elseif (! empty($apps)) {
+                    $matches = in_array($productId, $apps) || in_array((string) $productId, $apps);
+                }
+                if (! $matches) continue;
+                $unitPrice = $isPurchase ? (float) $product->purchase_price : (float) $product->selling_price;
+                $itemBase = $unitPrice * (float) $item['quantity'];
+                $lineDiscount = $this->calculateLineDiscount($unitPrice, (float) $item['quantity'], (float) ($product->default_discount ?? 0), $product->default_discount_type ?? 'percent');
+                $eligibleSubtotal += max(0, $itemBase - $lineDiscount);
+            }
+            $discount = $this->calculateOfferDiscount($eligibleSubtotal, $regularSubtotal, $offer);
+            $cashback = $eligibleSubtotal >= (float) $offer->min_spend
+                && ((float) $offer->cashback_percent > 0 || (float) $offer->cashback_fixed > 0);
+            return $discount > 0 || $cashback;
+        })->values();
+
+        $eligibleBogoOffers = $bogoOffers->filter(function ($offer) use ($cart, $products, $regularSubtotal) {
+                if ($regularSubtotal < (float) $offer->min_spend) {
+                    return false;
+                }
+                $apps = is_string($offer->applicable_products) ? json_decode($offer->applicable_products, true) : $offer->applicable_products;
+                $cats = is_string($offer->applicable_categories) ? json_decode($offer->applicable_categories, true) : $offer->applicable_categories;
+                $cycle = max(1, (int) $offer->buy_qty + (int) $offer->get_qty);
+                foreach ($cart as $item) {
+                    if (! empty($item['is_gift']) || (float) ($item['quantity'] ?? 0) < $cycle) {
+                        continue;
+                    }
+                    $productId = $item['product_id'] ?? $item['id'] ?? null;
+                    $categoryId = $products->get($productId)?->category_id;
+                    $matchesProduct = empty($apps) || in_array($productId, $apps) || in_array((string) $productId, $apps);
+                    $matchesCategory = empty($cats) || ($categoryId && (in_array($categoryId, $cats) || in_array((string) $categoryId, $cats)));
+                    if ((empty($apps) && empty($cats)) || (! empty($apps) && $matchesProduct) || (! empty($cats) && $matchesCategory)) {
+                        return true;
+                    }
+                }
+                return false;
+            })->values();
+
+        $eligibleFreeProductOffers = $freeProductOffers->filter(function ($offer) use ($cart, $products, $regularSubtotal) {
+            if ($regularSubtotal < (float) $offer->min_spend) return false;
+            $apps = is_string($offer->applicable_products) ? json_decode($offer->applicable_products, true) : $offer->applicable_products;
+            $cats = is_string($offer->applicable_categories) ? json_decode($offer->applicable_categories, true) : $offer->applicable_categories;
+            if (empty($apps) && empty($cats)) return true;
+            $triggerQty = 0;
+            foreach ($cart as $item) {
+                if (! empty($item['is_gift'])) continue;
+                $productId = $item['product_id'] ?? $item['id'] ?? null;
+                $categoryId = $products->get($productId)?->category_id;
+                if ((! empty($apps) && (in_array($productId, $apps) || in_array((string) $productId, $apps)))
+                    || (! empty($cats) && $categoryId && (in_array($categoryId, $cats) || in_array((string) $categoryId, $cats)))) {
+                    $triggerQty += (int) ($item['quantity'] ?? 0);
+                }
+            }
+            return $triggerQty >= ((int) $offer->buy_qty ?: 1);
+        })->values();
+
+        $offerCandidates = $eligibleOrderOffers->concat($eligibleBogoOffers)->concat($eligibleFreeProductOffers)->values();
+        $hasExplicitOfferSelection = array_key_exists('selected_offer_id', $data);
+        $requestedOfferId = ! empty($data['selected_offer_id'])
+            ? (int) $data['selected_offer_id']
+            : (! empty($data['applied_offer_id']) ? (int) $data['applied_offer_id'] : null);
+        $selectedOffer = $requestedOfferId
+            ? $offerCandidates->firstWhere('id', $requestedOfferId)
+            : (! $hasExplicitOfferSelection && $offerCandidates->count() === 1 ? $offerCandidates->first() : null);
+        $hasSelectedOrderOffer = $selectedOffer && in_array($selectedOffer->type, ['order_discount', 'category_discount'], true);
+        $selectedBogoOffer = $selectedOffer && $selectedOffer->type === 'bogo' ? $selectedOffer : null;
+        $selectedFreeProductOffer = $selectedOffer && $selectedOffer->type === 'free_product' ? $selectedOffer : null;
+
         $expectedGifts = [];
-        foreach ($freeProductOffers as $o) {
+        if ($selectedFreeProductOffer) {
+            $o = $selectedFreeProductOffer;
             if ($regularSubtotal >= (float) $o->min_spend) {
                 $apps = is_string($o->applicable_products) ? json_decode($o->applicable_products, true) : $o->applicable_products;
                 $cats = is_string($o->applicable_categories) ? json_decode($o->applicable_categories, true) : $o->applicable_categories;
@@ -526,30 +660,23 @@ class OrderService
             ];
         }
 
+        // A single order can use one discount offer campaign. An explicitly
+        // selected order/category offer takes precedence; otherwise select the
+        // first eligible BOGO campaign by the existing priority ordering.
         $appliedBogoIds = [];
-        // Calculate BOGO on second pass to respect minimum spend
+        // Calculate the selected BOGO on a second pass to respect minimum spend.
         foreach ($items as &$item) {
-            $productBogoOffer = $bogoOffers->first(function ($o) use ($item) {
+            $productBogoOffer = $selectedBogoOffer && ! $hasSelectedOrderOffer ? $selectedBogoOffer : null;
+            if ($productBogoOffer) {
+                $o = $productBogoOffer;
                 $apps = is_string($o->applicable_products) ? json_decode($o->applicable_products, true) : $o->applicable_products;
                 $cats = is_string($o->applicable_categories) ? json_decode($o->applicable_categories, true) : $o->applicable_categories;
-
-                if (empty($apps) && empty($cats)) {
-                    return true;
+                $matchesProduct = empty($apps) || in_array($item['product_id'], $apps) || in_array((string) $item['product_id'], $apps);
+                $matchesCategory = empty($cats) || ($item['category_id'] && (in_array($item['category_id'], $cats) || in_array((string) $item['category_id'], $cats)));
+                if (! ((empty($apps) && empty($cats)) || (! empty($apps) && $matchesProduct) || (! empty($cats) && $matchesCategory))) {
+                    $productBogoOffer = null;
                 }
-
-                if (! empty($apps) && (in_array($item['product_id'], $apps) || in_array((string) $item['product_id'], $apps))) {
-                    return true;
-                }
-
-                if (! empty($cats)) {
-                    $cid = $item['category_id'];
-                    if ($cid && (in_array($cid, $cats) || in_array((string) $cid, $cats))) {
-                        return true;
-                    }
-                }
-
-                return false;
-            });
+            }
 
             if ($productBogoOffer && $subtotal >= ((float) $productBogoOffer->min_spend ?? 0)) {
                 $disc = $this->calculateBogoDiscount(
@@ -630,7 +757,7 @@ class OrderService
             }
         }
 
-        $appliedOfferId = ! empty($data['applied_offer_id']) ? (int) $data['applied_offer_id'] : null;
+        $appliedOfferId = $hasSelectedOrderOffer ? (int) $selectedOffer->id : null;
         $bestOrderOffer = null;
         $orderDiscount = 0.0;
         $orderEligibleSubtotal = 0.0;

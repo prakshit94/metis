@@ -247,6 +247,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
     // ── Financial & Sales APIs ─────────────────────────────────────────────
     Route::prefix('orders')->name('api.orders.')->group(function (): void {
         Route::get('/', [OrderController::class, 'index'])->name('index');
+        Route::post('/preview', [OrderController::class, 'preview'])->name('preview');
         Route::post('/', [OrderController::class, 'store'])->name('store');
         Route::get('/{order}', [OrderController::class, 'show'])->name('show');
         Route::patch('/{order}', [OrderController::class, 'update'])->name('update');
@@ -402,6 +403,8 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::post('/bulk-disable-sku', [CatalogProductController::class, 'bulkDisableSku'])->name('bulk-disable-sku');
         Route::post('/bulk-enable-sku', [CatalogProductController::class, 'bulkEnableSku'])->name('bulk-enable-sku');
         Route::post('/bulk-delete', [CatalogProductController::class, 'bulkDelete'])->name('bulk-delete');
+        Route::post('/bulk-restore', [CatalogProductController::class, 'bulkRestore'])->name('bulk-restore');
+        Route::post('/bulk-force-delete', [CatalogProductController::class, 'bulkForceDelete'])->name('bulk-force-delete');
         Route::post('/{product}/duplicate', [CatalogProductController::class, 'duplicate'])->name('duplicate');
         Route::post('/{product}/restore', [CatalogProductController::class, 'restore'])->name('restore');
         Route::delete('/{product}/force-delete', [CatalogProductController::class, 'forceDelete'])->name('force-delete');

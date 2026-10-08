@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class ReferralProgramController extends Controller implements HasMiddleware
 {
@@ -47,10 +48,11 @@ class ReferralProgramController extends Controller implements HasMiddleware
             'end_date' => 'nullable|date|after_or_equal:start_date',
             'is_active' => 'boolean',
             'milestones' => 'required|array|min:1',
-            'milestones.*.required_referrals' => 'required|integer|min:0',
+            'milestones.*.required_referrals' => 'required|integer|min:0|distinct',
             'milestones.*.reward_type' => 'required|string|in:wallet,product,coupon',
             'milestones.*.reward_value' => 'required|string',
         ]);
+        $this->validateMilestoneValues($validated['milestones']);
 
         DB::transaction(function () use ($validated) {
             if (! empty($validated['is_active'])) {
@@ -80,10 +82,11 @@ class ReferralProgramController extends Controller implements HasMiddleware
             'end_date' => 'nullable|date|after_or_equal:start_date',
             'is_active' => 'boolean',
             'milestones' => 'required|array|min:1',
-            'milestones.*.required_referrals' => 'required|integer|min:0',
+            'milestones.*.required_referrals' => 'required|integer|min:0|distinct',
             'milestones.*.reward_type' => 'required|string|in:wallet,product,coupon',
             'milestones.*.reward_value' => 'required|string',
         ]);
+        $this->validateMilestoneValues($validated['milestones']);
 
         DB::transaction(function () use ($validated, $program) {
             if (! empty($validated['is_active'])) {
@@ -152,5 +155,25 @@ class ReferralProgramController extends Controller implements HasMiddleware
         ReferralProgram::findOrFail($id)->delete();
 
         return back()->with('success', 'Referral program deleted.');
+    }
+
+    private function validateMilestoneValues(array $milestones): void
+    {
+        foreach ($milestones as $index => $milestone) {
+            $value = $milestone['reward_value'] ?? '';
+
+            if ($milestone['reward_type'] === 'product' && ! Product::whereKey($value)->exists()) {
+                throw ValidationException::withMessages([
+                    "milestones.{$index}.reward_value" => 'Select a valid reward product.',
+                ]);
+            }
+
+            if (in_array($milestone['reward_type'], ['wallet', 'coupon'], true)
+                && (! is_numeric($value) || (float) $value < 0)) {
+                throw ValidationException::withMessages([
+                    "milestones.{$index}.reward_value" => 'Enter a valid non-negative reward amount.',
+                ]);
+            }
+        }
     }
 }

@@ -46,7 +46,7 @@
             });
         </script>
 
-        <nav class="sidebar-nav">
+        <nav class="sidebar-nav" aria-label="Sidebar navigation">
             <ul class="nav flex-column gap-1">
 
 

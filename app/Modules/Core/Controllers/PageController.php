@@ -255,7 +255,11 @@ class PageController extends Controller
         $salesByLocationRaw = (clone $orderQuery)->where(function ($q) {
             $q->whereNotNull('shipping_district')->orWhereNotNull('shipping_city')->orWhereNotNull('shipping_state');
         })
-            ->select(DB::raw('COALESCE(shipping_district, shipping_city, shipping_state) as location_name'), DB::raw('SUM(net_amount) as total_sales'))
+            ->select(
+                DB::raw('COALESCE(shipping_district, shipping_city, shipping_state) as location_name'),
+                DB::raw('SUM(net_amount) as total_sales'),
+                DB::raw('COUNT(*) as order_count'),
+            )
             ->whereNotIn('status', ['cancelled', 'returned'])
             ->whereNotIn('status', ['future_order'])
             ->groupBy('location_name')
@@ -267,6 +271,7 @@ class PageController extends Controller
             return [
                 'name' => $item->location_name,
                 'value' => round($item->total_sales, 2),
+                'orders' => (int) $item->order_count,
             ];
         })->toArray();
 

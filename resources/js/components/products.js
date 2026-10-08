@@ -169,6 +169,8 @@ document.addEventListener('alpine:init', () => {
     products: [],
     filteredProducts: [],
     selectedProducts: [],
+    bulkActionLoading: false,
+    showDeletedProducts: false,
     editingProductId: null,
     previewProduct: null,
     importing: false,
@@ -306,6 +308,7 @@ document.addEventListener('alpine:init', () => {
         params.set('summary', '1');
         if (this._optionsLoaded) params.set('without_options', '1');
         if (this.warehouseFilter) params.set('warehouse_id', this.warehouseFilter);
+        if (this.showDeletedProducts) params.set('trashed', '1');
         const query = params.toString();
         const url = query ? `${this.apiBase}?${query}` : this.apiBase;
         const payload = await apiFetch(url, { signal });
@@ -499,12 +502,12 @@ document.addEventListener('alpine:init', () => {
       const baseProducts = this.products.filter((product) => {
         const matchesSearch =
           !this.searchQuery ||
-          product.name.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
-          product.sku.toLowerCase().includes(this.searchQuery.toLowerCase());
+          String(product.name ?? '').toLowerCase().includes(this.searchQuery.toLowerCase()) ||
+          String(product.sku ?? '').toLowerCase().includes(this.searchQuery.toLowerCase());
 
         const matchesCategory = !this.categoryFilter || product.category === this.categoryFilter;
 
-        const matchesWarehouse =
+        const matchesWarehouse = this.showDeletedProducts ||
           !this.warehouseFilter ||
           (product.warehouse_stocks &&
             product.warehouse_stocks.some(
@@ -574,12 +577,12 @@ document.addEventListener('alpine:init', () => {
       this.filteredProducts = this.products.filter((product) => {
         const matchesSearch =
           !this.searchQuery ||
-          product.name.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
-          product.sku.toLowerCase().includes(this.searchQuery.toLowerCase());
+          String(product.name ?? '').toLowerCase().includes(this.searchQuery.toLowerCase()) ||
+          String(product.sku ?? '').toLowerCase().includes(this.searchQuery.toLowerCase());
 
         const matchesCategory = !this.categoryFilter || product.category === this.categoryFilter;
 
-        const matchesWarehouse =
+        const matchesWarehouse = this.showDeletedProducts ||
           !this.warehouseFilter ||
           (product.warehouse_stocks &&
             product.warehouse_stocks.some(
@@ -588,7 +591,7 @@ document.addEventListener('alpine:init', () => {
 
         const effStock = this.getEffectiveStock(product);
 
-        const matchesStock =
+        const matchesStock = this.showDeletedProducts ||
           !this.stockFilter ||
           (this.stockFilter === 'in-stock' && effStock > 0) ||
           (this.stockFilter === 'low-stock' &&
@@ -597,13 +600,16 @@ document.addEventListener('alpine:init', () => {
           (this.stockFilter === 'out-of-stock' && effStock <= 0);
 
         const skuEnabled = this.isSkuEnabled(product);
-        const matchesSku =
+        const matchesSku = this.showDeletedProducts ||
           !this.skuFilter ||
           (this.skuFilter === 'sku-on' && skuEnabled) ||
           (this.skuFilter === 'sku-off' && !skuEnabled);
 
         return matchesSearch && matchesCategory && matchesWarehouse && matchesStock && matchesSku;
       });
+
+      const visibleIds = new Set(this.filteredProducts.map((product) => product.id));
+      this.selectedProducts = this.selectedProducts.filter((id) => visibleIds.has(id));
 
       this.sortProducts();
       this.currentPage = 1;
@@ -627,6 +633,13 @@ document.addEventListener('alpine:init', () => {
     },
 
     async changeWarehouse() {
+      this.selectedProducts = [];
+      await this.loadProductsFromApi();
+      this.filterProducts();
+    },
+
+    async toggleDeletedProducts() {
+      this.showDeletedProducts = !this.showDeletedProducts;
       this.selectedProducts = [];
       await this.loadProductsFromApi();
       this.filterProducts();
@@ -899,68 +912,89 @@ document.addEventListener('alpine:init', () => {
       }
     },
 
-    bulkAction(action) {
-      if (this.selectedProducts.length === 0) return;
+    async bulkAction(action) {
+      if (this.bulkActionLoading) return;
+      const ids = [...new Set(this.selectedProducts)];
+      if (ids.length === 0) return;
 
-      if (action === 'delete') {
-        this.deleteProductsByIds(this.selectedProducts);
+      if (!this.showDeletedProducts && action === 'delete') {
+        await this.deleteProductsByIds(ids);
         return;
       }
+      if (this.showDeletedProducts && !['restore', 'force_delete'].includes(action)) return;
+      if (!this.showDeletedProducts && ['restore', 'force_delete'].includes(action)) return;
 
-      if (action === 'disable_sku') {
-        apiFetch(`${this.apiBase}/bulk-disable-sku`, {
+      if (action === 'force_delete') {
+        const confirmed = await confirmDelete({
+          title: `Permanently delete ${ids.length} product(s)?`,
+          text: 'This cannot be undone. Products with transaction history or nonzero stock will be kept.',
+          confirmButtonText: 'Permanently Delete',
+        });
+        if (!confirmed) return;
+      }
+
+      const actions = {
+        disable_sku: {
+          url: `${this.apiBase}/bulk-disable-sku`,
+          body: { ids, warehouse_id: this.warehouseFilter || null },
+          success: 'SKUs disabled successfully!',
+          failure: 'Failed to disable SKUs.',
+        },
+        enable_sku: {
+          url: `${this.apiBase}/bulk-enable-sku`,
+          body: { ids, warehouse_id: this.warehouseFilter || null },
+          success: 'SKUs enabled successfully!',
+          failure: 'Failed to enable SKUs.',
+        },
+        publish: {
+          url: `${this.apiBase}/bulk-status`,
+          body: { ids, status: 'published' },
+          success: 'Selected products published successfully!',
+          failure: 'Failed to publish products.',
+        },
+        unpublish: {
+          url: `${this.apiBase}/bulk-status`,
+          body: { ids, status: 'draft' },
+          success: 'Selected products unpublished successfully!',
+          failure: 'Failed to unpublish products.',
+        },
+        restore: {
+          url: `${this.apiBase}/bulk-restore`,
+          body: { ids },
+          failure: 'Failed to restore products.',
+        },
+        force_delete: {
+          url: `${this.apiBase}/bulk-force-delete`,
+          body: { ids },
+          failure: 'Failed to permanently delete products.',
+        },
+      };
+      const selectedAction = actions[action];
+      if (!selectedAction) return;
+
+      this.bulkActionLoading = true;
+      try {
+        const result = await apiFetch(selectedAction.url, {
           method: 'POST',
-          body: JSON.stringify({
-            ids: this.selectedProducts,
-            warehouse_id: this.warehouseFilter || null,
-          }),
-        })
-          .then(async () => {
-            await this.loadProductsFromApi();
-            this.filterProducts();
-            this.calculateStats();
-            this.selectedProducts = [];
-            showToast('SKUs disabled successfully!', 'success');
-          })
-          .catch((error) => showToast(error.message || 'Failed to disable SKUs.', 'danger'));
-        return;
+          body: JSON.stringify(selectedAction.body),
+        });
+        await this.loadProductsFromApi();
+        this.selectedProducts = [];
+        this.filterProducts();
+        if (result?.failed?.length) {
+          const reasons = result.failed.slice(0, 3)
+            .map((item) => `#${item.id}: ${item.reason}`)
+            .join(' ');
+          const remaining = result.failed.length > 3 ? ` ${result.failed.length - 3} more failure(s).` : '';
+          showToast(`${result.message || 'Some selected products could not be processed.'} ${reasons}${remaining}`, 'warning');
+        } else {
+          showToast(result?.message || selectedAction.success, 'success');
+        }
+      } catch (error) {
+        showToast(error.message || selectedAction.failure, 'danger');
+      } finally {
+        this.bulkActionLoading = false;
       }
-
-      if (action === 'enable_sku') {
-        apiFetch(`${this.apiBase}/bulk-enable-sku`, {
-          method: 'POST',
-          body: JSON.stringify({
-            ids: this.selectedProducts,
-            warehouse_id: this.warehouseFilter || null,
-          }),
-        })
-          .then(async () => {
-            await this.loadProductsFromApi();
-            this.filterProducts();
-            this.calculateStats();
-            this.selectedProducts = [];
-            showToast('SKUs enabled successfully!', 'success');
-          })
-          .catch((error) => showToast(error.message || 'Failed to enable SKUs.', 'danger'));
-        return;
-      }
-
-      const status = action === 'publish' ? 'published' : 'draft';
-      apiFetch(`${this.apiBase}/bulk-status`, {
-        method: 'POST',
-        body: JSON.stringify({
-          ids: this.selectedProducts,
-          status,
-        }),
-      })
-        .then(async () => {
-          await this.loadProductsFromApi();
-          this.filterProducts();
-          this.calculateStats();
-          this.selectedProducts = [];
-          showToast('Products updated successfully!', 'success');
-        })
-        .catch((error) => showToast(error.message || 'Failed to update products.', 'danger'));
     },
 
     async deleteProductsByIds(productIds) {
@@ -973,28 +1007,60 @@ document.addEventListener('alpine:init', () => {
         confirmButtonText: 'Yes, delete!',
       });
 
-      if (confirmed) {
-        this.executeDelete(ids);
-      }
+      if (confirmed) await this.executeDelete(ids);
     },
 
-    executeDelete(ids) {
-      apiFetch(`${this.apiBase}/bulk-delete`, {
-        method: 'POST',
-        body: JSON.stringify({ ids }),
-      })
-        .then(async () => {
-          await this.loadProductsFromApi();
-          this.filterProducts();
-          this.calculateStats();
-          this.selectedProducts = this.selectedProducts.filter((id) => !ids.includes(id));
-          showToast('Products deleted successfully!', 'success');
-        })
-        .catch((error) => showToast(error.message || 'Failed to delete products.', 'danger'));
+    async executeDelete(ids) {
+      if (this.bulkActionLoading) return;
+      this.bulkActionLoading = true;
+      try {
+        await apiFetch(`${this.apiBase}/bulk-delete`, {
+          method: 'POST',
+          body: JSON.stringify({ ids }),
+        });
+        await this.loadProductsFromApi();
+        this.selectedProducts = [];
+        this.filterProducts();
+        showToast('Products moved to deleted products.', 'success');
+      } catch (error) {
+        showToast(error.message || 'Failed to delete products.', 'danger');
+      } finally {
+        this.bulkActionLoading = false;
+      }
     },
 
     deleteProduct(product) {
       this.deleteProductsByIds([product.id]);
+    },
+
+    async restoreProduct(product) {
+      try {
+        await apiFetch(`${this.apiBase}/${product.id}/restore`, { method: 'POST' });
+        await this.loadProductsFromApi();
+        this.filterProducts();
+        showToast('Product restored successfully.', 'success');
+      } catch (error) {
+        showToast(error.message || 'Unable to restore this product.', 'danger');
+      }
+    },
+
+    async permanentlyDeleteProduct(product) {
+      const confirmed = await confirmDelete({
+        title: 'Permanently delete this product?',
+        text: 'This cannot be undone. Products with order, procurement, or inventory history are protected from permanent deletion.',
+        confirmButtonText: 'Permanently Delete',
+      });
+      if (!confirmed) return;
+
+      try {
+        await apiFetch(`${this.apiBase}/${product.id}/force-delete`, { method: 'DELETE' });
+        await this.loadProductsFromApi();
+        this.filterProducts();
+        this.selectedProducts = this.selectedProducts.filter((id) => id !== product.id);
+        showToast('Product permanently deleted.', 'success');
+      } catch (error) {
+        showToast(error.message || 'Unable to permanently delete this product.', 'danger');
+      }
     },
 
     exportProducts() {

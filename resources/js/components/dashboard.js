@@ -222,11 +222,19 @@ export class DashboardManager {
     const chartElement = document.querySelector('#salesByLocationChart');
     if (!chartElement) return;
 
+    const escapeTooltipText = (value) => String(value ?? '').replace(/[&<>"']/g, (character) => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#039;',
+    })[character]);
+
     const options = {
       series: [
         {
           name: 'Sales',
-          data: this.data.salesByLocation.map((c) => ({ x: c.name, y: c.value })),
+          data: this.data.salesByLocation.map((c) => ({ x: c.name, y: c.value, orders: c.orders })),
         },
       ],
       chart: {
@@ -254,8 +262,28 @@ export class DashboardManager {
       dataLabels: {
         enabled: true,
         style: { fontSize: '12px' },
-        formatter: (text, op) => [text, op.value],
+        formatter: (text, op) => {
+          const item = op.w.config.series[op.seriesIndex].data[op.dataPointIndex];
+          const sales = Number(item.y || 0).toLocaleString('en-IN', {
+            maximumFractionDigits: 2,
+          });
+          return [text, `₹${sales}`, `${Number(item.orders || 0).toLocaleString('en-IN')} orders`];
+        },
         offsetY: -4,
+      },
+      tooltip: {
+        custom: ({ seriesIndex, dataPointIndex, w }) => {
+          const item = w.config.series?.[seriesIndex]?.data?.[dataPointIndex] ?? {};
+          const location = escapeTooltipText(item.x);
+          const sales = Number(item.y || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 });
+          const orders = Number(item.orders || 0).toLocaleString('en-IN');
+
+          return `<div class="px-3 py-2">
+            <div class="fw-semibold mb-1">${location}</div>
+            <div>Revenue: ₹${sales}</div>
+            <div>Orders: ${orders}</div>
+          </div>`;
+        },
       },
       colors: ['#0d6efd'],
       plotOptions: {

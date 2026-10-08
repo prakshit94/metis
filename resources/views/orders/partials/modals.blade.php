@@ -6,7 +6,7 @@
 @endphp
 
 <!-- ═══════════════════════ Order Details Modal ═══════════════════════════ -->
-<div class="modal fade order-detail-modal" id="orderDetailModal" aria-labelledby="orderDetailModalLabel" aria-hidden="true" style="z-index: 1070;">
+<div class="modal fade order-detail-modal orders-list-order-detail" id="orderDetailModal" aria-labelledby="orderDetailModalLabel" aria-hidden="true" style="z-index: 1070;">
     <div class="modal-dialog modal-xl modal-dialog-scrollable">
         <div class="modal-content shadow-lg border-0 rounded-4" x-show="selectedOrder">
             <template x-if="selectedOrder">
@@ -50,7 +50,7 @@
                         <div class="row g-0" style="min-height: 100%;">
                             
                             <!-- Left Column: Details & Items -->
-                            <div class="col-lg-8 p-4 p-lg-5 bg-body-tertiary">
+                            <div class="col-xl-8 p-4 p-xl-5 bg-body-tertiary">
                                 <!-- Quick Stats Row -->
                                 <div class="row g-3 mb-4">
                                     <div class="col-sm-4">
@@ -145,7 +145,7 @@
                                         <span class="badge text-bg-primary-subtle text-primary-emphasis rounded-pill px-3" x-text="`${selectedOrder.itemCount} Items`"></span>
                                     </div>
                                     <div class="table-responsive">
-                                        <table class="table table-borderless table-hover align-middle mb-0 text-nowrap">
+                                        <table class="table table-borderless table-hover align-middle mb-0">
                                             <thead class="bg-body-tertiary">
                                                 <tr>
                                                     <th class="fw-semibold text-muted small py-3 ps-4">Product Details</th>
@@ -173,27 +173,27 @@
                                                                 </div>
                                                             </div>
                                                         </td>
-                                                        <td class="text-end py-3">
+                                                        <td class="text-end py-3 text-nowrap">
                                                             <span class="text-body-emphasis fw-medium" x-text="`₹ ${parseFloat(item.price || 0).toFixed(2)}`"></span>
                                                         </td>
-                                                        <td class="text-center py-3">
+                                                        <td class="text-center py-3 text-nowrap">
                                                             <span class="badge bg-secondary bg-opacity-10 text-body-emphasis px-2 py-1 rounded-3" x-text="item.quantity || 0"></span>
                                                         </td>
-                                                        <td class="text-end py-3 small">
+                                                        <td class="text-end py-3 small text-nowrap">
                                                             <div class="text-success fw-medium mb-1" x-show="parseFloat(item.discount || 0) > 0" x-text="`-₹ ${parseFloat(item.discount || 0).toFixed(2)}`"></div>
                                                             <template x-if="parseFloat(item.discount || 0) > 0 && item.discountBadgeLabel">
-                                                                <div class="badge bg-success bg-opacity-10 border border-success border-opacity-25 text-success d-inline-flex align-items-center gap-1 px-2 py-1 rounded-3 mt-1">
+                                                                <div class="badge bg-success bg-opacity-10 border border-success border-opacity-25 text-success d-inline-flex align-items-center gap-1 px-2 py-1 rounded-3 mt-1" style="max-width: 180px; white-space: normal; overflow-wrap: anywhere; text-align: right;">
                                                                     <i class="bi bi-tag-fill"></i>
                                                                     <span class="fw-bold" style="font-size: 11px;" x-text="item.discountBadgeLabel"></span>
                                                                 </div>
                                                             </template>
                                                             <div class="text-muted" x-show="!item.discount || parseFloat(item.discount) == 0">—</div>
                                                         </td>
-                                                        <td class="text-end py-3 small">
+                                                        <td class="text-end py-3 small text-nowrap">
                                                             <div class="text-muted fw-medium" x-text="`+₹ ${parseFloat(item.tax || 0).toFixed(2)}`"></div>
                                                             <div class="text-muted opacity-75" style="font-size: 0.7rem;" x-show="parseFloat(item.taxRate || 0) > 0" x-text="`(${parseFloat(item.taxRate).toFixed(0)}%)`"></div>
                                                         </td>
-                                                        <td class="text-end pe-4 py-3">
+                                                        <td class="text-end pe-4 py-3 text-nowrap">
                                                             <span class="fw-bold text-primary" x-text="`₹ ${((parseFloat(item.price || 0) * parseFloat(item.quantity || 0)) - parseFloat(item.discount || 0) + parseFloat(item.tax || 0)).toFixed(2)}`"></span>
                                                         </td>
                                                     </tr>
@@ -212,13 +212,19 @@
                                                     <span class="text-muted fw-medium">Subtotal</span>
                                                     <span class="text-body-emphasis fw-bold" x-text="`₹ ${formatCurrency(selectedOrder.subtotal)}`"></span>
                                                 </div>
-                                                <div class="d-flex justify-content-between mb-2">
-                                                    <div>
-                                                        <span class="text-muted fw-medium">Discount</span>
-                                                        <span x-show="selectedOrder.couponCode" class="badge bg-success ms-2 rounded-pill" x-text="selectedOrder.couponCode"></span>
-                                                        <span x-show="selectedOrder.appliedOfferName" class="text-muted d-block" style="font-size: 10px;" x-text="selectedOrder.appliedOfferName"></span>
+                                                <div class="d-flex justify-content-between align-items-start gap-3 mb-2">
+                                                    <div class="flex-grow-1" style="min-width: 0; overflow-wrap: anywhere;">
+                                                        <div class="d-flex align-items-center flex-wrap gap-2">
+                                                            <span class="text-muted fw-medium">Discount</span>
+                                                            <template x-if="selectedOrder.couponCode">
+                                                                <span class="badge bg-success rounded-pill" style="max-width: 100%; overflow-wrap: anywhere;" x-text="selectedOrder.couponCode"></span>
+                                                            </template>
+                                                        </div>
+                                                        <template x-if="selectedOrder.appliedOfferName">
+                                                            <span class="text-muted d-block mt-1" style="font-size: 10px; overflow-wrap: anywhere;" x-text="selectedOrder.appliedOfferName"></span>
+                                                        </template>
                                                     </div>
-                                                    <span class="text-success fw-bold" x-text="`-₹ ${formatCurrency(selectedOrder.discountTotal)}`"></span>
+                                                    <span class="text-success fw-bold text-nowrap flex-shrink-0" x-text="`-₹ ${formatCurrency(selectedOrder.discountTotal)}`"></span>
                                                 </div>
                                                 <div class="d-flex justify-content-between mb-3 border-bottom pb-3">
                                                     <span class="text-muted fw-medium">Tax</span>
@@ -254,7 +260,7 @@
                             </div>
                             
                             <!-- Right Column: Warehouse / Logistics / Timeline -->
-                            <div class="col-lg-4 p-4 p-lg-5 border-start bg-body" style="height: fit-content; align-self: flex-start;">
+                            <div class="col-xl-4 p-4 p-xl-5 border-start bg-body" style="height: fit-content; align-self: flex-start;">
                                 
                                 <!-- Document Actions -->
                                 <div class="d-flex flex-wrap gap-2 mb-4 w-100">
@@ -1089,4 +1095,3 @@
     </div>
 
     </div> <!-- End showAnalytics Main Wrapper -->
-

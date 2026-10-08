@@ -19,7 +19,9 @@ use App\Modules\Inventory\Models\Supplier;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -283,10 +285,87 @@ class ProductController extends Controller
             return response()->json(['message' => 'No products selected.'], 422);
         }
 
-        Product::whereIn('id', $ids)->delete();
+        $deletedCount = Product::whereIn('id', $ids)->delete();
 
         return response()->json([
-            'message' => 'Selected products deleted.',
+            'message' => $deletedCount.' product(s) moved to deleted products.',
+            'deleted_count' => $deletedCount,
+        ]);
+    }
+
+    public function bulkRestore(Request $request): JsonResponse
+    {
+        abort_unless($request->user()?->can('product-restore'), 403);
+
+        $ids = $this->extractIds($request->input('ids'));
+        if (empty($ids)) {
+            return response()->json(['message' => 'No products selected.'], 422);
+        }
+
+        $restored = [];
+        $failed = [];
+        $products = Product::withTrashed()->whereIn('id', $ids)->get();
+
+        foreach ($ids as $id) {
+            $product = $products->firstWhere('id', $id);
+            if (! $product || ! $product->trashed()) {
+                $failed[] = ['id' => $id, 'reason' => 'Product is unavailable or is not deleted.'];
+                continue;
+            }
+            if (Product::query()->where('sku', $product->sku)->where('id', '<>', $product->id)->exists()) {
+                $failed[] = ['id' => $id, 'reason' => 'Another active product is using this SKU.'];
+                continue;
+            }
+
+            $product->restore();
+            $restored[] = $id;
+        }
+
+        return response()->json([
+            'message' => count($restored).' product(s) restored; '.count($failed).' could not be restored.',
+            'restored_ids' => $restored,
+            'failed' => $failed,
+        ]);
+    }
+
+    public function bulkForceDelete(Request $request): JsonResponse
+    {
+        abort_unless($request->user()?->can('product-permanent-delete'), 403);
+
+        $ids = $this->extractIds($request->input('ids'));
+        if (empty($ids)) {
+            return response()->json(['message' => 'No products selected.'], 422);
+        }
+
+        $deleted = [];
+        $failed = [];
+        $products = Product::withTrashed()->whereIn('id', $ids)->get();
+
+        foreach ($ids as $id) {
+            $product = $products->firstWhere('id', $id);
+            if (! $product || ! $product->trashed()) {
+                $failed[] = ['id' => $id, 'reason' => 'Product is unavailable or is not deleted.'];
+                continue;
+            }
+
+            $reason = $this->permanentDeleteBlockReason($product);
+            if ($reason !== null) {
+                $failed[] = ['id' => $id, 'reason' => $reason];
+                continue;
+            }
+
+            $imagePath = $product->image_path;
+            DB::transaction(fn () => $product->forceDelete());
+            if ($imagePath) {
+                Storage::disk('public')->delete($imagePath);
+            }
+            $deleted[] = $id;
+        }
+
+        return response()->json([
+            'message' => count($deleted).' product(s) permanently deleted; '.count($failed).' could not be deleted.',
+            'deleted_ids' => $deleted,
+            'failed' => $failed,
         ]);
     }
 
@@ -432,6 +511,16 @@ class ProductController extends Controller
         abort_unless($request->user()?->can('product-restore'), 403);
 
         $product = Product::withTrashed()->findOrFail($product);
+        if (! $product->trashed()) {
+            return response()->json(['message' => 'This product is not in the deleted products list.'], 409);
+        }
+
+        if (Product::query()->where('sku', $product->sku)->where('id', '<>', $product->id)->exists()) {
+            return response()->json([
+                'message' => 'This product cannot be restored because another active product is using its SKU.',
+            ], 409);
+        }
+
         $product->restore();
 
         $stockScope = function ($q) use ($request) {
@@ -465,8 +554,20 @@ class ProductController extends Controller
         abort_unless($request->user()?->can('product-permanent-delete'), 403);
 
         $product = Product::withTrashed()->findOrFail($product);
-        $this->deleteImage($product);
-        $product->forceDelete();
+        if (! $product->trashed()) {
+            return response()->json(['message' => 'Only deleted products can be permanently deleted.'], 409);
+        }
+
+        $reason = $this->permanentDeleteBlockReason($product);
+        if ($reason !== null) {
+            return response()->json(['message' => $reason], 409);
+        }
+
+        $imagePath = $product->image_path;
+        DB::transaction(fn () => $product->forceDelete());
+        if ($imagePath) {
+            Storage::disk('public')->delete($imagePath);
+        }
 
         return response()->json([
             'message' => 'Product permanently deleted.',
@@ -1535,6 +1636,42 @@ class ProductController extends Controller
         if ($product->image_path) {
             Storage::disk('public')->delete($product->image_path);
         }
+    }
+
+    private function permanentDeleteBlockReason(Product $product): ?string
+    {
+        // Keep transaction and inventory audit history intact. Some related tables
+        // cascade on product deletion, so check before allowing a hard delete.
+        $historyTables = [
+            'order_items',
+            'order_return_items',
+            'purchase_order_items',
+            'goods_receipt_items',
+            'stock_movements',
+            'stock_batches',
+            'stock_reservations',
+            'inventory_adjustment_items',
+            'stock_transfer_items',
+        ];
+
+        foreach ($historyTables as $table) {
+            if (Schema::hasTable($table)
+                && Schema::hasColumn($table, 'product_id')
+                && DB::table($table)->where('product_id', $product->id)->exists()) {
+                return 'This product has transaction or inventory history and cannot be permanently deleted. Restore it if it is needed again; its history must remain available for audit.';
+            }
+        }
+
+        if (Schema::hasTable('stocks') && Schema::hasColumn('stocks', 'product_id')) {
+            foreach (['quantity', 'reserved_qty', 'dispatched_qty'] as $quantityColumn) {
+                if (Schema::hasColumn('stocks', $quantityColumn)
+                    && DB::table('stocks')->where('product_id', $product->id)->where($quantityColumn, '<>', 0)->exists()) {
+                    return 'This product still has on-hand, reserved, or dispatched stock and cannot be permanently deleted. Clear or reconcile its stock before trying again.';
+                }
+            }
+        }
+
+        return null;
     }
 
     private function nullableString(mixed $value): ?string

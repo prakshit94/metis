@@ -8,11 +8,11 @@
         <div class="container-fluid align-items-center h-100 px-3 px-md-4 d-flex justify-content-between">
 
             {{-- ── LEFT SECTION (Brand & Toggle) ────────────────── --}}
-            <div class="d-flex align-items-center gap-2 gap-md-4 flex-shrink-0" style="min-width: 0;">
+            <div class="header-left-section d-flex align-items-center gap-2 gap-md-4 flex-shrink-0" style="min-width: 0;">
                 
                 {{-- SIDEBAR TOGGLE --}}
                 @if(!isset($hideSidebar) || !$hideSidebar)
-                <button class="btn btn-outline-secondary border-0 shadow-sm bg-body rounded-circle p-2 d-flex align-items-center justify-content-center transition-all hover-scale"
+                <button class="header-icon-control btn btn-outline-secondary border-0 shadow-sm bg-body rounded-circle p-2 d-flex align-items-center justify-content-center transition-all hover-scale"
                         style="width: 42px; height: 42px;"
                         type="button"
                         data-sidebar-toggle
@@ -298,11 +298,11 @@
             </div>
             @endif
             {{-- ── RIGHT ACTIONS ─────────────────────────────────── --}}
-            <div class="d-flex align-items-center justify-content-end gap-2 gap-sm-3 h-100 flex-shrink-0">
+            <div class="header-right-actions d-flex align-items-center justify-content-end gap-2 gap-sm-3 h-100 flex-shrink-0">
 
 {{-- Theme Toggle --}}
                 <div x-data="themeSwitch" class="h-100 d-flex align-items-center d-none d-md-flex">
-                    <button class="btn btn-outline-secondary border-0 shadow-sm bg-body rounded-circle p-2 d-flex align-items-center justify-content-center transition-all hover-scale"
+                    <button class="header-icon-control btn btn-outline-secondary border-0 shadow-sm bg-body rounded-circle p-2 d-flex align-items-center justify-content-center transition-all hover-scale"
                             style="width: 42px; height: 42px;"
                             type="button"
                             @click="toggle()"
@@ -316,7 +316,7 @@
                 </div>
 
 {{-- Fullscreen Toggle --}}
-                <button class="btn btn-outline-secondary border-0 shadow-sm bg-body rounded-circle p-2 d-flex align-items-center justify-content-center transition-all hover-scale d-none d-lg-flex"
+                <button class="header-icon-control btn btn-outline-secondary border-0 shadow-sm bg-body rounded-circle p-2 d-flex align-items-center justify-content-center transition-all hover-scale d-none d-lg-flex"
                         style="width: 42px; height: 42px;"
                         type="button"
                         data-fullscreen-toggle
@@ -398,7 +398,7 @@
                 @if(count($availableWebApps) > 0)
                 {{-- Web Apps Dropdown --}}
                 <div class="dropdown h-100 d-flex align-items-center">
-                    <button class="btn btn-outline-secondary border-0 shadow-sm bg-body rounded-circle p-2 d-flex align-items-center justify-content-center transition-all hover-scale"
+                    <button class="header-icon-control btn btn-outline-secondary border-0 shadow-sm bg-body rounded-circle p-2 d-flex align-items-center justify-content-center transition-all hover-scale"
                             style="width: 42px; height: 42px;"
                             type="button"
                             id="webAppsMenuBtn"
@@ -408,7 +408,7 @@
                             aria-label="Quick Links">
                         <i class="bi bi-grid-3x3-gap-fill fs-5 text-secondary" aria-hidden="true"></i>
                     </button>
-                    <div class="dropdown-menu dropdown-menu-end p-0 shadow-lg border-0 rounded-4 mt-3" aria-labelledby="webAppsMenuBtn" style="width: 320px;">
+                    <div class="dropdown-menu header-floating-menu dropdown-menu-end p-0 shadow-lg border-0 rounded-4 mt-3" aria-labelledby="webAppsMenuBtn" style="width: min(320px, calc(100vw - 1rem));">
                         <div class="p-3 border-bottom bg-body-secondary bg-opacity-50 rounded-top-4">
                             <h6 class="m-0 fw-bold text-body text-uppercase" style="font-size: 11px; letter-spacing: 1px;">Quick Links</h6>
                         </div>
@@ -434,7 +434,7 @@
 {{-- Shopping Cart Dropdown --}}
                 @if(request()->routeIs('orders.create', 'promotions.coupons', 'promotions.offers'))
                 <div class="dropdown h-100 d-flex align-items-center" x-data="headerCart">
-                    <button class="btn btn-outline-secondary border-0 shadow-sm bg-body rounded-circle p-2 d-flex align-items-center justify-content-center transition-all hover-scale position-relative"
+                    <button class="header-icon-control btn btn-outline-secondary border-0 shadow-sm bg-body rounded-circle p-2 d-flex align-items-center justify-content-center transition-all hover-scale position-relative"
                             style="width: 42px; height: 42px;"
                             type="button"
                             id="cartMenuBtn"
@@ -446,7 +446,7 @@
                         <i class="bi bi-bag-fill fs-5 text-secondary" aria-hidden="true"></i>
                         <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary border border-2 border-body shadow-sm" style="font-size: 10px; margin-top: 8px; margin-left: -12px;" x-text="items.length" x-show="items.length > 0" x-cloak></span>
                     </button>
-                    <div class="dropdown-menu dropdown-menu-end p-0 shadow-lg border-0 rounded-4 mt-3" aria-labelledby="cartMenuBtn" style="width: 350px;">
+                    <div class="dropdown-menu header-floating-menu dropdown-menu-end p-0 shadow-lg border-0 rounded-4 mt-3" aria-labelledby="cartMenuBtn" style="width: min(350px, calc(100vw - 1rem));">
                         <div class="p-3 border-bottom bg-body-secondary bg-opacity-50 rounded-top-4">
                             <div class="row align-items-center">
                                 <div class="col">
@@ -475,10 +475,13 @@
                                         </div>
                                         <div class="flex-grow-1" style="min-width: 0;">
                                             <h6 class="mb-1 fw-bold text-body text-truncate fs-6" x-text="item.name"></h6>
-                                            <p class="mb-0 text-muted fw-semibold" style="font-size: 11px;">Qty: <span x-text="item.quantity"></span> × ₹ <span x-text="parseFloat(item.price).toFixed(2)"></span></p>
+                                            <div class="d-flex align-items-center gap-1 flex-wrap mb-0 text-muted fw-semibold" style="font-size: 11px;">
+                                                <template x-if="item.is_gift"><span class="badge text-bg-success-subtle text-success-emphasis">Free</span></template>
+                                                <template x-if="!item.is_gift"><span>Qty: <span x-text="item.quantity"></span> × ₹ <span x-text="Number(item.price || 0).toFixed(2)"></span></span></template>
+                                            </div>
                                         </div>
                                         <div class="text-end ms-2">
-                                            <h6 class="mb-1 fw-black text-success" x-text="'₹ ' + (item.quantity * parseFloat(item.price)).toFixed(2)"></h6>
+                                            <h6 class="mb-1 fw-black text-success" x-text="'₹ ' + lineTotal(item).toFixed(2)"></h6>
                                             <template x-if="!item.is_gift">
                                                 <button type="button" class="btn btn-sm btn-link text-danger p-0 text-decoration-none" style="font-size: 11px;" @click="removeItem(idx)">Remove</button>
                                             </template>
@@ -829,7 +832,7 @@
                          }
                      }">
                     <a href="{{ route('chat.index') }}"
-                       class="btn btn-outline-secondary border-0 shadow-sm bg-body rounded-circle p-2 d-flex align-items-center justify-content-center transition-all hover-scale position-relative"
+                       class="header-icon-control btn btn-outline-secondary border-0 shadow-sm bg-body rounded-circle p-2 d-flex align-items-center justify-content-center transition-all hover-scale position-relative"
                        style="width: 42px; height: 42px;"
                        data-bs-toggle="tooltip"
                        data-bs-placement="bottom"
@@ -848,7 +851,7 @@
 
                 {{-- Notifications Dropdown --}}
                 <div class="dropdown h-100 d-flex align-items-center" x-data="notificationApp(@js($initialActivities), {{ $initialUnreadCount }}, {{ $otherAlertsCount }}, @js($canViewActivities))">
-                    <button class="btn btn-outline-secondary border-0 shadow-sm bg-body rounded-circle p-2 d-flex align-items-center justify-content-center transition-all hover-scale position-relative"
+                    <button class="header-icon-control btn btn-outline-secondary border-0 shadow-sm bg-body rounded-circle p-2 d-flex align-items-center justify-content-center transition-all hover-scale position-relative"
                             style="width: 42px; height: 42px;"
                             type="button"
                             id="notificationsMenuBtn"
@@ -861,9 +864,9 @@
                         <i class="bi bi-bell-fill fs-5 text-secondary" aria-hidden="true"></i>
                         <span x-cloak class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger border border-2 border-body shadow-sm align-items-center justify-content-center {{ $totalInitialUnread > 0 ? 'd-flex' : 'd-none' }}" :class="totalCount > 0 ? 'd-flex' : 'd-none'" style="font-size: 10px; min-width: 18px; height: 18px; margin-top: 8px; margin-left: -12px;"><span x-text="totalCount"></span></span>
                     </button>
-                    <div class="dropdown-menu dropdown-menu-end p-0 shadow-lg border-0 rounded-4 mt-3"
+                    <div class="dropdown-menu header-floating-menu dropdown-menu-end p-0 shadow-lg border-0 rounded-4 mt-3"
                          aria-labelledby="notificationsMenuBtn"
-                         style="width: 340px;">
+                         style="width: min(340px, calc(100vw - 1rem));">
                         <div class="bg-primary rounded-top-4 p-3 text-white">
                             <div class="d-flex align-items-center justify-content-between mb-3">
                                 <div>
@@ -915,14 +918,14 @@
                                                     <i class="bi bi-person-fill fs-5"></i>
                                                 </div>
                                             </template>
-                                            <div class="flex-grow-1">
+                                            <div class="flex-grow-1" style="min-width: 0; overflow-wrap: anywhere;">
                                                 <div class="d-flex justify-content-between align-items-center mb-1">
                                                     <h6 class="mb-0 fs-13" :class="!activity.is_read ? 'fw-bold text-primary' : 'fw-semibold text-body'" x-text="activity.causer_name"></h6>
                                                     <template x-if="!activity.is_read">
                                                         <span class="badge bg-primary rounded-pill shadow-sm" style="font-size: 9px;">New</span>
                                                     </template>
                                                 </div>
-                                                <p class="mb-1 fs-13" :class="!activity.is_read ? 'text-body' : 'text-muted'" style="line-height: 1.4;" x-text="activity.plain_description || activity.formatted_description"></p>
+                                                <p class="mb-1 fs-13" :class="!activity.is_read ? 'text-body' : 'text-muted'" style="line-height: 1.4; overflow-wrap: anywhere;" x-text="activity.plain_description || activity.formatted_description"></p>
                                                 <p class="mb-0 small" :class="!activity.is_read ? 'text-primary text-opacity-75 fw-semibold' : 'text-muted'"><i class="bi bi-clock me-1"></i> <span x-text="activity.time_ago"></span></p>
                                             </div>
                                         </a>
@@ -953,14 +956,14 @@
                                              :class="!alertsRead ? 'bg-{{ $alert->type }} bg-opacity-25 text-{{ $alert->type }} border border-2 border-{{ $alert->type }} border-opacity-25' : 'bg-secondary bg-opacity-10 text-secondary'" style="width: 40px; height: 40px;">
                                             <i class="bi {{ $alert->icon }} fs-5"></i>
                                         </div>
-                                        <div class="flex-grow-1">
+                                        <div class="flex-grow-1" style="min-width: 0; overflow-wrap: anywhere;">
                                             <div class="d-flex justify-content-between align-items-center mb-1">
                                                 <h6 class="mb-0 fs-13" :class="!alertsRead ? 'fw-bold text-{{ $alert->type }}' : 'fw-semibold text-body'">{{ $alert->title }}</h6>
                                                 <template x-if="!alertsRead">
                                                     <span class="badge bg-{{ $alert->type }} rounded-pill shadow-sm" style="font-size: 9px;">New</span>
                                                 </template>
                                             </div>
-                                            <p class="mb-1 fs-13" :class="!alertsRead ? 'text-body fw-bold' : 'text-muted'">{!! $alert->message !!}</p>
+                                            <p class="mb-1 fs-13" :class="!alertsRead ? 'text-body fw-bold' : 'text-muted'" style="overflow-wrap: anywhere;">{!! $alert->message !!}</p>
                                             @if($alert->time_ago)
                                             <p class="mb-0 small" :class="!alertsRead ? 'text-{{ $alert->type }} text-opacity-75 fw-semibold' : 'text-muted'"><i class="bi bi-clock me-1"></i> {{ $alert->time_ago }}</p>
                                             @endif
@@ -1003,8 +1006,8 @@
                         </span>
                         <i class="bi bi-chevron-down text-muted ms-1 d-none d-md-inline" style="font-size: 12px;"></i>
                     </button>
-                    <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 rounded-4 mt-3 py-2"
-                        aria-labelledby="userMenuBtn" style="min-width: 240px;">
+                    <ul class="dropdown-menu header-floating-menu dropdown-menu-end shadow-lg border-0 rounded-4 mt-3 py-2"
+                        aria-labelledby="userMenuBtn" style="width: min(280px, calc(100vw - 1rem)); min-width: min(240px, calc(100vw - 1rem));">
                         
                         <li class="px-4 py-3 d-flex align-items-center gap-3 border-bottom mb-2">
                             <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center shadow-sm overflow-hidden" style="width: 48px; height: 48px;">
@@ -1187,9 +1190,9 @@ document.addEventListener('alpine:init', () => {
         items: [],
         cartGrandTotal: 0,
         init() {
+            this.syncCustomerContext();
             this.loadCart();
             this.loadCartTotal();
-            this.syncCustomerContext();
             window.addEventListener('storage', (e) => {
                 const customerId = localStorage.getItem('ecommerce_active_customer_id');
                 const cartKey = customerId ? `ecommerce_create_order_cart_${customerId}` : 'ecommerce_create_order_cart';
@@ -1227,6 +1230,8 @@ document.addEventListener('alpine:init', () => {
                 localStorage.setItem('ecommerce_active_customer_id', match[1]);
             } else if (customerIdParam) {
                 localStorage.setItem('ecommerce_active_customer_id', customerIdParam);
+            } else if (window.location.pathname.replace(/\/$/, '') === '/orders/create') {
+                localStorage.removeItem('ecommerce_active_customer_id');
             }
         },
         loadCart() {
@@ -1243,6 +1248,17 @@ document.addEventListener('alpine:init', () => {
             const totalKey = customerId ? `ecommerce_create_order_cart_total_${customerId}` : 'ecommerce_create_order_cart_total';
             this.cartGrandTotal = parseFloat(localStorage.getItem(totalKey)) || 0;
         },
+        lineTotal(item) {
+            if (!item || item.is_gift) return 0;
+            const base = (parseFloat(item.price) || 0) * (parseInt(item.quantity) || 0);
+            const discount = parseFloat(item.discountValue) || 0;
+            if (discount <= 0) return base;
+            const type = (item.discountType || '').toLowerCase();
+            const amount = ['flat', 'amount', 'fixed'].includes(type)
+                ? Math.min(discount * (parseInt(item.quantity) || 0), base)
+                : Math.min(base * (discount / 100), base);
+            return Math.max(0, base - amount);
+        },
         checkoutHref() {
             const pathMatch = window.location.pathname.match(/^\/customers\/(\d+)(?:\/|$)/);
             const customerId = (pathMatch && pathMatch[1]) || localStorage.getItem('ecommerce_active_customer_id');
@@ -1257,10 +1273,7 @@ document.addEventListener('alpine:init', () => {
             const cartKey = customerId ? `ecommerce_create_order_cart_${customerId}` : 'ecommerce_create_order_cart';
             localStorage.setItem(cartKey, JSON.stringify(this.items));
             
-            let total = 0;
-            this.items.forEach(item => {
-                total += (parseFloat(item.price) || 0) * (parseInt(item.quantity) || 1);
-            });
+            const total = this.items.reduce((sum, item) => sum + this.lineTotal(item), 0);
             const totalKey = customerId ? `ecommerce_create_order_cart_total_${customerId}` : 'ecommerce_create_order_cart_total';
             localStorage.setItem(totalKey, total.toString());
             this.cartGrandTotal = total;
