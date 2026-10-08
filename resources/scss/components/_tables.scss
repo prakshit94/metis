@@ -240,6 +240,20 @@
 }
 
 // Responsive Table Improvements
+.table-responsive:has(.dropdown-menu.show) {
+  // Bootstrap menus inside responsive tables otherwise get clipped by the
+  // wrapper's overflow while their Popper boundary is already the viewport.
+  overflow: visible !important;
+}
+
+.table-responsive:has(.dropdown-menu.show) .dropdown.show {
+  z-index: 1080;
+}
+
+.table-responsive:has(.dropdown-menu.show) .dropdown-menu.show {
+  z-index: 1081;
+}
+
 @media (max-width: 768px) {
   .table-responsive {
     .table {

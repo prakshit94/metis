@@ -67,7 +67,7 @@
             </div>
         </div>
         <div class="col-xl-3 col-lg-6">
-            <div class="card stats-card h-100 shadow-sm rounded-4 border-start border-4 border-warning">
+            <div class="card stats-card h-100 shadow-sm rounded-4 border-start border-4 border-info">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-info bg-opacity-10 text-info me-3 rounded-circle d-flex justify-content-center align-items-center" style="width: 48px; height: 48px;">
@@ -75,14 +75,14 @@
                         </div>
                         <div>
                             <p class="h6 mb-0 text-muted">Permanent</p>
-                            <div class="h3 mb-0 fw-bold">{{ $programs->whereNull('start_date')->count() }}</div>
+                            <div class="h3 mb-0 fw-bold">{{ $programs->whereNull('start_date')->whereNull('end_date')->count() }}</div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
         <div class="col-xl-3 col-lg-6">
-            <div class="card stats-card h-100 shadow-sm rounded-4 border-start border-4 border-info">
+            <div class="card stats-card h-100 shadow-sm rounded-4 border-start border-4 border-warning">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-warning bg-opacity-10 text-warning me-3 rounded-circle d-flex justify-content-center align-items-center" style="width: 48px; height: 48px;">
@@ -90,7 +90,7 @@
                         </div>
                         <div>
                             <p class="h6 mb-0 text-muted">Time-Bound</p>
-                            <div class="h3 mb-0 fw-bold">{{ $programs->whereNotNull('start_date')->count() }}</div>
+                            <div class="h3 mb-0 fw-bold">{{ $programs->filter(fn ($program) => $program->start_date !== null || $program->end_date !== null)->count() }}</div>
                         </div>
                     </div>
                 </div>
@@ -192,19 +192,19 @@
                                                 @else
                                                     <i class="bi bi-box2-heart-fill text-success"></i>
                                                 @endif
-                                                <span>{{ $milestone->required_referrals == 0 ? 'Every Ref' : $milestone->required_referrals . ' Refs' }} = {{ ucfirst($milestone->reward_type) }}: {{ $milestone->reward_value }}</span>
+                                                <span>{{ $milestone->required_referrals == 0 ? 'Every Ref' : $milestone->required_referrals . ' Refs' }} = {{ ucfirst($milestone->reward_type) }}: {{ $milestone->reward_type === 'product' ? ($products->firstWhere('id', (int) $milestone->reward_value)?->name ?? 'Product #'.$milestone->reward_value) : $milestone->reward_value }}</span>
                                             </span>
                                         @endforeach
                                     </div>
                                 </td>
                                 <td class="text-end pe-4">
                                     <div class="dropdown">
-                                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" data-bs-boundary="window" title="Actions">
+                                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" data-bs-boundary="viewport" title="Actions">
                                             <i class="bi bi-three-dots"></i>
                                         </button>
                                         <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
                                             <li>
-                                                <a class="dropdown-item" href="#" @click.prevent="editProgram({{ $program->toJson() }})">
+                                                <a class="dropdown-item" href="#" @click.prevent="editProgram(@js($program))">
                                                     <i class="bi bi-pencil me-2"></i>Edit
                                                 </a>
                                             </li>
@@ -331,7 +331,7 @@
                                                     </div>
                                                     <div class="col-md-4">
                                                         <label class="form-label mb-2 fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.1em;">Reward Type</label>
-                                                        <select x-model="milestone.reward_type" :name="`milestones[${index}][reward_type]`" class="form-select fw-semibold border-secondary border-opacity-25 shadow-none" required style="font-size: 13px;">
+                                                        <select x-model="milestone.reward_type" @change="milestone.reward_value = ''" :name="`milestones[${index}][reward_type]`" class="form-select fw-semibold border-secondary border-opacity-25 shadow-none" required style="font-size: 13px;">
                                                             <option value="wallet">Wallet Balance</option>
                                                             <option value="product">Free Product</option>
                                                             <option value="coupon">Discount Coupon</option>
@@ -360,7 +360,7 @@
                                                                     </div>
                                                                 </div>
                                                                 <div class="overflow-y-auto" style="max-height: 200px;">
-                                                                    <template x-for="product in allProducts.filter(p => (p.name + ' ' + (p.sku || '')).toLowerCase().includes(search.toLowerCase()))" :key="product.id">
+                                                                    <template x-for="product in allProducts.filter(p => (String(p.name || '') + ' ' + String(p.sku || '')).toLowerCase().includes(search.toLowerCase()))" :key="product.id">
                                                                         <div class="px-3 py-2 cursor-pointer border-bottom border-secondary border-opacity-10 custom-hover-bg transition-all" role="option" :aria-selected="milestone.reward_value == product.id"
                                                                             @click="milestone.reward_value = product.id; open = false; search = ''" 
                                                                             :class="milestone.reward_value == product.id ? 'bg-primary bg-opacity-10 text-primary fw-bold' : ''">
@@ -368,7 +368,7 @@
                                                                             <span class="text-muted ms-1" style="font-size: 10px;" x-text="product.sku ? '(' + product.sku + ')' : ''"></span>
                                                                         </div>
                                                                     </template>
-                                                                    <div x-show="allProducts.filter(p => (p.name + ' ' + (p.sku || '')).toLowerCase().includes(search.toLowerCase())).length === 0" class="p-3 text-center text-muted" style="font-size: 11px;">
+                                                                    <div x-show="allProducts.filter(p => (String(p.name || '') + ' ' + String(p.sku || '')).toLowerCase().includes(search.toLowerCase())).length === 0" class="p-3 text-center text-muted" style="font-size: 11px;">
                                                                         No products found.
                                                                     </div>
                                                                 </div>
