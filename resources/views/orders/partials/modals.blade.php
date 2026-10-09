@@ -401,6 +401,14 @@
                                                     </div>
                                                     <div class="d-flex justify-content-between align-items-center">
                                                         <p class="fw-bold text-body-emphasis font-monospace mb-0 fs-6" x-text="selectedOrder.shipment.trackingNo"></p>
+                                                        <button type="button" class="btn btn-sm btn-outline-secondary py-1 px-2 me-auto ms-2"
+                                                                x-data="{ copied: false }"
+                                                                :disabled="!selectedOrder.shipment.trackingNo || selectedOrder.shipment.trackingNo === 'N/A'"
+                                                                title="Copy tracking number" aria-label="Copy tracking number"
+                                                                @click.stop="copyText(selectedOrder.shipment.trackingNo).then((success) => { if (success) { copied = true; setTimeout(() => copied = false, 2000); } })">
+                                                            <i class="bi" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'"></i>
+                                                            <span class="ms-1" x-text="copied ? 'Copied' : 'Copy'"></span>
+                                                        </button>
                                                         <span class="badge text-bg-info-subtle text-info-emphasis border-opacity-25 rounded-pill" x-text="selectedOrder.shipment.carrier"></span>
                                                     </div>
                                                 </div>

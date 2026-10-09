@@ -563,7 +563,7 @@
                         <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-2 text-muted z-1" style="font-size: 0.85rem;"></i>
                         <input type="search" 
                                class="form-control form-control-sm ps-4" 
-                               placeholder="Search orders..."
+                               placeholder="Search orders, customers, or tracking ID..."
                                x-model="searchQuery"
                                @input="filterOrdersDebounced()"
                                style="width: 200px;">

@@ -2162,7 +2162,6 @@ document.addEventListener('alpine:init', () => {
         window.URL.revokeObjectURL(url);
 
         showToast(`Bulk ${type} generated successfully.`, 'success');
-        this.selectedOrders = [];
       } catch (err) {
         showToast('Network error or download failed.', 'danger');
       }

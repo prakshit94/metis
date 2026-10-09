@@ -108,6 +108,9 @@ class OrderController extends Controller implements HasMiddleware
                             ->orWhere('lastname', 'LIKE', "%{$s}%")
                             ->orWhere('company_name', 'LIKE', "%{$s}%")
                             ->orWhere('phone', 'LIKE', "%{$s}%");
+                    })
+                    ->orWhereHas('shipments', function ($q) use ($s) {
+                        $q->where('tracking_no', 'LIKE', "%{$s}%");
                     });
             });
         }
