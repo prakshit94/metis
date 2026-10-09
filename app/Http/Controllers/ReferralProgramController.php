@@ -28,10 +28,13 @@ class ReferralProgramController extends Controller implements HasMiddleware
         $filters = $request->validate([
             'status' => 'nullable|in:active,inactive,expired,scheduled',
         ]);
+        $statusFilter = array_key_exists('status', $request->query())
+            ? ($filters['status'] ?? '')
+            : 'active';
         $allPrograms = ReferralProgram::with('milestones')->latest()->get();
         $today = today()->toDateString();
-        $programs = $allPrograms->filter(function (ReferralProgram $program) use ($filters, $today) {
-            return match ($filters['status'] ?? '') {
+        $programs = $allPrograms->filter(function (ReferralProgram $program) use ($statusFilter, $today) {
+            return match ($statusFilter) {
                 'active' => $program->is_active,
                 'inactive' => ! $program->is_active,
                 'expired' => $program->end_date !== null && $program->end_date->toDateString() < $today,

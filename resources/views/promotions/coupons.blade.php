@@ -105,7 +105,7 @@
                         </select>
                         <select class="form-select form-select-sm" x-model="filterStatus" @change="applyFilters()" style="width: 150px;">
                             <option value="">All Status</option>
-                            <option value="active">Enabled (manual)</option>
+                            <option value="active">Active</option>
                             <option value="inactive">Inactive</option>
                             <option value="expired">Expired</option>
                         </select>
@@ -522,7 +522,7 @@ function couponsModule() {
         allProducts: INITIAL_PRODUCTS || [],
         showFreeProductDropdown: false, freeProductSearch: '',
         coupons: [], loading: false, saving: false,
-        search: '', filterType: '', filterStatus: '', page: 1, lastPage: 1,
+        search: '', filterType: '', filterStatus: 'active', page: 1, lastPage: 1,
         total: 0, from: 0, to: 0, _fetchRequestId: 0,
         selected: [], stats: { total: 0, active: 0, inactive: 0, expired: 0, expiring_soon: 0 },
         form: { id: null, code: '', type: 'percentage', display_type: 'percentage', value: '', min_spend: '', max_discount: '', cashback_type: 'none', cashback_val: '', free_product_id: '', free_qty: 1, expiry_date: '', usage_limit: '', is_active: true },

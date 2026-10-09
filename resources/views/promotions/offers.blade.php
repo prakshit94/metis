@@ -106,7 +106,7 @@
                         </select>
                         <select class="form-select form-select-sm" x-model="filterStatus" @change="applyFilters()" style="width: 150px;">
                             <option value="">All Statuses</option>
-                            <option value="active">Enabled (manual)</option>
+                            <option value="active">Active</option>
                             <option value="inactive">Inactive</option>
                             <option value="expired">Expired</option>
                             <option value="scheduled">Scheduled</option>
@@ -706,7 +706,7 @@ function offersModule() {
         showCategoriesDropdown: false, categorySearch: '',
         showGiftProductDropdown: false, giftProductSearch: '',
         offers: [], loading: false, saving: false,
-        search: '', filterType: '', filterStatus: '', page: 1, lastPage: 1,
+        search: '', filterType: '', filterStatus: 'active', page: 1, lastPage: 1,
         total: 0, from: 0, to: 0, _fetchRequestId: 0,
         selected: [], stats: { total: 0, active: 0, expired: 0, scheduled: 0, bogo: 0, order_discount: 0 },
         form: { id: null, name: '', type: 'order_discount', discount_type: 'percentage', display_discount_type: 'percentage', value: '', min_spend: '', max_discount: '', cashback_type: 'none', cashback_val: '', product_ids: [], product_id: '', applicable_categories: [], buy_qty: 1, get_qty: 1, starts_at: '', ends_at: '', priority: 0, is_active: true },

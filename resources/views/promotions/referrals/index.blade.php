@@ -110,8 +110,8 @@
                     <form method="GET" action="{{ route('referrals.programs.index') }}" class="d-flex align-items-center gap-2">
                         <label for="referral-status-filter" class="small text-muted mb-0">Status</label>
                         <select id="referral-status-filter" name="status" class="form-select form-select-sm" onchange="this.form.submit()">
-                            <option value="" @selected(request('status') === null || request('status') === '')>All statuses</option>
-                            <option value="active" @selected(request('status') === 'active')>Enabled (manual)</option>
+                            <option value="" @selected(request()->query('status', 'active') === '')>All statuses</option>
+                            <option value="active" @selected(request()->query('status', 'active') === 'active')>Active</option>
                             <option value="inactive" @selected(request('status') === 'inactive')>Inactive</option>
                             <option value="expired" @selected(request('status') === 'expired')>Expired</option>
                             <option value="scheduled" @selected(request('status') === 'scheduled')>Scheduled</option>

@@ -91,10 +91,16 @@ class VillageController extends Controller implements HasMiddleware
         }
 
         if ($request->filled('service_id')) {
-            $serviceId = (int) $request->input('service_id');
-            $query->whereHas('mappings', function ($q) use ($serviceId): void {
-                $q->where('service_id', $serviceId)->where('is_available', true);
-            });
+            if ($request->input('service_id') === 'unassigned') {
+                $query->whereDoesntHave('mappings', function ($q): void {
+                    $q->where('is_available', true);
+                });
+            } else {
+                $serviceId = (int) $request->input('service_id');
+                $query->whereHas('mappings', function ($q) use ($serviceId): void {
+                    $q->where('service_id', $serviceId)->where('is_available', true);
+                });
+            }
         }
 
         if ($request->filled('office_type_code')) {

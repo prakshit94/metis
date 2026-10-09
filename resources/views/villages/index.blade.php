@@ -286,6 +286,7 @@
                         <label class="form-label small fw-semibold text-body-secondary">Service</label>
                         <select class="form-select form-select-sm" x-model="serviceFilter" @change="filterVillages()">
                             <option value="">All Services</option>
+                            <option value="unassigned">Unassigned (no active services)</option>
                             <template x-for="s in servicesOptions" :key="s.id">
                                 <option :value="s.id" x-text="s.name"></option>
                             </template>
