@@ -4295,8 +4295,26 @@ mapOrder(o) {
             }
         },
         setCartItemQty(id, val) {
-            const newVal = parseInt(val) || 0;
-            const currentQty = this.getCartItemQty(id);
+            const requestedQty = Math.max(0, parseInt(val) || 0);
+            const item = this.cart.find(i => String(i.id) === String(id) && !i.is_gift);
+            let newVal = requestedQty;
+            const match = this.getBogoMatch(id);
+            if (item && match) {
+                // The input displays paid plus free units. Convert its requested
+                // displayed quantity back to the paid quantity that drives BOGO.
+                const buyQty = parseInt(match.buy_qty) || 1;
+                const getQty = parseInt(match.get_qty) || 1;
+                let low = 0;
+                let high = requestedQty;
+                while (low < high) {
+                    const mid = Math.ceil((low + high) / 2);
+                    const displayedQty = mid + Math.floor(mid / buyQty) * getQty;
+                    if (displayedQty <= requestedQty) low = mid;
+                    else high = mid - 1;
+                }
+                newVal = low;
+            }
+            const currentQty = item ? (parseInt(item._bogoBaseQuantity ?? item.quantity) || 0) : 0;
             const delta = newVal - currentQty;
             if (delta !== 0) {
                 this.updateQtyByProductId(id, delta);
@@ -4643,7 +4661,6 @@ mapOrder(o) {
                 if (typeof cats === 'string') { try { cats = JSON.parse(cats); } catch(e) { cats = null; } }
                 const buyQty = parseInt(o.buy_qty) || 1;
                 const getQty = parseInt(o.get_qty) || 1;
-                const cycle = buyQty + getQty;
                 return this.cart.some(item => {
                     const baseQty = parseInt(item._bogoBaseQuantity ?? item.quantity) || 0;
                     if (item.is_gift || baseQty < buyQty) return false;
@@ -4657,10 +4674,7 @@ mapOrder(o) {
                         || (apps && apps.length > 0 && (apps.includes(item.id) || apps.includes(String(item.id))) )
                         || (cats && cats.length > 0 && cid && (cats.includes(cid) || cats.includes(String(cid))));
                     if (!matches) return false;
-                    const paidQty = baseQty - Math.floor(baseQty / cycle) * getQty;
-                    const expectedFree = Math.floor(paidQty / buyQty) * getQty;
-                    const actualFree = Math.floor(baseQty / cycle) * getQty;
-                    const requiredQty = baseQty + Math.max(0, expectedFree - actualFree);
+                    const requiredQty = baseQty + Math.floor(baseQty / buyQty) * getQty;
                     const maxAllowed = this.getMaxAllowedStock(p);
                     return maxAllowed === null || maxAllowed === undefined || requiredQty <= maxAllowed;
                 });
@@ -4737,11 +4751,7 @@ mapOrder(o) {
                 if (match) {
                     const buyQty = parseInt(match.buy_qty) || 1;
                     const getQty = parseInt(match.get_qty) || 1;
-                    const cycle = buyQty + getQty;
-                    const paidQty = baseQty - Math.floor(baseQty / cycle) * getQty;
-                    const expectedFree = Math.floor(paidQty / buyQty) * getQty;
-                    const actualFree = Math.floor(baseQty / cycle) * getQty;
-                    desiredQty += Math.max(0, expectedFree - actualFree);
+                    desiredQty += Math.floor(baseQty / buyQty) * getQty;
                 }
                 const product = item._product || this.products.find(p => String(p.id) === String(item.id));
                 const maxAllowed = product ? this.getMaxAllowedStock(product) : item.available;
