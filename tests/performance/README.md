@@ -40,12 +40,20 @@ K6_PROFILE=stress K6_PEAK_API_VUS=20 \
   k6 run --summary-export=tests/performance/apis-summary.json tests/performance/k6/apis.js
 ```
 
+To load-test the customer-prefilled order creation page without submitting the form:
+
+```sh
+K6_CUSTOMER_ID=81349 K6_PEAK_VUS=68 \
+  k6 run --summary-export=tests/performance/order-create-summary.json \
+  tests/performance/k6/order-create-customer.js
+```
+
 To include the read-only Order History path, set both `K6_CUSTOMER_ID` and `K6_ORDER_ID` to existing fixture records owned by the test environment. This visits the customer details endpoint, the order creation page preselected for that customer, and the order details endpoint. It does not submit the order form.
 
 ## Coverage and limits
 
 - `site.js` performs one complete sweep of the configured 63 static authenticated pages, then exercises a representative page mix under load. The Order History path is conditional on the fixture IDs above.
-- `apis.js` is generated from the Laravel route table and covers 115 GET API routes in this checkout. It excludes the live-tracking lookup because repeated calls can contact an external shipping provider.
+- `apis.js` covers all 118 registered GET API routes in this checkout except the live-tracking lookup, which can contact an external shipping provider. The inventory includes the API documentation endpoints and the authenticated product search helper registered under web middleware.
 - API export/download routes are called once by the route sweep, then excluded from repeated stress traffic. Missing fixture records can cause expected 404 responses. Login storms and all write workflows are excluded; login happens once during K6 setup.
 - Complete write-flow tests need a disposable database and purpose-built fixture users/products/orders. They must be run separately from this read-only load profile so inventory, financial, and order lifecycle state cannot be polluted.
 

@@ -458,5 +458,17 @@
   {
     "uri": "api/warehouses/{warehouse}",
     "action": "App\\Modules\\Catalog\\Controllers\\WarehouseController@show"
+  },
+  {
+    "uri": "docs/api",
+    "action": "Closure"
+  },
+  {
+    "uri": "docs/api.json",
+    "action": "Closure"
+  },
+  {
+    "uri": "products-search-api",
+    "action": "App\\Modules\\Catalog\\Controllers\\ProductController@searchApi"
   }
 ]

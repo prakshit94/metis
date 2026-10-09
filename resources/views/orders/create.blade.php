@@ -4647,7 +4647,11 @@ mapOrder(o) {
                 return this.cart.some(item => {
                     const baseQty = parseInt(item._bogoBaseQuantity ?? item.quantity) || 0;
                     if (item.is_gift || baseQty < buyQty) return false;
-                    const p = this.products.find(x => String(x.id) === String(item.id)) || item;
+                    // Product search replaces this.products with only the current
+                    // result page. Keep using the cart's product snapshot when its
+                    // SKU is no longer in those results; otherwise stock resolves to
+                    // zero and a still-valid BOGO is incorrectly dropped.
+                    const p = this.products.find(x => String(x.id) === String(item.id)) || item._product || item;
                     const cid = p && p.category_id != null ? String(p.category_id) : null;
                     const matches = ((!apps || apps.length === 0) && (!cats || cats.length === 0))
                         || (apps && apps.length > 0 && (apps.includes(item.id) || apps.includes(String(item.id))) )
@@ -4688,19 +4692,22 @@ mapOrder(o) {
         },
         get activeOfferId() {
             const candidates = this.offerCandidates;
-            if (!this.offerSelectionTouched && candidates.length > 1) return null;
+            // Keep an already-applied offer selected while it remains eligible.
+            // A newly added cart item can make other offers eligible, but should
+            // not silently remove the customer's current BOGO selection.
             if (this.appliedOfferId && candidates.some(o => String(o.id) === String(this.appliedOfferId))) return this.appliedOfferId;
+            if (!this.offerSelectionTouched && candidates.length > 1) return null;
             return !this.offerSelectionTouched && candidates.length === 1 ? candidates[0].id : null;
         },
         syncOfferSelection() {
             const candidates = this.offerCandidates;
-            if (!this.offerSelectionTouched && candidates.length > 1) this.appliedOfferId = null;
             if (this.appliedOfferId && !candidates.some(o => String(o.id) === String(this.appliedOfferId))) {
                 this.appliedOfferId = null;
                 this.offerSelectionTouched = false;
             }
-            if (!this.offerSelectionTouched && candidates.length === 1) this.appliedOfferId = candidates[0].id;
-            if (!this.offerSelectionTouched && candidates.length !== 1) this.appliedOfferId = null;
+            if (!this.appliedOfferId && !this.offerSelectionTouched && candidates.length === 1) {
+                this.appliedOfferId = candidates[0].id;
+            }
         },
         selectOffer(offerId) {
             const candidates = this.offerCandidates;

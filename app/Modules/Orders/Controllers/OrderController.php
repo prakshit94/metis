@@ -309,10 +309,10 @@ class OrderController extends Controller implements HasMiddleware
         }
 
         if ($request->filled('from_date')) {
-            $query->whereDate('order_date', '>=', $request->from_date);
+            $query->where('order_date', '>=', Carbon::parse($request->from_date)->startOfDay());
         }
         if ($request->filled('to_date')) {
-            $query->whereDate('order_date', '<=', $request->to_date);
+            $query->where('order_date', '<', Carbon::parse($request->to_date)->startOfDay()->addDay());
         }
 
         if ($request->filled('warehouse')) {
@@ -464,7 +464,7 @@ class OrderController extends Controller implements HasMiddleware
         } else {
             $query->latest('id');
         }
-        $perPage = $request->integer('limit', 10);
+        $perPage = min(max($request->integer('limit', 10), 1), 200);
         $orders = $query->paginate($perPage);
 
         $productWarehousePairs = [];
@@ -582,7 +582,7 @@ class OrderController extends Controller implements HasMiddleware
         $lobStateForTrends = $user?->lob_state_name;
         $trendsCacheKey = 'order_trends_7_days_'.auth()->id().($lobStateForTrends ? '_'.md5($lobStateForTrends) : '');
         $trendsData = Cache::remember($trendsCacheKey, 300, function () use ($lobStateForTrends) {
-            $trendsQuery = Order::whereDate('order_date', '>=', now()->subDays(6))
+            $trendsQuery = Order::where('order_date', '>=', now()->subDays(6)->startOfDay())
                 ->when($lobStateForTrends, fn ($q) => $q->where('shipping_state', $lobStateForTrends))
                 ->groupBy(DB::raw('DATE(order_date)'))
                 ->orderBy(DB::raw('DATE(order_date)'))
@@ -1856,10 +1856,10 @@ class OrderController extends Controller implements HasMiddleware
         }
 
         if ($request->filled('from_date')) {
-            $query->whereDate('order_date', '>=', $request->from_date);
+            $query->where('order_date', '>=', Carbon::parse($request->from_date)->startOfDay());
         }
         if ($request->filled('to_date')) {
-            $query->whereDate('order_date', '<=', $request->to_date);
+            $query->where('order_date', '<', Carbon::parse($request->to_date)->startOfDay()->addDay());
         }
 
         if ($request->filled('warehouse')) {

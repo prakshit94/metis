@@ -1,0 +1,144 @@
+{
+    "metrics": {
+        "vus_max": {
+            "min": 68,
+            "max": 68,
+            "value": 68
+        },
+        "http_req_waiting": {
+            "p(95)": 13126.7287928,
+            "p(99)": 13495.06884258,
+            "max": 13632.88939,
+            "avg": 5424.753817920537,
+            "med": 3758.0230145,
+            "p(90)": 12458.580326700001
+        },
+        "iteration_duration": {
+            "p(99)": 13699.3316203,
+            "max": 13836.317732,
+            "avg": 5648.587743510426,
+            "med": 4024.549458,
+            "p(90)": 12664.621025,
+            "p(95)": 13331.2690579
+        },
+        "http_req_receiving": {
+            "max": 21.838039,
+            "avg": 2.4151655721271372,
+            "med": 1.904726,
+            "p(90)": 4.278289000000002,
+            "p(95)": 5.2177624999999965,
+            "p(99)": 9.664825100000003
+        },
+        "data_sent": {
+            "rate": 3743.207465591282,
+            "count": 682408
+        },
+        "http_req_blocked": {
+            "p(99)": 2.710588580000002,
+            "max": 9.449307,
+            "avg": 0.5167200317848412,
+            "med": 0.3164345,
+            "p(90)": 1.0980655000000008,
+            "p(95)": 1.5644195999999997
+        },
+        "http_req_tls_handshaking": {
+            "med": 0,
+            "p(90)": 0,
+            "p(95)": 0,
+            "p(99)": 0,
+            "max": 0,
+            "avg": 0
+        },
+        "http_req_connecting": {
+            "med": 0.19487100000000002,
+            "p(90)": 0.7381946000000014,
+            "p(95)": 1.1376264999999999,
+            "p(99)": 1.9030515100000023,
+            "max": 8.187187,
+            "avg": 0.344720504889975
+        },
+        "checks": {
+            "passes": 1630,
+            "fails": 0,
+            "thresholds": {
+                "rate>0.99": false
+            },
+            "value": 1
+        },
+        "http_req_duration{expected_response:true}": {
+            "p(99)": 13497.03295653,
+            "max": 13634.840115,
+            "avg": 5427.224135922982,
+            "med": 3760.4250009999996,
+            "p(90)": 12460.6299029,
+            "p(95)": 13128.293373299999
+        },
+        "iterations": {
+            "count": 815,
+            "rate": 4.470513365108403
+        },
+        "http_reqs": {
+            "count": 818,
+            "rate": 4.48696924252598
+        },
+        "http_req_duration": {
+            "p(95)": 13128.293373299999,
+            "p(99)": 13497.03295653,
+            "max": 13634.840115,
+            "avg": 5427.224135922982,
+            "med": 3760.4250009999996,
+            "p(90)": 12460.6299029,
+            "thresholds": {
+                "p(95)<2500": true,
+                "p(99)<5000": true
+            }
+        },
+        "http_req_sending": {
+            "avg": 0.055152430317848423,
+            "med": 0.027416,
+            "p(90)": 0.0744136000000001,
+            "p(95)": 0.17197874999999999,
+            "p(99)": 0.6241149700000023,
+            "max": 2.347834
+        },
+        "http_req_failed": {
+            "passes": 0,
+            "fails": 818,
+            "thresholds": {
+                "rate<0.01": false
+            },
+            "value": 0
+        },
+        "vus": {
+            "min": 0,
+            "max": 68,
+            "value": 2
+        },
+        "data_received": {
+            "count": 762200994,
+            "rate": 4180895.3749397662
+        }
+    },
+    "root_group": {
+        "path": "",
+        "id": "d41d8cd98f00b204e9800998ecf8427e",
+        "groups": [],
+        "checks": {
+            "customer order-create page returns HTTP 200": {
+                "name": "customer order-create page returns HTTP 200",
+                "path": "::customer order-create page returns HTTP 200",
+                "id": "9ed227240f5622164634dfbd8bbd9a5a",
+                "passes": 815,
+                "fails": 0
+            },
+            "customer order-create page returns HTML": {
+                "name": "customer order-create page returns HTML",
+                "path": "::customer order-create page returns HTML",
+                "id": "f9515749778d36efea35545f88d79b46",
+                "passes": 815,
+                "fails": 0
+            }
+        },
+        "name": ""
+    }
+}

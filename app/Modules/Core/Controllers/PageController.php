@@ -82,24 +82,28 @@ class PageController extends Controller
         
         $filter = $request->input('filter', 'today');
         if ($filter === 'today') {
-            $orderQuery->whereDate('order_date', Carbon::today());
-            $customerQuery->whereDate('created_at', Carbon::today());
+            $filterStart = Carbon::today();
+            $filterEnd = $filterStart->copy()->addDay();
         } elseif ($filter === 'yesterday') {
-            $orderQuery->whereDate('order_date', Carbon::yesterday());
-            $customerQuery->whereDate('created_at', Carbon::yesterday());
+            $filterStart = Carbon::yesterday();
+            $filterEnd = Carbon::today();
         } elseif ($filter === 'this_week') {
-            $orderQuery->whereBetween('order_date', [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()]);
-            $customerQuery->whereBetween('created_at', [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()]);
+            $filterStart = Carbon::now()->startOfWeek();
+            $filterEnd = $filterStart->copy()->addWeek();
         } elseif ($filter === 'this_month') {
-            $orderQuery->whereMonth('order_date', Carbon::now()->month)->whereYear('order_date', Carbon::now()->year);
-            $customerQuery->whereMonth('created_at', Carbon::now()->month)->whereYear('created_at', Carbon::now()->year);
+            $filterStart = Carbon::now()->startOfMonth();
+            $filterEnd = $filterStart->copy()->addMonth();
         } elseif ($filter === 'prev_month') {
-            $prevMonth = Carbon::now()->subMonthNoOverflow();
-            $orderQuery->whereMonth('order_date', $prevMonth->month)->whereYear('order_date', $prevMonth->year);
-            $customerQuery->whereMonth('created_at', $prevMonth->month)->whereYear('created_at', $prevMonth->year);
+            $filterStart = Carbon::now()->subMonthNoOverflow()->startOfMonth();
+            $filterEnd = $filterStart->copy()->addMonth();
         } elseif ($filter === 'this_year') {
-            $orderQuery->whereYear('order_date', Carbon::now()->year);
-            $customerQuery->whereYear('created_at', Carbon::now()->year);
+            $filterStart = Carbon::now()->startOfYear();
+            $filterEnd = $filterStart->copy()->addYear();
+        }
+
+        if (isset($filterStart, $filterEnd)) {
+            $orderQuery->where('order_date', '>=', $filterStart)->where('order_date', '<', $filterEnd);
+            $customerQuery->where('created_at', '>=', $filterStart)->where('created_at', '<', $filterEnd);
         }
 
         // 1. Top Metrics
@@ -830,7 +834,8 @@ class PageController extends Controller
 
             // ── Login Activity ────────────────────────────────────────────────
             $loginsToday = DB::table('login_histories')
-                ->whereDate('attempted_at', Carbon::today())
+                ->where('attempted_at', '>=', Carbon::today())
+                ->where('attempted_at', '<', Carbon::tomorrow())
                 ->count();
 
             $loginsInPeriod = DB::table('login_histories')
