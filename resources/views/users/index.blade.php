@@ -1203,8 +1203,8 @@
                                     <div class="row g-3">
                                         <div class="col-12">
                                             <label class="form-label fw-medium text-muted small">Primary Role <span class="text-danger">*</span></label>
-                                            <select class="form-select form-select-sm" x-model="form.role" required :disabled="roles.length === 0">
-                                                <option value="" disabled x-show="roles.length === 0">No roles available</option>
+                                            <select class="form-select form-select-sm" x-model="form.role" :required="!editingUserId" :disabled="roles.length === 0">
+                                                <option value="" disabled x-text="roles.length === 0 ? 'No roles available' : 'Select a role'"></option>
                                                 <template x-for="r in roles" :key="r.id">
                                                     <option :value="r.name" x-text="r.name"></option>
                                                 </template>

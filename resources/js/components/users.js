@@ -367,7 +367,7 @@ document.addEventListener('alpine:init', () => {
     users: [],
     selectedUsers: [],
     searchQuery: '',
-    statusFilter: '',
+    statusFilter: 'active',
     roleFilter: '',
     teamFilter: '',
     sortField: 'name',
@@ -1277,7 +1277,7 @@ document.addEventListener('alpine:init', () => {
       photo: '',
       photoFile: null,
       joining_date: '',
-      role: 'User',
+      role: '',
       is_active: true,
       address_line_1: '',
       address_line_2: '',
@@ -1412,9 +1412,6 @@ document.addEventListener('alpine:init', () => {
       } finally {
         this.form.is_active = true;
         this.form.permissions = [];
-        if (this.roles.length > 0 && !this.roles.some((role) => role.name === this.form.role)) {
-          this.form.role = this.roles[0].name;
-        }
         this.rolesLoading = false;
       }
 
@@ -1439,7 +1436,7 @@ document.addEventListener('alpine:init', () => {
         employee_id: '',
         photoFile: null,
         joining_date: new Date().toISOString().split('T')[0],
-        role: 'User',
+        role: '',
         is_active: true,
         address_line_1: '',
         address_line_2: '',
@@ -1490,6 +1487,11 @@ document.addEventListener('alpine:init', () => {
     async saveUser() {
       if (!this.form.first_name || !this.form.email) {
         showToast('First name and email are required.', 'warning');
+        return;
+      }
+      if (!this.editingUserId && !this.form.role) {
+        showToast('Please select a role for the new user.', 'warning');
+        document.querySelector('#userModal select[x-model="form.role"]')?.focus();
         return;
       }
       if (!this.editingUserId && !this.form.password) {
