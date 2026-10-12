@@ -338,7 +338,7 @@ class OrderService
      * Recalculate order totals and validate coupon code.
      * Must be called inside a database transaction if a coupon is being updated.
      */
-    public function recalculateAndValidate(array $data, ?string $lastCouponCode = null, bool $isUpdate = false): array
+    public function recalculateAndValidate(array $data, ?string $lastCouponCode = null, bool $isUpdate = false, ?int $lastSelectedOfferId = null): array
     {
         $cart = [];
         if (! empty($data['cart'])) {
@@ -413,6 +413,15 @@ class OrderService
             ->orderByDesc('priority')
             ->orderBy('id')
             ->get();
+
+        // Allow an order edit to retain only the inactive offer already saved
+        // on that order. New orders still use active offers exclusively.
+        if ($isUpdate && $lastSelectedOfferId && ! $activeOffers->contains('id', $lastSelectedOfferId)) {
+            $savedOffer = Offer::whereKey($lastSelectedOfferId)->where('is_active', false)->first();
+            if ($savedOffer) {
+                $activeOffers->push($savedOffer);
+            }
+        }
 
         $orderOffers = $activeOffers->whereIn('type', ['order_discount', 'category_discount'])->values();
         $bogoOffers = $activeOffers->where('type', 'bogo')->values();
@@ -548,11 +557,12 @@ class OrderService
         if (! empty($data['coupon_code'])) {
             $code = strtoupper(trim($data['coupon_code']));
             $coupon = Coupon::where('code', $code)->lockForUpdate()->first();
+            $isRetainedCoupon = $isUpdate && $lastCouponCode !== null && strcasecmp($lastCouponCode, $code) === 0;
 
             if (! $coupon) {
                 throw ValidationException::withMessages(['coupon_code' => 'Invalid promo code.']);
             }
-            if (! $coupon->is_active) {
+            if (! $coupon->is_active && ! $isRetainedCoupon) {
                 throw ValidationException::withMessages(['coupon_code' => 'This promo code is inactive.']);
             }
             if ($coupon->expiry_date && $coupon->expiry_date < now()->startOfDay()) {
@@ -998,8 +1008,9 @@ class OrderService
 
             $lastCouponCode = $order->coupon_code;
             $lastOfferId = $order->applied_offer_id;
+            $lastSelectedOfferId = $order->selected_offer_id ?: $order->applied_offer_id;
 
-            $calc = $this->recalculateAndValidate($data, $lastCouponCode, true);
+            $calc = $this->recalculateAndValidate($data, $lastCouponCode, true, $lastSelectedOfferId);
 
             // Treat the amount already used on this order as available while
             // recalculating it, then apply only the difference to the wallet.

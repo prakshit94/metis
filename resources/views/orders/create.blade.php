@@ -1048,7 +1048,7 @@
                                     </div>
                                     <div class="text-start">
                                         <p class="mb-0 fw-bold fs-6">View Promos & Offers</p>
-                                        <p class="mb-0 text-body-secondary small" x-text="(activeOffers.length + activeCoupons.length) + ' available'"></p>
+                                        <p class="mb-0 text-body-secondary small" x-text="(offersForCurrentOrder.length + activeCoupons.length) + ' available'"></p>
                                     </div>
                                 </div>
                                 <i class="bi bi-chevron-right text-body-secondary"></i>
@@ -1535,7 +1535,7 @@
                     <ul class="nav nav-tabs nav-fill border-bottom-0 bg-body-tertiary px-3" role="tablist">
                         <li class="nav-item" role="presentation">
                             <button id="promotions-offers-tab" class="nav-link active fw-semibold py-3 border-0 border-bottom border-3 border-transparent" data-bs-toggle="tab" data-bs-target="#tab-offers" type="button" role="tab" aria-controls="tab-offers" aria-selected="true">
-                                Offers <span class="badge bg-secondary ms-1 rounded-pill" x-text="activeOffers.length"></span>
+                                Offers <span class="badge bg-secondary ms-1 rounded-pill" x-text="offersForCurrentOrder.length"></span>
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
@@ -1551,7 +1551,7 @@
                             <div class="alert alert-info py-2 mb-3" x-show="offerCandidates.length > 1 && !activeOfferId" x-cloak>
                                 More than one offer is available. Choose one offer to apply to this order.
                             </div>
-                            <template x-if="activeOffers.length === 0">
+                            <template x-if="offersForCurrentOrder.length === 0">
                                 <div class="text-center py-4 text-body-secondary">
                                     <i class="bi bi-gift fs-1 mb-2 d-block opacity-50"></i>
                                     <p class="mb-0 fw-medium">No offers available for your current cart.</p>
@@ -1583,6 +1583,7 @@
                                                     <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
                                                         <h6 class="fw-bold mb-0" :class="String(activeOfferId) === String(offer.id) ? 'text-body-emphasis' : 'text-body'" x-text="offer.name"></h6>
                                                         <span class="badge text-bg-secondary-subtle text-secondary-emphasis rounded-pill px-2 py-1 small" style="font-size: 0.7rem;" x-text="'Offer ID: ' + offer.id"></span>
+                                                        <span class="badge text-bg-warning text-dark rounded-pill px-2 py-1 small" style="font-size: 0.7rem;" x-show="offer.is_active === false && String(offer.id) === String(appliedOfferId)">Inactive · retained on this order</span>
                                                         <span class="badge text-bg-secondary-subtle text-secondary-emphasis rounded-pill px-2 py-1 small" style="font-size: 0.7rem;" x-text="'Priority: ' + offer.priority"></span>
                                                     </div>
                                                     
@@ -1678,6 +1679,7 @@
                                                         <div class="d-flex align-items-center flex-wrap gap-2">
                                                             <code class="fw-black text-body-emphasis fs-6 d-block" x-text="c.code"></code>
                                                             <span class="badge text-bg-secondary-subtle text-secondary-emphasis rounded-pill" style="font-size: 0.7rem;" x-text="'Coupon ID: ' + c.id"></span>
+                                                            <span class="badge text-bg-warning text-dark rounded-pill" style="font-size: 0.7rem;" x-show="c.is_active === false && editingOrderId && originalCouponCode && String(c.code).toUpperCase() === String(originalCouponCode).toUpperCase()">Inactive · retained on this order</span>
                                                         </div>
                                                     </div>
                                                     <div class="pe-3 ps-2 border-start border-2 border-secondary border-opacity-25">
@@ -2900,6 +2902,7 @@
         'id' => $o->id,
         'name' => $o->name,
         'type' => $o->type,
+        'is_active' => (bool) $o->is_active,
         'discount_type' => $o->discount_type,
         'value' => (float)$o->value,
         'min_spend' => (float)$o->min_spend,
@@ -3569,17 +3572,17 @@ mapOrder(o) {
         
         getAppliedItemOffers(order) {
             let names = [];
-            if (!order || !order.items || !this.activeOffers) return names;
+            if (!order || !order.items || !this.offersForCurrentOrder) return names;
             order.items.forEach(item => {
                 if (Number(item.discount_amount || 0) > 0) {
-                    let match = this.activeOffers.find(o => o.type === 'bogo' && (
+                    let match = this.offersForCurrentOrder.find(o => o.type === 'bogo' && (
                         (o.applicable_products && (o.applicable_products.includes(item.product_id) || o.applicable_products.includes(String(item.product_id)))) ||
                         (o.applicable_categories && (o.applicable_categories.includes(item.product?.category_id) || o.applicable_categories.includes(String(item.product?.category_id))))
                     ));
                     if (match && !names.includes(match.name)) names.push(match.name);
                 }
                 if (Number(item.unit_price || 0) === 0 || Number(item.total_amount || 0) === 0) {
-                    let match = this.activeOffers.find(o => o.type === 'free_product' && Number(o.product_id) === Number(item.product_id));
+                    let match = this.offersForCurrentOrder.find(o => o.type === 'free_product' && Number(o.product_id) === Number(item.product_id));
                     if (match && !names.includes(match.name)) names.push(match.name);
                 }
             });
@@ -3587,16 +3590,16 @@ mapOrder(o) {
         },
 
         getSingleItemOffer(item) {
-            if (!this.activeOffers) return null;
+            if (!this.offersForCurrentOrder) return null;
             if (Number(item.discount_amount || 0) > 0) {
-                let match = this.activeOffers.find(o => o.type === 'bogo' && (
+                let match = this.offersForCurrentOrder.find(o => o.type === 'bogo' && (
                     (o.applicable_products && (o.applicable_products.includes(item.product_id) || o.applicable_products.includes(String(item.product_id)))) ||
                     (o.applicable_categories && (o.applicable_categories.includes(item.product?.category_id) || o.applicable_categories.includes(String(item.product?.category_id))))
                 ));
                 if (match) return match.name;
             }
             if (Number(item.unit_price || 0) === 0 || Number(item.total_amount || 0) === 0) {
-                let match = this.activeOffers.find(o => o.type === 'free_product' && Number(o.product_id) === Number(item.product_id));
+                let match = this.offersForCurrentOrder.find(o => o.type === 'free_product' && Number(o.product_id) === Number(item.product_id));
                 if (match) return match.name;
             }
             return null;
@@ -3626,7 +3629,7 @@ mapOrder(o) {
 
         getProductPromotions(p) {
             let promos = [];
-            this.activeOffers.forEach(o => {
+            this.offersForCurrentOrder.forEach(o => {
                 let cashbackInfo = '';
                 if (Number(o.cashback_percent) > 0 || Number(o.cashback_fixed) > 0) {
                     let parts = [];
@@ -3828,7 +3831,7 @@ mapOrder(o) {
         async openProductModal(p) {
             this.selectedProductForModal = p;
             this.productModalTab = 'overview';
-            this.productModalOffers = this.activeOffers.filter(o => o.product_id === p.id || o.product_id === null);
+            this.productModalOffers = this.offersForCurrentOrder.filter(o => o.product_id === p.id || o.product_id === null);
             bootstrap.Modal.getOrCreateInstance(document.getElementById('productDetailsModal')).show();
             
             this.productModalLoading = true;
@@ -3897,7 +3900,7 @@ mapOrder(o) {
                     && this.appliedCouponObj.type === 'free_product'
                     && String(this.appliedCouponObj.free_product_id) === String(productId)
                     && fullyDiscounted;
-                const selectedGiftOffer = (this.activeOffers || []).find(offer => String(offer.id) === String(order.selected_offer_id || ''));
+                const selectedGiftOffer = this.offersForCurrentOrder.find(offer => String(offer.id) === String(order.selected_offer_id || ''));
                 const offerGift = selectedGiftOffer
                     && selectedGiftOffer.type === 'free_product'
                     && String(selectedGiftOffer.product_id) === String(productId)
@@ -3928,7 +3931,7 @@ mapOrder(o) {
 
             // Saved item quantities include free BOGO units. Reconstruct their
             // paid base so cart reconciliation doesn't add the same units again.
-            const savedBogo = (this.activeOffers || []).find(offer => String(offer.id) === String(order.selected_offer_id || order.applied_offer_id || ''));
+            const savedBogo = this.offersForCurrentOrder.find(offer => String(offer.id) === String(order.selected_offer_id || order.applied_offer_id || ''));
             if (savedBogo && savedBogo.type === 'bogo') {
                 const apps = typeof savedBogo.applicable_products === 'string' ? JSON.parse(savedBogo.applicable_products) : (savedBogo.applicable_products || []);
                 const cats = typeof savedBogo.applicable_categories === 'string' ? JSON.parse(savedBogo.applicable_categories) : (savedBogo.applicable_categories || []);
@@ -4550,8 +4553,8 @@ mapOrder(o) {
         },
         couponIsApplicable(c) {
             if (!c || !this.cart.length) return false;
-            if (c._unavailable || c.deleted_at || c.is_active === false || c.is_active === 0 || c.is_active === '0') return false;
             const isSavedCoupon = this.editingOrderId && this.originalCouponCode && String(c.code || '').toUpperCase() === String(this.originalCouponCode).toUpperCase();
+            if (c._unavailable || c.deleted_at || ((c.is_active === false || c.is_active === 0 || c.is_active === '0') && !isSavedCoupon)) return false;
             if (!isSavedCoupon && Number(c.usage_limit) > 0 && Number(c.used_count || 0) >= Number(c.usage_limit)) return false;
             if (c.expiry_date) {
                 const expiryDate = String(c.expiry_date).slice(0, 10);
@@ -4586,8 +4589,8 @@ mapOrder(o) {
             if (!c || !this.cart.length) return 'Add products to check coupon eligibility';
             if (c._unavailable) return 'Coupon details are unavailable';
             if (c.deleted_at) return 'Coupon is no longer available';
-            if (c.is_active === false || c.is_active === 0 || c.is_active === '0') return 'Coupon is inactive';
             const isSavedCoupon = this.editingOrderId && this.originalCouponCode && String(c.code || '').toUpperCase() === String(this.originalCouponCode).toUpperCase();
+            if ((c.is_active === false || c.is_active === 0 || c.is_active === '0') && !isSavedCoupon) return 'Coupon is inactive';
             if (!isSavedCoupon && Number(c.usage_limit) > 0 && Number(c.used_count || 0) >= Number(c.usage_limit)) return 'Usage limit reached';
             if (c.expiry_date) {
                 const expiryDate = String(c.expiry_date).slice(0, 10);
@@ -4687,9 +4690,14 @@ mapOrder(o) {
             });
             return ids;
         },
+        get offersForCurrentOrder() {
+            return (this.activeOffers || []).filter(offer =>
+                offer.is_active !== false || (this.appliedOfferId && String(offer.id) === String(this.appliedOfferId))
+            );
+        },
         get sortedActiveOffers() {
             const eligibleOfferIds = new Set(this.offerCandidates.map(offer => String(offer.id)));
-            return [...this.activeOffers].sort((a,b) => {
+            return [...this.offersForCurrentOrder].sort((a,b) => {
                 const aEligible = eligibleOfferIds.has(String(a.id));
                 const bEligible = eligibleOfferIds.has(String(b.id));
                 if (aEligible !== bEligible) return aEligible ? -1 : 1;
@@ -4718,7 +4726,7 @@ mapOrder(o) {
             return coupons;
         },
         get availableOrderOffers() {
-            return this.activeOffers.filter(o => {
+            return this.offersForCurrentOrder.filter(o => {
                 if (!['order_discount', 'category_discount'].includes(o.type)) return false;
                 if ((parseFloat(o.min_spend)||0) > this.subtotal) return false;
                 
@@ -4750,7 +4758,7 @@ mapOrder(o) {
             });
         },
         get eligibleBogoOffers() {
-            return this.activeOffers.filter(o => {
+            return this.offersForCurrentOrder.filter(o => {
                 if (o.type !== 'bogo' || this.subtotal < (parseFloat(o.min_spend) || 0)) return false;
                 let apps = o.applicable_products;
                 if (typeof apps === 'string') { try { apps = JSON.parse(apps); } catch(e) { apps = null; } }
@@ -4778,7 +4786,7 @@ mapOrder(o) {
             });
         },
         get eligibleFreeProductOffers() {
-            return this.activeOffers.filter(o => {
+            return this.offersForCurrentOrder.filter(o => {
                 if (o.type !== 'free_product' || !o.product_id || this.subtotal < (parseFloat(o.min_spend) || 0)) return false;
                 let apps = o.applicable_products;
                 if (typeof apps === 'string') { try { apps = JSON.parse(apps); } catch(e) { apps = null; } }

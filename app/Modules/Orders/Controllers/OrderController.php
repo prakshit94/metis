@@ -752,6 +752,8 @@ class OrderController extends Controller implements HasMiddleware
                 'statusLogs' => fn ($q) => $q->with('user')->latest(),
             ])->find(request()->integer('order_id'));
 
+            $this->includeSavedInactiveOffer($activeOffers, $initialOrder);
+
             if ($initialOrder?->coupon_code) {
                 $initialCoupon = Coupon::withTrashed()->where('code', $initialOrder->coupon_code)->first();
             }
@@ -1001,6 +1003,7 @@ class OrderController extends Controller implements HasMiddleware
         $categories = Category::where('is_active', true)->orderBy('name')->get();
 
         $activeOffers = Offer::active()->orderByDesc('priority')->get();
+        $this->includeSavedInactiveOffer($activeOffers, $order);
         $activeCoupons = Coupon::active()
             ->where(function ($query) {
                 $query->whereNull('usage_limit')
@@ -1018,6 +1021,24 @@ class OrderController extends Controller implements HasMiddleware
         $cancelReasons = CancelReason::where('is_active', true)->orderBy('id')->get();
 
         return view('orders.create', compact('warehouses', 'activeOffers', 'activeCoupons', 'categories', 'hideSidebar', 'lockSearch', 'initialCustomer', 'initialOrder', 'initialCoupon', 'rescheduleReasons', 'cancelReasons'));
+    }
+
+    /** Include only an inactive offer already attached to the order being edited. */
+    private function includeSavedInactiveOffer($activeOffers, ?Order $order): void
+    {
+        $offerId = $order?->selected_offer_id ?: $order?->applied_offer_id;
+        if (! $offerId || $activeOffers->contains(fn (Offer $offer) => (int) $offer->id === (int) $offerId)) {
+            return;
+        }
+
+        $savedOffer = Offer::with('product')
+            ->whereKey($offerId)
+            ->where('is_active', false)
+            ->first();
+
+        if ($savedOffer) {
+            $activeOffers->push($savedOffer);
+        }
     }
 
     public function show(string $id)
