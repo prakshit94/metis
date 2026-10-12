@@ -318,6 +318,28 @@ class OrderController extends Controller implements HasMiddleware
             $query->where('order_date', '<', Carbon::parse($request->to_date)->startOfDay()->addDay());
         }
 
+        // Dispatch filters use the shipment's shipped_at timestamp, which is
+        // populated when the shipment enters transit. Keep these independent
+        // from the order creation date filters above.
+        if ($request->filled('dispatch_from_date') || $request->filled('dispatch_to_date')) {
+            $dispatchFrom = $request->filled('dispatch_from_date')
+                ? Carbon::parse($request->dispatch_from_date)->startOfDay()
+                : null;
+            $dispatchToExclusive = $request->filled('dispatch_to_date')
+                ? Carbon::parse($request->dispatch_to_date)->startOfDay()->addDay()
+                : null;
+
+            $query->whereHas('shipments', function ($shipmentQuery) use ($dispatchFrom, $dispatchToExclusive) {
+                $shipmentQuery->whereNotNull('shipped_at');
+                if ($dispatchFrom) {
+                    $shipmentQuery->where('shipped_at', '>=', $dispatchFrom);
+                }
+                if ($dispatchToExclusive) {
+                    $shipmentQuery->where('shipped_at', '<', $dispatchToExclusive);
+                }
+            });
+        }
+
         if ($request->filled('warehouse')) {
             $warehouseIds = array_filter(array_map('intval', explode(',', $request->warehouse)));
             if (!empty($warehouseIds)) {
@@ -1901,6 +1923,25 @@ class OrderController extends Controller implements HasMiddleware
         }
         if ($request->filled('to_date')) {
             $query->where('order_date', '<', Carbon::parse($request->to_date)->startOfDay()->addDay());
+        }
+
+        if ($request->filled('dispatch_from_date') || $request->filled('dispatch_to_date')) {
+            $dispatchFrom = $request->filled('dispatch_from_date')
+                ? Carbon::parse($request->dispatch_from_date)->startOfDay()
+                : null;
+            $dispatchToExclusive = $request->filled('dispatch_to_date')
+                ? Carbon::parse($request->dispatch_to_date)->startOfDay()->addDay()
+                : null;
+
+            $query->whereHas('shipments', function ($shipmentQuery) use ($dispatchFrom, $dispatchToExclusive) {
+                $shipmentQuery->whereNotNull('shipped_at');
+                if ($dispatchFrom) {
+                    $shipmentQuery->where('shipped_at', '>=', $dispatchFrom);
+                }
+                if ($dispatchToExclusive) {
+                    $shipmentQuery->where('shipped_at', '<', $dispatchToExclusive);
+                }
+            });
         }
 
         if ($request->filled('warehouse')) {

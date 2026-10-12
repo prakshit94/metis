@@ -611,7 +611,7 @@
                     <select class="form-select form-select-sm" 
                             x-tom-select
                             x-model="dateFilter" 
-                            @change="filterOrders()"
+                            @change="onDatePresetChange()"
                             style="width: 150px;">
                         <option value="">All Dates</option>
                         <option value="today">Today</option>
@@ -770,13 +770,23 @@
                 @can('orders.filter_date')
                 <div class="col-md-3">
                     <label class="form-label small fw-semibold text-body-secondary">From Date</label>
-                    <input type="date" class="form-control form-control-sm" x-model="fromDate" @change="filterOrders()">
+                    <input type="date" class="form-control form-control-sm" x-model="fromDate" @change="onCustomDateChange()">
                 </div>
 
                 <!-- Date Range To -->
                 <div class="col-md-3">
                     <label class="form-label small fw-semibold text-body-secondary">To Date</label>
-                    <input type="date" class="form-control form-control-sm" x-model="toDate" @change="filterOrders()">
+                    <input type="date" class="form-control form-control-sm" x-model="toDate" @change="onCustomDateChange()">
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label small fw-semibold text-body-secondary">Dispatch From</label>
+                    <input type="date" class="form-control form-control-sm" x-model="dispatchFromDate" @change="onDispatchDateChange()">
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label small fw-semibold text-body-secondary">Dispatch To</label>
+                    <input type="date" class="form-control form-control-sm" x-model="dispatchToDate" @change="onDispatchDateChange()">
                 </div>
                 @endcan
 

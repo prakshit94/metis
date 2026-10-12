@@ -136,6 +136,8 @@ document.addEventListener('alpine:init', () => {
     warehouseFilter: [],
     fromDate: '',
     toDate: '',
+    dispatchFromDate: '',
+    dispatchToDate: '',
     sortField: 'id',
     sortDirection: 'desc',
     isLoading: false,
@@ -422,6 +424,8 @@ document.addEventListener('alpine:init', () => {
         this.villageFilter = params.get('village').split(',').filter(Boolean);
       if (params.has('from_date')) this.fromDate = params.get('from_date');
       if (params.has('to_date')) this.toDate = params.get('to_date');
+      if (params.has('dispatch_from_date')) this.dispatchFromDate = params.get('dispatch_from_date');
+      if (params.has('dispatch_to_date')) this.dispatchToDate = params.get('dispatch_to_date');
       if (params.has('limit')) {
         const requestedLimit = parseInt(params.get('limit'), 10);
         this.itemsPerPage = [25, 50, 100, 200].includes(requestedLimit) ? requestedLimit : 25;
@@ -635,6 +639,8 @@ document.addEventListener('alpine:init', () => {
 
       if (activeFromDate) params.append('from_date', activeFromDate);
       if (activeToDate) params.append('to_date', activeToDate);
+      if (this.dispatchFromDate) params.append('dispatch_from_date', this.dispatchFromDate);
+      if (this.dispatchToDate) params.append('dispatch_to_date', this.dispatchToDate);
 
       params.append('limit', this.itemsPerPage);
       params.append('page', this.currentPage);
@@ -1238,6 +1244,25 @@ document.addEventListener('alpine:init', () => {
       this.loadOrders();
     },
 
+    onDatePresetChange() {
+      // Preset ranges and explicit dates are mutually exclusive. Clear the
+      // previous custom range so it cannot silently override "All Dates" or
+      // remain visible while a preset is active.
+      this.fromDate = '';
+      this.toDate = '';
+      this.filterOrders();
+    },
+
+    onCustomDateChange() {
+      // Manual dates must take precedence over the default 30-day preset.
+      this.dateFilter = '';
+      this.filterOrders();
+    },
+
+    onDispatchDateChange() {
+      this.filterOrders();
+    },
+
     filterOrdersDebounced() {
       this.currentPage = 1;
       if (this._searchDebounce) clearTimeout(this._searchDebounce);
@@ -1261,6 +1286,8 @@ document.addEventListener('alpine:init', () => {
       this.warehouseFilter = [];
       this.fromDate = '';
       this.toDate = '';
+      this.dispatchFromDate = '';
+      this.dispatchToDate = '';
       this.stateSearch = '';
       this.districtSearch = '';
       this.talukaSearch = '';
@@ -1305,6 +1332,8 @@ document.addEventListener('alpine:init', () => {
         (this.warehouseFilter && this.warehouseFilter.length > 0) ||
         this.fromDate ||
         this.toDate ||
+        this.dispatchFromDate ||
+        this.dispatchToDate ||
         this.stateFilter.length > 0 ||
         this.districtFilter.length > 0 ||
         this.talukaFilter.length > 0 ||
