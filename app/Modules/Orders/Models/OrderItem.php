@@ -19,11 +19,12 @@ class OrderItem extends Model implements Auditable
 
     protected $fillable = [
         'order_id', 'product_id', 'product_variant_id', 'quantity', 'unit_price',
-        'tax_rate', 'tax_amount', 'discount_amount', 'total_amount', 'batch_number',
+        'tax_rate', 'tax_amount', 'discount_amount', 'total_amount', 'batch_number', 'is_gift', 'gift_source',
     ];
 
     protected $casts = [
         'quantity' => 'float',
+        'is_gift' => 'boolean',
     ];
 
     public function order(): BelongsTo

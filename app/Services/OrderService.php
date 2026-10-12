@@ -116,6 +116,7 @@ class OrderService
                 'discount_amount' => $data['discount_amount'] ?? 0,
                 'coupon_code' => $data['coupon_code'] ?? null,
                 'applied_offer_id' => $data['applied_offer_id'] ?? null,
+                'selected_offer_id' => $data['selected_offer_id'] ?? null,
                 'net_amount' => $data['net_amount'] ?? 0,
                 'status' => $data['status'] ?? 'pending',
                 'future_order_date' => $data['future_order_date'] ?? null,
@@ -140,6 +141,8 @@ class OrderService
                         'tax_rate'           => $item['tax_rate'] ?? 0,
                         'discount_amount'    => $item['discount_amount'] ?? 0,
                         'tax_amount'         => $item['tax_amount'] ?? 0,
+                        'is_gift'            => $item['is_gift'] ?? null,
+                        'gift_source'        => $item['gift_source'] ?? null,
                         'total_amount'       => $item['total_amount']
                             ?? (($item['quantity'] * $item['unit_price']) - ($item['discount_amount'] ?? 0)),
                     ]);
@@ -650,6 +653,7 @@ class OrderService
                 'product_id' => $product->id,
                 'category_id' => $product->category_id,
                 'is_gift' => ! empty($item['is_gift']),
+                'gift_source' => $item['gift_source'] ?? null,
                 'quantity' => $qty,
                 'unit_price' => $unitPrice,
                 'tax_rate' => $taxRateVal,
@@ -875,7 +879,7 @@ class OrderService
             $taxAmount += $itemTax;
 
             // Clean up temporary variables
-            unset($item['category_id'], $item['is_gift'], $item['bogo_discount']);
+            unset($item['category_id'], $item['bogo_discount']);
         }
         unset($item);
 
@@ -921,6 +925,7 @@ class OrderService
             'coupon_code' => $couponCode,
             'order_offer_name' => $bestOrderOffer?->name,
             'applied_offer_id' => $bestOrderOffer?->id,
+            'selected_offer_id' => $selectedOffer?->id,
             'applied_bogo_ids' => $appliedBogoIds,
             'cashback_earned' => $cashbackEarned,
         ];
@@ -953,6 +958,7 @@ class OrderService
                 'discount_amount' => $calc['total_discount'],
                 'coupon_code' => $calc['coupon_code'],
                 'applied_offer_id' => $calc['applied_offer_id'],
+                'selected_offer_id' => $calc['selected_offer_id'],
                 'net_amount' => $calc['grand_total'],
                 'items' => $calc['items'],
                 'status' => $data['status'] ?? 'pending',
@@ -1056,6 +1062,7 @@ class OrderService
                 'discount_amount' => $calc['total_discount'],
                 'coupon_code' => $calc['coupon_code'],
                 'applied_offer_id' => $calc['applied_offer_id'],
+                'selected_offer_id' => $calc['selected_offer_id'],
                 'net_amount' => max(0.0, (float) $calc['grand_total'] - $walletUsed),
                 'wallet_amount_used' => $walletUsed,
                 'status' => $newStatus,

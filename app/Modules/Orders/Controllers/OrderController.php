@@ -676,6 +676,7 @@ class OrderController extends Controller implements HasMiddleware
         $categories = Category::whereNull('parent_id')->with('children')->orderBy('name')->get();
         $initialCustomer = null;
         $initialOrder = null;
+        $initialCoupon = null;
 
         if (request()->filled('customer_id')) {
             $initialCustomer = Party::with([
@@ -737,7 +738,7 @@ class OrderController extends Controller implements HasMiddleware
             $initialOrder = Order::with([
                 'party.addresses.village.services',
                 'warehouse',
-                'items.product:id,name,sku,image_path,tax_rate_id,allow_overselling',
+                'items.product:id,name,sku,image_path,tax_rate_id,allow_overselling,category_id',
                 'items.product.stocks.warehouse',
                 'items.product.taxRate',
                 'shippingAddress.village.services',
@@ -746,6 +747,10 @@ class OrderController extends Controller implements HasMiddleware
                 'creator:id,first_name,last_name,name',
                 'statusLogs' => fn ($q) => $q->with('user')->latest(),
             ])->find(request()->integer('order_id'));
+
+            if ($initialOrder?->coupon_code) {
+                $initialCoupon = Coupon::withTrashed()->where('code', $initialOrder->coupon_code)->first();
+            }
 
             if ($initialOrder) {
                 $productIds = $initialOrder->items->pluck('product_id')->filter()->unique()->values();
@@ -862,7 +867,7 @@ class OrderController extends Controller implements HasMiddleware
             $initialCustomer->setAttribute('calculated_outstanding', (float) $due);
         }
 
-        return view('orders.create', compact('warehouses', 'activeOffers', 'activeCoupons', 'categories', 'hideSidebar', 'lockSearch', 'initialCustomer', 'initialOrder', 'rescheduleReasons', 'cancelReasons'));
+        return view('orders.create', compact('warehouses', 'activeOffers', 'activeCoupons', 'categories', 'hideSidebar', 'lockSearch', 'initialCustomer', 'initialOrder', 'initialCoupon', 'rescheduleReasons', 'cancelReasons'));
     }
 
     /**
@@ -896,6 +901,7 @@ class OrderController extends Controller implements HasMiddleware
             $validated['discount_amount'] = $calc['total_discount'];
             $validated['coupon_code'] = $calc['coupon_code'];
             $validated['applied_offer_id'] = $calc['applied_offer_id'];
+            $validated['selected_offer_id'] = $calc['selected_offer_id'];
             $validated['net_amount'] = $calc['grand_total'];
             $validated['applied_bogo_ids'] = $calc['applied_bogo_ids'];
             $validated['cashback_earned'] = $calc['cashback_earned'] ?? 0;
@@ -921,6 +927,9 @@ class OrderController extends Controller implements HasMiddleware
         }
 
         $order->load(['party', 'warehouse', 'items.product.stocks.warehouse', 'shippingAddress', 'billingAddress', 'appliedOffer']);
+        $initialCoupon = $order->coupon_code
+            ? Coupon::withTrashed()->where('code', $order->coupon_code)->first()
+            : null;
 
         $productIds = $order->items->pluck('product_id')->filter()->unique()->values();
         $warehouseIds = $order->items
@@ -1002,7 +1011,7 @@ class OrderController extends Controller implements HasMiddleware
         $rescheduleReasons = RescheduleReason::where('is_active', true)->orderBy('id')->get();
         $cancelReasons = CancelReason::where('is_active', true)->orderBy('id')->get();
 
-        return view('orders.create', compact('warehouses', 'activeOffers', 'activeCoupons', 'categories', 'hideSidebar', 'lockSearch', 'initialCustomer', 'initialOrder', 'rescheduleReasons', 'cancelReasons'));
+        return view('orders.create', compact('warehouses', 'activeOffers', 'activeCoupons', 'categories', 'hideSidebar', 'lockSearch', 'initialCustomer', 'initialOrder', 'initialCoupon', 'rescheduleReasons', 'cancelReasons'));
     }
 
     public function show(string $id)

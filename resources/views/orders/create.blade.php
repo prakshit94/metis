@@ -6,6 +6,7 @@
     <script>
         window.__INITIAL_ORDER_CUSTOMER__ = @json($initialCustomer ? $initialCustomer->toArray() : null);
         window.__INITIAL_ORDER_TO_EDIT__ = @json($initialOrder ? $initialOrder->toArray() : null);
+        window.__INITIAL_ORDER_COUPON__ = @json($initialCoupon ? $initialCoupon->toArray() : null);
     </script>
 
     <div class="order-create-page" x-data="createOrderApp(window.__INITIAL_ORDER_CUSTOMER__, window.__INITIAL_ORDER_TO_EDIT__)"
@@ -1621,7 +1622,7 @@
 
                             <h6 class="fw-bold text-body-secondary text-uppercase tracking-widest small mb-3">Available Coupons</h6>
                             
-                            <template x-if="activeCoupons.length === 0">
+                            <template x-if="couponsForDisplay.length === 0">
                                 <div class="text-center py-4 text-body-secondary">
                                     <p class="mb-0 fw-medium">No coupons currently available.</p>
                                 </div>
@@ -3259,7 +3260,7 @@ mapOrder(o) {
         recentOrders: [],
         products: [], productQuery: '', stockFilter: 'in-stock', categoryFilter: '', perPage: 10,
         searching: false, productPage: 1, productLastPage: 1, productTotal: 0, productFrom: 0, productTo: 0,
-        cart: [], couponCode: '', couponApplied: false, appliedCouponObj: null, appliedOfferId: null,
+        cart: [], couponCode: '', couponApplied: false, appliedCouponObj: null, originalCouponCode: '', appliedOfferId: null,
         offerSelectionTouched: false,
         placing: false, formErrors: [],
         warehouses: @json($warehouses->map(fn($w) => $w->toArray())),
@@ -3453,7 +3454,7 @@ mapOrder(o) {
                     this.offerSelectionTouched = false;
                     this.isCartSidebarOpen = false;
                 } else {
-                    if (this.couponApplied) {
+                    if (this.couponApplied && !(this.editingOrderId && this.originalCouponCode && String(this.couponCode).toUpperCase() === String(this.originalCouponCode).toUpperCase())) {
                         this.applyCoupon();
                     }
                     this.syncOfferSelection();
@@ -3826,13 +3827,18 @@ mapOrder(o) {
             this.futureOrderDate = order.future_order_date ? String(order.future_order_date).substring(0, 10) : '';
             const savedCouponCode = String(order.coupon_code || '').trim();
             const savedCoupon = savedCouponCode
-                ? (this.activeCoupons || []).find(coupon => String(coupon.code || '').toUpperCase() === savedCouponCode.toUpperCase()) || null
+                ? (this.activeCoupons || []).find(coupon => String(coupon.code || '').toUpperCase() === savedCouponCode.toUpperCase())
+                    || (window.__INITIAL_ORDER_COUPON__ && String(window.__INITIAL_ORDER_COUPON__.code || '').toUpperCase() === savedCouponCode.toUpperCase() ? window.__INITIAL_ORDER_COUPON__ : null)
                 : null;
-            this.couponCode = savedCoupon ? savedCoupon.code : '';
-            this.appliedCouponObj = savedCoupon;
-            this.couponApplied = Boolean(savedCoupon);
-            this.appliedOfferId = order.applied_offer_id || null;
-            this.offerSelectionTouched = Boolean(order.applied_offer_id);
+            this.originalCouponCode = savedCouponCode;
+            this.couponCode = savedCouponCode;
+            this.appliedCouponObj = savedCoupon ? { ...savedCoupon, _isSavedOrderCoupon: true } : (savedCouponCode ? { code: savedCouponCode, type: 'unavailable', _unavailable: true, _isSavedOrderCoupon: true } : null);
+            this.couponApplied = Boolean(savedCouponCode);
+            this.appliedOfferId = order.selected_offer_id || order.applied_offer_id || null;
+            // Never auto-apply a newly eligible offer while restoring an order.
+            // Persisted selections are restored above; legacy orders without a
+            // saved selection must remain unchanged until the user chooses one.
+            this.offerSelectionTouched = Boolean(order.id) || Boolean(order.selected_offer_id || order.applied_offer_id);
             this.customerDetails = this.sanitizeCustomerData(order.party
                 ? {
                     ...(this.customerDetails || {}),
@@ -3854,10 +3860,25 @@ mapOrder(o) {
                     ? Number(item.discount_amount || item.discountValue || 0) / quantity
                     : 0;
                 const price = Number(item.unit_price ?? item.price ?? 0);
-                const is_gift = price > 0 && Math.abs(price - discountValue) < 0.01;
+                const productId = item.product_id || item.id;
+                const fullyDiscounted = price > 0 && Math.abs(price - discountValue) < 0.01;
+                const couponGift = this.appliedCouponObj
+                    && this.appliedCouponObj.type === 'free_product'
+                    && String(this.appliedCouponObj.free_product_id) === String(productId)
+                    && fullyDiscounted;
+                const selectedGiftOffer = (this.activeOffers || []).find(offer => String(offer.id) === String(order.selected_offer_id || ''));
+                const offerGift = selectedGiftOffer
+                    && selectedGiftOffer.type === 'free_product'
+                    && String(selectedGiftOffer.product_id) === String(productId)
+                    && fullyDiscounted;
+                const hasSavedGiftState = item.is_gift !== null && item.is_gift !== undefined;
+                const is_gift = hasSavedGiftState ? Boolean(item.is_gift) : Boolean(couponGift || offerGift);
+                const gift_source = item.gift_source || (couponGift
+                    ? 'coupon_' + this.appliedCouponObj.code
+                    : (offerGift ? 'offer_' + selectedGiftOffer.id : null));
 
                 return {
-                    id: item.product_id || item.id,
+                    id: productId,
                     _product: item.product,
                     name: item.product?.name || item.product_name || 'Product',
                     sku: item.product?.sku || item.sku || '',
@@ -3870,9 +3891,29 @@ mapOrder(o) {
                     discountType: 'flat',
                     category_id: item.product?.category_id || null,
                     is_gift: is_gift,
-                    gift_source: is_gift ? 'legacy_gift' : null
+                    gift_source: gift_source
                 };
             });
+
+            // Saved item quantities include free BOGO units. Reconstruct their
+            // paid base so cart reconciliation doesn't add the same units again.
+            const savedBogo = (this.activeOffers || []).find(offer => String(offer.id) === String(order.selected_offer_id || order.applied_offer_id || ''));
+            if (savedBogo && savedBogo.type === 'bogo') {
+                const apps = typeof savedBogo.applicable_products === 'string' ? JSON.parse(savedBogo.applicable_products) : (savedBogo.applicable_products || []);
+                const cats = typeof savedBogo.applicable_categories === 'string' ? JSON.parse(savedBogo.applicable_categories) : (savedBogo.applicable_categories || []);
+                const buyQty = Math.max(1, parseInt(savedBogo.buy_qty) || 1);
+                const getQty = Math.max(1, parseInt(savedBogo.get_qty) || 1);
+                this.cart.forEach(item => {
+                    if (item.is_gift) return;
+                    const productMatches = !apps.length || apps.some(id => String(id) === String(item.id));
+                    const categoryMatches = !cats.length || cats.some(id => String(id) === String(item.category_id));
+                    if ((!apps.length && !cats.length) || (apps.length && productMatches) || (cats.length && categoryMatches)) {
+                        const totalQty = parseInt(item.quantity) || 0;
+                        const cycles = Math.floor(totalQty / (buyQty + getQty));
+                        item._bogoBaseQuantity = totalQty - (cycles * getQty);
+                    }
+                });
+            }
 
             if (this.cart.length > 0) {
                 localStorage.setItem(`ecommerce_create_order_cart_${this.partyId}`, JSON.stringify(this.cart));
@@ -4244,7 +4285,7 @@ mapOrder(o) {
                         }
                     }
                 }
-                if (this.couponApplied && this.appliedCouponObj && this.appliedCouponObj.type === 'free_product' && this.appliedCouponObj.free_product_id) {
+                if (this.couponApplied && this.appliedCouponObj && this.couponIsApplicable(this.appliedCouponObj) && this.appliedCouponObj.type === 'free_product' && this.appliedCouponObj.free_product_id) {
                     if (this.subtotal >= (parseFloat(this.appliedCouponObj.min_spend)||0)) {
                         expectedGifts.push({ product_id: this.appliedCouponObj.free_product_id, qty: parseInt(this.appliedCouponObj.free_qty)||1, source: 'coupon_' + this.appliedCouponObj.code });
                     }
@@ -4478,8 +4519,9 @@ mapOrder(o) {
         },
         couponIsApplicable(c) {
             if (!c || !this.cart.length) return false;
-            if (c.is_active === false || c.is_active === 0 || c.is_active === '0') return false;
-            if (Number(c.usage_limit) > 0 && Number(c.used_count || 0) >= Number(c.usage_limit)) return false;
+            if (c._unavailable || c.deleted_at || c.is_active === false || c.is_active === 0 || c.is_active === '0') return false;
+            const isSavedCoupon = this.editingOrderId && this.originalCouponCode && String(c.code || '').toUpperCase() === String(this.originalCouponCode).toUpperCase();
+            if (!isSavedCoupon && Number(c.usage_limit) > 0 && Number(c.used_count || 0) >= Number(c.usage_limit)) return false;
             if (c.expiry_date) {
                 const expiryDate = String(c.expiry_date).slice(0, 10);
                 const now = new Date();
@@ -4511,7 +4553,11 @@ mapOrder(o) {
         },
         couponIneligibilityReason(c) {
             if (!c || !this.cart.length) return 'Add products to check coupon eligibility';
-            if (Number(c.usage_limit) > 0 && Number(c.used_count || 0) >= Number(c.usage_limit)) return 'Usage limit reached';
+            if (c._unavailable) return 'Coupon details are unavailable';
+            if (c.deleted_at) return 'Coupon is no longer available';
+            if (c.is_active === false || c.is_active === 0 || c.is_active === '0') return 'Coupon is inactive';
+            const isSavedCoupon = this.editingOrderId && this.originalCouponCode && String(c.code || '').toUpperCase() === String(this.originalCouponCode).toUpperCase();
+            if (!isSavedCoupon && Number(c.usage_limit) > 0 && Number(c.used_count || 0) >= Number(c.usage_limit)) return 'Usage limit reached';
             if (c.expiry_date) {
                 const expiryDate = String(c.expiry_date).slice(0, 10);
                 const now = new Date();
@@ -4618,15 +4664,23 @@ mapOrder(o) {
         },
         get couponsSortedByEligibility() {
             const eligibleCouponIds = new Set(
-                this.activeCoupons
+                this.couponsForDisplay
                     .filter(coupon => this.couponIsApplicable(coupon))
                     .map(coupon => String(coupon.id))
             );
-            return [...this.activeCoupons].sort((a, b) => {
+            return [...this.couponsForDisplay].sort((a, b) => {
                 const aEligible = eligibleCouponIds.has(String(a.id));
                 const bEligible = eligibleCouponIds.has(String(b.id));
                 return aEligible === bEligible ? 0 : (aEligible ? -1 : 1);
             });
+        },
+        get couponsForDisplay() {
+            const coupons = [...(this.activeCoupons || [])];
+            const saved = this.appliedCouponObj;
+            if (saved && saved.code && !coupons.some(coupon => String(coupon.code).toUpperCase() === String(saved.code).toUpperCase())) {
+                coupons.unshift(saved);
+            }
+            return coupons;
         },
         get availableOrderOffers() {
             return this.activeOffers.filter(o => {
@@ -4725,7 +4779,7 @@ mapOrder(o) {
             const candidates = this.offerCandidates;
             if (this.appliedOfferId && !candidates.some(o => String(o.id) === String(this.appliedOfferId))) {
                 this.appliedOfferId = null;
-                this.offerSelectionTouched = false;
+                this.offerSelectionTouched = Boolean(this.editingOrderId);
             }
             if (!this.appliedOfferId && !this.offerSelectionTouched && candidates.length === 1) {
                 this.appliedOfferId = candidates[0].id;
@@ -4792,7 +4846,7 @@ mapOrder(o) {
             return best ? this.orderOfferDiscount(best) : 0;
         },
         get couponDiscount() {
-            if (!this.couponApplied || !this.appliedCouponObj) return 0;
+            if (!this.couponApplied || !this.appliedCouponObj || !this.couponIsApplicable(this.appliedCouponObj)) return 0;
             const c = this.appliedCouponObj;
             if (c.type === 'free_shipping' || c.type === 'free_product') return 0;
             if ((parseFloat(c.min_spend) || 0) > this.subtotal) return 0;
@@ -4809,7 +4863,7 @@ mapOrder(o) {
         get totalDiscount() { return Math.min(this.subtotal, this.bogoDiscount + this.couponDiscount + this.orderOfferDiscountAmount); },
         get grandTotal() { 
             let shipping = this.shippingFee;
-            if (this.couponApplied && this.appliedCouponObj && this.appliedCouponObj.type === 'free_shipping') {
+            if (this.couponApplied && this.appliedCouponObj && this.couponIsApplicable(this.appliedCouponObj) && this.appliedCouponObj.type === 'free_shipping') {
                 if (this.subtotal >= (parseFloat(this.appliedCouponObj.min_spend) || 0)) {
                     shipping = 0;
                 }
@@ -4842,6 +4896,18 @@ mapOrder(o) {
         async applyCoupon(codeToApply = null) {
             const code = (codeToApply || this.couponInputTemp || this.couponCode).toUpperCase().trim();
             if (!code) return;
+            if (this.editingOrderId && this.originalCouponCode && String(code).toUpperCase() === String(this.originalCouponCode).toUpperCase()) {
+                const savedCoupon = window.__INITIAL_ORDER_COUPON__;
+                if (savedCoupon && this.couponIsApplicable(savedCoupon)) {
+                    this.couponCode = savedCoupon.code;
+                    this.appliedCouponObj = { ...savedCoupon, _isSavedOrderCoupon: true };
+                    this.couponApplied = true;
+                    this.couponInputTemp = '';
+                    bootstrap.Modal.getInstance(document.getElementById('promotionsModal'))?.hide();
+                    await this.evaluateFreeProducts();
+                    return;
+                }
+            }
             const res = await fetch('/coupons/validate', {method:'POST', headers:{'Content-Type':'application/json','X-CSRF-TOKEN':document.querySelector('meta[name=csrf-token]').content,'Accept':'application/json'}, body:JSON.stringify({code,subtotal:this.subtotal,items:this.cart.map(item=>({product_id:item.id,quantity:item.quantity,is_gift:Boolean(item.is_gift)}))})});
             const json = await res.json();
             if (json.valid) { 

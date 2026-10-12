@@ -148,7 +148,7 @@ class Order extends Model implements Auditable
 
     protected $fillable = [
         'order_no', 'type', 'party_id', 'order_date', 'total_amount',
-        'tax_amount', 'discount_amount', 'coupon_code', 'applied_offer_id', 'net_amount', 'status', 'warehouse_id',
+        'tax_amount', 'discount_amount', 'coupon_code', 'applied_offer_id', 'selected_offer_id', 'net_amount', 'status', 'warehouse_id',
         'shipping_address_id', 'shipping_address_line_1', 'shipping_address_line_2',
         'shipping_village_id', 'shipping_village_name', 'shipping_post_office', 'shipping_taluka',
         'shipping_district', 'shipping_city', 'shipping_state', 'shipping_pincode',
@@ -162,6 +162,7 @@ class Order extends Model implements Auditable
     protected $casts = [
         'order_date' => 'datetime',
         'applied_offer_id' => 'integer',
+        'selected_offer_id' => 'integer',
     ];
 
     public function items(): HasMany
@@ -172,6 +173,11 @@ class Order extends Model implements Auditable
     public function appliedOffer(): BelongsTo
     {
         return $this->belongsTo(Offer::class, 'applied_offer_id');
+    }
+
+    public function selectedOffer(): BelongsTo
+    {
+        return $this->belongsTo(Offer::class, 'selected_offer_id');
     }
 
     public function party(): BelongsTo
