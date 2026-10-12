@@ -141,6 +141,7 @@
                     <thead class=" text-uppercase small">
                         <tr>
                             <th style="width:40px"><input type="checkbox" class="user-select-checkbox" @change="$event.isTrusted && toggleAll($event)" :checked="allSelected"></th>
+                            <th>ID</th>
                             <th>Name</th>
                             <th>Type</th>
                             <th>Discount</th>
@@ -156,14 +157,15 @@
                     </thead>
                     <tbody>
                         <template x-if="loading">
-                            <tr><td colspan="12" class="text-center py-5"><div class="spinner-border text-primary"></div></td></tr>
+                            <tr><td colspan="13" class="text-center py-5"><div class="spinner-border text-primary"></div></td></tr>
                         </template>
                         <template x-if="!loading && offers.length === 0">
-                            <tr><td colspan="12" class="text-center py-5 text-muted"><i class="bi bi-star fs-1 d-block mb-2"></i>No offers found</td></tr>
+                            <tr><td colspan="13" class="text-center py-5 text-muted"><i class="bi bi-star fs-1 d-block mb-2"></i>No offers found</td></tr>
                         </template>
                         <template x-for="o in offers" :key="o.id">
                             <tr :class="{ 'selected': selected.includes(o.id), 'offer-row-active': o.is_active }">
                                 <td><input type="checkbox" class="user-select-checkbox" :value="o.id" x-model="selected"></td>
+                                <td class="text-muted text-nowrap"><span class="font-monospace" x-text="o.id"></span></td>
                                 <td>
                                     <div class="d-flex align-items-center">
                                         <div class="p-2 rounded-circle me-3 d-flex align-items-center justify-content-center" 
@@ -173,7 +175,6 @@
                                         </div>
                                         <div>
                                             <div class="fw-bold text-primary text-decoration-underline cursor-pointer" style="cursor: pointer;" @click="viewDetails(o)" x-text="o.name"></div>
-                                            <div class="text-muted small" style="font-size: 10px;" x-text="'ID: #' + o.id"></div>
                                         </div>
                                     </div>
                                 </td>

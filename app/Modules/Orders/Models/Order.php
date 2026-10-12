@@ -180,6 +180,11 @@ class Order extends Model implements Auditable
         return $this->belongsTo(Offer::class, 'selected_offer_id');
     }
 
+    public function coupon(): BelongsTo
+    {
+        return $this->belongsTo(Coupon::class, 'coupon_code', 'code')->withTrashed();
+    }
+
     public function party(): BelongsTo
     {
         return $this->belongsTo(Party::class, 'party_id');

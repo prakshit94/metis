@@ -1056,21 +1056,22 @@
                         </div>
 
                         {{-- Applied Promotions Tags --}}
-                        <div class="space-y-3 mb-4" x-show="bestOrderOffer || couponApplied || bogoDiscount > 0" x-cloak>
+                        <div class="space-y-3 mb-4" x-show="bestOrderOffer || selectedFreeProductOffer || couponApplied || bogoDiscount > 0" x-cloak>
                             
                             {{-- Offer applied --}}
                             <template x-if="bestOrderOffer">
-                                <div class="d-flex align-items-center justify-content-between gap-3 px-3 py-2 rounded-4 bg-success bg-opacity-10 border border-success border-opacity-25 shadow-sm transition-all hover-shadow">
+                                <div class="d-flex align-items-center justify-content-between gap-3 p-3 rounded-4 bg-primary-subtle border border-primary-subtle shadow-sm transition-all hover-shadow">
                                     <div class="d-flex align-items-center gap-3">
-                                        <div class="bg-success-subtle text-success-emphasis rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 32px; height: 32px;">
-                                            <i class="bi bi-check-lg fs-5"></i>
+                                        <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 36px; height: 36px;">
+                                            <i class="bi bi-tag-fill"></i>
                                         </div>
                                         <div>
-                                            <p class="mb-0 fw-bold text-success-emphasis fs-6" x-text="bestOrderOffer.name"></p>
-                                            <p class="mb-0 fw-semibold text-success opacity-75 small">
-                                                <span x-show="orderOfferDiscountAmount > 0" x-text="'Saving ₹ ' + Number(orderOfferDiscountAmount).toFixed(2)"></span>
+                                            <p class="mb-0 fw-bold text-primary-emphasis fs-6" x-text="bestOrderOffer.name"></p>
+                                            <span class="badge text-bg-secondary-subtle text-secondary-emphasis rounded-pill mt-1" x-text="'Offer ID: ' + bestOrderOffer.id"></span>
+                                            <p class="mb-0 fw-semibold small d-flex flex-wrap gap-1 mt-1">
+                                                <span class="badge rounded-pill text-bg-success-subtle text-success-emphasis" x-show="orderOfferDiscountAmount > 0" x-text="'You save ₹ ' + Number(orderOfferDiscountAmount).toFixed(2)"></span>
                                                 <template x-if="bestOrderOffer.cashback_percent > 0 || bestOrderOffer.cashback_fixed > 0">
-                                                    <span :class="{'ms-1 border-start border-success ps-1': orderOfferDiscountAmount > 0}" x-text="'Cashback: ₹ ' + Number(offerCashbackAmount(bestOrderOffer)).toFixed(2)"></span>
+                                                    <span class="badge rounded-pill text-bg-info-subtle text-info-emphasis" x-text="'Cashback ₹ ' + Number(offerCashbackAmount(bestOrderOffer)).toFixed(2)"></span>
                                                 </template>
                                             </p>
                                         </div>
@@ -1078,27 +1079,47 @@
                                 </div>
                             </template>
 
+                            {{-- Free-product offer applied --}}
+                            <template x-if="selectedFreeProductOffer">
+                                <div class="d-flex align-items-center justify-content-between gap-3 p-3 rounded-4 bg-primary-subtle border border-primary-subtle shadow-sm">
+                                    <div class="d-flex align-items-center gap-3 min-w-0">
+                                        <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 36px; height: 36px;">
+                                            <i class="bi bi-gift-fill fs-5"></i>
+                                        </div>
+                                        <div class="min-w-0">
+                                            <p class="mb-0 fw-bold text-primary-emphasis fs-6" x-text="'Offer: ' + selectedFreeProductOffer.name"></p>
+                                            <span class="badge text-bg-secondary-subtle text-secondary-emphasis rounded-pill mt-1" x-text="'Offer ID: ' + selectedFreeProductOffer.id"></span>
+                                            <p class="mb-0 mt-1"><span class="badge rounded-pill text-bg-warning text-dark" x-text="cart.some(item => item.is_gift && item.gift_source === 'offer_' + selectedFreeProductOffer.id) ? 'Free Gift Applied' : 'Free Gift being added'"></span></p>
+                                        </div>
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-outline-danger rounded-pill flex-shrink-0" @click.stop="removeOffer(selectedFreeProductOffer.id)" aria-label="Remove applied offer">
+                                        <i class="bi bi-x-circle me-1" aria-hidden="true"></i>Remove
+                                    </button>
+                                </div>
+                            </template>
+
                             {{-- Coupon applied --}}
                             <template x-if="couponApplied">
-                                <div class="d-flex align-items-center justify-content-between gap-3 px-3 py-2 rounded-4 bg-success bg-opacity-10 border border-success border-opacity-25 shadow-sm transition-all hover-shadow">
+                                <div class="d-flex align-items-center justify-content-between gap-3 p-3 rounded-4 bg-warning-subtle border border-warning-subtle shadow-sm transition-all hover-shadow">
                                     <div class="d-flex align-items-center gap-3">
-                                        <div class="bg-success-subtle text-success-emphasis rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 32px; height: 32px;">
+                                        <div class="bg-warning text-dark rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 36px; height: 36px;">
                                             <i class="bi bi-ticket-perforated fs-5"></i>
                                         </div>
                                         <div>
-                                            <p class="mb-0 fw-bold text-success-emphasis fs-6" x-text="'Coupon: ' + couponCode"></p>
-                                            <p class="mb-0 fw-semibold text-success opacity-75 small">
+                                            <p class="mb-0 fw-bold text-warning-emphasis fs-6" x-text="'Coupon: ' + couponCode"></p>
+                                            <span class="badge text-bg-secondary-subtle text-secondary-emphasis rounded-pill mt-1" x-show="appliedCouponObj && appliedCouponObj.id" x-text="'Coupon ID: ' + appliedCouponObj.id"></span>
+                                            <p class="mb-0 fw-semibold small d-flex flex-wrap gap-1 mt-1">
                                                 <template x-if="appliedCouponObj && appliedCouponObj.type === 'free_shipping'">
-                                                    <span>Free Shipping Applied</span>
+                                                    <span class="badge rounded-pill text-bg-warning text-dark">Free Shipping Applied</span>
                                                 </template>
                                                 <template x-if="appliedCouponObj && appliedCouponObj.type === 'free_product'">
-                                                    <span>Free Gift Applied</span>
+                                                    <span class="badge rounded-pill text-bg-warning text-dark">Free Gift Applied</span>
                                                 </template>
-                                                <template x-if="appliedCouponObj && appliedCouponObj.type !== 'free_shipping' && appliedCouponObj.type !== 'free_product'">
-                                                    <span x-text="'Saving ₹ ' + Number(couponDiscount).toFixed(2)"></span>
+                                                <template x-if="appliedCouponObj && appliedCouponObj.type !== 'free_shipping' && appliedCouponObj.type !== 'free_product' && couponDiscount > 0">
+                                                    <span class="badge rounded-pill text-bg-success-subtle text-success-emphasis" x-text="'You save ₹ ' + Number(couponDiscount).toFixed(2)"></span>
                                                 </template>
                                                 <template x-if="appliedCouponObj && (appliedCouponObj.cashback_percent > 0 || appliedCouponObj.cashback_fixed > 0)">
-                                                    <span class="ms-1 border-start border-success ps-1" x-text="'Cashback: ₹ ' + Number(couponCashbackAmount(appliedCouponObj)).toFixed(2)"></span>
+                                                    <span class="badge rounded-pill text-bg-info-subtle text-info-emphasis" x-text="'Cashback ₹ ' + Number(couponCashbackAmount(appliedCouponObj)).toFixed(2)"></span>
                                                 </template>
                                             </p>
                                         </div>
@@ -1112,17 +1133,17 @@
 
                             {{-- BOGO (auto-applied) --}}
                             <template x-if="bogoDiscount > 0">
-                                <div class="d-flex align-items-center justify-content-between gap-3 px-3 py-2 rounded-4 bg-info bg-opacity-10 border border-info border-opacity-25 shadow-sm transition-all hover-shadow">
+                                <div class="d-flex align-items-center justify-content-between gap-3 p-3 rounded-4 bg-info-subtle border border-info-subtle shadow-sm transition-all hover-shadow">
                                     <div class="d-flex align-items-center gap-3">
-                                        <div class="text-bg-info-subtle text-info-emphasis rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 32px; height: 32px;">
+                                        <div class="bg-info text-dark rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 36px; height: 36px;">
                                             <i class="bi bi-lightning-charge-fill fs-5"></i>
                                         </div>
                                         <div>
                                             <p class="mb-0 fw-bold text-info-emphasis fs-6">BOGO Savings</p>
-                                            <p class="mb-0 text-info opacity-75 small" x-text="appliedBogoOfferNames"></p>
+                                            <p class="mb-1 text-info-emphasis small" x-text="appliedBogoOfferNames"></p>
+                                            <span class="badge rounded-pill text-bg-info-subtle text-info-emphasis" x-text="'You save ₹ ' + Number(bogoDiscount).toFixed(2)"></span>
                                         </div>
                                     </div>
-                                    <span class="fw-bold text-info-emphasis fs-6" x-text="'- ₹ ' + Number(bogoDiscount).toFixed(2)"></span>
                                 </div>
                             </template>
 
@@ -1137,26 +1158,26 @@
                                 <span class="text-body fw-bold" x-text="'₹ ' + Number(subtotal).toFixed(2)"></span>
                             </div>
                             
-                            <div class="d-flex justify-content-between fw-medium" :class="bogoDiscount > 0 ? 'text-success' : 'text-body-secondary'" style="font-size: 13px;">
+                            <div class="d-flex justify-content-between align-items-center fw-medium rounded-3 border border-secondary border-opacity-10 px-2 py-2" :class="bogoDiscount > 0 ? 'bg-info-subtle border-info-subtle text-info-emphasis' : 'text-body-secondary'" style="font-size: 13px;">
                                 <div>
                                     <span>BOGO Savings</span>
-                                    <span class="text-body-secondary d-block" style="font-size: 10px;" x-text="appliedBogoOfferNames"></span>
+                                    <span class="d-block opacity-75" style="font-size: 10px;" x-text="appliedBogoOfferNames"></span>
                                 </div>
                                 <span class="fw-bold align-top" x-text="'- ₹ ' + Number(bogoDiscount).toFixed(2)"></span>
                             </div>
 
-                            <div class="d-flex justify-content-between fw-medium" :class="orderOfferDiscountAmount > 0 ? 'text-success' : 'text-body-secondary'" style="font-size: 13px;">
+                            <div class="d-flex justify-content-between align-items-center fw-medium rounded-3 border border-secondary border-opacity-10 px-2 py-2" :class="bestOrderOffer ? 'bg-primary-subtle border-primary-subtle text-primary-emphasis' : 'text-body-secondary'" style="font-size: 13px;">
                                 <div>
                                     <span>Order Discount</span>
-                                    <span class="text-body-secondary d-block" style="font-size: 10px;" x-text="bestOrderOffer ? bestOrderOffer.name : 'No active offer'"></span>
+                                    <span class="d-block opacity-75" style="font-size: 10px;" x-text="bestOrderOffer ? bestOrderOffer.name + ' (Offer ID: ' + bestOrderOffer.id + ')' : 'No active offer'"></span>
                                 </div>
                                 <span class="fw-bold align-top" x-text="'- ₹ ' + Number(orderOfferDiscountAmount).toFixed(2)"></span>
                             </div>
 
-                            <div class="d-flex justify-content-between fw-medium" :class="appliedCouponObj !== null ? 'text-success' : 'text-body-secondary'" style="font-size: 13px;">
+                            <div class="d-flex justify-content-between align-items-center fw-medium rounded-3 border border-secondary border-opacity-10 px-2 py-2" :class="appliedCouponObj !== null ? 'bg-warning-subtle border-warning-subtle text-warning-emphasis' : 'text-body-secondary'" style="font-size: 13px;">
                                 <div>
                                     <span>Coupon Savings</span>
-                                    <span class="text-body-secondary d-block" style="font-size: 10px;" x-text="appliedCouponObj ? '(Code: ' + couponCode + ')' : 'No coupon applied'"></span>
+                                    <span class="d-block opacity-75" style="font-size: 10px;" x-text="appliedCouponObj ? '(Code: ' + couponCode + (appliedCouponObj.id ? ' · Coupon ID: ' + appliedCouponObj.id : '') + ')' : 'No coupon applied'"></span>
                                 </div>
                                 <span class="fw-bold align-top" x-show="appliedCouponObj && (appliedCouponObj.type === 'free_shipping' || appliedCouponObj.type === 'free_product')" x-text="appliedCouponObj?.type === 'free_shipping' ? 'Free Shipping' : 'Free Gift'"></span>
                                 <span class="fw-bold align-top" x-show="!appliedCouponObj || (appliedCouponObj.type !== 'free_shipping' && appliedCouponObj.type !== 'free_product')" x-text="'- ₹ ' + Number(couponDiscount).toFixed(2)"></span>
@@ -1168,7 +1189,7 @@
                             </div>
 
                             <template x-if="cashbackEarned > 0">
-                                <div class="d-flex justify-content-between fw-medium text-info mt-2" style="font-size: 13px;">
+                                <div class="d-flex justify-content-between align-items-center fw-medium text-info-emphasis bg-info-subtle border border-info-subtle rounded-3 px-2 py-2 mt-2" style="font-size: 13px;">
                                     <div>
                                         <span>Cashback Earned</span>
                                         <span class="text-info opacity-75 d-block" style="font-size: 10px;" x-text="cashbackSources"></span>
@@ -1561,6 +1582,7 @@
                                                 <div class="flex-grow-1" style="min-width: 0; overflow-wrap: anywhere;">
                                                     <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
                                                         <h6 class="fw-bold mb-0" :class="String(activeOfferId) === String(offer.id) ? 'text-body-emphasis' : 'text-body'" x-text="offer.name"></h6>
+                                                        <span class="badge text-bg-secondary-subtle text-secondary-emphasis rounded-pill px-2 py-1 small" style="font-size: 0.7rem;" x-text="'Offer ID: ' + offer.id"></span>
                                                         <span class="badge text-bg-secondary-subtle text-secondary-emphasis rounded-pill px-2 py-1 small" style="font-size: 0.7rem;" x-text="'Priority: ' + offer.priority"></span>
                                                     </div>
                                                     
@@ -1653,7 +1675,10 @@
                                                 </template>
                                                 <div class="flex-grow-1" style="min-width: 0; overflow-wrap: anywhere;">
                                                     <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
-                                                        <code class="fw-black text-body-emphasis fs-6 d-block" x-text="c.code"></code>
+                                                        <div class="d-flex align-items-center flex-wrap gap-2">
+                                                            <code class="fw-black text-body-emphasis fs-6 d-block" x-text="c.code"></code>
+                                                            <span class="badge text-bg-secondary-subtle text-secondary-emphasis rounded-pill" style="font-size: 0.7rem;" x-text="'Coupon ID: ' + c.id"></span>
+                                                        </div>
                                                     </div>
                                                     <div class="pe-3 ps-2 border-start border-2 border-secondary border-opacity-25">
                                                         <p class="mb-1 fw-medium small text-primary" x-show="c.type === 'free_product'" x-text="(() => { let cp = products.find(p => String(p.id) === String(c.free_product_id)); return 'Free Gift: ' + (cp ? cp.name : 'Special Item'); })()"></p>
@@ -1866,7 +1891,7 @@
                                                 <div class="d-flex align-items-center gap-2 p-2 rounded-3 border border-primary border-opacity-10 bg-body">
                                                     <div class="text-bg-primary-subtle text-primary-emphasis rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width:28px;height:28px;"><i class="bi bi-tag-fill" style="font-size:12px;"></i></div>
                                                     <div class="min-w-0">
-                                                        <div class="fw-bold text-body-emphasis text-truncate" style="font-size:11px;" x-text="offer.name"></div>
+                                                        <div class="fw-bold text-body-emphasis text-truncate" style="font-size:11px;" x-text="offer.name + ' (ID: ' + offer.id + ')' "></div>
                                                         <div class="text-body-secondary text-truncate" style="font-size:9px;" x-text="offer.type === 'percentage' ? offer.value + '% off' : 'Flat ₹ ' + offer.value + ' off'"></div>
                                                     </div>
                                                 </div>
@@ -2077,7 +2102,7 @@
                                 <div class="d-flex justify-content-between mb-1 small text-success" x-show="orderOfferDiscountAmount > 0" x-cloak>
                                     <div>
                                         <span>Order Discount:</span>
-                                        <div style="font-size: 9px; opacity: 0.8;" x-text="bestOrderOffer?.name"></div>
+                                        <div style="font-size: 9px; opacity: 0.8;" x-text="bestOrderOffer ? bestOrderOffer.name + ' (Offer ID: ' + bestOrderOffer.id + ')' : ''"></div>
                                     </div>
                                     <span class="fw-bold" x-text="'- ₹ ' + Number(orderOfferDiscountAmount).toFixed(2)"></span>
                                 </div>
@@ -2085,7 +2110,7 @@
                                 <div class="d-flex justify-content-between mb-1 small text-success" x-show="couponApplied && appliedCouponObj && appliedCouponObj.type !== 'free_shipping' && appliedCouponObj.type !== 'free_product'" x-cloak>
                                     <div>
                                         <span>Coupon Savings:</span>
-                                        <div style="font-size: 9px; opacity: 0.8;" x-text="couponCode"></div>
+                                        <div style="font-size: 9px; opacity: 0.8;" x-text="couponDisplayLabel"></div>
                                     </div>
                                     <span class="fw-bold" x-text="'- ₹ ' + Number(couponDiscount).toFixed(2)"></span>
                                 </div>
@@ -2093,7 +2118,7 @@
                                 <div class="d-flex justify-content-between mb-1 small text-success" x-show="couponApplied && appliedCouponObj && appliedCouponObj.type === 'free_product'" x-cloak>
                                     <div>
                                         <span>Coupon (Free Gift):</span>
-                                        <div style="font-size: 9px; opacity: 0.8;" x-text="couponCode"></div>
+                                        <div style="font-size: 9px; opacity: 0.8;" x-text="couponDisplayLabel"></div>
                                     </div>
                                     <span class="fw-bold">Applied</span>
                                 </div>
@@ -2106,7 +2131,7 @@
                                 <div class="d-flex justify-content-between mb-1 small text-success" x-show="couponApplied && appliedCouponObj && appliedCouponObj.type === 'free_shipping'" x-cloak>
                                     <div>
                                         <span>Shipping:</span>
-                                        <div style="font-size: 9px; opacity: 0.8;" x-text="couponCode"></div>
+                                        <div style="font-size: 9px; opacity: 0.8;" x-text="couponDisplayLabel"></div>
                                     </div>
                                     <span class="fw-bold">Free</span>
                                 </div>
@@ -2438,7 +2463,8 @@
                                                     <div>
                                                         <span class="text-muted fw-medium">Discount</span>
                                                         <span x-show="selectedOrder.couponCode" class="badge bg-success ms-2 rounded-pill" x-text="selectedOrder.couponCode"></span>
-                                                        <span x-show="selectedOrder.appliedOfferName" class="text-muted d-block" style="font-size: 10px;" x-text="selectedOrder.appliedOfferName"></span>
+                                                        <span x-show="selectedOrder.couponId" class="badge text-bg-secondary-subtle text-secondary-emphasis ms-1 rounded-pill" x-text="'Coupon ID: ' + selectedOrder.couponId"></span>
+                                                        <span x-show="selectedOrder.appliedOfferName" class="text-muted d-block" style="font-size: 10px;" x-text="selectedOrder.appliedOfferName + (selectedOrder.appliedOfferId ? ' (Offer ID: ' + selectedOrder.appliedOfferId + ')' : '')"></span>
                                                     </div>
                                                     <span class="text-success fw-bold" x-text="`-₹ ${formatCurrency(selectedOrder.discountTotal)}`"></span>
                                                 </div>
@@ -3192,7 +3218,9 @@ mapOrder(o) {
         discountTotal: Math.max(0, (o.items || []).reduce((sum, item) => sum + (formatMoney(item.unit_price) * formatMoney(item.quantity)), 0) + formatMoney(o.tax_amount) - formatMoney(o.net_amount)),
         paymentMethod: formattedPaymentMethod,
         couponCode: o.coupon_code || '',
-        appliedOfferName: o.applied_offer ? o.applied_offer.name : '',
+        couponId: o.coupon?.id || null,
+        appliedOfferId: o.selected_offer?.id || o.applied_offer?.id || o.selected_offer_id || o.applied_offer_id || null,
+        appliedOfferName: o.selected_offer?.name || o.applied_offer?.name || '',
         isDraft: o.status === 'future_order',
         futureOrderDate: o.future_order_date || null,
         createdBy: {
@@ -3576,6 +3604,9 @@ mapOrder(o) {
 
         get selectedBogoOffer() {
             return this.eligibleBogoOffers.find(o => String(o.id) === String(this.activeOfferId)) || null;
+        },
+        get selectedFreeProductOffer() {
+            return this.eligibleFreeProductOffers.find(o => String(o.id) === String(this.activeOfferId)) || null;
         },
 
         getBogoMatch(productId) {
@@ -4629,16 +4660,20 @@ mapOrder(o) {
             return this.cart.reduce((t,item) => t + this.itemBogoDiscount(item), 0);
         },
         get appliedBogoOfferNames() {
-            const names = new Set();
+            const names = new Map();
             this.cart.forEach(item => {
                 if (item.is_gift) return;
                 const match = this.getBogoMatch(item.id);
                 if (match && this.itemBogoDiscount(item) > 0) {
-                    names.add(match.name);
+                    names.set(String(match.id), `${match.name} (Offer ID: ${match.id})`);
                 }
             });
-            const arr = Array.from(names);
+            const arr = Array.from(names.values());
             return arr.length > 0 ? arr.join(', ') : 'No active offer';
+        },
+        get couponDisplayLabel() {
+            const couponId = this.appliedCouponObj?.id;
+            return `${this.couponCode}${couponId ? ` (Coupon ID: ${couponId})` : ''}`;
         },
         get appliedBogoIds() {
             const ids = [];
@@ -4801,6 +4836,20 @@ mapOrder(o) {
             }
             this.evaluateFreeProducts();
         },
+        removeOffer(offerId) {
+            if (String(this.activeOfferId) !== String(offerId)) return;
+            const previousOfferId = this.appliedOfferId;
+            const previousTouched = this.offerSelectionTouched;
+            this.appliedOfferId = null;
+            this.offerSelectionTouched = true;
+            if (!this.reconcileSelectedBogoQuantities()) {
+                this.appliedOfferId = previousOfferId;
+                this.offerSelectionTouched = previousTouched;
+                this.reconcileSelectedBogoQuantities();
+                return;
+            }
+            this.evaluateFreeProducts();
+        },
         reconcileSelectedBogoQuantities() {
             const offer = this.selectedBogoOffer;
             const updates = [];
@@ -4873,10 +4922,10 @@ mapOrder(o) {
         get cashbackSources() {
             let sources = [];
             if (this.couponApplied && this.appliedCouponObj && (parseFloat(this.appliedCouponObj.cashback_percent) > 0 || parseFloat(this.appliedCouponObj.cashback_fixed) > 0)) {
-                sources.push('Coupon: ' + this.appliedCouponObj.code);
+                sources.push('Coupon: ' + this.appliedCouponObj.code + (this.appliedCouponObj.id ? ' (ID: ' + this.appliedCouponObj.id + ')' : ''));
             }
             if (this.bestOrderOffer && (parseFloat(this.bestOrderOffer.cashback_percent) > 0 || parseFloat(this.bestOrderOffer.cashback_fixed) > 0)) {
-                sources.push('Offer: ' + this.bestOrderOffer.name);
+                sources.push('Offer: ' + this.bestOrderOffer.name + ' (ID: ' + this.bestOrderOffer.id + ')');
             }
             return sources.join(' & ');
         },

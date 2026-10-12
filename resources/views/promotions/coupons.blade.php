@@ -139,6 +139,7 @@
                     <thead class=" text-uppercase small">
                         <tr>
                             <th style="width:40px"><input type="checkbox" class="user-select-checkbox" @change="$event.isTrusted && toggleAll($event)" :checked="allSelected"></th>
+                            <th>ID</th>
                             <th>Code</th>
                             <th>Type</th>
                             <th>Value</th>
@@ -152,14 +153,15 @@
                     </thead>
                     <tbody>
                         <template x-if="loading">
-                            <tr><td colspan="10" class="text-center py-5"><div class="spinner-border text-primary"></div></td></tr>
+                            <tr><td colspan="11" class="text-center py-5"><div class="spinner-border text-primary"></div></td></tr>
                         </template>
                         <template x-if="!loading && coupons.length === 0">
-                            <tr><td colspan="10" class="text-center py-5 text-muted"><i class="bi bi-ticket-perforated fs-1 d-block mb-2"></i>No coupons found</td></tr>
+                            <tr><td colspan="11" class="text-center py-5 text-muted"><i class="bi bi-ticket-perforated fs-1 d-block mb-2"></i>No coupons found</td></tr>
                         </template>
                         <template x-for="c in coupons" :key="c.id">
                             <tr :class="{ 'selected': selected.includes(c.id), 'coupon-row-active': c.is_active }">
                                 <td><input type="checkbox" class="user-select-checkbox" :value="c.id" x-model="selected"></td>
+                                <td class="text-muted text-nowrap"><span class="font-monospace" x-text="c.id"></span></td>
                                 <td>
                                     <div class="d-flex align-items-center">
                                         <div class="p-2 rounded-circle me-3 d-flex align-items-center justify-content-center bg-primary bg-opacity-10 text-primary" style="width: 38px; height: 38px;">
