@@ -259,6 +259,12 @@
                                         </button>
                                         <ul class="dropdown-menu dropdown-menu-end">
                                             <li>
+                                                <a class="dropdown-item" href="#" @click.prevent="toggleStatus(c)">
+                                                    <i class="bi me-2" :class="c.is_active ? 'bi-pause-circle text-warning' : 'bi-check-circle text-success'"></i>
+                                                    <span x-text="c.is_active ? 'Deactivate' : 'Activate'"></span>
+                                                </a>
+                                            </li>
+                                            <li>
                                                 <a class="dropdown-item" href="#" @click.prevent="openModal(c)">
                                                     <i class="bi bi-pencil me-2"></i>Edit
                                                 </a>
@@ -682,8 +688,15 @@ function couponsModule() {
         },
 
         async toggleStatus(c) {
-            const res = await fetch(`/api/promotions/coupons/${c.id}/toggle`, { method: 'PATCH', headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, 'Accept': 'application/json' } });
-            if (res.ok) this.fetchCoupons();
+            try {
+                const res = await fetch(`/api/promotions/coupons/${c.id}/toggle`, { method: 'PATCH', headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, 'Accept': 'application/json' } });
+                const json = await res.json().catch(() => ({}));
+                if (!res.ok) throw new Error(json.message || `Could not update coupon status (${res.status}).`);
+                window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'success', message: json.message || 'Coupon status updated.' } }));
+                await this.fetchCoupons();
+            } catch (error) {
+                window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: error.message || 'Could not update coupon status.' } }));
+            }
         },
 
         async deleteCoupon(c) {
@@ -697,8 +710,16 @@ function couponsModule() {
         async bulkAction(action) {
             if (!this.selected.length) return;
             if (action === 'delete' && !confirm(`Delete ${this.selected.length} coupon(s)?`)) return;
-            await fetch('/api/promotions/coupons/bulk-action', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, 'Accept': 'application/json' }, body: JSON.stringify({ action, ids: this.selected }) });
-            this.selected = []; this.fetchCoupons();
+            try {
+                const res = await fetch('/api/promotions/coupons/bulk-action', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, 'Accept': 'application/json' }, body: JSON.stringify({ action, ids: this.selected }) });
+                const json = await res.json().catch(() => ({}));
+                if (!res.ok) throw new Error(json.message || `Could not ${action} selected coupons (${res.status}).`);
+                this.selected = [];
+                window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'success', message: json.message || `Selected coupons ${action}d successfully.` } }));
+                await this.fetchCoupons();
+            } catch (error) {
+                window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: error.message || `Could not ${action} selected coupons.` } }));
+            }
         },
     };
 }

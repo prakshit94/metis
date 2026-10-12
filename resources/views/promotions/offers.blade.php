@@ -277,6 +277,12 @@
                                         </button>
                                         <ul class="dropdown-menu dropdown-menu-end">
                                             <li>
+                                                <a class="dropdown-item" href="#" @click.prevent="toggleStatus(o)">
+                                                    <i class="bi me-2" :class="o.is_active ? 'bi-pause-circle text-warning' : 'bi-check-circle text-success'"></i>
+                                                    <span x-text="o.is_active ? 'Deactivate' : 'Activate'"></span>
+                                                </a>
+                                            </li>
+                                            <li>
                                                 <a class="dropdown-item" href="#" @click.prevent="openModal(o)">
                                                     <i class="bi bi-pencil me-2"></i>Edit
                                                 </a>
@@ -889,8 +895,15 @@ function offersModule() {
         },
 
         async toggleStatus(o) {
-            const res = await fetch(`/api/promotions/offers/${o.id}/toggle`, { method: 'PATCH', headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, 'Accept': 'application/json' } });
-            if (res.ok) this.fetchOffers();
+            try {
+                const res = await fetch(`/api/promotions/offers/${o.id}/toggle`, { method: 'PATCH', headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, 'Accept': 'application/json' } });
+                const json = await res.json().catch(() => ({}));
+                if (!res.ok) throw new Error(json.message || `Could not update offer status (${res.status}).`);
+                window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'success', message: json.message || 'Offer status updated.' } }));
+                await this.fetchOffers();
+            } catch (error) {
+                window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: error.message || 'Could not update offer status.' } }));
+            }
         },
 
         async deleteOffer(o) {
@@ -904,8 +917,16 @@ function offersModule() {
         async bulkAction(action) {
             if (!this.selected.length) return;
             if (action === 'delete' && !confirm(`Delete ${this.selected.length} offer(s)?`)) return;
-            await fetch('/api/promotions/offers/bulk-action', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, 'Accept': 'application/json' }, body: JSON.stringify({ action, ids: this.selected }) });
-            this.selected = []; this.fetchOffers();
+            try {
+                const res = await fetch('/api/promotions/offers/bulk-action', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, 'Accept': 'application/json' }, body: JSON.stringify({ action, ids: this.selected }) });
+                const json = await res.json().catch(() => ({}));
+                if (!res.ok) throw new Error(json.message || `Could not ${action} selected offers (${res.status}).`);
+                this.selected = [];
+                window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'success', message: json.message || `Selected offers ${action}d successfully.` } }));
+                await this.fetchOffers();
+            } catch (error) {
+                window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: error.message || `Could not ${action} selected offers.` } }));
+            }
         },
     };
 }
