@@ -58,7 +58,8 @@ class VillageController extends Controller implements HasMiddleware
                 $q->where('village_name', 'like', "%{$search}%")
                     ->orWhere('pincode', 'like', "{$search}%")
                     ->orWhere('taluka_name', 'like', "%{$search}%")
-                    ->orWhere('district_name', 'like', "%{$search}%");
+                    ->orWhere('district_name', 'like', "%{$search}%")
+                    ->orWhere('office_type_code', 'like', "%{$search}%");
             });
         }
 
@@ -539,7 +540,7 @@ class VillageController extends Controller implements HasMiddleware
                 'success'  => true,
                 'finished' => true,
                 'message'  => $pincode
-                    ? "Pincode {$pincode} is already synced. Nothing to do."
+                    ? "Pincode {$pincode} has no pending sync records. Nothing to do."
                     : 'All pincodes are already synced. Nothing to do.',
                 'errors'   => [],
             ]);
@@ -611,10 +612,15 @@ class VillageController extends Controller implements HasMiddleware
 
                 $officesList = $this->indiaPostOfficeList($details);
                 $hasValidData = false;
+                $hasInvalidData = false;
 
                 if (is_array($officesList) && count($officesList) > 0) {
                     foreach ($officesList as $office) {
                         if (! is_array($office)) {
+                            $hasInvalidData = true;
+                            Log::warning('India Post returned a non-object village office record.', [
+                                'pincode' => (string) $code,
+                            ]);
                             continue;
                         }
 
@@ -622,6 +628,7 @@ class VillageController extends Controller implements HasMiddleware
                         $officeId = $officeData['office_id'];
                         $officePincode = $officeData['pincode'];
                         if ($officePincode !== (string) $code || empty($office['office_type_code']) || empty($officeId)) {
+                            $hasInvalidData = true;
                             Log::warning('India Post returned an incomplete or mismatched village office record.', [
                                 'requested_pincode' => (string) $code,
                                 'returned_pincode' => $officePincode,
@@ -630,10 +637,12 @@ class VillageController extends Controller implements HasMiddleware
                             ]);
                         }
                         if ($officePincode !== (string) $code) {
+                            $hasInvalidData = true;
                             continue;
                         }
                         $villageName = $officeData['village_name'];
                         if (!is_string($villageName) || trim($villageName) === '') {
+                            $hasInvalidData = true;
                             Log::warning('India Post returned an office without a usable village name.', [
                                 'pincode' => (string) $code,
                                 'office_id' => $officeId,
@@ -642,6 +651,7 @@ class VillageController extends Controller implements HasMiddleware
                         }
 
                         if (trim((string) $villageName) === '') {
+                            $hasInvalidData = true;
                             continue;
                         }
                         $hasValidData = true;
@@ -684,44 +694,42 @@ class VillageController extends Controller implements HasMiddleware
                         'pincode' => (string) $code,
                         'response_item_count' => count($officesList),
                     ]);
-                    Village::where('pincode', $code)
-                        ->where(function ($q) {
-                            $q->whereNull('office_type_code')
-                                ->orWhereIn('office_type_code', ['INVALID', 'FAILED', 'API_ERROR', '']);
-                        })
-                        ->update(['office_type_code' => 'API_ERROR']);
+                    $this->markPincodeSyncStatus((string) $code, 'FAILED', $request->user()?->lob_state_name);
+                    $errors[] = $code;
+                } elseif ($hasInvalidData) {
+                    Log::warning('India Post returned partial village office data; unresolved records were marked failed.', [
+                        'pincode' => (string) $code,
+                    ]);
+                    $this->markPincodeSyncStatus((string) $code, 'FAILED', $request->user()?->lob_state_name);
                     $errors[] = $code;
                 }
 
                 // Mark pincodes with a genuinely empty response so they are never retried.
                 if (! $hasValidData && $officesList === []) {
-                    Village::where('pincode', $code)
-                           ->where(function ($q) {
-                               $q->whereNull('office_type_code')
-                                 ->orWhere('office_type_code', 'INVALID');
-                           })
-                           ->update(['office_type_code' => 'FAILED']);
+                    Log::warning('India Post returned no offices for a village pincode.', [
+                        'pincode' => (string) $code,
+                        'status' => 'FAILED',
+                    ]);
+                    $this->markPincodeSyncStatus((string) $code, 'FAILED', $request->user()?->lob_state_name);
                 }
             } catch (\Exception $e) {
                 Log::error("Failed to sync India Post pincode {$code}: " . $e->getMessage());
 
-                Village::where('pincode', $code)
-                       ->where(function ($q) {
-                           $q->whereNull('office_type_code')
-                             ->orWhereIn('office_type_code', ['INVALID', 'FAILED', 'API_ERROR']);
-                       })
-                       ->update(['office_type_code' => 'API_ERROR']);
+                $isTransientFailure = $e instanceof \Illuminate\Http\Client\ConnectionException
+                    || str_contains(strtolower($e->getMessage()), 'curl')
+                    || str_contains(strtolower($e->getMessage()), 'authenticate')
+                    || str_contains(strtolower($e->getMessage()), 'unauthorized')
+                    || str_contains(strtolower($e->getMessage()), 'timeout');
+                $this->markPincodeSyncStatus(
+                    (string) $code,
+                    $isTransientFailure ? 'API_ERROR' : 'FAILED',
+                    $request->user()?->lob_state_name
+                );
 
                 $errors[] = $code;
 
                 // Network or Auth errors
-                if (
-                    $e instanceof \Illuminate\Http\Client\ConnectionException
-                    || str_contains(strtolower($e->getMessage()), 'curl')
-                    || str_contains(strtolower($e->getMessage()), 'authenticate')
-                    || str_contains(strtolower($e->getMessage()), 'unauthorized')
-                    || str_contains(strtolower($e->getMessage()), 'timeout')
-                ) {
+                if ($isTransientFailure) {
                     Cache::forget('india_post_access_token'); // Clear token to force re-auth next time
 
                     // Instead of aborting with a 500 error, we tell the frontend to
@@ -942,9 +950,12 @@ class VillageController extends Controller implements HasMiddleware
     private function unsyncedVillageCondition(): \Closure
     {
         return static function ($query): void {
-            $query->whereNull('office_id')
-                ->orWhereNull('office_type_code')
-                ->orWhereIn('office_type_code', ['INVALID', 'FAILED', 'API_ERROR', '']);
+            $query->whereNull('office_type_code')
+                ->orWhereIn('office_type_code', ['INVALID', ''])
+                ->orWhere(function ($query): void {
+                    $query->whereNull('office_id')
+                        ->where('office_type_code', '<>', 'FAILED');
+                });
         };
     }
 
@@ -955,6 +966,31 @@ class VillageController extends Controller implements HasMiddleware
         return filled($village->office_id)
             && $officeType !== ''
             && !in_array($officeType, ['INVALID', 'FAILED', 'API_ERROR'], true);
+    }
+
+    private function markPincodeSyncStatus(string $pincode, string $status, ?string $stateName = null): void
+    {
+        $pendingQuery = Village::where('pincode', $pincode)
+            ->where($this->unsyncedVillageCondition());
+        $hasPendingRecords = $pendingQuery->exists();
+        if ($hasPendingRecords) {
+            $pendingQuery->update(['office_type_code' => $status]);
+        }
+
+        // Persist the failure as a searchable management row when there was no
+        // unresolved row to annotate. This preserves all completed office rows.
+        $hasStatusRow = Village::where('pincode', $pincode)
+            ->where('village_name', 'India Post sync failure')
+            ->where('office_type_code', $status)
+            ->exists();
+        if (!$hasPendingRecords && !$hasStatusRow && strlen($pincode) <= 10) {
+            Village::create([
+                'village_name' => 'India Post sync failure',
+                'pincode' => $pincode,
+                'state_name' => $stateName,
+                'office_type_code' => $status,
+            ]);
+        }
     }
 
     /**
@@ -968,6 +1004,7 @@ class VillageController extends Controller implements HasMiddleware
 
         $term = (string) $request->input('q');
         $query = Village::search($term)
+            ->where('village_name', '<>', 'India Post sync failure')
             ->with(['services' => function ($q) {
                 $q->where('is_active', true)
                   ->where('village_service_mappings.is_available', true);
