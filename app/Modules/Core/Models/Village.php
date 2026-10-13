@@ -35,6 +35,11 @@ class Village extends Model implements Auditable
         'is_rolled_out',
     ];
 
+    protected $casts = [
+        'delivery_office_flag' => 'boolean',
+        'is_rolled_out' => 'boolean',
+    ];
+
     /**
      * Mutator to normalize village name for faster searching
      */

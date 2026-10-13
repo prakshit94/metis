@@ -225,20 +225,32 @@ class VillageController extends Controller implements HasMiddleware
             ? [$lobStateName]
             : ($request->filled('state') ? array_map('trim', explode(',', (string) $request->state)) : []);
 
-        $districtsList = Village::when(!empty($targetStates), function ($q) use ($targetStates) {
-            $q->whereIn('state_name', $targetStates);
+        $districtsList = Village::when($lobStateName || !empty($targetStates), function ($q) use ($targetStates, $lobStateName) {
+            if ($lobStateName) {
+                $q->where('state_name', $lobStateName);
+            } elseif (!empty($targetStates)) {
+                $q->whereIn('state_name', $targetStates);
+            }
         })->distinct()->pluck('district_name')->filter()->sort()->values();
 
         $targetDistricts = $request->filled('district') ? array_map('trim', explode(',', (string) $request->district)) : [];
-        $talukasList = Village::when(!empty($targetStates), function ($q) use ($targetStates) {
-            $q->whereIn('state_name', $targetStates);
+        $talukasList = Village::when($lobStateName || !empty($targetStates), function ($q) use ($targetStates, $lobStateName) {
+            if ($lobStateName) {
+                $q->where('state_name', $lobStateName);
+            } elseif (!empty($targetStates)) {
+                $q->whereIn('state_name', $targetStates);
+            }
         })->when(!empty($targetDistricts), function ($q) use ($targetDistricts) {
             $q->whereIn('district_name', $targetDistricts);
         })->distinct()->pluck('taluka_name')->filter()->sort()->values();
 
         $targetTalukas = $request->filled('taluka') ? array_map('trim', explode(',', (string) $request->taluka)) : [];
-        $villagesList = !empty($targetTalukas) ? Village::when(!empty($targetStates), function ($q) use ($targetStates) {
-            $q->whereIn('state_name', $targetStates);
+        $villagesList = !empty($targetTalukas) ? Village::when($lobStateName || !empty($targetStates), function ($q) use ($targetStates, $lobStateName) {
+            if ($lobStateName) {
+                $q->where('state_name', $lobStateName);
+            } elseif (!empty($targetStates)) {
+                $q->whereIn('state_name', $targetStates);
+            }
         })->when(!empty($targetDistricts), function ($q) use ($targetDistricts) {
             $q->whereIn('district_name', $targetDistricts);
         })->whereIn('taluka_name', $targetTalukas)
@@ -394,19 +406,39 @@ class VillageController extends Controller implements HasMiddleware
             'office_type_code' => ['nullable', 'string', 'max:255'],
             'delivery_office_flag' => ['nullable', 'boolean'],
             'is_rolled_out' => ['nullable', 'boolean'],
+            'services' => ['sometimes', 'array'],
+            'services.*' => ['array'],
+            'services.*.is_available' => ['required', 'boolean'],
+            'services.*.priority' => ['nullable', 'integer', 'min:1'],
+            'services.*.remarks' => ['nullable', 'string', 'max:500'],
+            'services.*.serviceable_from_date' => ['nullable', 'date'],
+            'services.*.serviceable_to_date' => ['nullable', 'date', 'after_or_equal:services.*.serviceable_from_date'],
         ]);
 
-        $village->update($validated);
+        if (isset($validated['services'])) {
+            $serviceIds = array_map('intval', array_keys($validated['services']));
+            $validServiceIds = Service::whereIn('id', $serviceIds)->pluck('id')->map(fn ($id) => (int) $id)->all();
+            if (count(array_unique($validServiceIds)) !== count(array_unique($serviceIds))) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'services' => 'One or more selected services are invalid.',
+                ]);
+            }
+        }
 
-        if ($request->has('services')) {
-            $services = $request->input('services'); // e.g. [service_id => [is_available => 1, priority => 10, remarks => '...']]
+        DB::transaction(function () use ($village, $validated): void {
+            $village->update(collect($validated)->except('services')->all());
+
+            if (!isset($validated['services'])) {
+                return;
+            }
+            $services = $validated['services'];
             foreach ($services as $serviceId => $data) {
                 if (! empty($data['is_available'])) {
                     VillageServiceMapping::updateOrCreate(
                         ['village_id' => $village->id, 'service_id' => (int) $serviceId],
                         [
                             'is_available' => true,
-                            'priority' => (int) ($data['priority'] ?? 0),
+                            'priority' => (int) ($data['priority'] ?? 1),
                             'remarks' => $data['remarks'] ?? null,
                             'serviceable_from_date' => $data['serviceable_from_date'] ?? null,
                             'serviceable_to_date' => $data['serviceable_to_date'] ?? null,
@@ -418,7 +450,9 @@ class VillageController extends Controller implements HasMiddleware
                         ->update(['is_available' => false]);
                 }
             }
-        }
+        });
+
+        $village->refresh();
 
         return response()->json([
             'message' => "Village [{$village->village_name}] updated successfully.",
@@ -482,13 +516,19 @@ class VillageController extends Controller implements HasMiddleware
 
         $pincodesToSync = [];
         if ($pincode) {
-            $pincodesToSync[] = $pincode;
+            $hasVillageRecords = Village::where('pincode', $pincode)->exists();
+            $hasUnsyncedVillages = Village::where('pincode', $pincode)
+                ->where($this->unsyncedVillageCondition())
+                ->exists();
+
+            // Keep support for importing a pincode that has no local records, but
+            // never call India Post again when every local office is already synced.
+            if (!$hasVillageRecords || $hasUnsyncedVillages) {
+                $pincodesToSync[] = $pincode;
+            }
         } else {
-            $pincodesToSync = Village::where(function ($q) {
-                $q->whereNull('office_id')
-                  ->orWhereNull('office_type_code')
-                  ->orWhereIn('office_type_code', ['INVALID', '']);
-            })->select('pincode')->distinct()->pluck('pincode')->toArray();
+            $pincodesToSync = Village::where($this->unsyncedVillageCondition())
+                ->select('pincode')->distinct()->pluck('pincode')->toArray();
         }
 
         // Nothing left to sync — clear flags and return done immediately
@@ -498,7 +538,9 @@ class VillageController extends Controller implements HasMiddleware
             return response()->json([
                 'success'  => true,
                 'finished' => true,
-                'message'  => 'All pincodes are already synced. Nothing to do.',
+                'message'  => $pincode
+                    ? "Pincode {$pincode} is already synced. Nothing to do."
+                    : 'All pincodes are already synced. Nothing to do.',
                 'errors'   => [],
             ]);
         }
@@ -533,6 +575,15 @@ class VillageController extends Controller implements HasMiddleware
                 ]);
             }
 
+            // A preceding batch or another request may have completed this
+            // pincode after the candidate list was built.
+            $hasVillageRecords = Village::where('pincode', $code)->exists();
+            if ($hasVillageRecords && !Village::where('pincode', $code)
+                ->where($this->unsyncedVillageCondition())
+                ->exists()) {
+                continue;
+            }
+
             try {
                 if (method_exists($indiaPostProvider, 'getPincodeDetails')) {
                     $details = $indiaPostProvider->getPincodeDetails((string) $code);
@@ -558,8 +609,8 @@ class VillageController extends Controller implements HasMiddleware
                     }
                 }
 
+                $officesList = $this->indiaPostOfficeList($details);
                 $hasValidData = false;
-                $officesList  = isset($details['data']) && is_array($details['data']) ? $details['data'] : $details;
 
                 if (is_array($officesList) && count($officesList) > 0) {
                     foreach ($officesList as $office) {
@@ -567,43 +618,60 @@ class VillageController extends Controller implements HasMiddleware
                             continue;
                         }
 
+                        $officeData = $this->normalizeIndiaPostOffice($office, (string) $code);
+                        $officeId = $officeData['office_id'];
+                        $officePincode = $officeData['pincode'];
+                        if ($officePincode !== (string) $code || empty($office['office_type_code']) || empty($officeId)) {
+                            Log::warning('India Post returned an incomplete or mismatched village office record.', [
+                                'requested_pincode' => (string) $code,
+                                'returned_pincode' => $officePincode,
+                                'office_id_present' => !empty($officeId),
+                                'office_type_present' => !empty($office['office_type_code']),
+                            ]);
+                        }
+                        if ($officePincode !== (string) $code) {
+                            continue;
+                        }
+                        $villageName = $officeData['village_name'];
+                        if (!is_string($villageName) || trim($villageName) === '') {
+                            Log::warning('India Post returned an office without a usable village name.', [
+                                'pincode' => (string) $code,
+                                'office_id' => $officeId,
+                            ]);
+                            continue;
+                        }
+
+                        if (trim((string) $villageName) === '') {
+                            continue;
+                        }
                         $hasValidData = true;
-                        $villageName  = ! empty($office['village_name']) && $office['village_name'] !== 'Choose an option'
-                            ? $office['village_name']
-                            : ($office['office_name'] ?? 'Unknown');
 
                         $existingVillage = Village::where('pincode', $code)
-                            ->where('office_id', $office['office_id'] ?? null)
+                            ->when($officeId !== null && $officeId !== '', fn ($q) => $q->where('office_id', $officeId), fn ($q) => $q->whereNull('office_id'))
                             ->first();
+
+                        // A pincode may contain both completed offices and an
+                        // unsynced stub. Preserve completed office data exactly.
+                        if ($existingVillage && $this->isVillageSynced($existingVillage)) {
+                            continue;
+                        }
 
                         if (! $existingVillage) {
                             // Adopt an un-synced stub record to avoid orphaned duplicates
                             $existingVillage = Village::where('pincode', $code)
-                                ->where(function ($q) {
-                                    $q->whereNull('office_id')
-                                      ->orWhereNull('office_type_code')
-                                      ->orWhereIn('office_type_code', ['INVALID', 'FAILED', 'API_ERROR', '']);
-                                })
+                                ->where($this->unsyncedVillageCondition())
                                 ->first();
                         }
 
                         $updateData = [
-                            'village_name'         => $villageName,
-                            'post_so_name'         => $office['office_name'] ?? null,
-                            'taluka_name'          => $office['taluk_name'] ?? null,
-                            'district_name'        => $office['city_name'] ?? null,
-                            'state_name'           => $office['state_name'] ?? null,
-                            'office_type_code'     => $office['office_type_code'] ?? null,
-                            'delivery_office_flag' => $office['delivery_office_flag'] ?? false,
-                            'is_rolled_out'        => $office['is_rolled_out'] ?? false,
+                            ...$officeData,
                         ];
 
                         if ($existingVillage) {
-                            $updateData['office_id'] = $office['office_id'] ?? null;
+                            $updateData['office_id'] = $officeId;
                             $existingVillage->update($updateData);
                         } else {
-                            $updateData['pincode']   = $office['pincode'] ?? $code;
-                            $updateData['office_id'] = $office['office_id'] ?? null;
+                            $updateData['office_id'] = $officeId;
                             Village::create($updateData);
                         }
 
@@ -611,8 +679,22 @@ class VillageController extends Controller implements HasMiddleware
                     }
                 }
 
-                // Mark pincodes with no valid offices so they are never retried
-                if (! $hasValidData) {
+                if (!$hasValidData && $officesList !== []) {
+                    Log::warning('India Post returned no usable office records for a village pincode.', [
+                        'pincode' => (string) $code,
+                        'response_item_count' => count($officesList),
+                    ]);
+                    Village::where('pincode', $code)
+                        ->where(function ($q) {
+                            $q->whereNull('office_type_code')
+                                ->orWhereIn('office_type_code', ['INVALID', 'FAILED', 'API_ERROR', '']);
+                        })
+                        ->update(['office_type_code' => 'API_ERROR']);
+                    $errors[] = $code;
+                }
+
+                // Mark pincodes with a genuinely empty response so they are never retried.
+                if (! $hasValidData && $officesList === []) {
                     Village::where('pincode', $code)
                            ->where(function ($q) {
                                $q->whereNull('office_type_code')
@@ -739,7 +821,7 @@ class VillageController extends Controller implements HasMiddleware
                     'serviceable_from_date' => null,
                     'serviceable_to_date' => null,
                     'remarks' => 'Bulk updated via admin',
-                    'priority' => 0,
+                    'priority' => 1,
                     'created_at' => now(),
                     'updated_at' => now(),
                 ];
@@ -775,36 +857,104 @@ class VillageController extends Controller implements HasMiddleware
     {
         return Cache::remember('india_post_pincode_lookup_'.$pincode, now()->addHour(), function () use ($indiaPostProvider, $pincode): array {
             $response = $indiaPostProvider->getPincodeDetails($pincode);
-            $items = isset($response['data']) && is_array($response['data']) ? $response['data'] : $response;
+            $items = $this->indiaPostOfficeList($response);
 
             return collect($items)
                 ->filter(fn ($office) => is_array($office))
                 ->map(function (array $office) use ($pincode): array {
-                    $isTruthy = static fn ($value): bool => in_array(
-                        strtolower(trim((string) $value)),
-                        ['1', 'true', 'yes', 'y'],
-                        true
-                    );
+                    $normalized = $this->normalizeIndiaPostOffice($office, $pincode);
+                    if ($normalized['pincode'] !== $pincode) {
+                        Log::warning('India Post returned an office for a different pincode during village creation.', [
+                            'requested_pincode' => $pincode,
+                            'returned_pincode' => $normalized['pincode'],
+                            'office_id' => $normalized['office_id'],
+                        ]);
+                    }
 
-                    return [
-                        'village_name' => ! empty($office['village_name']) && $office['village_name'] !== 'Choose an option'
-                            ? $office['village_name']
-                            : ($office['office_name'] ?? ''),
-                        'pincode' => (string) ($office['pincode'] ?? $pincode),
-                        'post_so_name' => $office['office_name'] ?? null,
-                        'taluka_name' => $office['taluk_name'] ?? null,
-                        'district_name' => $office['city_name'] ?? null,
-                        'state_name' => $office['state_name'] ?? null,
-                        'office_id' => isset($office['office_id']) ? (string) $office['office_id'] : null,
-                        'office_type_code' => $office['office_type_code'] ?? null,
-                        'delivery_office_flag' => $isTruthy($office['delivery_office_flag'] ?? false),
-                        'is_rolled_out' => $isTruthy($office['is_rolled_out'] ?? false),
-                    ];
+                    return $normalized;
                 })
+                ->filter(fn (array $office) => $office['pincode'] === $pincode)
                 ->filter(fn (array $office) => trim($office['village_name']) !== '')
                 ->values()
                 ->all();
         });
+    }
+
+    private function indiaPostOfficeList(mixed $response): array
+    {
+        if (!is_array($response)
+            || (array_key_exists('success', $response) && !$this->indiaPostBoolean($response['success']))) {
+            throw new \UnexpectedValueException('India Post returned an unsuccessful or invalid response payload.');
+        }
+
+        $offices = $response['data'] ?? null;
+        if (is_array($offices) && !array_is_list($offices)
+            && (isset($offices['office_id']) || isset($offices['office_name']))) {
+            $offices = [$offices];
+        } elseif ($offices === null && array_is_list($response)) {
+            $offices = $response;
+        } elseif ($offices === null && (isset($response['office_id']) || isset($response['office_name']))) {
+            $offices = [$response];
+        }
+
+        if (!is_array($offices) || !array_is_list($offices)) {
+            throw new \UnexpectedValueException('India Post response did not contain a valid office list.');
+        }
+
+        return $offices;
+    }
+
+    /** Map the India Post office payload to the persisted village columns. */
+    private function normalizeIndiaPostOffice(array $office, string $fallbackPincode): array
+    {
+        $villageName = $office['village_name'] ?? null;
+        if (!is_string($villageName) || trim($villageName) === '' || $villageName === 'Choose an option') {
+            $villageName = $office['office_name'] ?? '';
+        }
+
+        $officeId = $office['office_id'] ?? null;
+
+        $pincode = trim((string) ($office['pincode'] ?? $office['pin_code'] ?? ''));
+
+        return [
+            'village_name' => is_string($villageName) ? trim($villageName) : '',
+            'pincode' => $pincode !== '' ? $pincode : $fallbackPincode,
+            'post_so_name' => $office['office_name'] ?? $office['post_so_name'] ?? null,
+            'taluka_name' => $office['taluk_name'] ?? $office['taluka_name'] ?? $office['taluk'] ?? null,
+            'district_name' => $office['city_name'] ?? $office['district_name'] ?? $office['district'] ?? null,
+            'state_name' => $office['state_name'] ?? $office['state'] ?? null,
+            'office_id' => $officeId !== null && $officeId !== '' ? (string) $officeId : null,
+            'office_type_code' => $office['office_type_code'] ?? null,
+            'delivery_office_flag' => $this->indiaPostBoolean($office['delivery_office_flag'] ?? false),
+            'is_rolled_out' => $this->indiaPostBoolean($office['is_rolled_out'] ?? false),
+        ];
+    }
+
+    private function indiaPostBoolean(mixed $value): bool
+    {
+        if (is_bool($value)) {
+            return $value;
+        }
+
+        return in_array(strtolower(trim((string) $value)), ['1', 'true', 'yes', 'y'], true);
+    }
+
+    private function unsyncedVillageCondition(): \Closure
+    {
+        return static function ($query): void {
+            $query->whereNull('office_id')
+                ->orWhereNull('office_type_code')
+                ->orWhereIn('office_type_code', ['INVALID', 'FAILED', 'API_ERROR', '']);
+        };
+    }
+
+    private function isVillageSynced(Village $village): bool
+    {
+        $officeType = strtoupper(trim((string) $village->office_type_code));
+
+        return filled($village->office_id)
+            && $officeType !== ''
+            && !in_array($officeType, ['INVALID', 'FAILED', 'API_ERROR'], true);
     }
 
     /**
@@ -989,10 +1139,14 @@ class VillageController extends Controller implements HasMiddleware
         }
 
         if ($request->filled('service_id')) {
-            $serviceId = (int) $request->input('service_id');
-            $query->whereHas('mappings', function ($q) use ($serviceId): void {
-                $q->where('service_id', $serviceId)->where('is_available', true);
-            });
+            if ((string) $request->input('service_id') === 'unassigned') {
+                $query->whereDoesntHave('mappings', fn ($q) => $q->where('is_available', true));
+            } else {
+                $serviceId = (int) $request->input('service_id');
+                $query->whereHas('mappings', function ($q) use ($serviceId): void {
+                    $q->where('service_id', $serviceId)->where('is_available', true);
+                });
+            }
         }
 
         if ($request->filled('office_type_code')) {
