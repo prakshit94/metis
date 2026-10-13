@@ -168,6 +168,18 @@ document.addEventListener('alpine:init', () => {
       return list.filter((t) => t && t.toLowerCase().includes(this.officeTypeSearch.toLowerCase()));
     },
 
+    clearFilterSearch(type) {
+      const searchProperty = {
+        state: 'stateSearch',
+        district: 'districtSearch',
+        taluka: 'talukaSearch',
+        village: 'villageSearch',
+        office_type: 'officeTypeSearch',
+      }[type];
+
+      if (searchProperty) this[searchProperty] = '';
+    },
+
     toggleFilter(type, value) {
       if (type === 'state') {
         if (this.stateFilter.includes(value))
@@ -196,6 +208,7 @@ document.addEventListener('alpine:init', () => {
           this.officeTypeFilter = this.officeTypeFilter.filter((v) => v !== value);
         else this.officeTypeFilter.push(value);
       }
+      this.clearFilterSearch(type);
       this.filterVillages();
     },
 
@@ -227,6 +240,7 @@ document.addEventListener('alpine:init', () => {
         if (this.officeTypeFilter.length === list.length) this.officeTypeFilter = [];
         else this.officeTypeFilter = [...list];
       }
+      this.clearFilterSearch(type);
       this.filterVillages();
     },
 
