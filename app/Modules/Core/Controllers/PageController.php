@@ -1145,9 +1145,9 @@ class PageController extends Controller
 
             $columns = [
                 'Order ID', 'Order No', 'Order Date', 'Status', 'Order Type',
-                'Order Subtotal', 'Order Tax', 'Order Discount', 'Order Total',
+                'Order Subtotal', 'Order Tax', 'Order Discount', 'Grand Total',
                 'Coupon Code', 'Applied Offer ID', 'Wallet Used', 'Cashback Earned',
-                'Customer First Name', 'Customer Middle Name', 'Customer Last Name',
+                'Customer Name',
                 'Company Name', 'Customer Email', 'Customer Phone', 'Alternate Mobile', 'Relative Name', 'Relative Phone', 'GST Number', 'PAN Number',
                 'Billing Address 1', 'Billing Address 2', 'Billing Village', 'Billing PO/BO', 'Billing Taluka', 'Billing District', 'Billing City', 'Billing State', 'Billing Pincode',
                 'Shipping Address 1', 'Shipping Address 2', 'Shipping Village', 'Shipping PO/BO', 'Shipping Taluka', 'Shipping District', 'Shipping City', 'Shipping State', 'Shipping Pincode',
@@ -1240,7 +1240,11 @@ class PageController extends Controller
                         $order->id, $order->order_no, $order->order_date, $order->status, $order->type,
                         $order->total_amount, $order->tax_amount, $order->discount_amount, $order->net_amount,
                         $order->coupon_code ?? '-', $order->applied_offer_id ?? '-', $order->wallet_amount_used, $order->cashback_earned,
-                        $customerFirstName ?: '-', $customerMiddleName ?: '-', $customerLastName ?: '-',
+                        trim(implode(' ', array_filter([
+                            $customerFirstName,
+                            $customerMiddleName,
+                            $customerLastName,
+                        ]))) ?: '-',
                         $customerCompanyName ?: '-', $customerEmail ?: '-', $customerPhone ?: '-', $customerAltMobile ?: '-', $customerRelName ?: '-', $customerRelPhone ?: '-', $customerGst ?: '-', $customerPan ?: '-',
                         $billingAdd1 ?: '-', $billingAdd2 ?: '-', $billingVillage ?: '-', $billingPO ?: '-', $billingTaluka ?: '-', $billingDistrict ?: '-', $billingCity ?: '-', $billingState ?: '-', $billingPin ?: '-',
                         $shippingAdd1 ?: '-', $shippingAdd2 ?: '-', $shippingVillage ?: '-', $shippingPO ?: '-', $shippingTaluka ?: '-', $shippingDistrict ?: '-', $shippingCity ?: '-', $shippingState ?: '-', $shippingPin ?: '-',
