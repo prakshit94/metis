@@ -31,7 +31,7 @@ class PollIndiaPostTracking extends Command
     {
         // Get all in-transit shipments for India Post
         $shipments = Shipment::where('carrier_name', 'India Post')
-            ->where('status', 'in_transit')
+            ->whereIn('status', ['pending', 'in_transit'])
             ->whereNotNull('tracking_no')
             ->get();
 
@@ -52,7 +52,15 @@ class PollIndiaPostTracking extends Command
                 $trackingData = $provider->getTrackingStatus($chunk);
 
                 foreach ($trackingData as $data) {
-                    $trackingNumber = $data['booking_details']['article_number'];
+                    if (! is_array($data)) {
+                        Log::warning('India Post tracking response contained a non-object record.');
+                        continue;
+                    }
+                    $trackingNumber = $data['booking_details']['article_number'] ?? null;
+                    if (! $trackingNumber) {
+                        Log::warning('India Post tracking response omitted booking_details.article_number', ['keys' => array_keys($data)]);
+                        continue;
+                    }
                     $deliveryStatus = $data['del_status']['del_status'] ?? null;
                     $events = $data['tracking_details'] ?? [];
 
@@ -61,34 +69,77 @@ class PollIndiaPostTracking extends Command
                         continue;
                     }
 
-                    // Record the latest event
-                    if (! empty($events)) {
-                        $latestEvent = end($events);
-                        $eventDesc = $latestEvent['event'] ?? 'Update';
+                    // Preserve the full latest provider response, including booking
+                    // and delivery fields that do not have dedicated local columns.
+                    $shipment->update(['india_post_tracking_response' => $data]);
 
-                        // Simple deduplication logic
+                    // Persist every event, idempotently, using the source event time.
+                    foreach ($events as $event) {
+                        if (! is_array($event)) {
+                            Log::warning('India Post tracking response contained a non-object event', ['tracking_number' => $trackingNumber]);
+                            continue;
+                        }
+                        $eventDesc = $event['event'] ?? 'Update';
+                        try {
+                            $occurredAt = \Carbon\Carbon::parse($event['date'] ?? now());
+                            if (isset($event['time']) && ! preg_match('/T\d{2}:\d{2}/', (string) ($event['date'] ?? ''))) {
+                                $occurredAt = \Carbon\Carbon::parse(($event['date'] ?? now()->toDateString()).' '.$event['time']);
+                            }
+                        } catch (\Throwable $e) {
+                            Log::warning('Could not parse India Post tracking event timestamp', ['tracking_number' => $trackingNumber, 'event' => $event]);
+                            $occurredAt = now();
+                        }
+
                         $exists = ShipmentTrackingEvent::where('shipment_id', $shipment->id)
-                            ->where('description', $eventDesc)
+                            ->where('event_name', $eventDesc)
+                            ->where('location', $event['office'] ?? 'Unknown')
+                            ->where('occurred_at', $occurredAt)
                             ->exists();
-
                         if (! $exists) {
                             ShipmentTrackingEvent::create([
                                 'shipment_id' => $shipment->id,
-                                'status' => 'in_transit',
-                                'location' => $latestEvent['office'] ?? 'Unknown',
-                                'description' => $eventDesc,
-                                'tracked_at' => now(),
+                                'event_name' => $eventDesc,
+                                'location' => $event['office'] ?? 'Unknown',
+                                'description' => $event['remarks'] ?? $eventDesc,
+                                'occurred_at' => $occurredAt,
+                                'provider' => 'india_post',
+                                'provider_event_code' => $eventDesc,
+                                'provider_office_id' => $event['officeid'] ?? null,
+                                'provider_remarks' => $event['remarks'] ?? null,
+                                'provider_is_rts' => $event['rts'] ?? null,
+                                'provider_payload' => [
+                                    'booking_details' => $data['booking_details'] ?? null,
+                                    'tracking_event' => $event,
+                                    'del_status' => $data['del_status'] ?? null,
+                                ],
                             ]);
+                        }
+                    }
+
+                    if (! empty($events) && $shipment->status === 'pending' && $deliveryStatus !== 'delivered') {
+                        $shipment->update(['status' => 'in_transit', 'shipped_at' => $shipment->shipped_at ?? now()]);
+                        if ($shipment->order && $shipment->order->status === 'ready_to_ship') {
+                            $shipment->order->update(['status' => 'dispatched']);
                         }
                     }
 
                     // If delivered, update the status
                     if ($deliveryStatus === 'delivered' && $shipment->status !== 'delivered') {
+                        $deliveredAt = now();
+                        if (! empty($data['booking_details']['delivery_confirmed_on'])) {
+                            try {
+                                $deliveredAt = \Carbon\Carbon::parse($data['booking_details']['delivery_confirmed_on']);
+                            } catch (\Throwable $e) {
+                                Log::warning('Could not parse India Post delivery confirmation timestamp', ['tracking_number' => $trackingNumber]);
+                            }
+                        }
                         $shipment->update([
                             'status' => 'delivered',
-                            'delivered_at' => now(),
+                            'delivered_at' => $deliveredAt,
                         ]);
-                        $shipment->order->update(['status' => 'delivered']);
+                        if ($shipment->order) {
+                            $shipment->order->update(['status' => 'delivered']);
+                        }
                         $this->info("Shipment {$trackingNumber} marked as delivered.");
                     }
                 }

@@ -15,25 +15,26 @@ class IndiaPostSettingsSeeder extends Seeder
     public function run(): void
     {
         $officeId = (string) time();
+        $provider = config('shipping.providers.india_post');
         $defaultOffice = [
             [
                 'id' => $officeId,
-                'pickup_dropoff_office_id' => '21260024',
-                'drop_off_pincode' => '600001',
-                'booking_office_name' => 'Default Booking Office',
-                'booking_office_pin' => '600001',
+                'pickup_dropoff_office_id' => $provider['pickup_dropoff_office_id'],
+                'drop_off_pincode' => $provider['drop_off_pincode'],
+                'booking_office_name' => $provider['booking_office_name'],
+                'booking_office_pin' => $provider['booking_office_pin'],
                 'status' => 'active',
                 'is_default' => true,
-                'api_base_url' => 'https://test.cept.gov.in/beextcustomer',
-                'api_username' => '9999999999',
-                'api_password' => Crypt::encryptString('Dop@1234'),
-                'bulk_customer_id' => '3000064781',
-                'contract_sp_doc' => '41585456',
-                'contract_sp_parcel' => '41585456',
-                'contract_bp' => '41367422',
-                'contract_24_sp_doc' => '41469430',
-                'contract_24_spp_parspl' => '41918281',
-                'contract_48_sp_doc' => '41471113',
+                'api_base_url' => $provider['base_url'],
+                'api_username' => $provider['username'],
+                'api_password' => Crypt::encryptString($provider['password']),
+                'bulk_customer_id' => $provider['bulk_customer_id'],
+                'contract_sp_doc' => $provider['contracts']['SP_INLAND_DOC'],
+                'contract_sp_parcel' => $provider['contracts']['SP_INLAND_PARCEL'],
+                'contract_bp' => $provider['contracts']['BUSINESS_PARCEL'],
+                'contract_24_sp_doc' => $provider['contracts']['24_SPEEDPOST_DOC'],
+                'contract_24_spp_parspl' => $provider['contracts']['24_SPP_PARSPL'],
+                'contract_48_sp_doc' => $provider['contracts']['48_SPEEDPOST_DOC'],
             ],
         ];
 
@@ -42,16 +43,22 @@ class IndiaPostSettingsSeeder extends Seeder
             ['value' => json_encode($defaultOffice)]
         );
 
-        // Seed a default active barcode range for this office
-        IndiaPostBarcodeRange::updateOrCreate(
-            ['office_id' => $officeId, 'prefix' => 'EA'],
-            [
-                'start_sequence' => 10000000,
-                'end_sequence' => 19999999,
-                'current_sequence' => 10000000,
-                'status' => 'active',
-            ]
-        );
+        // Never seed synthetic AWB numbers in production. India Post assigns
+        // ranges to the customer; configure the assigned range explicitly.
+        $barcodePrefix = $provider['barcode']['prefix'];
+        if ($barcodePrefix) {
+            $start = (int) $provider['barcode']['start'];
+            $end = (int) $provider['barcode']['end'];
+            IndiaPostBarcodeRange::updateOrCreate(
+                ['office_id' => $officeId, 'prefix' => $barcodePrefix],
+                [
+                    'start_sequence' => $start,
+                    'end_sequence' => $end,
+                    'current_sequence' => $start,
+                    'status' => 'active',
+                ]
+            );
+        }
 
         $this->command->info('India Post default office and barcode range seeded successfully!');
     }

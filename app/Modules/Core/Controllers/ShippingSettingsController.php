@@ -18,11 +18,12 @@ class ShippingSettingsController extends Controller
         // Scrub passwords before sending to frontend
         $offices = isset($settings['india_post_offices']) ? json_decode($settings['india_post_offices'], true) : [];
         if (is_array($offices)) {
+            $offices = array_values(array_filter($offices, 'is_array'));
             foreach ($offices as &$office) {
                 $office['api_password'] = '';
                 
                 // Calculate AWB Statistics from DB instead of JSON config
-                $activeRange = \App\Models\IndiaPostBarcodeRange::where('office_id', $office['id'])
+                $activeRange = \App\Models\IndiaPostBarcodeRange::where('office_id', $office['id'] ?? '')
                     ->where('status', 'active')
                     ->first();
                     
@@ -52,10 +53,15 @@ class ShippingSettingsController extends Controller
                     ];
                 }
             }
-            $settings['india_post_offices'] = json_encode($offices);
+        } else {
+            $offices = [];
         }
 
-        return view('shipping.settings', compact('settings'));
+        return view('shipping.settings', [
+            'offices' => $offices,
+            'defaultIndiaPostBaseUrl' => config('shipping.providers.india_post.base_url'),
+            'isProduction' => app()->environment('production'),
+        ]);
     }
 
     /**
@@ -148,9 +154,9 @@ class ShippingSettingsController extends Controller
         $range = \App\Models\IndiaPostBarcodeRange::findOrFail($rangeId);
 
         $validated = $request->validate([
-            'prefix' => 'required|string|max:10',
-            'start_sequence' => 'required|integer|min:0',
-            'end_sequence' => 'required|integer|gt:start_sequence',
+            'prefix' => ['required', 'regex:/^[A-Z]{2}$/i'],
+            'start_sequence' => 'required|integer|min:0|max:99999999',
+            'end_sequence' => 'required|integer|gt:start_sequence|max:99999999',
         ]);
 
         if ($validated['end_sequence'] < $range->current_sequence) {
@@ -171,7 +177,7 @@ class ShippingSettingsController extends Controller
         }
 
         $range->update([
-            'prefix' => $validated['prefix'],
+            'prefix' => strtoupper($validated['prefix']),
             'start_sequence' => $validated['start_sequence'],
             'end_sequence' => $validated['end_sequence'],
             'current_sequence' => $newCurrentSequence,
@@ -190,9 +196,9 @@ class ShippingSettingsController extends Controller
     public function storeRange(Request $request, string $officeId)
     {
         $validated = $request->validate([
-            'prefix' => 'required|string|max:10',
-            'start_sequence' => 'required|integer|min:0',
-            'end_sequence' => 'required|integer|gt:start_sequence',
+            'prefix' => ['required', 'regex:/^[A-Z]{2}$/i'],
+            'start_sequence' => 'required|integer|min:0|max:99999999',
+            'end_sequence' => 'required|integer|gt:start_sequence|max:99999999',
         ]);
 
         $hasActive = \App\Models\IndiaPostBarcodeRange::where('office_id', $officeId)

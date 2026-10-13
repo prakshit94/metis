@@ -730,7 +730,7 @@ class VillageController extends Controller implements HasMiddleware
 
                 // Network or Auth errors
                 if ($isTransientFailure) {
-                    Cache::forget('india_post_access_token'); // Clear token to force re-auth next time
+                    $indiaPostProvider->clearAccessToken();
 
                     // Instead of aborting with a 500 error, we tell the frontend to
                     // automatically continue to the next batch. The broken token is cleared,

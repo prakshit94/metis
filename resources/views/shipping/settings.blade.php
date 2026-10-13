@@ -14,6 +14,12 @@
         </div>
         
     </div>
+    <div class="alert alert-warning d-flex align-items-start gap-2 mb-4"
+         x-show="isProduction && form.india_post_offices.some(o => o.status === 'active' && (o.api_base_url || '').includes('test.cept.gov.in'))"
+         x-cloak>
+        <i class="bi bi-exclamation-triangle-fill mt-1"></i>
+        <div><strong>UAT endpoint is active in production.</strong> Update the affected office to the approved production API URL before enabling bookings.</div>
+    </div>
 
     <!-- ═══════════════════════ Stats Widgets ══════════════════════════════ -->
     <div class="row g-4 g-lg-5 mb-5">
@@ -126,7 +132,7 @@
                     <thead class="table-group-divider">
                         <tr>
                             <th class="ps-3" style="width:44px;">
-                                <input type="checkbox" class="user-select-checkbox" @change="$event.isTrusted && toggleAll($event.target.checked)" :checked="selectedOffices.length === paginatedOffices.length && paginatedOffices.length > 0">
+                                <input type="checkbox" class="user-select-checkbox" @change="$event.isTrusted && toggleAll($event.target.checked)" :checked="filteredOffices.length > 0 && filteredOffices.every(o => selectedOffices.includes(o.id))">
                             </th>
                             <th>Post Office</th>
                             <th>IDs & Pincodes</th>
@@ -234,13 +240,13 @@
                 <nav>
                     <ul class="pagination pagination-sm mb-0">
                         <li class="page-item" :class="{ 'disabled': currentPage === 1 }">
-                            <a class="page-link" href="#" @click.prevent="currentPage--">Previous</a>
+                            <a class="page-link" href="#" @click.prevent="previousPage()" :aria-disabled="currentPage <= 1">Previous</a>
                         </li>
                         <li class="page-item disabled">
                             <span class="page-link">Page <span x-text="currentPage"></span> of <span x-text="totalPages"></span></span>
                         </li>
                         <li class="page-item" :class="{ 'disabled': currentPage === totalPages }">
-                            <a class="page-link" href="#" @click.prevent="currentPage++">Next</a>
+                            <a class="page-link" href="#" @click.prevent="nextPage()" :aria-disabled="currentPage >= totalPages">Next</a>
                         </li>
                     </ul>
                 </nav>
@@ -400,7 +406,7 @@
                                         <div class="row g-2">
                                             <div class="col-md-12">
                                                 <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Base URL *</label>
-                                                <input type="url" class="form-control form-control-sm fw-semibold text-primary" x-model="officeForm.api_base_url" placeholder="https://test.cept.gov.in/beextcustomer" style="font-size: 12px;" required>
+                                                <input type="url" class="form-control form-control-sm fw-semibold text-primary" x-model.trim="officeForm.api_base_url" :placeholder="defaultApiBaseUrl" style="font-size: 12px;" required>
                                             </div>
                                             <div class="col-md-6">
                                                 <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Username *</label>
@@ -599,11 +605,11 @@
                                             </div>
                                             <div class="col-md-3">
                                                 <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Start Sequence *</label>
-                                                <input type="number" class="form-control form-control-sm fw-semibold" x-model="newRangeForm.start_sequence" placeholder="8 digits" style="font-size: 12px;" required>
+                                                <input type="number" class="form-control form-control-sm fw-semibold" x-model.number="newRangeForm.start_sequence" placeholder="0–99,999,999" min="0" max="99999999" step="1" style="font-size: 12px;" required>
                                             </div>
                                             <div class="col-md-3">
                                                 <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">End Sequence *</label>
-                                                <input type="number" class="form-control form-control-sm fw-semibold" x-model="newRangeForm.end_sequence" placeholder="8 digits" style="font-size: 12px;" required>
+                                                <input type="number" class="form-control form-control-sm fw-semibold" x-model.number="newRangeForm.end_sequence" placeholder="0–99,999,999" min="0" max="99999999" step="1" style="font-size: 12px;" required>
                                             </div>
                                             <div class="col-md-4 d-flex gap-2">
                                                 <button type="submit" class="btn btn-primary btn-sm flex-grow-1" style="height: 31px;" :disabled="savingRange">
@@ -717,8 +723,10 @@
 document.addEventListener('alpine:init', () => {
     Alpine.data('shippingSettings', () => ({
         form: {
-            india_post_offices: {!! isset($settings['india_post_offices']) && is_string($settings['india_post_offices']) ? $settings['india_post_offices'] : '[]' !!},
+            india_post_offices: @js($offices),
         },
+        isProduction: @js($isProduction),
+        defaultApiBaseUrl: @js($defaultIndiaPostBaseUrl),
         showPassword: false,
         saving: false,
         
@@ -824,6 +832,12 @@ document.addEventListener('alpine:init', () => {
                 this.selectedOffices = [];
             }
         },
+        previousPage() {
+            this.currentPage = Math.max(1, this.currentPage - 1);
+        },
+        nextPage() {
+            this.currentPage = Math.min(this.totalPages, this.currentPage + 1);
+        },
 
         toggleOffice(id) {
             if (this.selectedOffices.includes(id)) {
@@ -919,7 +933,7 @@ document.addEventListener('alpine:init', () => {
         cancelEditRange() {
             this.isEditingRange = false;
             this.editingRangeId = null;
-            this.newRangeForm = { prefix: 'EA', start_sequence: '', end_sequence: '' };
+            this.newRangeForm = { prefix: '', start_sequence: '', end_sequence: '' };
         },
         async fetchRanges(officeId) {
             this.loadingRanges = true;
@@ -940,6 +954,14 @@ document.addEventListener('alpine:init', () => {
         async saveNewRange() {
             this.savingRange = true;
             try {
+                this.newRangeForm.prefix = String(this.newRangeForm.prefix || '').trim().toUpperCase();
+                const start = Number(this.newRangeForm.start_sequence);
+                const end = Number(this.newRangeForm.end_sequence);
+                if (!/^[A-Z]{2}$/.test(this.newRangeForm.prefix)
+                    || !Number.isInteger(start) || !Number.isInteger(end)
+                    || start < 0 || end > 99999999 || end <= start) {
+                    throw new Error('Enter a two-letter prefix and a valid increasing sequence from 0 to 99,999,999.');
+                }
                 let url = `/api/shipping/offices/${this.activeRangeOffice.id}/ranges`;
                 let method = 'POST';
                 if (this.isEditingRange) {
@@ -1022,7 +1044,7 @@ document.addEventListener('alpine:init', () => {
                 booking_office_pin: '',
                 status: 'active',
                 is_default: false,
-                api_base_url: 'https://test.cept.gov.in/beextcustomer',
+                api_base_url: this.defaultApiBaseUrl,
                 api_username: '',
                 api_password: '',
                 bulk_customer_id: '',
@@ -1051,8 +1073,33 @@ document.addEventListener('alpine:init', () => {
         },
 
         async saveOffice() {
-            if (!this.officeForm.booking_office_name || !this.officeForm.pickup_dropoff_office_id || !this.officeForm.api_username || !this.officeForm.api_base_url) {
-                alert('Please fill in all required fields.');
+            const officeId = String(this.officeForm.pickup_dropoff_office_id || '').trim();
+            const customerId = String(this.officeForm.bulk_customer_id || '').trim();
+            const contractId = String(this.officeForm.contract_bp || '').trim();
+            const validPin = value => /^[1-9][0-9]{5}$/.test(String(value || '').trim());
+            if (!this.officeForm.booking_office_name?.trim()
+                || !this.officeForm.api_username?.trim()
+                || !this.officeForm.api_base_url?.trim()
+                || !customerId
+                || !contractId
+                || !/^[0-9]{8}$/.test(officeId)
+                || !/^[0-9]{10}$/.test(customerId)
+                || !/^[0-9]{8}$/.test(contractId)
+                || !validPin(this.officeForm.booking_office_pin)
+                || !validPin(this.officeForm.drop_off_pincode)
+                || (!this.isEditing && !this.officeForm.api_password?.trim())) {
+                alert('Enter the office name, valid 8-digit facility ID, 6-digit booking and drop-off PINs, 10-digit customer ID, 8-digit Business Parcel contract ID, API username and URL. A password is required for a new office.');
+                return;
+            }
+            try {
+                const parsedUrl = new URL(this.officeForm.api_base_url);
+                if (parsedUrl.protocol !== 'https:') throw new Error('HTTPS is required.');
+                if (this.isProduction && parsedUrl.hostname === 'test.cept.gov.in') {
+                    alert('Production offices cannot use the India Post UAT host. Enter the approved production API URL.');
+                    return;
+                }
+            } catch (error) {
+                alert('Enter a valid HTTPS India Post API base URL.');
                 return;
             }
             
@@ -1096,6 +1143,8 @@ document.addEventListener('alpine:init', () => {
                 }
                 
                 this.showToast(customMessage || data.message || 'Settings updated successfully.', 'success');
+                this.currentPage = Math.min(this.currentPage, this.totalPages);
+                this.selectedOffices = [];
                 
                 // Clear all passwords from frontend state so they don't resend it next time
                 this.form.india_post_offices.forEach(o => o.api_password = '');
@@ -1120,14 +1169,21 @@ document.addEventListener('alpine:init', () => {
             const toast = document.createElement('div');
             toast.className = `toast align-items-center text-bg-${type === 'error' ? 'danger' : type} border-0 show mb-2`;
             toast.setAttribute('role', 'alert');
-            toast.innerHTML = `
-                <div class="d-flex">
-                    <div class="toast-body">
-                        <i class="bi ${iconMap[type] || 'bi-info-circle-fill'} me-2"></i>
-                        <span>${message}</span>
-                    </div>
-                    <button type="button" class="btn-close btn-close me-2 m-auto" data-bs-dismiss="toast"></button>
-                </div>`;
+            const row = document.createElement('div');
+            row.className = 'd-flex';
+            const body = document.createElement('div');
+            body.className = 'toast-body';
+            const icon = document.createElement('i');
+            icon.className = 'bi ' + (iconMap[type] || 'bi-info-circle-fill') + ' me-2';
+            const text = document.createElement('span');
+            text.textContent = String(message ?? '');
+            body.append(icon, text);
+            const close = document.createElement('button');
+            close.type = 'button';
+            close.className = 'btn-close me-2 m-auto';
+            close.setAttribute('data-bs-dismiss', 'toast');
+            row.append(body, close);
+            toast.appendChild(row);
                 
             container.appendChild(toast);
             setTimeout(() => toast.remove(), 4000);

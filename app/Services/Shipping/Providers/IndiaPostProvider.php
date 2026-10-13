@@ -7,6 +7,7 @@ use App\Models\SystemSetting;
 use App\Modules\Orders\Models\Order;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class IndiaPostProvider implements ShippingProviderInterface
 {
@@ -58,10 +59,10 @@ class IndiaPostProvider implements ShippingProviderInterface
             config(['shipping.providers.india_post.contracts.24_SPP_PARSPL' => $activeOffice['contract_24_spp_parspl'] ?? config('shipping.providers.india_post.contracts.24_SPP_PARSPL')]);
             config(['shipping.providers.india_post.contracts.48_SPEEDPOST_DOC' => $activeOffice['contract_48_sp_doc'] ?? config('shipping.providers.india_post.contracts.48_SPEEDPOST_DOC')]);
 
-            config(['shipping.providers.india_post.pickup_dropoff_office_id' => $activeOffice['pickup_dropoff_office_id'] ?? '21260024']);
-            config(['shipping.providers.india_post.drop_off_pincode' => $activeOffice['drop_off_pincode'] ?? '600001']);
-            config(['shipping.providers.india_post.booking_office_name' => $activeOffice['booking_office_name'] ?? 'Default Booking Office']);
-            config(['shipping.providers.india_post.booking_office_pin' => $activeOffice['booking_office_pin'] ?? '600001']);
+            config(['shipping.providers.india_post.pickup_dropoff_office_id' => $activeOffice['pickup_dropoff_office_id'] ?? config('shipping.providers.india_post.pickup_dropoff_office_id')]);
+            config(['shipping.providers.india_post.drop_off_pincode' => $activeOffice['drop_off_pincode'] ?? config('shipping.providers.india_post.drop_off_pincode')]);
+            config(['shipping.providers.india_post.booking_office_name' => $activeOffice['booking_office_name'] ?? config('shipping.providers.india_post.booking_office_name')]);
+            config(['shipping.providers.india_post.booking_office_pin' => $activeOffice['booking_office_pin'] ?? config('shipping.providers.india_post.booking_office_pin')]);
             
             config(['shipping.providers.india_post.barcode_prefix' => $activeOffice['barcode_prefix'] ?? 'EA']);
             config(['shipping.providers.india_post.barcode_start' => $activeOffice['barcode_start'] ?? '10000000']);
@@ -72,10 +73,10 @@ class IndiaPostProvider implements ShippingProviderInterface
             $this->baseUrl = config('shipping.providers.india_post.base_url');
             $this->username = config('shipping.providers.india_post.username');
             $this->password = config('shipping.providers.india_post.password');
-            config(['shipping.providers.india_post.pickup_dropoff_office_id' => config('shipping.providers.india_post.pickup_dropoff_office_id', '21260024')]);
-            config(['shipping.providers.india_post.drop_off_pincode' => config('shipping.providers.india_post.drop_off_pincode', '600001')]);
-            config(['shipping.providers.india_post.booking_office_name' => config('shipping.providers.india_post.booking_office_name', 'Default Booking Office')]);
-            config(['shipping.providers.india_post.booking_office_pin' => config('shipping.providers.india_post.booking_office_pin', '600001')]);
+            config(['shipping.providers.india_post.pickup_dropoff_office_id' => config('shipping.providers.india_post.pickup_dropoff_office_id')]);
+            config(['shipping.providers.india_post.drop_off_pincode' => config('shipping.providers.india_post.drop_off_pincode')]);
+            config(['shipping.providers.india_post.booking_office_name' => config('shipping.providers.india_post.booking_office_name')]);
+            config(['shipping.providers.india_post.booking_office_pin' => config('shipping.providers.india_post.booking_office_pin')]);
         }
     }
     protected function httpClient()
@@ -89,29 +90,68 @@ class IndiaPostProvider implements ShippingProviderInterface
         return $client;
     }
 
-    public function authenticate(): string
+    protected function tokenCacheKeys(): array
     {
-        $cacheKey = 'india_post_access_token';
+        $scope = sha1($this->baseUrl.'|'.$this->username);
+        return ['india_post_access_token_'.$scope, 'india_post_refresh_token_'.$scope];
+    }
 
-        $fetchToken = function () {
+    public function clearAccessToken(): void
+    {
+        [$accessCacheKey] = $this->tokenCacheKeys();
+        Cache::forget($accessCacheKey);
+        Cache::forget('india_post_access_token');
+    }
+
+    public function authenticate(bool $forceRefresh = false): string
+    {
+        [$accessCacheKey, $refreshCacheKey] = $this->tokenCacheKeys();
+        $accessToken = Cache::get($accessCacheKey);
+        $refreshToken = Cache::get($refreshCacheKey);
+        if (! $forceRefresh && $accessToken) {
+            return $accessToken;
+        }
+
+        if ($refreshToken) {
+            try {
+                $response = $this->httpClient()->withToken($refreshToken)
+                    ->post("{$this->baseUrl}/v1/access/TokenWithRtoken");
+                if ($response->successful() && $response->json('success') && $response->json('data.access_token')) {
+                    $this->cacheTokens($response->json('data'), $accessCacheKey, $refreshCacheKey);
+                    return $response->json('data.access_token');
+                }
+                Log::warning('India Post refresh token rejected; falling back to login', ['status' => $response->status()]);
+            } catch (\Throwable $e) {
+                Log::warning('India Post refresh request failed; falling back to login', ['message' => $e->getMessage()]);
+            }
+        }
+
+        try {
             $response = $this->httpClient()->post("{$this->baseUrl}/v1/access/login", [
                 'username' => $this->username,
                 'password' => $this->password,
             ]);
-
-            if ($response->successful() && $response->json('success')) {
+            if ($response->successful() && $response->json('success') && $response->json('data.access_token')) {
+                $this->cacheTokens($response->json('data'), $accessCacheKey, $refreshCacheKey);
                 return $response->json('data.access_token');
             }
-
             throw new \Exception('Failed to authenticate with India Post: '.$response->body());
-        };
-
-        try {
-            return Cache::remember($cacheKey, now()->addMinutes(13), $fetchToken);
         } catch (\Throwable $e) {
-            // In case of unserialize errors or corrupted cache, clear it and retry
-            Cache::forget($cacheKey);
-            return Cache::remember($cacheKey, now()->addMinutes(13), $fetchToken);
+            Log::error('India Post authentication failed', ['message' => $e->getMessage(), 'base_url' => $this->baseUrl]);
+            throw $e;
+        }
+    }
+
+    protected function cacheTokens(array $tokens, string $accessCacheKey, string $refreshCacheKey): void
+    {
+        $accessToken = $tokens['access_token'] ?? null;
+        if (! $accessToken) {
+            throw new \UnexpectedValueException('India Post returned no access token.');
+        }
+        $expiresIn = (int) ($tokens['expires_in'] ?? 780);
+        Cache::put($accessCacheKey, $accessToken, now()->addSeconds(max(60, min($expiresIn - 30, 840))));
+        if (! empty($tokens['refresh_token'])) {
+            Cache::put($refreshCacheKey, $tokens['refresh_token'], now()->addSeconds(max(60, (int) ($tokens['refresh_expires_in'] ?? 86400))));
         }
     }
     protected function apiRequest(string $method, string $url, array $data = [], array $options = [])
@@ -127,8 +167,9 @@ class IndiaPostProvider implements ShippingProviderInterface
 
         // Auto-refresh token if expired (401 Unauthorized)
         if ($response->status() === 401 || $response->status() === 403) {
-            \Illuminate\Support\Facades\Cache::forget('india_post_access_token');
-            $token = $this->authenticate();
+            [$accessCacheKey] = $this->tokenCacheKeys();
+            Cache::forget($accessCacheKey);
+            $token = $this->authenticate(true);
             $client = $this->httpClient()->withToken($token);
             
             if (isset($options['file_path'])) {
@@ -136,6 +177,16 @@ class IndiaPostProvider implements ShippingProviderInterface
             }
             
             $response = $method === 'get' ? $client->get($url, $data) : $client->post($url, $data);
+        }
+
+        if (! $response->successful() || $response->json('success') === false) {
+            Log::error('India Post API request failed', [
+                'method' => strtoupper($method),
+                'url' => $url,
+                'status' => $response->status(),
+                'message' => $response->json('message'),
+                'errors' => $response->json('errors'),
+            ]);
         }
 
         return $response;
@@ -153,7 +204,12 @@ class IndiaPostProvider implements ShippingProviderInterface
         ]);
 
         if ($response->successful()) {
-            return $response->json();
+            $offices = $response->json();
+            if (is_array($offices)) {
+                return $offices;
+            }
+            Log::error('India Post pincode lookup returned a non-array response', ['pincode' => $pincode]);
+            throw new \UnexpectedValueException('India Post pincode lookup returned an invalid response.');
         }
 
         throw new \Exception('Failed to fetch pincode details: '.$response->body());
@@ -161,8 +217,6 @@ class IndiaPostProvider implements ShippingProviderInterface
 
     public function getTariff(array $packageDetails): array
     {
-        $token = $this->authenticate();
-
         $endpoint = '/v1/speed-post/tariffs';
         if (isset($packageDetails['product-code'])) {
             switch ($packageDetails['product-code']) {
@@ -179,10 +233,15 @@ class IndiaPostProvider implements ShippingProviderInterface
             }
         }
 
-        $response = $this->httpClient()->withToken($token)->get("{$this->baseUrl}{$endpoint}", $packageDetails);
+        $response = $this->apiRequest('get', "{$this->baseUrl}{$endpoint}", $packageDetails);
 
         if ($response->successful() && $response->json('success')) {
-            return $response->json();
+            $tariff = $response->json();
+            if (is_array($tariff)) {
+                return $tariff;
+            }
+            Log::error('India Post tariff API returned an invalid response', ['product_code' => $packageDetails['product-code'] ?? null]);
+            throw new \UnexpectedValueException('India Post tariff API returned an invalid response.');
         }
 
         throw new \Exception('Failed to calculate tariff: '.$response->body());
@@ -196,9 +255,11 @@ class IndiaPostProvider implements ShippingProviderInterface
         $customId = config('shipping.providers.india_post.bulk_customer_id');
 
         $totalWeightG = 0;
-        $maxLength = 10;
-        $maxWidth = 10;
-        $maxHeight = 10;
+        // Current automatic booking is Business Parcel, whose documented minimum
+        // dimensions are 14 x 9 x 1 cm.
+        $maxLength = 14;
+        $maxWidth = 9;
+        $maxHeight = 1;
 
         foreach ($order->items as $item) {
             $product = $item->product;
@@ -206,7 +267,10 @@ class IndiaPostProvider implements ShippingProviderInterface
                 $totalWeightG += ($product->weight_g ?: 500) * $item->quantity;
                 $maxLength = max($maxLength, $product->length_cm ?: 10);
                 $maxWidth = max($maxWidth, $product->width_cm ?: 10);
-                $maxHeight += ($product->height_cm ?: 10) * $item->quantity;
+                // The order does not carry packed-carton dimensions. Summing product
+                // heights creates invalid dimensions for multi-quantity orders; use
+                // the largest known item dimension as a conservative package input.
+                $maxHeight = max($maxHeight, $product->height_cm ?: 10);
             }
         }
         // Cap weight at 35000g (35kg) to respect India Post's maximum limit for BUSINESS_PARCEL
@@ -231,18 +295,18 @@ class IndiaPostProvider implements ShippingProviderInterface
         $warehouse = $order->warehouse;
         $senderName = $warehouse ? $warehouse->name : config('app.name');
         $senderCompany = $warehouse ? ($warehouse->company_name ?: $senderName) : config('app.name');
-        $senderPhoneRaw = $warehouse && $warehouse->phone ? $warehouse->phone : '9876543210';
+        $senderPhoneRaw = $warehouse->phone ?? '';
         $senderPhoneNum = preg_replace('/[^0-9]/', '', $senderPhoneRaw);
         if (strlen($senderPhoneNum) > 10) $senderPhoneNum = substr($senderPhoneNum, -10);
-        $senderPhone = preg_match('/^[6-9][0-9]{9}$/', $senderPhoneNum) ? $senderPhoneNum : '9876543210';
+        $senderPhone = $senderPhoneNum;
         
-        $senderAddr = $warehouse ? ($warehouse->address_line_1 ?: 'HQ Address') : 'HQ Address';
-        $senderCity = $warehouse ? ($warehouse->city ?: 'HQ City') : 'HQ City';
-        $senderPin = $warehouse ? (int) $warehouse->pincode : 110001;
+        $senderAddr = $warehouse->address_line_1 ?? '';
+        $senderCity = $warehouse->city ?? '';
+        $senderPin = (string) ($warehouse->pincode ?? '');
 
         // Dynamic Receiver info
         $receiverName = trim(($order->party->firstname ?? '') . ' ' . ($order->party->lastname ?? ''));
-        if (!$receiverName) $receiverName = 'Customer';
+        $receiverName = trim($receiverName);
         
         $receiverCompany = trim($order->party->company_name ?? '');
         if (!$receiverCompany) $receiverCompany = $receiverName;
@@ -250,11 +314,43 @@ class IndiaPostProvider implements ShippingProviderInterface
         $receiverPhoneRaw = $order->party->phone ?? '';
         $receiverPhoneNum = preg_replace('/[^0-9]/', '', $receiverPhoneRaw);
         if (strlen($receiverPhoneNum) > 10) $receiverPhoneNum = substr($receiverPhoneNum, -10);
-        $receiverPhone = preg_match('/^[6-9][0-9]{9}$/', $receiverPhoneNum) ? $receiverPhoneNum : '9876543210';
+        $receiverPhone = $receiverPhoneNum;
         
-        $receiverAddr = $order->shipping_address_line_1 ?? 'Receiver Addr';
-        $receiverCity = $order->shipping_city ?? 'Receiver City';
-        $receiverPin = (int) ($order->shipping_pincode ?? 110001);
+        $receiverAddr = $order->shipping_address_line_1 ?? '';
+        $receiverCity = $order->shipping_city ?? '';
+        $receiverPin = (string) ($order->shipping_pincode ?? '');
+
+        $requiredFields = [
+            'sender name' => $senderName,
+            'sender address' => $senderAddr,
+            'sender city' => $senderCity,
+            'sender state' => $warehouse->state ?? '',
+            'sender pincode' => $senderPin,
+            'receiver name' => $receiverName,
+            'receiver address' => $receiverAddr,
+            'receiver city' => $receiverCity,
+            'receiver state' => $order->shipping_state ?? '',
+            'receiver pincode' => $receiverPin,
+            'pickup/dropoff office ID' => (string) config('shipping.providers.india_post.pickup_dropoff_office_id'),
+            'drop-off pincode' => (string) config('shipping.providers.india_post.drop_off_pincode'),
+            'contract ID' => (string) $contractId,
+            'bulk customer ID' => (string) $customId,
+        ];
+        foreach ($requiredFields as $label => $value) {
+            if (trim((string) $value) === '') {
+                throw new \InvalidArgumentException("India Post booking requires a configured {$label}.");
+            }
+        }
+        if (! preg_match('/^[1-9][0-9]{5}$/', $senderPin) || ! preg_match('/^[1-9][0-9]{5}$/', $receiverPin)
+            || ! preg_match('/^[1-9][0-9]{5}$/', (string) config('shipping.providers.india_post.drop_off_pincode'))) {
+            throw new \InvalidArgumentException('India Post sender, receiver, and drop-off pincodes must be valid six-digit pincodes.');
+        }
+        if (! preg_match('/^[6-9][0-9]{9}$/', $senderPhone) || ! preg_match('/^[6-9][0-9]{9}$/', $receiverPhone)) {
+            throw new \InvalidArgumentException('India Post requires valid 10-digit sender and receiver mobile numbers starting with 6, 7, 8, or 9.');
+        }
+        if (! preg_match('/^[0-9]{8}$/', (string) config('shipping.providers.india_post.pickup_dropoff_office_id'))) {
+            throw new \InvalidArgumentException('India Post pickup/dropoff office ID must be exactly eight digits.');
+        }
 
         $dueAmount = $order->net_amount - $order->total_paid;
         $isCOD = $dueAmount > 0;
@@ -268,21 +364,25 @@ class IndiaPostProvider implements ShippingProviderInterface
             'article_type' => $articleType,
             'physical_weight' => $totalWeightG,
             'shape_of_article' => $shape,
-            'length' => (int) $maxLength,
-            'breadth_diameter' => (int) $maxWidth,
-            'height' => (int) $maxHeight,
+            'length' => $maxLength,
+            'breadth_diameter' => $maxWidth,
+            'height' => $maxHeight,
             
             'sender_name' => substr($senderName, 0, 80),
             'sender_company' => substr($senderCompany, 0, 80),
             'sender_add_line_1' => substr($senderAddr, 0, 80),
+            'sender_add_line_2' => substr($warehouse->address_line_2 ?? '', 0, 80),
             'sender_city' => substr($senderCity, 0, 80),
+            'sender_state' => substr($warehouse->state ?? '', 0, 80),
             'sender_pincode' => $senderPin,
             'sender_mobile_no' => $senderPhone,
             
             'receiver_name' => substr($receiverName, 0, 80),
             'receiver_company' => substr($receiverCompany, 0, 80),
             'receiver_add_line_1' => substr($receiverAddr, 0, 80),
+            'receiver_add_line_2' => substr($order->shipping_address_line_2 ?? '', 0, 80),
             'receiver_city' => substr($receiverCity, 0, 80),
+            'receiver_state' => substr($order->shipping_state ?? '', 0, 80),
             'receiver_pincode' => $receiverPin,
             'receiver_mobile_no' => $receiverPhone,
             
@@ -319,7 +419,7 @@ class IndiaPostProvider implements ShippingProviderInterface
                 'length_cm' => $maxLength,
                 'width_cm' => $maxWidth,
                 'height_cm' => $maxHeight,
-                'shipping_cost' => $validArticles[0]['tariff'] ?? 0,
+                'shipping_cost' => $validArticles[0]['calculated_tariff'] ?? $validArticles[0]['tariff'] ?? null,
                 'tax_components' => $validArticles[0]['taxes'] ?? $validArticles[0]['tax_components'] ?? null,
                 'booking_data' => $validArticles[0],
                 'estimated_delivery_date' => $validArticles[0]['estimated_delivery_date'] ?? $validArticles[0]['expected_delivery_date'] ?? null,
@@ -332,11 +432,7 @@ class IndiaPostProvider implements ShippingProviderInterface
     public function createShipmentBatch(string $filePath): array
     {
         $customId = config('shipping.providers.india_post.bulk_customer_id');
-        $token    = $this->authenticate(); // was undefined — caused PHP warning
-
-        $response = $this->httpClient()->withToken($token)
-            ->attach('file', file_get_contents($filePath), basename($filePath))
-            ->post("{$this->baseUrl}/process-articles-file/{$customId}");
+        $response = $this->apiRequest('post', "{$this->baseUrl}/process-articles-file/{$customId}", [], ['file_path' => $filePath]);
 
         if ($response->successful() && $response->json('success')) {
             return $response->json();
@@ -347,7 +443,8 @@ class IndiaPostProvider implements ShippingProviderInterface
 
     public function generateLabel(Order $order, string $trackingNumber): string
     {
-        $token = $this->authenticate();
+        $order->loadMissing(['items.product', 'warehouse', 'party']);
+        $shipment = \App\Modules\Orders\Models\Shipment::where('tracking_no', $trackingNumber)->first();
 
         $warehouse = $order->warehouse;
         $senderName = $warehouse ? $warehouse->name : config('app.name');
@@ -356,20 +453,50 @@ class IndiaPostProvider implements ShippingProviderInterface
         if (!$receiverName) $receiverName = 'Customer';
         
         $receiverAddr = $order->shipping_address_line_1 ?? 'Receiver Addr';
+        $weight = $shipment->actual_weight_g ?? 0;
+        $length = $shipment->length_cm ?? 0;
+        $breadth = $shipment->width_cm ?? 0;
+        $height = $shipment->height_cm ?? 0;
+        if (! $weight || ! $length || ! $breadth || ! $height) {
+            $calculatedWeight = 0;
+            foreach ($order->items as $item) {
+                if (! $item->product) {
+                    continue;
+                }
+                $calculatedWeight += ($item->product->weight_g ?: 500) * $item->quantity;
+                $length = max($length, $item->product->length_cm ?: 14);
+                $breadth = max($breadth, $item->product->width_cm ?: 9);
+                $height = max($height, $item->product->height_cm ?: 1);
+            }
+            $weight = $weight ?: $calculatedWeight;
+        }
+        $phoneDigits = static fn ($phone) => preg_replace('/[^0-9]/', '', (string) $phone);
 
         $payload = [[
             'customer_id' => (int) config('shipping.providers.india_post.bulk_customer_id'),
             'channel_type' => 'E',
             'user_type' => 'R',
             'barcode_no' => $trackingNumber,
-            'service_type' => 'BP', // Could be dynamic
+            'service_type' => $shipment->article_type ?? 'BP',
             'booking_type' => 'COMMERCIAL',
-            'physical_weight' => 500, // Dummy fallback, ideally fetched from order items
+            'physical_weight' => max(1, (int) $weight),
+            'article_length' => (string) max(14, $length),
+            'article_breadth' => (string) max(9, $breadth),
+            'article_height' => (string) max(1, $height),
             'insurance_flag' => false,
             'insurance_value' => 0,
             'recipient_name' => substr($receiverName, 0, 80),
             'recipient_addressl1' => substr($receiverAddr, 0, 80),
+            'recipient_mobile' => $phoneDigits($order->party->phone ?? ''),
+            'recipient_city' => $order->shipping_city ?? '',
+            'recipient_pin' => (string) ($order->shipping_pincode ?? ''),
             'sender_name' => substr($senderName, 0, 80),
+            'sender_mobile' => $phoneDigits($warehouse->phone ?? ''),
+            'sender_addressl1' => $warehouse->address_line_1 ?? '',
+            'sender_city' => $warehouse->city ?? '',
+            'sender_pin' => (string) ($warehouse->pincode ?? ''),
+            'delivery_office_name' => config('shipping.providers.india_post.booking_office_name'),
+            'destination_pin' => (string) ($order->shipping_pincode ?? ''),
             'transmission_mode' => 'S',
             'payment_mode' => 'CO',
             'booking_office_name' => config('shipping.providers.india_post.booking_office_name'),
@@ -379,8 +506,7 @@ class IndiaPostProvider implements ShippingProviderInterface
             'identifier' => 'Domestic'
         ]];
 
-        $response = $this->httpClient()
-            ->withToken($token)->post("{$this->baseUrl}/v1/label/create/domestic", $payload);
+        $response = $this->apiRequest('post', "{$this->baseUrl}/v1/label/create/domestic", $payload);
 
         if ($response->successful()) {
             // Ideally we'd store the PDF somewhere and return the URL
@@ -396,14 +522,25 @@ class IndiaPostProvider implements ShippingProviderInterface
 
     public function getTrackingStatus(array $trackingNumbers): array
     {
-        $token = $this->authenticate();
+        if (count($trackingNumbers) > 500) {
+            throw new \InvalidArgumentException('India Post bulk tracking accepts at most 500 article numbers per request.');
+        }
 
-        $response = $this->httpClient()->withToken($token)->post("{$this->baseUrl}/v1/tracking/bulk", [
-            'bulk' => $trackingNumbers,
+        if (empty($trackingNumbers)) {
+            return [];
+        }
+
+        $response = $this->apiRequest('post', "{$this->baseUrl}/v1/tracking/bulk", [
+            'bulk' => array_values($trackingNumbers),
         ]);
 
         if ($response->successful() && $response->json('success')) {
-            return $response->json('data');
+            $tracking = $response->json('data');
+            if (is_array($tracking)) {
+                return $tracking;
+            }
+            Log::error('India Post tracking API returned invalid data', ['requested_count' => count($trackingNumbers)]);
+            throw new \UnexpectedValueException('India Post tracking API returned invalid data.');
         }
 
         throw new \Exception('Failed to get tracking status: '.$response->body());
@@ -418,6 +555,9 @@ class IndiaPostProvider implements ShippingProviderInterface
             ->first();
 
         if (!$range) {
+            if (app()->environment('production')) {
+                throw new \RuntimeException('No India Post barcode range is configured for the active office.');
+            }
             // Fallback for backwards compatibility or missing setup
             $prefix = strtoupper(config('shipping.providers.india_post.barcode_prefix', 'EA'));
             $start = (int) config('shipping.providers.india_post.barcode_start', '10000000');
@@ -434,6 +574,10 @@ class IndiaPostProvider implements ShippingProviderInterface
 
         if (!$current) {
             $current = $start;
+        }
+
+        if (strlen($prefix) !== 2 || $current < $start || $current > $end || $start < 0 || $end > 99999999) {
+            throw new \RuntimeException('The configured India Post barcode sequence is outside its assigned range.');
         }
 
         $sequence = str_pad((string) $current, 8, '0', STR_PAD_LEFT);
@@ -478,7 +622,7 @@ class IndiaPostProvider implements ShippingProviderInterface
         } else {
             // Legacy config update
             if ($nextSequence > (int) $end) {
-                $nextSequence = (int) $start;
+                throw new \RuntimeException('The configured India Post barcode range is exhausted.');
             }
             $this->updateBarcodeSequence((string) $nextSequence);
             config(['shipping.providers.india_post.barcode_current' => (string) $nextSequence]);

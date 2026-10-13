@@ -1072,7 +1072,12 @@ class InventoryService
      */
     public function readyToShipOrder(Order $order, ?string $carrierName = null, ?string $trackingNo = null, ?int $serviceProviderId = null): void
     {
-        DB::transaction(function () use ($order, $carrierName, $trackingNo, $serviceProviderId) {
+        // India Post booking is an external side effect inside this transaction.
+        // Keep its successful response across Laravel's deadlock retries so a
+        // retry only repeats the database writes, not the carrier booking.
+        $indiaPostBooking = null;
+
+        DB::transaction(function () use ($order, $carrierName, &$trackingNo, $serviceProviderId, &$indiaPostBooking) {
             $order = Order::lockForUpdate()->findOrFail($order->id);
 
             if ($order->status !== 'processing') {
@@ -1091,17 +1096,24 @@ class InventoryService
                 ]);
             }
             $shipmentDataArr = [];
-            if ($carrierName === 'India Post' && empty($trackingNo)) {
-                $shippingManager = app(ShippingManager::class);
-                try {
-                    $provider = $shippingManager->driver('india_post');
-                    $shipmentDataArr = $provider->createShipment($order);
-                    $trackingNo = $shipmentDataArr['tracking_number'];
-                } catch (\Exception $e) {
-                    throw ValidationException::withMessages([
-                        'tracking_no' => 'Failed to create shipment with India Post: '.$e->getMessage(),
-                    ]);
+            if ($carrierName === 'India Post' && (empty($trackingNo) || $indiaPostBooking !== null)) {
+                if ($indiaPostBooking === null) {
+                    $shippingManager = app(ShippingManager::class);
+                    try {
+                        $provider = $shippingManager->driver('india_post');
+                        $indiaPostBooking = $provider->createShipment($order);
+                        if (empty($indiaPostBooking['tracking_number'])) {
+                            throw new \UnexpectedValueException('India Post returned no tracking number for the booking.');
+                        }
+                    } catch (\Exception $e) {
+                        throw ValidationException::withMessages([
+                            'tracking_no' => 'Failed to create shipment with India Post: '.$e->getMessage(),
+                        ]);
+                    }
                 }
+
+                $shipmentDataArr = $indiaPostBooking;
+                $trackingNo = $shipmentDataArr['tracking_number'];
             }
 
             $shipment->fill([

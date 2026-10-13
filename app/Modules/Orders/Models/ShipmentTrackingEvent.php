@@ -17,10 +17,18 @@ class ShipmentTrackingEvent extends Model implements Auditable
         'description',
         'reschedule_reason',
         'occurred_at',
+        'provider',
+        'provider_event_code',
+        'provider_office_id',
+        'provider_remarks',
+        'provider_is_rts',
+        'provider_payload',
     ];
 
     protected $casts = [
         'occurred_at' => 'datetime',
+        'provider_is_rts' => 'boolean',
+        'provider_payload' => 'array',
     ];
 
     public function shipment()

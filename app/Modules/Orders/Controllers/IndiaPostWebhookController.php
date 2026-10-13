@@ -28,6 +28,10 @@ class IndiaPostWebhookController extends Controller
         }
 
         foreach ($articles as $articleData) {
+            if (! is_array($articleData)) {
+                Log::warning('India Post webhook contained a non-object article event.');
+                continue;
+            }
             $trackingNumber = $articleData['article_number'] ?? $articleData['articleId'] ?? null;
             $eventCode = $articleData['event_code'] ?? $articleData['evntCode'] ?? null;
             
@@ -98,6 +102,11 @@ class IndiaPostWebhookController extends Controller
                 'location'    => $location,
                 'description' => $eventDescription,
                 'occurred_at' => $timestamp,
+                'provider' => 'india_post',
+                'provider_event_code' => $eventCode,
+                'provider_office_id' => $articleData['event_office_facility_id'] ?? null,
+                'provider_remarks' => $articleData['non_delivery_reason'] ?? null,
+                'provider_payload' => $articleData,
             ]);
         }
 

@@ -37,6 +37,7 @@ class Shipment extends Model implements Auditable
         'tax_components',
         'booking_data',
         'estimated_delivery_date',
+        'india_post_tracking_response',
     ];
 
     protected $casts = [
@@ -47,6 +48,7 @@ class Shipment extends Model implements Auditable
         'tax_components' => 'array',
         'booking_data' => 'array',
         'estimated_delivery_date' => 'date',
+        'india_post_tracking_response' => 'array',
     ];
 
     public function order()
