@@ -8,6 +8,7 @@ use App\Modules\Customers\Models\Party;
 use App\Modules\Inventory\Models\Stock;
 use App\Modules\Orders\Models\Order;
 use App\Modules\Orders\Models\OrderItem;
+use App\Modules\Users\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -1104,7 +1105,15 @@ class PageController extends Controller
 
     private function exportSalesOverview($dateFrom, $dateTo)
     {
-        $query = Order::query()->with(['party', 'warehouse', 'items.product', 'shipments', 'billingAddress', 'shippingAddress']);
+        $query = Order::query()->with([
+            'party',
+            'warehouse',
+            'items.product',
+            'shipments',
+            'billingAddress',
+            'shippingAddress',
+            'statusLogs.user:id,name',
+        ]);
         if ($lobStateName = auth()->user()?->lob_state_name) {
             $query->where('shipping_state', $lobStateName);
         }
@@ -1144,10 +1153,44 @@ class PageController extends Controller
                 'Shipping Address 1', 'Shipping Address 2', 'Shipping Village', 'Shipping PO/BO', 'Shipping Taluka', 'Shipping District', 'Shipping City', 'Shipping State', 'Shipping Pincode',
                 'Warehouse Name', 'Carrier Name', 'Tracking No',
                 'Product Name', 'Product SKU', 'Batch Number', 'Quantity', 'Unit Price', 'Item Tax Rate', 'Item Tax', 'Item Discount', 'Item Net',
+                // Append migration-backed order metadata so existing CSV columns remain stable.
+                'Party ID', 'Selected Offer ID', 'Future Order Date', 'Scheduled Confirmation Date', 'Confirmation Attempts',
+                'Pending At', 'Pending By Name', 'Pending Confirmation At', 'Pending Confirmation By Name',
+                'Future Order At', 'Future Order By Name', 'Confirmed At', 'Confirmed By Name',
+                'Processing At', 'Processing By Name', 'Ready to Ship At', 'Ready to Ship By Name',
+                'Dispatched At', 'Dispatched By Name', 'Shipped At', 'Shipped By Name',
+                'Delivered At', 'Delivered By Name', 'Cancelled At', 'Cancelled By Name',
+                'Returned At', 'Returned By Name', 'Return Requested At', 'Return Requested By Name',
+                'Warehouse ID', 'Shipping Address ID', 'Shipping Village ID', 'Billing Address ID', 'Billing Village ID',
+                'Created By Name', 'Updated By Name',
+                'Record Created At', 'Record Updated At', 'Record Deleted At',
+                'Status Log IDs', 'Status Log Statuses', 'Status Log Notes',
+                'Status Log Changed By Names', 'Status Log Created At',
+                'Product Variant ID', 'Item Is Gift', 'Item Gift Source', 'Item Created At', 'Item Updated At',
             ];
             fputcsv($file, $columns);
 
             $query->chunk(100, function ($orders) use ($file) {
+                $actorIds = $orders->flatMap(fn ($order) => [
+                    $order->pending_by,
+                    $order->pending_confirmation_by,
+                    $order->future_order_by,
+                    $order->confirmed_by,
+                    $order->processing_by,
+                    $order->ready_to_ship_by,
+                    $order->dispatched_by,
+                    $order->shipped_by,
+                    $order->delivered_by,
+                    $order->cancelled_by,
+                    $order->returned_by,
+                    $order->return_requested_by,
+                    $order->created_by,
+                    $order->updated_by,
+                ])->filter()->unique()->values();
+                $actorNames = $actorIds->isEmpty()
+                    ? collect()
+                    : User::whereIn('id', $actorIds)->pluck('name', 'id');
+
                 foreach ($orders as $order) {
                     $carriers = $order->shipments->pluck('carrier_name')->filter()->implode(', ');
                     $trackings = $order->shipments->pluck('tracking_no')->filter()->implode(', ');
@@ -1185,6 +1228,13 @@ class PageController extends Controller
                     $shippingPin = $order->shipping_pincode ?? '';
 
                     $warehouseName = $order->warehouse?->name ?? '';
+
+                    $statusLogs = $order->statusLogs->sortBy('id');
+                    $statusLogIds = $statusLogs->pluck('id')->implode(' | ');
+                    $statusLogStatuses = $statusLogs->pluck('status')->implode(' | ');
+                    $statusLogNotes = $statusLogs->pluck('notes')->map(fn ($value) => $value ?? '')->implode(' | ');
+                    $statusLogChangedByNames = $statusLogs->map(fn ($log) => $log->user?->name ?? '')->implode(' | ');
+                    $statusLogCreatedAt = $statusLogs->pluck('created_at')->map(fn ($value) => $value?->toDateTimeString() ?? '')->implode(' | ');
                     
                     $commonOrderData = [
                         $order->id, $order->order_no, $order->order_date, $order->status, $order->type,
@@ -1197,17 +1247,44 @@ class PageController extends Controller
                         $warehouseName ?: '-', $carriers ?: '-', $trackings ?: '-',
                     ];
 
+                    $additionalOrderData = [
+                        $order->party_id, $order->selected_offer_id, $order->future_order_date, $order->scheduled_confirmation_date, $order->confirmation_attempts,
+                        $order->pending_at, $actorNames->get($order->pending_by, ''),
+                        $order->pending_confirmation_at, $actorNames->get($order->pending_confirmation_by, ''),
+                        $order->future_order_at, $actorNames->get($order->future_order_by, ''),
+                        $order->confirmed_at, $actorNames->get($order->confirmed_by, ''),
+                        $order->processing_at, $actorNames->get($order->processing_by, ''),
+                        $order->ready_to_ship_at, $actorNames->get($order->ready_to_ship_by, ''),
+                        $order->dispatched_at, $actorNames->get($order->dispatched_by, ''),
+                        $order->shipped_at, $actorNames->get($order->shipped_by, ''),
+                        $order->delivered_at, $actorNames->get($order->delivered_by, ''),
+                        $order->cancelled_at, $actorNames->get($order->cancelled_by, ''),
+                        $order->returned_at, $actorNames->get($order->returned_by, ''),
+                        $order->return_requested_at, $actorNames->get($order->return_requested_by, ''),
+                        $order->warehouse_id, $order->shipping_address_id, $order->shipping_village_id, $order->billing_address_id, $order->billing_village_id,
+                        $actorNames->get($order->created_by, ''), $actorNames->get($order->updated_by, ''),
+                        $order->created_at, $order->updated_at, $order->deleted_at,
+                        $statusLogIds, $statusLogStatuses, $statusLogNotes,
+                        $statusLogChangedByNames, $statusLogCreatedAt,
+                    ];
+
                     if ($order->items->isEmpty()) {
-                        fputcsv($file, array_merge($commonOrderData, [
-                            '-', '-', '-', '-', '-', '-', '-', '-', '-'
-                        ]));
+                        fputcsv($file, array_merge(
+                            $commonOrderData,
+                            ['-', '-', '-', '-', '-', '-', '-', '-', '-'],
+                            $additionalOrderData,
+                            ['-', '-', '-', '-', '-']
+                        ));
                     } else {
                         foreach ($order->items as $item) {
                             $productName = $item->product ? $item->product->name : 'Unknown Product';
                             $productSku = $item->product ? $item->product->sku : '-';
-                            fputcsv($file, array_merge($commonOrderData, [
-                                $productName, $productSku, $item->batch_number ?: '-', $item->quantity, $item->unit_price, $item->tax_rate, $item->tax_amount, $item->discount_amount, $item->total_amount,
-                            ]));
+                            fputcsv($file, array_merge(
+                                $commonOrderData,
+                                [$productName, $productSku, $item->batch_number ?: '-', $item->quantity, $item->unit_price, $item->tax_rate, $item->tax_amount, $item->discount_amount, $item->total_amount],
+                                $additionalOrderData,
+                                [$item->product_variant_id, $item->is_gift, $item->gift_source, $item->created_at, $item->updated_at]
+                            ));
                         }
                     }
                 }

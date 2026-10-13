@@ -343,7 +343,20 @@
                 </div>
                 <div class="modal-body pt-3 bg-body-tertiary">
                     <form @submit.prevent="saveOffice" autocomplete="off">
-                        <p class="small text-muted mb-3">Configure branch details and API credentials</p>
+                        <p class="small text-muted mb-3">Configure branch details and API credentials. Use values issued for this India Post office and environment.</p>
+
+                        <div class="alert alert-info border-info-subtle small mb-3" role="note">
+                            <div class="fw-bold mb-1"><i class="bi bi-list-check me-1"></i>Production setup checklist</div>
+                            <ul class="mb-2 ps-3">
+                                <li>For production, use <code>https://app.indiapost.gov.in/beextcustomer</code> and production username/password and Bulk Customer ID issued by India Post. Do not use UAT credentials.</li>
+                                <li>Enter the assigned Facility ID as exactly 8 digits. Booking PIN and drop-off PIN must each be exactly 6 digits and belong to this office.</li>
+                                <li>Enter the production contract IDs for products enabled on your account: Speed Post document, Speed Post parcel, Business Parcel, 24_SPEEDPOST_DOC, 24_SPP_PARSPL, and 48_SPEEDPOST_DOC. India Post must confirm which products/contracts are enabled. The current automatic booking flow uses Business Parcel, so its contract is required.</li>
+                                <li>Add only the AWB/barcode range assigned to this production account in <strong>Manage Ranges</strong>: two-letter prefix and sequence bounds from 0 to 99,999,999.</li>
+                                <li>Set the correct office to <strong>Active</strong> and <strong>Default</strong>. Coordinate deployment: configure the same production URL and credentials in environment settings, allowlist the application’s production IP, and confirm India Post webhook access requirements.</li>
+                                <li>Apply the tracking migration before enabling tracking persistence. Confirm the pincode lookup route with India Post: the supplied documents specify <code>/v1/pincode-search</code>, while this project currently calls <code>/v1/offices/limited-details</code> on the master-data host.</li>
+                            </ul>
+                            <span class="text-muted">Use the production values above only for a production office; use the matching UAT URL and credentials for a UAT office.</span>
+                        </div>
 
                         <div class="row g-3">
                             
@@ -364,15 +377,15 @@
                                             </div>
                                             <div class="col-md-3">
                                                 <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Booking PIN Code *</label>
-                                                <input type="text" class="form-control form-control-sm fw-semibold" x-model="officeForm.booking_office_pin" placeholder="e.g. 560001" style="font-size: 12px;" required>
+                                                <input type="text" class="form-control form-control-sm fw-semibold" x-model="officeForm.booking_office_pin" placeholder="6 digits from India Post" inputmode="numeric" maxlength="6" style="font-size: 12px;" required>
                                             </div>
                                             <div class="col-md-3">
                                                 <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Drop-off PIN Code *</label>
-                                                <input type="text" class="form-control form-control-sm fw-semibold" x-model="officeForm.drop_off_pincode" placeholder="e.g. 560001" style="font-size: 12px;" required>
+                                                <input type="text" class="form-control form-control-sm fw-semibold" x-model="officeForm.drop_off_pincode" placeholder="6 digits from India Post" inputmode="numeric" maxlength="6" style="font-size: 12px;" required>
                                             </div>
                                             <div class="col-md-6">
                                                 <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Facility ID (Office ID) *</label>
-                                                <input type="text" class="form-control form-control-sm fw-semibold" x-model="officeForm.pickup_dropoff_office_id" placeholder="8 digits ID" style="font-size: 12px;" required>
+                                                <input type="text" class="form-control form-control-sm fw-semibold" x-model="officeForm.pickup_dropoff_office_id" placeholder="8 digits from India Post" inputmode="numeric" maxlength="8" style="font-size: 12px;" required>
                                             </div>
                                             <div class="col-md-3">
                                                 <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Status</label>
@@ -406,7 +419,8 @@
                                         <div class="row g-2">
                                             <div class="col-md-12">
                                                 <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Base URL *</label>
-                                                <input type="url" class="form-control form-control-sm fw-semibold text-primary" x-model.trim="officeForm.api_base_url" :placeholder="defaultApiBaseUrl" style="font-size: 12px;" required>
+                                                <input type="url" class="form-control form-control-sm fw-semibold text-primary" x-model.trim="officeForm.api_base_url" :placeholder="isProduction ? 'https://app.indiapost.gov.in/beextcustomer' : defaultApiBaseUrl" style="font-size: 12px;" required>
+                                                <div class="form-text" style="font-size: 10px;">Production: <code>https://app.indiapost.gov.in/beextcustomer</code>. Use the UAT host only with UAT credentials.</div>
                                             </div>
                                             <div class="col-md-6">
                                                 <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Username *</label>
@@ -427,7 +441,7 @@
                                             </div>
                                             <div class="col-md-12 mt-3">
                                                 <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Bulk Customer ID *</label>
-                                                <input type="text" class="form-control form-control-sm fw-semibold" x-model="officeForm.bulk_customer_id" placeholder="e.g. 3000064781" style="font-size: 12px;" required>
+                                                <input type="text" class="form-control form-control-sm fw-semibold" x-model="officeForm.bulk_customer_id" placeholder="Production customer ID from India Post" style="font-size: 12px;" required>
                                             </div>
                                             <div class="col-md-12 mt-2">
                                                 <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Webhook URL (For India Post)</label>
@@ -467,18 +481,19 @@
                                                 <input type="text" class="form-control form-control-sm fw-semibold" x-model="officeForm.contract_bp" style="font-size: 12px;">
                                             </div>
                                             <div class="col-md-6">
-                                                <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Express Parcel (Document)</label>
+                                                <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">24_SPEEDPOST_DOC</label>
                                                 <input type="text" class="form-control form-control-sm fw-semibold" x-model="officeForm.contract_24_sp_doc" style="font-size: 12px;">
                                             </div>
                                             <div class="col-md-6">
-                                                <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Express Parcel</label>
+                                                <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">24_SPP_PARSPL</label>
                                                 <input type="text" class="form-control form-control-sm fw-semibold" x-model="officeForm.contract_24_spp_parspl" style="font-size: 12px;">
                                             </div>
                                             <div class="col-md-6">
-                                                <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Registered Parcel</label>
+                                                <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">48_SPEEDPOST_DOC</label>
                                                 <input type="text" class="form-control form-control-sm fw-semibold" x-model="officeForm.contract_48_sp_doc" style="font-size: 12px;">
                                             </div>
                                         </div>
+                                        <div class="form-text mt-2" style="font-size: 10px;">Use production contract IDs issued for this customer. Business Parcel is required by the current automatic booking flow; other contracts are needed only for products enabled for this account.</div>
                                     </div>
                                 </div>
                             </div>
@@ -598,6 +613,7 @@
                                             <i class="bi bi-plus-circle text-primary me-2" x-show="!isEditingRange"></i>
                                             <span x-text="isEditingRange ? 'Edit Range' : 'Add New Range'"></span>
                                         </h6>
+                                        <div class="alert alert-warning py-2 px-3 small mb-3" role="note">For production, enter only an AWB range assigned by India Post to this customer account. Prefix must be two letters; start and end sequence must be within 0–99,999,999.</div>
                                         <form @submit.prevent="saveNewRange()" class="row g-2 align-items-end">
                                             <div class="col-md-2">
                                                 <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Prefix *</label>
