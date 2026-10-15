@@ -914,7 +914,7 @@ class OrderController extends Controller implements HasMiddleware
             'scope' => ['nullable', 'in:auto,village,pincode,district'],
         ]);
 
-        $periodDays = (int) ($validated['period_days'] ?? 180);
+        $periodDays = (int) ($validated['period_days'] ?? 30);
         $requestedScope = $validated['scope'] ?? 'auto';
 
         $customer = Party::query()

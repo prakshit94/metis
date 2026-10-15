@@ -3503,7 +3503,7 @@ mapOrder(o) {
         nearbySellingInsightsError: '',
         nearbySellingInsightsRequestId: 0,
         showNearbySellingInsights: false,
-        nearbyInsightsPeriodDays: '180',
+        nearbyInsightsPeriodDays: '30',
         nearbyInsightsScope: 'auto',
         nearbySellingInsightsAbortController: null,
         products: [], productQuery: '', stockFilter: 'in-stock', categoryFilter: '', perPage: 10,
@@ -4057,7 +4057,7 @@ mapOrder(o) {
         },
 
         get nearbyInsightsPeriodLabel() {
-            return ({ '30': '30 days', '90': '90 days', '180': '6 months', '365': '12 months' })[String(this.nearbyInsightsPeriodDays)] || '6 months';
+            return ({ '30': '30 days', '90': '90 days', '180': '6 months', '365': '12 months' })[String(this.nearbyInsightsPeriodDays)] || '30 days';
         },
 
         toggleNearbySellingInsights() {
