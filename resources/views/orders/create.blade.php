@@ -132,7 +132,7 @@
                 <div class="card-header bg-transparent border-bottom py-3 px-4 d-flex justify-content-between align-items-center customer-workspace-header">
                     <div class="d-flex align-items-center gap-3">
                         <template x-if="customerDetails">
-                            <div class="d-flex align-items-center gap-4 flex-wrap">
+                            <div class="customer-workspace-overview d-flex align-items-center gap-4 flex-wrap">
                                 <div class="d-flex align-items-center gap-3">
                                     <div class="rounded-circle bg-primary text-white fw-bold d-flex align-items-center justify-content-center shadow-sm overflow-hidden" style="width: 48px; height: 48px;">
                                         <template x-if="customerDetails.avatar">
@@ -170,7 +170,7 @@
                                 </div>
                                 
                                 <!-- Referral Stats in Header -->
-                                <div class="d-flex gap-3 align-items-start border-start ps-3 ms-1 border-secondary border-opacity-25" x-show="customerDetails.referral_code || customerDetails?.referrer || customerDetails?.total_farmers_referred > 0" x-cloak>
+                                <div class="customer-workspace-stat-group d-flex gap-3 align-items-start border-start ps-3 ms-1 border-secondary border-opacity-25" x-show="customerDetails.referral_code || customerDetails?.referrer || customerDetails?.total_farmers_referred > 0" x-cloak>
                                     <!-- Referral Code -->
                                     <div x-show="customerDetails.referral_code" style="min-width: 110px;">
                                         <span class="text-body-secondary d-block fw-bold text-uppercase" style="font-size: 9px; letter-spacing: 0.5px;">Referral Code</span>
@@ -226,7 +226,7 @@
                                 </div>
                                 
                                 <!-- Complaints Stats in Header -->
-                                <div class="d-flex gap-3 align-items-start border-start ps-3 border-secondary border-opacity-25" x-show="customerDetails.total_complaints > 0" x-cloak>
+                                <div class="customer-workspace-stat-group d-flex gap-3 align-items-start border-start ps-3 border-secondary border-opacity-25" x-show="customerDetails.total_complaints > 0" x-cloak>
                                     <div style="min-width: 110px;">
                                         <span class="text-body-secondary d-block fw-bold text-uppercase" style="font-size: 9px; letter-spacing: 0.5px;">Complaints</span>
                                         <div class="d-flex align-items-center gap-1 mt-1">
@@ -242,7 +242,7 @@
                                     </div>
                                 </div>
                                 
-                                <div class="d-flex flex-column align-items-start gap-2 border-start ps-3 border-secondary border-opacity-25" x-show="customerDetails.created_at || customerDetails.updated_at" x-cloak>
+                                <div class="customer-workspace-stat-group d-flex flex-column align-items-start gap-2 border-start ps-3 border-secondary border-opacity-25" x-show="customerDetails.created_at || customerDetails.updated_at" x-cloak>
                                     <div x-show="customerDetails.created_at" class="badge text-bg-primary-subtle text-primary-emphasis fw-medium" style="font-size: 10px; letter-spacing: 0.5px;">
                                         <i class="bi bi-clock-history me-1"></i> Since: <span x-text="new Date(customerDetails.created_at).toLocaleDateString()"></span> 
                                         (<span x-text="customerDetails.created_at ? Math.max(0, Math.floor((new Date() - new Date(customerDetails.created_at)) / 86400000)) : 0"></span> days)
@@ -258,18 +258,18 @@
                         </template>
                     </div>
                     <div class="d-flex align-items-center gap-3 customer-workspace-header-actions" x-show="customerDetails" x-cloak>
-                        <div class="form-check form-switch cursor-pointer ms-2 mb-0 d-flex align-items-center" title="Toggle Workspace">
-                            <input class="form-check-input mt-0 me-2 shadow-sm" type="checkbox" role="switch" id="workspaceToggleBtn" x-model="showCustomerWorkspace" style="cursor: pointer;">
-                            <label class="form-check-label fw-bold text-body-secondary text-uppercase mb-0" for="workspaceToggleBtn" style="cursor: pointer; font-size: 10px; letter-spacing: 0.5px;" x-text="showCustomerWorkspace ? 'Hide Profile' : 'View Profile'"></label>
-                        </div>
                         @can('customer-edit')
                         <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 shadow-sm hover-shadow transition-all" @click="$dispatch('open-add-customer-modal', {customer: customerDetails})">
                             <i class="bi bi-pencil-square me-1"></i>Edit Profile
                         </button>
                         @endcan
+                        <button type="button" class="btn btn-sm" :class="showCustomerWorkspace ? 'btn-outline-secondary' : 'btn-outline-primary'" @click="showCustomerWorkspace = !showCustomerWorkspace" :aria-expanded="showCustomerWorkspace.toString()" aria-controls="customer-profile-details">
+                            <i class="bi me-1" :class="showCustomerWorkspace ? 'bi-eye-slash' : 'bi-eye'"></i>
+                            <span x-text="showCustomerWorkspace ? 'Hide Profile' : 'View Profile'"></span>
+                        </button>
                     </div>
                 </div>
-                <div class="card-body p-4 p-lg-4" x-show="showCustomerWorkspace">
+                <div id="customer-profile-details" class="card-body p-4 p-lg-4" x-show="showCustomerWorkspace" x-transition x-cloak>
                     <div class="card border shadow-sm mb-4" x-show="customerDetails" x-cloak>
 
                         <div class="card-body p-3">
@@ -399,15 +399,27 @@
                 
                 <div class="card-body p-4 p-lg-4" :class="{'border-top': showCustomerWorkspace}" x-show="partyId" x-cloak>
                     {{-- Addresses Section --}}
-                    <div id="addresses-section" class="transition-all">
-                        <div class="d-flex justify-content-between align-items-center mb-4">
-                            <h6 class="fw-bold mb-0 text-body fs-5"><i class="bi bi-geo-alt-fill me-2 text-primary"></i>Shipping Addresses</h6>
-                            @can('customeraddress-create')
-                            <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-4 shadow-sm hover-shadow transition-all" @click="$dispatch('open-address-modal', {customerId: partyId})">
-                                <i class="bi bi-plus-lg me-2"></i>Add Address
-                            </button>
-                            @endcan
+                    <div id="addresses-section" class="customer-address-section transition-all">
+                        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                            <div>
+                                <h6 class="fw-bold mb-0 text-body fs-5"><i class="bi bi-geo-alt-fill me-2 text-primary"></i>Shipping Addresses</h6>
+                                <div class="small text-body-secondary mt-1" x-show="!showCustomerAddresses && addresses.length">
+                                    Selected: <span class="fw-semibold" x-text="(() => { const a = addresses.find(item => String(item.id) === String(shippingAddressId)); return a ? [a.label || 'Address', a.city, a.state, a.pincode].filter(Boolean).join(' · ') : 'No shipping address selected'; })()"></span>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                @can('customeraddress-create')
+                                <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 shadow-sm" @click="$dispatch('open-address-modal', {customerId: partyId})">
+                                    <i class="bi bi-plus-lg me-1"></i>Add Address
+                                </button>
+                                @endcan
+                                <button type="button" class="btn btn-sm" :class="showCustomerAddresses ? 'btn-outline-secondary' : 'btn-outline-primary'" @click="showCustomerAddresses = !showCustomerAddresses" :aria-expanded="showCustomerAddresses.toString()" aria-controls="customer-address-details">
+                                    <i class="bi me-1" :class="showCustomerAddresses ? 'bi-eye-slash' : 'bi-eye'"></i>
+                                    <span x-text="showCustomerAddresses ? 'Hide Addresses' : 'View Addresses'"></span>
+                                </button>
+                            </div>
                         </div>
+                        <div id="customer-address-details" x-show="showCustomerAddresses" x-transition x-cloak>
                         
                         <div class="row g-4">
                             <template x-for="addr in addresses" :key="addr.id">
@@ -542,6 +554,7 @@
                                     </div>
                                 </template>
                             </div>
+                        </div>
                         </div>
                     </div>
 
@@ -2926,6 +2939,50 @@
         min-width: 0;
     }
 
+    .customer-workspace-header {
+        align-items: flex-start !important;
+        gap: 1rem;
+    }
+
+    .customer-workspace-header > div:first-child {
+        flex: 1 1 720px;
+        min-width: 0;
+    }
+
+    .customer-workspace-overview {
+        align-items: flex-start !important;
+        gap: 1rem !important;
+    }
+
+    .customer-workspace-overview > div,
+    .customer-workspace-stat-group {
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    .customer-workspace-header-actions {
+        flex: 0 0 auto;
+        align-self: flex-start;
+        flex-wrap: wrap;
+    }
+
+    .customer-address-section .btn {
+        white-space: nowrap;
+    }
+
+    #customer-address-details > .row {
+        align-items: stretch;
+    }
+
+    #customer-address-details > .row > [class*="col-"] {
+        display: flex;
+    }
+
+    #customer-address-details > .row > [class*="col-"] > * {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
     /* Hide number input spin buttons */
     .no-spinners::-webkit-inner-spin-button,
     .no-spinners::-webkit-outer-spin-button {
@@ -2980,8 +3037,29 @@
         }
 
         .customer-workspace-header-actions {
-            justify-content: space-between;
+            justify-content: flex-start;
             flex-wrap: wrap;
+        }
+
+        .customer-workspace-overview {
+            width: 100%;
+        }
+
+        .customer-workspace-stat-group {
+            border-left: 0 !important;
+            border-top: 1px solid var(--bs-border-color);
+            padding: .75rem 0 0 !important;
+            margin: 0 !important;
+            width: 100%;
+        }
+
+        .customer-address-section > .d-flex {
+            align-items: flex-start !important;
+        }
+
+        .customer-address-section > .d-flex > div:last-child {
+            flex-wrap: wrap;
+            justify-content: flex-start;
         }
 
         #productDetailsModal .modal-body > .row {
@@ -3411,6 +3489,7 @@ mapOrder(o) {
 
         viewMode: 'table',
         showCustomerWorkspace: false,
+        showCustomerAddresses: true,
         isCartSidebarOpen: false, useWalletBalance: false,
         partyId: new URLSearchParams(window.location.search).get('customer_id') || '', defaultWarehouseId: '{{ $warehouses->where("is_default", true)->first()->id ?? ($warehouses->first()->id ?? "") }}', warehouseId: '{{ $warehouses->where("is_default", true)->first()->id ?? ($warehouses->first()->id ?? "") }}', previousWarehouseId: '{{ $warehouses->where("is_default", true)->first()->id ?? ($warehouses->first()->id ?? "") }}', shippingAddressId: '', billingAddressId: '', sameAsShipping: true, orderType: 'sale', shippingFee: 0,
         orderDate: (() => { const d = new Date(); const o = d.getTimezoneOffset() * 60000; return new Date(d - o).toISOString().slice(0, 19).replace('T', ' '); })(),
