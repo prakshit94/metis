@@ -549,11 +549,102 @@
 
             </div>
 
+            {{-- Local selling insights (read-only recommendations) --}}
+            <div class="card shadow-sm border-start border-4 border-info mb-4" x-show="partyId" x-cloak>
+                <div class="card-header bg-transparent border-bottom py-3 px-4 d-flex flex-wrap align-items-center justify-content-between gap-2">
+                    <div>
+                        <h5 class="fw-bold mb-1"><i class="bi bi-graph-up-arrow me-2 text-info"></i>Local Selling Insights</h5>
+                        <div class="small text-body-secondary">
+                            <span x-show="showNearbySellingInsights && nearbySellingInsights.location">Based on <span class="fw-semibold" x-text="nearbySellingInsights.location"></span> · last <span x-text="nearbyInsightsPeriodLabel"></span></span>
+                            <span x-show="!nearbySellingInsights.location">Open to load local trends for the selected address.</span>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge text-bg-info-subtle text-info-emphasis" x-show="showNearbySellingInsights && nearbySellingInsights.location_level" x-text="['village', 'village_pincode'].includes(nearbySellingInsights.location_level) ? (nearbySellingInsights.location_level === 'village_pincode' ? 'Village / PIN area' : 'Village match') : (nearbySellingInsights.location_level === 'pincode' ? 'PIN code match' : 'District match')"></span>
+                        <button type="button" class="btn btn-sm" :class="showNearbySellingInsights ? 'btn-outline-secondary' : 'btn-info'" @click="toggleNearbySellingInsights()" :aria-expanded="showNearbySellingInsights.toString()">
+                            <i class="bi me-1" :class="showNearbySellingInsights ? 'bi-eye-slash' : 'bi-eye'"></i>
+                            <span x-text="showNearbySellingInsights ? 'Hide insights' : 'Show insights'"></span>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body p-3 p-lg-4" x-show="showNearbySellingInsights" x-transition x-cloak>
+                    <div class="d-flex flex-wrap gap-2 mb-3">
+                        <label class="small text-body-secondary d-flex align-items-center gap-2">Period
+                            <select class="form-select form-select-sm w-auto" x-model="nearbyInsightsPeriodDays" @change="loadNearbySellingInsights()">
+                                <option value="30">Last 30 days</option><option value="90">Last 90 days</option><option value="180">Last 6 months</option><option value="365">Last 12 months</option>
+                            </select>
+                        </label>
+                        <label class="small text-body-secondary d-flex align-items-center gap-2">Area
+                            <select class="form-select form-select-sm w-auto" x-model="nearbyInsightsScope" @change="loadNearbySellingInsights()">
+                                <option value="auto">Village / PIN area</option><option value="village">Same village</option><option value="pincode">Same PIN code</option><option value="district">Same district</option>
+                            </select>
+                        </label>
+                    </div>
+                    <div class="text-center py-4" x-show="nearbySellingInsightsLoading" x-cloak>
+                        <span class="spinner-border spinner-border-sm text-info me-2" role="status" aria-hidden="true"></span>
+                        <span class="small text-body-secondary">Loading local sales insights…</span>
+                    </div>
+                    <div class="alert alert-warning py-2 mb-3" x-show="nearbySellingInsightsError" x-text="nearbySellingInsightsError" x-cloak></div>
+                    <div class="row g-3" x-show="!nearbySellingInsightsLoading && nearbySellingInsights.location" x-cloak>
+                        <div class="col-12 col-xl-6">
+                            <div class="card h-100 border rounded-3">
+                                <div class="card-header bg-body-tertiary py-2 px-3">
+                                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                                        <h6 class="mb-0 fw-bold"><i class="bi bi-people me-2 text-primary"></i>Nearby Farmers Who Purchased</h6>
+                                        <span class="badge text-bg-primary-subtle text-primary-emphasis" x-text="Number(nearbySellingInsights.customer_count || 0).toLocaleString('en-IN') + ' customers in this area'"></span>
+                                    </div>
+                                    <div class="small text-body-secondary mt-1">Showing up to 5 recent purchasers from this locality.</div>
+                                </div>
+                                <div class="list-group list-group-flush">
+                                    <template x-for="(farmer, index) in nearbySellingInsights.customers" :key="'nearby-farmer-' + farmer.id">
+                                        <div class="list-group-item d-flex align-items-center gap-3 py-2 px-3">
+                                            <span class="badge rounded-pill text-bg-primary-subtle text-primary-emphasis" x-text="index + 1"></span>
+                                            <div class="flex-grow-1 min-w-0">
+                                                <div class="fw-semibold text-truncate" x-text="farmer.name || 'Farmer'"></div>
+                                                <div class="small text-body-secondary">Last purchase <span x-text="farmer.last_purchase_at ? new Date(farmer.last_purchase_at).toLocaleDateString('en-IN') : '—'"></span></div>
+                                                <div class="small text-body-secondary" x-show="farmer.village_name" x-text="'Village: ' + farmer.village_name"></div>
+                                            </div>
+                                            <span class="badge text-bg-secondary-subtle text-secondary-emphasis" x-text="farmer.recent_order_count + (farmer.recent_order_count === 1 ? ' order' : ' orders')"></span>
+                                        </div>
+                                    </template>
+                                    <div class="list-group-item small text-body-secondary py-3" x-show="nearbySellingInsights.customers.length === 0">No recent nearby purchases found for this location.</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-xl-6">
+                            <div class="card h-100 border rounded-3">
+                                <div class="card-header bg-body-tertiary py-2 px-3">
+                                    <h6 class="mb-0 fw-bold"><i class="bi bi-basket me-2 text-success"></i>Top Products Sold Nearby</h6>
+                                </div>
+                                <div class="list-group list-group-flush">
+                                    <template x-for="(product, index) in nearbySellingInsights.products" :key="'nearby-product-' + product.id">
+                                        <div class="list-group-item nearby-product-row py-2 px-3">
+                                            <span class="badge rounded-pill text-bg-success-subtle text-success-emphasis nearby-product-rank" x-text="index + 1"></span>
+                                            <img :src="product.image_url || '/assets/images/product-placeholder.svg'" :alt="product.name" class="rounded border bg-body nearby-product-image" style="width: 48px; height: 48px; object-fit: cover;" x-on:error="$el.src='/assets/images/product-placeholder.svg'">
+                                            <div class="nearby-product-details">
+                                                <div class="fw-semibold text-truncate" x-text="product.name"></div>
+                                                <div class="small text-body-secondary" x-text="product.sku || 'No SKU'"></div>
+                                            </div>
+                                            <div class="text-end nearby-product-metrics">
+                                                <div class="fw-bold text-success" x-text="Number(product.units_sold).toLocaleString('en-IN') + ' sold'"></div>
+                                                <div class="small text-body-secondary" x-text="'₹ ' + (Number(product.selling_price || 0) * (1 + (Number(product.tax_rate) || 0) / 100)).toFixed(2) + ' / unit incl. tax'"></div>
+                                                <div class="small text-body-secondary" x-text="Number(product.order_count).toLocaleString('en-IN') + ' orders · ' + Number(product.buyer_count).toLocaleString('en-IN') + ' buyers'"></div>
+                                                <div class="small text-body-secondary" x-text="'Sales ₹ ' + Number(product.sales_value || 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2)}"></div>
+                                            </div>
+                                        </div>
+                                    </template>
+                                    <div class="list-group-item small text-body-secondary py-3" x-show="nearbySellingInsights.products.length === 0">No recent product sales found for this location.</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             {{-- Product Search Card --}}
             <div id="catalog-section" class="card shadow-sm border-start border-4 border-primary mb-4">
                 <div class="card-header bg-transparent border-bottom py-3">
                     <div class="d-flex flex-wrap gap-2 align-items-center justify-content-between">
-                        <span class="fw-bold fs-5"><i class="bi bi-search me-2 text-info"></i>Product Catalog</span>
                         <div class="d-flex flex-wrap gap-2 flex-grow-1 justify-content-md-end align-items-center">
 
                             <div class="btn-group" role="group">
@@ -2821,6 +2912,20 @@
         color: var(--bs-emphasis-color);
     }
 
+    .nearby-product-row {
+        display: grid !important;
+        grid-template-columns: auto 48px minmax(0, 1fr) auto;
+        align-items: center;
+        gap: .75rem;
+    }
+
+    .nearby-product-rank,
+    .nearby-product-image,
+    .nearby-product-details,
+    .nearby-product-metrics {
+        min-width: 0;
+    }
+
     /* Hide number input spin buttons */
     .no-spinners::-webkit-inner-spin-button,
     .no-spinners::-webkit-outer-spin-button {
@@ -2892,6 +2997,31 @@
         #productDetailsModal .modal-body > .row > .col-md-8 {
             flex: 0 0 100%;
             width: 100%;
+        }
+    }
+
+    @media (max-width: 575.98px) {
+        .nearby-product-row {
+            grid-template-columns: auto 40px minmax(0, 1fr);
+            gap: .5rem;
+        }
+
+        .nearby-product-image {
+            width: 40px !important;
+            height: 40px !important;
+        }
+
+        .nearby-product-metrics {
+            grid-column: 1 / -1;
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            align-items: baseline;
+            gap: .5rem;
+            text-align: left !important;
+        }
+
+        .nearby-product-metrics .small {
+            text-align: right;
         }
     }
 </style>
@@ -3289,6 +3419,14 @@ mapOrder(o) {
         editingOrderNo: null,
         addresses: [],
         recentOrders: [],
+        nearbySellingInsights: { location: null, location_level: null, customer_count: 0, customers: [], products: [] },
+        nearbySellingInsightsLoading: false,
+        nearbySellingInsightsError: '',
+        nearbySellingInsightsRequestId: 0,
+        showNearbySellingInsights: false,
+        nearbyInsightsPeriodDays: '180',
+        nearbyInsightsScope: 'auto',
+        nearbySellingInsightsAbortController: null,
         products: [], productQuery: '', stockFilter: 'in-stock', categoryFilter: '', perPage: 10,
         searching: false, productPage: 1, productLastPage: 1, productTotal: 0, productFrom: 0, productTo: 0,
         cart: [], couponCode: '', couponApplied: false, appliedCouponObj: null, originalCouponCode: '', appliedOfferId: null,
@@ -3568,6 +3706,10 @@ mapOrder(o) {
                     this.cart = [];
                 }
             });
+
+            this.$watch('shippingAddressId', () => {
+                if (this.showNearbySellingInsights) this.loadNearbySellingInsights();
+            });
         },
         
         getAppliedItemOffers(order) {
@@ -3792,7 +3934,13 @@ mapOrder(o) {
         },
 
         async loadAddresses() {
-            if (!this.partyId) { this.addresses = []; this.recentOrders = []; this.customerDetails = null; return; }
+            if (!this.partyId) {
+                this.addresses = [];
+                this.recentOrders = [];
+                this.customerDetails = null;
+                this.nearbySellingInsights = { location: null, location_level: null, customer_count: 0, customers: [], products: [] };
+                return;
+            }
             try {
                 const res = await fetch(`/customers/${this.partyId}?_t=${Date.now()}`, { headers: {'Accept':'application/json','X-Requested-With':'XMLHttpRequest'} });
                 const json = await res.json();
@@ -3825,7 +3973,67 @@ mapOrder(o) {
                     }
                     */
                 }
+                if (this.showNearbySellingInsights) this.loadNearbySellingInsights();
             } catch(e) { console.error(e); }
+        },
+
+        get nearbyInsightsPeriodLabel() {
+            return ({ '30': '30 days', '90': '90 days', '180': '6 months', '365': '12 months' })[String(this.nearbyInsightsPeriodDays)] || '6 months';
+        },
+
+        toggleNearbySellingInsights() {
+            this.showNearbySellingInsights = !this.showNearbySellingInsights;
+            if (this.showNearbySellingInsights) {
+                this.loadNearbySellingInsights();
+                return;
+            }
+            this.nearbySellingInsightsRequestId++;
+            this.nearbySellingInsightsAbortController?.abort();
+            this.nearbySellingInsightsAbortController = null;
+            this.nearbySellingInsightsLoading = false;
+        },
+
+        async loadNearbySellingInsights() {
+            if (!this.showNearbySellingInsights) return;
+            const requestId = ++this.nearbySellingInsightsRequestId;
+            this.nearbySellingInsightsAbortController?.abort();
+            if (!this.partyId) {
+                this.nearbySellingInsights = { location: null, location_level: null, customer_count: 0, customers: [], products: [] };
+                this.nearbySellingInsightsLoading = false;
+                this.nearbySellingInsightsError = '';
+                return;
+            }
+
+            this.nearbySellingInsightsLoading = true;
+            this.nearbySellingInsightsError = '';
+            const abortController = new AbortController();
+            this.nearbySellingInsightsAbortController = abortController;
+            try {
+                const params = new URLSearchParams({ customer_id: this.partyId, period_days: String(this.nearbyInsightsPeriodDays), scope: this.nearbyInsightsScope });
+                if (this.shippingAddressId) params.set('address_id', this.shippingAddressId);
+                const response = await fetch(`/orders/nearby-selling-insights?${params.toString()}`, {
+                    headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                    signal: abortController.signal,
+                });
+                const result = await response.json();
+                if (!response.ok || !result.success) {
+                    throw new Error(result.message || 'Unable to load local sales insights.');
+                }
+                if (requestId === this.nearbySellingInsightsRequestId) {
+                    this.nearbySellingInsights = result.data || { location: null, location_level: null, customer_count: 0, customers: [], products: [] };
+                }
+            } catch (error) {
+                if (error.name === 'AbortError') return;
+                if (requestId === this.nearbySellingInsightsRequestId) {
+                    this.nearbySellingInsights = { location: null, location_level: null, customer_count: 0, customers: [], products: [] };
+                    this.nearbySellingInsightsError = error.message || 'Unable to load local sales insights.';
+                }
+            } finally {
+                if (requestId === this.nearbySellingInsightsRequestId) {
+                    this.nearbySellingInsightsLoading = false;
+                    this.nearbySellingInsightsAbortController = null;
+                }
+            }
         },
 
         async openProductModal(p) {

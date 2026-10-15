@@ -151,6 +151,9 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('orders/{order}/receipt', [OrderController::class, 'receipt'])->name('orders.receipt');
     Route::get('/order-reasons', [OrderReasonController::class, 'index'])->name('order.reasons');
     Route::get('/orders', [OrderController::class, 'index'])->name('orders');
+    Route::get('/orders/nearby-selling-insights', [OrderController::class, 'nearbySellingInsights'])
+        ->name('orders.nearby-selling-insights')
+        ->middleware('permission:orders.create|orders.edit');
     Route::resource('orders', OrderController::class)->except(['index']);
 
     // Order Returns

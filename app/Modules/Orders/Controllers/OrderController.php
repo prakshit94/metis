@@ -41,6 +41,7 @@ class OrderController extends Controller implements HasMiddleware
         return [
             new Middleware('permission:orders.view', only: ['index', 'show']),
             new Middleware('permission:orders.create', only: ['store', 'preview']),
+            new Middleware('permission:orders.create|orders.edit', only: ['nearbySellingInsights']),
             new Middleware('permission:orders.edit', only: ['edit', 'update']),
             new Middleware('permission:orders.delete', only: ['destroy']),
             new Middleware('permission:orders.confirm', only: ['confirm']),
@@ -898,6 +899,247 @@ class OrderController extends Controller implements HasMiddleware
         }
 
         return view('orders.create', compact('warehouses', 'activeOffers', 'activeCoupons', 'categories', 'hideSidebar', 'lockSearch', 'initialCustomer', 'initialOrder', 'initialCoupon', 'rescheduleReasons', 'cancelReasons'));
+    }
+
+    /**
+     * Read-only local sales recommendations for the order creation screen.
+     * Results are scoped to the selected address locality and recent sale orders.
+     */
+    public function nearbySellingInsights(Request $request)
+    {
+        $validated = $request->validate([
+            'customer_id' => ['required', 'integer', 'exists:parties,id'],
+            'address_id' => ['nullable', 'integer'],
+            'period_days' => ['nullable', 'integer', 'in:30,90,180,365'],
+            'scope' => ['nullable', 'in:auto,village,pincode,district'],
+        ]);
+
+        $periodDays = (int) ($validated['period_days'] ?? 180);
+        $requestedScope = $validated['scope'] ?? 'auto';
+
+        $customer = Party::query()
+            ->with(['addresses' => function ($query) {
+                $query->where('status', 'active')
+                    ->with('village:id,village_name,taluka_name,district_name,state_name')
+                    ->orderByDesc('is_default')
+                    ->orderBy('id');
+            }])
+            ->findOrFail($validated['customer_id']);
+
+        $address = $customer->addresses->firstWhere('id', $validated['address_id'] ?? null)
+            ?? $customer->addresses->first();
+
+        if (! $address) {
+            return response()->json([
+                'success' => true,
+                'data' => ['location' => null, 'location_level' => null, 'period_days' => $periodDays, 'customer_count' => 0, 'customers' => [], 'products' => []],
+            ]);
+        }
+
+        $villageId = $address->village_id;
+        $pincode = trim((string) $address->pincode);
+        $district = trim((string) ($address->village?->district_name ?: $address->district));
+        $state = trim((string) ($address->village?->state_name ?: $address->state));
+        $locationLevel = match ($requestedScope) {
+            'village' => $villageId ? 'village' : ($pincode !== '' ? 'pincode' : (($district !== '' && $state !== '') ? 'district' : null)),
+            'pincode' => $pincode !== '' ? 'pincode' : (($district !== '' && $state !== '') ? 'district' : null),
+            'district' => ($district !== '' && $state !== '') ? 'district' : null,
+            default => $villageId ? ($pincode !== '' ? 'village_pincode' : 'village') : ($pincode !== '' ? 'pincode' : (($district !== '' && $state !== '') ? 'district' : null)),
+        };
+
+        if (! $locationLevel) {
+            return response()->json([
+                'success' => true,
+                    'data' => ['location' => null, 'location_level' => null, 'period_days' => $periodDays, 'customer_count' => 0, 'customers' => [], 'products' => []],
+            ]);
+        }
+
+        $applyAddressLocation = function ($query, string $alias) use ($locationLevel, $villageId, $pincode, $district, $state): void {
+            $query->where(function ($locationQuery) use ($alias, $locationLevel, $villageId, $pincode, $district, $state) {
+                if (in_array($locationLevel, ['village', 'village_pincode'], true)) {
+                    $locationQuery->where("{$alias}.village_id", $villageId);
+                    if ($locationLevel === 'village_pincode' && $pincode !== '') {
+                        $locationQuery->orWhere("{$alias}.pincode", $pincode);
+                    }
+                } elseif ($locationLevel === 'pincode') {
+                    $locationQuery->where("{$alias}.pincode", $pincode);
+                } else {
+                    $locationQuery->where("{$alias}.district", $district)
+                        ->where("{$alias}.state", $state);
+                }
+            });
+        };
+
+        $applyOrderLocation = function ($query, string $alias) use ($locationLevel, $villageId, $pincode, $district, $state): void {
+            $query->where(function ($locationQuery) use ($alias, $locationLevel, $villageId, $pincode, $district, $state) {
+                if (in_array($locationLevel, ['village', 'village_pincode'], true)) {
+                    $locationQuery->where("{$alias}.shipping_village_id", $villageId);
+                    if ($locationLevel === 'village_pincode' && $pincode !== '') {
+                        $locationQuery->orWhere("{$alias}.shipping_pincode", $pincode);
+                    }
+                } elseif ($locationLevel === 'pincode') {
+                    $locationQuery->where("{$alias}.shipping_pincode", $pincode);
+                } else {
+                    $locationQuery->where("{$alias}.shipping_district", $district)
+                        ->where("{$alias}.shipping_state", $state);
+                }
+            });
+        };
+
+        $recentPeriod = now()->subDays($periodDays);
+        $eligibleOrders = function ($query, string $alias) use ($recentPeriod): void {
+            $query->where("{$alias}.type", 'sale')
+                ->whereNotIn("{$alias}.status", ['future_order', 'cancelled', 'returned'])
+                ->where("{$alias}.order_date", '>=', $recentPeriod)
+                ->whereNull("{$alias}.deleted_at");
+        };
+        $applyOrderVisibility = function ($query, string $alias): void {
+            $user = auth()->user();
+            if ($user->hasAnyRole(['Super Admin', 'Admin']) || $user->can('view-all-data')) {
+                return;
+            }
+
+            $query->whereIn("{$alias}.status", $this->allowedOrderFilterStatuses($user));
+            if ($lobStateName = $user->lob_state_name) {
+                $query->where(function ($scope) use ($alias, $lobStateName, $user) {
+                    $scope->where("{$alias}.shipping_state", $lobStateName)
+                        ->orWhere("{$alias}.created_by", $user->id);
+                });
+            }
+            if (! $user->can('view_all_order')) {
+                $query->where("{$alias}.created_by", $user->id);
+            }
+        };
+
+        $nearbyPartyIds = DB::table('party_addresses as nearby_address')
+            ->whereNull('nearby_address.deleted_at')
+            ->where('nearby_address.status', 'active')
+            ->where('nearby_address.party_id', '<>', $customer->id);
+        $applyAddressLocation($nearbyPartyIds, 'nearby_address');
+        $nearbyPartyIds->select('nearby_address.party_id')->distinct();
+
+        $nearbyCustomerCount = DB::table('parties as nearby_customer_count')
+            ->whereIn('nearby_customer_count.id', clone $nearbyPartyIds)
+            ->where('nearby_customer_count.type', 'customer')
+            ->where('nearby_customer_count.status', 'active')
+            ->where('nearby_customer_count.is_active', true)
+            ->where('nearby_customer_count.is_blacklisted', false)
+            ->whereNull('nearby_customer_count.deleted_at')
+            ->count();
+
+        $recentCustomerOrders = DB::table('orders as recent_order')
+            ->select(
+                'recent_order.party_id',
+                DB::raw('MAX(recent_order.order_date) as last_purchase_at'),
+                DB::raw('COUNT(recent_order.id) as recent_order_count')
+            );
+        $eligibleOrders($recentCustomerOrders, 'recent_order');
+        $applyOrderVisibility($recentCustomerOrders, 'recent_order');
+        $recentCustomerOrders->groupBy('recent_order.party_id');
+
+        $nearbyPartyAddress = DB::table('party_addresses as farmer_address')
+            ->leftJoin('villages as farmer_village', 'farmer_village.id', '=', 'farmer_address.village_id')
+            ->whereColumn('farmer_address.party_id', 'nearby_party.id')
+            ->whereNull('farmer_address.deleted_at')
+            ->where('farmer_address.status', 'active');
+        $applyAddressLocation($nearbyPartyAddress, 'farmer_address');
+        $nearbyPartyAddress
+            ->orderByDesc('farmer_address.is_default')
+            ->orderBy('farmer_address.id')
+            ->limit(1)
+            ->selectRaw("COALESCE(NULLIF(farmer_village.village_name, ''), NULLIF(farmer_address.village_name, ''), NULLIF(farmer_address.city, ''))");
+
+        $nearbyCustomers = DB::table('parties as nearby_party')
+            ->joinSub($recentCustomerOrders, 'recent_customer_orders', function ($join) {
+                $join->on('recent_customer_orders.party_id', '=', 'nearby_party.id');
+            })
+            ->whereIn('nearby_party.id', $nearbyPartyIds)
+            ->where('nearby_party.type', 'customer')
+            ->where('nearby_party.status', 'active')
+            ->where('nearby_party.is_active', true)
+            ->where('nearby_party.is_blacklisted', false)
+            ->whereNull('nearby_party.deleted_at')
+            ->orderByDesc('recent_customer_orders.last_purchase_at')
+            ->limit(5)
+            ->select([
+                'nearby_party.id',
+                'nearby_party.firstname',
+                'nearby_party.middlename',
+                'nearby_party.lastname',
+                'recent_customer_orders.last_purchase_at',
+                'recent_customer_orders.recent_order_count',
+            ])
+            ->selectSub($nearbyPartyAddress, 'village_name')
+            ->get()
+            ->map(fn ($farmer) => [
+                'id' => $farmer->id,
+                'name' => trim(implode(' ', array_filter([$farmer->firstname, $farmer->middlename, $farmer->lastname]))),
+                'last_purchase_at' => $farmer->last_purchase_at,
+                'recent_order_count' => (int) $farmer->recent_order_count,
+                'village_name' => $farmer->village_name,
+            ])
+            ->values();
+
+        $localProductSales = DB::table('orders as local_order')
+            ->join('order_items as local_item', 'local_item.order_id', '=', 'local_order.id')
+            ->join('products as local_product', 'local_product.id', '=', 'local_item.product_id')
+            ->leftJoin('tax_rates as local_tax_rate', function ($join) {
+                $join->on('local_tax_rate.id', '=', 'local_product.tax_rate_id')
+                    ->whereNull('local_tax_rate.deleted_at');
+            });
+        $eligibleOrders($localProductSales, 'local_order');
+        $applyOrderVisibility($localProductSales, 'local_order');
+        $applyOrderLocation($localProductSales, 'local_order');
+        $topProducts = $localProductSales
+            ->where('local_product.is_active', true)
+            ->where('local_product.is_sku_enabled', true)
+            ->select(
+                'local_product.id',
+                'local_product.name',
+                'local_product.sku',
+                'local_product.image_path',
+                'local_product.selling_price',
+                DB::raw('COALESCE(local_tax_rate.rate, 0) as tax_rate'),
+                DB::raw('SUM(local_item.quantity) as units_sold'),
+                DB::raw('COUNT(DISTINCT local_order.id) as order_count'),
+                DB::raw('COUNT(DISTINCT local_order.party_id) as buyer_count'),
+                DB::raw('SUM(local_item.total_amount) as sales_value'),
+                DB::raw('MAX(local_order.order_date) as last_sold_at')
+            )
+            ->groupBy('local_product.id', 'local_product.name', 'local_product.sku', 'local_product.image_path', 'local_product.selling_price', 'local_tax_rate.rate')
+            ->orderByDesc('units_sold')
+            ->orderByDesc('order_count')
+            ->limit(5)
+            ->get()
+            ->map(fn ($product) => [
+                'id' => $product->id,
+                'name' => $product->name,
+                'sku' => $product->sku,
+                'image_url' => $product->image_path ? '/storage/'.ltrim($product->image_path, '/') : null,
+                'selling_price' => (float) $product->selling_price,
+                'tax_rate' => (float) $product->tax_rate,
+                'units_sold' => (float) $product->units_sold,
+                'order_count' => (int) $product->order_count,
+                'buyer_count' => (int) $product->buyer_count,
+                'sales_value' => (float) $product->sales_value,
+                'last_sold_at' => $product->last_sold_at,
+            ])
+            ->values();
+
+        $locationName = $address->village?->village_name ?: ($address->village_name ?: ($address->city ?: $district));
+        $locationLabel = trim(implode(', ', array_filter([$locationName, $pincode ?: null, $state ?: null])));
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'location' => $locationLabel,
+                'location_level' => $locationLevel,
+                'period_days' => $periodDays,
+                'customer_count' => $nearbyCustomerCount,
+                'customers' => $nearbyCustomers,
+                'products' => $topProducts,
+            ],
+        ]);
     }
 
     /**
