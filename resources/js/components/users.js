@@ -34,14 +34,6 @@ async function apiFetch(url, options = {}) {
   if (!res.ok) {
     const validation = data?.errors ? Object.values(data.errors).flat().join(' ') : '';
     const message = validation || data?.message || data?.error || 'Request failed';
-    if (
-      res.status === 403 ||
-      message.toLowerCase().includes('authoriz') ||
-      message.toLowerCase().includes('forbidden')
-    ) {
-      window.location.href = '/';
-      return;
-    }
     throw new Error(message);
   }
 
@@ -443,11 +435,7 @@ document.addEventListener('alpine:init', () => {
         this.availableRoles = await apiFetch(`/api/roles/options?_t=${Date.now()}`);
         this.availableRoles = this.availableRoles.data ?? this.availableRoles;
       } catch {
-        this.availableRoles = [
-          { id: 'admin', name: 'Admin' },
-          { id: 'manager', name: 'Manager' },
-          { id: 'user', name: 'User' },
-        ];
+        this.availableRoles = [];
       }
     },
 
@@ -464,6 +452,7 @@ document.addEventListener('alpine:init', () => {
 
     // ── API: Load users (server-side filtering / sorting / pagination) ────────
     async loadUsers() {
+      const requestId = this._usersRequestId = (this._usersRequestId || 0) + 1;
       this.isLoading = true;
       try {
         const params = new URLSearchParams({
@@ -481,6 +470,8 @@ document.addEventListener('alpine:init', () => {
 
         const data = await apiFetch(`/api/users?${params}`);
 
+        if (requestId !== this._usersRequestId) return;
+
         // Map API response to the shape the template expects
         this.users = (data.data ?? []).map((u) => this._mapUser(u));
         this.totalUsers = data.total ?? this.users.length;
@@ -493,6 +484,7 @@ document.addEventListener('alpine:init', () => {
           this.initCharts();
         });
       } catch (err) {
+        if (requestId !== this._usersRequestId) return;
         const msg = err.message.toLowerCase();
         if (
           msg.includes('right permissions') ||
@@ -505,7 +497,7 @@ document.addEventListener('alpine:init', () => {
         }
         showToast('Failed to load users: ' + err.message, 'danger');
       } finally {
-        this.isLoading = false;
+        if (requestId === this._usersRequestId) this.isLoading = false;
       }
     },
 
@@ -746,9 +738,6 @@ document.addEventListener('alpine:init', () => {
       form.form.password = '';
       form.form.password_confirmation = '';
 
-      // Update modal title
-      const title = document.querySelector('#userModal .modal-title');
-      if (title) title.textContent = 'Edit User';
 
       getModal('#userModal')?.show();
     },
@@ -757,8 +746,6 @@ document.addEventListener('alpine:init', () => {
       const formEl = document.querySelector('[x-data="userForm"]');
       const form = formEl ? Alpine.$data(formEl) : null;
       if (form) form.resetForm();
-      const title = document.querySelector('#userModal .modal-title');
-      if (title) title.textContent = 'Add New User';
       getModal('#userModal')?.show();
     },
 
@@ -1320,6 +1307,8 @@ document.addEventListener('alpine:init', () => {
     isViewMode: false,
 
     async searchVillages() {
+      const requestId = this._villageRequestId = (this._villageRequestId || 0) + 1;
+      this.villageResults = [];
       if (!this.villageSearchQuery || this.villageSearchQuery.length < 3) {
         this.villageResults = [];
         return;
@@ -1331,14 +1320,16 @@ document.addEventListener('alpine:init', () => {
             headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
           }
         );
+        if (!res.ok) throw new Error('Village search failed');
         const data = await res.json();
-        this.villageResults = data.data || [];
+        if (requestId === this._villageRequestId) this.villageResults = data.data || [];
       } catch (e) {
         console.error('Village search failed:', e);
       }
     },
 
     selectVillage(v) {
+      this._villageRequestId = (this._villageRequestId || 0) + 1;
       this.form.village_id = v.id;
       this.form.village_name = v.village_name || v.name || '';
       this.form.post_office = v.post_so_name || v.post_office || '';
@@ -1359,8 +1350,6 @@ document.addEventListener('alpine:init', () => {
       // Reset form when modal is hidden
       document.getElementById('userModal')?.addEventListener('hidden.bs.modal', () => {
         this.resetForm();
-        const title = document.querySelector('#userModal .modal-title');
-        if (title) title.textContent = 'Add New User';
       });
 
       this.loadHrData();
@@ -1374,8 +1363,16 @@ document.addEventListener('alpine:init', () => {
         this.departments = [];
       }
       try {
-        const mData = await apiFetch('/api/users?per_page=1000');
-        this.managers = mData.data ?? mData;
+        const managers = [];
+        let page = 1;
+        let lastPage = 1;
+        do {
+          const mData = await apiFetch(`/api/users?per_page=100&page=${page}`);
+          managers.push(...(mData.data ?? mData));
+          lastPage = mData.last_page ?? 1;
+          page++;
+        } while (page <= lastPage);
+        this.managers = managers;
       } catch (e) {
         this.managers = [];
       }
@@ -1410,8 +1407,6 @@ document.addEventListener('alpine:init', () => {
           this.rolesError = fallbackErr.message || err.message;
         }
       } finally {
-        this.form.is_active = true;
-        this.form.permissions = [];
         this.rolesLoading = false;
       }
 
@@ -1424,6 +1419,7 @@ document.addEventListener('alpine:init', () => {
     },
 
     resetForm() {
+      this._villageRequestId = (this._villageRequestId || 0) + 1;
       this.form = {
         first_name: '',
         middle_name: '',
@@ -1485,6 +1481,7 @@ document.addEventListener('alpine:init', () => {
     },
 
     async saveUser() {
+      if (this.saving) return;
       if (!this.form.first_name || !this.form.email) {
         showToast('First name and email are required.', 'warning');
         return;

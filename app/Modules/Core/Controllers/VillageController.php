@@ -152,13 +152,17 @@ class VillageController extends Controller implements HasMiddleware
             });
 
         $activeServices = Service::active()->get();
-        $serviceDistribution = $activeServices->map(function ($service) use ($statsQuery) {
-            $count = (clone $statsQuery)->whereHas('mappings', function ($q) use ($service) {
-                $q->where('service_id', $service->id)->where('is_available', true);
-            })->count();
+        $serviceCounts = $activeServices->isEmpty() ? collect() : VillageServiceMapping::query()
+            ->whereIn('village_id', (clone $statsQuery)->select('villages.id'))
+            ->whereIn('service_id', $activeServices->pluck('id'))
+            ->where('is_available', true)
+            ->selectRaw('service_id, COUNT(DISTINCT village_id) as total')
+            ->groupBy('service_id')
+            ->pluck('total', 'service_id');
+        $serviceDistribution = $activeServices->map(function ($service) use ($serviceCounts) {
             return [
                 'name' => $service->name,
-                'count' => $count,
+                'count' => (int) ($serviceCounts[$service->id] ?? 0),
             ];
         });
 

@@ -24,6 +24,7 @@ return new class extends Migration
             $table->timestamps();
             $table->softDeletes();
 
+            $table->index(['agent_id', 'direction', 'created_at'], 'call_logs_productivity_idx');
         });
     }
 

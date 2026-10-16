@@ -50,6 +50,12 @@ class AppServiceProvider extends ServiceProvider
 
         $this->configureSanctum();
 
+        if ($this->app->runningInConsole()) {
+            // Generate documentation during deployment instead of on each read.
+            $this->optimizes('scramble:cache', 'scramble:clear', 'api-docs');
+        }
+
+
         RateLimiter::for('chat', function (Request $request) {
             return Limit::perMinute(config('chat.rate_limits.requests_per_minute', 1200))
                 ->by($request->user()?->id ?: $request->ip());

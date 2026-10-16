@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Laravel\Sanctum\PersonalAccessToken;
 
 class EnsureUserIsActive
 {
@@ -27,7 +28,11 @@ class EnsureUserIsActive
             // Log out the user
             if ($request->bearerToken() || $request->is('api/*')) {
                 // If it's an API request, revoke current token
-                $request->user('sanctum')?->currentAccessToken()?->delete();
+                $token = $request->user('sanctum')?->currentAccessToken();
+                // Browser sessions use a TransientToken, which has no delete method.
+                if ($token instanceof PersonalAccessToken) {
+                    $token->delete();
+                }
                 // Auth::guard('sanctum')->logout() is not strictly a method but revoking token is enough
             } else {
                 Auth::guard('web')->logout();

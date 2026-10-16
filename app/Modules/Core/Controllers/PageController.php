@@ -131,12 +131,11 @@ class PageController extends Controller
 
         $orderQueryForItems = (clone $orderQuery)->where('type', 'sale')->whereNotIn('status', ['cancelled', 'returned'])->select('id');
 
-        $totalProducts = (int) OrderItem::joinSub($orderQueryForItems, 'o', 'order_items.order_id', '=', 'o.id')->sum('quantity');
-
-        $totalVariantsObj = OrderItem::joinSub($orderQueryForItems, 'o', 'order_items.order_id', '=', 'o.id')
-            ->selectRaw('COUNT(DISTINCT CONCAT(product_id, "-", COALESCE(product_variant_id, 0))) as count')
+        $itemTotals = OrderItem::joinSub($orderQueryForItems, 'o', 'order_items.order_id', '=', 'o.id')
+            ->selectRaw('SUM(quantity) as quantity_total, COUNT(DISTINCT CONCAT(product_id, "-", COALESCE(product_variant_id, 0))) as variant_count')
             ->first();
-        $totalVariants = $totalVariantsObj ? (int) $totalVariantsObj->count : 0;
+        $totalProducts = (int) ($itemTotals->quantity_total ?? 0);
+        $totalVariants = (int) ($itemTotals->variant_count ?? 0);
 
         $deliveredPercent = $totalOrders > 0 ? round(($totalDelivered / $totalOrders) * 100) : 0;
         $returnedPercent = $totalOrders > 0 ? round(($totalReturned / $totalOrders) * 100) : 0;
@@ -280,8 +279,14 @@ class PageController extends Controller
             ];
         })->toArray();
 
+        // Read variant labels alongside items instead of once per displayed item.
+        $dashboardItems = fn ($query) => $query->select('order_items.*')
+            ->leftJoin('product_attribute_values as dashboard_variants', 'dashboard_variants.id', '=', 'order_items.product_variant_id')
+            ->addSelect('dashboard_variants.value as dashboard_variant_name');
+
         // Recent Orders
-        $recentOrdersRaw = (clone $orderQuery)->with(['party', 'items.product', 'statusLogs', 'shipments', 'orderReturns', 'creator'])
+        $recentOrdersRaw = (clone $orderQuery)->with(['party', 'items' => $dashboardItems, 'items.product', 'statusLogs', 'shipments', 'orderReturns', 'creator'])
+            ->withSum(['payments as total_paid_amount' => fn ($query) => $query->where('status', 'completed')], 'amount')
             ->whereNotIn('status', ['future_order'])
             ->latest('order_date')
             ->get();
@@ -302,7 +307,7 @@ class PageController extends Controller
                 $name = $item->product ? $item->product->name : 'Unknown Product';
                 $variantStr = '';
                 if ($item->product_variant_id) {
-                    $variantName = DB::table('product_attribute_values')->where('id', $item->product_variant_id)->value('value');
+                    $variantName = $item->dashboard_variant_name;
                     if ($variantName) {
                         $variantStr = ' (' . $variantName . ')';
                     }
@@ -369,7 +374,8 @@ class PageController extends Controller
         })->toArray();
 
         // Future Orders
-        $futureOrdersRaw = (clone $orderQuery)->with(['party', 'items.product', 'statusLogs', 'shipments', 'orderReturns', 'creator'])
+        $futureOrdersRaw = (clone $orderQuery)->with(['party', 'items' => $dashboardItems, 'items.product', 'statusLogs', 'shipments', 'orderReturns', 'creator'])
+            ->withSum(['payments as total_paid_amount' => fn ($query) => $query->where('status', 'completed')], 'amount')
             ->where('status', 'future_order')
             ->orderBy('future_order_date', 'asc')
             ->get();
@@ -381,7 +387,7 @@ class PageController extends Controller
                 $name = $item->product ? $item->product->name : 'Unknown Product';
                 $variantStr = '';
                 if ($item->product_variant_id) {
-                    $variantName = DB::table('product_attribute_values')->where('id', $item->product_variant_id)->value('value');
+                    $variantName = $item->dashboard_variant_name;
                     if ($variantName) {
                         $variantStr = ' (' . $variantName . ')';
                     }
@@ -1323,12 +1329,20 @@ class PageController extends Controller
                 ->join('products', 'order_items.product_id', '=', 'products.id')
                 ->leftJoin('categories', 'products.category_id', '=', 'categories.id')
                 ->leftJoin('brands', 'products.brand_id', '=', 'brands.id')
+                ->leftJoinSub(
+                    DB::table('stocks')->select('product_id', DB::raw('SUM(quantity) as total_stock'))->groupBy('product_id'),
+                    'product_stock',
+                    'product_stock.product_id',
+                    '=',
+                    'products.id'
+                )
                 ->select(
                     'products.id', 'products.name', 'products.sku', 
                     'categories.name as category_name', 'brands.name as brand_name',
                     DB::raw('SUM(order_items.quantity) as total_qty'), 
                     DB::raw('AVG(order_items.unit_price) as avg_price'), 
-                    DB::raw('SUM(order_items.total_amount) as total_revenue')
+                    DB::raw('SUM(order_items.total_amount) as total_revenue'),
+                    DB::raw('COALESCE(MAX(product_stock.total_stock), 0) as total_stock')
                 )
                 ->where('orders.type', 'sale')
                 ->groupBy('products.id', 'products.name', 'products.sku', 'categories.name', 'brands.name')
@@ -1343,8 +1357,7 @@ class PageController extends Controller
 
             $cursor = $query->cursor();
             foreach ($cursor as $row) {
-                $stock = DB::table('stocks')->where('product_id', $row->id)->sum('quantity');
-                fputcsv($file, [$row->name, $row->sku, $row->category_name, $row->brand_name, $row->total_qty, round((float) $row->avg_price, 2), $row->total_revenue, $stock]);
+                fputcsv($file, [$row->name, $row->sku, $row->category_name, $row->brand_name, $row->total_qty, round((float) $row->avg_price, 2), $row->total_revenue, $row->total_stock]);
             }
             fclose($file);
         };
@@ -1356,7 +1369,7 @@ class PageController extends Controller
     {
         $headers = $this->getCsvHeaders('sales_region_'.now()->format('Ymd_His').'.csv');
         $columns = ['State', 'District', 'Taluka', 'Village', 'Order Count', 'Total Revenue', 'AOV'];
-        $callback = function () use ($columns) {
+        $callback = function () use ($dateFrom, $dateTo, $columns) {
             $file = fopen('php://output', 'w');
             fputcsv($file, $columns);
             $query = DB::table('orders')
@@ -1421,13 +1434,13 @@ class PageController extends Controller
     {
         $headers = $this->getCsvHeaders('stock_ledger_'.now()->format('Ymd_His').'.csv');
         $columns = ['Date', 'Type', 'SKU', 'Product Name', 'Warehouse', 'Qty Before', 'Qty Moved', 'Qty After'];
-        $callback = function () use ($columns) {
+        $callback = function () use ($columns, $dateFrom, $dateTo) {
             $file = fopen('php://output', 'w');
             fputcsv($file, $columns);
             $query = DB::table('stock_movements')
                 ->leftJoin('products', 'stock_movements.product_id', '=', 'products.id')
                 ->leftJoin('warehouses', 'stock_movements.warehouse_id', '=', 'warehouses.id')
-                ->select('stock_movements.created_at', 'stock_movements.type', 'products.sku', 'products.name', 'warehouses.name as warehouse_name', 'stock_movements.quantity_before', 'stock_movements.quantity', 'stock_movements.quantity_after')
+                ->select('stock_movements.created_at', 'stock_movements.type', 'products.sku', 'products.name', 'warehouses.name as warehouse_name', DB::raw('NULL as quantity_before'), 'stock_movements.quantity', DB::raw('NULL as quantity_after'))
                 ->orderBy('stock_movements.id');
 
             if ($dateFrom) {
@@ -1679,7 +1692,7 @@ class PageController extends Controller
     {
         $headers = $this->getCsvHeaders('audit_trail_'.now()->format('Ymd_His').'.csv');
         $columns = ['Timestamp', 'User', 'Action', 'Subject Type', 'Subject ID'];
-        $callback = function () use ($columns) {
+        $callback = function () use ($dateFrom, $dateTo, $columns) {
             $file = fopen('php://output', 'w');
             fputcsv($file, $columns);
             $query = DB::table('activity_log')

@@ -23,7 +23,7 @@ class PaymentController extends Controller implements HasMiddleware
 
     public function index(Request $request)
     {
-        $query = Payment::withTrashed()->with(['order.party', 'invoice.payments', 'invoice.refunds', 'recorder']);
+        $query = Payment::withTrashed()->with(['order.party', 'order.orderReturns', 'order.shipments', 'invoice.payments', 'invoice.refunds', 'recorder']);
 
         if ($request->filled('search')) {
             $s = trim($request->search);
@@ -67,12 +67,20 @@ class PaymentController extends Controller implements HasMiddleware
 
         $payments = $query->paginate($request->integer('limit', 10));
 
+        $payments->getCollection()->each(fn ($payment) => $payment->order?->makeHidden(['orderReturns', 'shipments']));
+
         if ($request->wantsJson() || $request->ajax()) {
+            $amounts = $statsQuery()->whereNull('deleted_at')->toBase()->selectRaw("
+                COALESCE(SUM(amount), 0) as total_volume,
+                COALESCE(SUM(CASE WHEN status = 'completed' THEN amount ELSE 0 END), 0) as completed_amount,
+                COALESCE(SUM(CASE WHEN status IN ('authorized', 'pending') THEN amount ELSE 0 END), 0) as authorized_amount,
+                COALESCE(SUM(CASE WHEN status = 'failed' THEN amount ELSE 0 END), 0) as failed_amount
+            ")->first();
             $stats = [
-                'total_volume' => (float) $statsQuery()->whereNull('deleted_at')->sum('amount'),
-                'completed_amount' => (float) $statsQuery()->where('status', 'completed')->whereNull('deleted_at')->sum('amount'),
-                'authorized_amount' => (float) $statsQuery()->whereIn('status', ['authorized', 'pending'])->whereNull('deleted_at')->sum('amount'),
-                'failed_amount' => (float) $statsQuery()->where('status', 'failed')->whereNull('deleted_at')->sum('amount'),
+                'total_volume' => (float) $amounts->total_volume,
+                'completed_amount' => (float) $amounts->completed_amount,
+                'authorized_amount' => (float) $amounts->authorized_amount,
+                'failed_amount' => (float) $amounts->failed_amount,
             ];
 
             return response()->json([

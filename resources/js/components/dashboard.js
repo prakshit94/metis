@@ -64,12 +64,34 @@ export class DashboardManager {
       const theme = e.detail?.theme || 'light';
       this.charts.forEach((chart) => {
         if (typeof chart.updateOptions === 'function') {
-          chart.updateOptions({ theme: { mode: theme } });
+          chart.updateOptions(this.chartThemeOptions(theme));
         }
       });
     };
     window.addEventListener('themeChanged', onThemeChange);
     this.cleanupFns.push(() => window.removeEventListener('themeChanged', onThemeChange));
+  }
+
+  chartThemeOptions(theme = document.documentElement.getAttribute('data-bs-theme')) {
+    const styles = getComputedStyle(document.documentElement);
+    const text = styles.getPropertyValue('--bs-body-color').trim();
+    return {
+      theme: { mode: theme === 'dark' ? 'dark' : 'light' },
+      chart: { background: 'transparent', foreColor: text },
+      tooltip: { theme: theme === 'dark' ? 'dark' : 'light' },
+      grid: { borderColor: styles.getPropertyValue('--bs-border-color').trim() },
+    };
+  }
+
+  themedChartOptions(options) {
+    const theme = this.chartThemeOptions();
+    return {
+      ...options,
+      ...theme,
+      chart: { ...options.chart, ...theme.chart },
+      tooltip: { ...options.tooltip, ...theme.tooltip },
+      grid: { ...options.grid, ...theme.grid },
+    };
   }
 
   async loadDashboardData() {
@@ -110,7 +132,7 @@ export class DashboardManager {
       },
       yaxis: {
         labels: {
-          formatter: (value) => '$' + value.toLocaleString(),
+          formatter: (value) => '₹' + value.toLocaleString('en-IN'),
         },
       },
       colors: ['#6366f1', '#10b981'],
@@ -122,12 +144,12 @@ export class DashboardManager {
       dataLabels: { enabled: false },
       legend: { position: 'top' },
       tooltip: {
-        y: { formatter: (value) => '$' + value.toLocaleString() },
+        y: { formatter: (value) => '₹' + value.toLocaleString('en-IN') },
       },
       grid: { borderColor: 'rgba(0,0,0,0.08)', strokeDashArray: 4 },
     };
 
-    const chart = new ApexCharts(el, options);
+    const chart = new ApexCharts(el, this.themedChartOptions(options));
     chart.render();
     this.charts.set('revenue', chart);
   }
@@ -144,14 +166,13 @@ export class DashboardManager {
         categories: recent.map((item) => `Day ${item.day}`),
         axisBorder: { show: false },
       },
-      colors: ['#6366f1'],
       colors: ['#0d6efd'],
       plotOptions: { bar: { borderRadius: 6, columnWidth: '55%' } },
       dataLabels: { enabled: false },
       grid: { borderColor: 'rgba(0,0,0,0.08)', strokeDashArray: 4 },
     };
 
-    const chart = new ApexCharts(el, options);
+    const chart = new ApexCharts(el, this.themedChartOptions(options));
     chart.render();
     this.charts.set('userGrowth', chart);
   }
@@ -172,11 +193,10 @@ export class DashboardManager {
       colors: ['#198754', '#0d6efd', '#6c757d', '#dc3545'], // Match success, primary, secondary, danger from orders page
       legend: { position: 'bottom' },
       dataLabels: { enabled: false },
-      colors: ['#0d6efd'],
       plotOptions: { pie: { donut: { size: '60%' } } },
     };
 
-    const chart = new ApexCharts(el, options);
+    const chart = new ApexCharts(el, this.themedChartOptions(options));
     chart.render();
     this.charts.set('orderStatus', chart);
   }
@@ -188,15 +208,14 @@ export class DashboardManager {
     const options = {
       chart: { height: 280, type: 'radialBar' },
       series: [76],
-      colors: ['#20E647'],
       colors: ['#0d6efd'],
       plotOptions: {
         radialBar: {
-          hollow: { margin: 0, size: '70%', background: '#293450' },
+          hollow: { margin: 0, size: '70%', background: 'transparent' },
           track: { dropShadow: { enabled: true, top: 2, left: 0, blur: 4, opacity: 0.15 } },
           dataLabels: {
-            name: { offsetY: -10, color: '#fff', fontSize: '13px' },
-            value: { color: '#fff', fontSize: '30px', show: true },
+            name: { offsetY: -10, color: 'var(--bs-body-color)', fontSize: '13px' },
+            value: { color: 'var(--bs-body-color)', fontSize: '30px', show: true },
           },
         },
       },
@@ -213,7 +232,7 @@ export class DashboardManager {
       labels: ['Used Space'],
     };
 
-    const chart = new ApexCharts(el, options);
+    const chart = new ApexCharts(el, this.themedChartOptions(options));
     chart.render();
     this.charts.set('storage', chart);
   }
@@ -222,13 +241,18 @@ export class DashboardManager {
     const chartElement = document.querySelector('#salesByLocationChart');
     if (!chartElement) return;
 
-    const escapeTooltipText = (value) => String(value ?? '').replace(/[&<>"']/g, (character) => ({
-      '&': '&amp;',
-      '<': '&lt;',
-      '>': '&gt;',
-      '"': '&quot;',
-      "'": '&#039;',
-    })[character]);
+    const escapeTooltipText = (value) =>
+      String(value ?? '').replace(
+        /[&<>"']/g,
+        (character) =>
+          ({
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#039;',
+          })[character]
+      );
 
     const options = {
       series: [
@@ -306,12 +330,10 @@ export class DashboardManager {
       ],
     };
 
-    const chart = new ApexCharts(chartElement, options);
+    const chart = new ApexCharts(chartElement, this.themedChartOptions(options));
     chart.render();
     this.charts.set('salesByLocation', chart);
   }
-
-
 
   initInteractiveElements() {
     const onPeriodClick = (e) => {

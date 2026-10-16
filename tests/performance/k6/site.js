@@ -61,14 +61,16 @@ export const options = {
       maxDuration: '5m',
       exec: 'routeSweep',
     },
-    page_load: {
-      executor: 'ramping-vus',
-      startVUs: 0,
-      stages,
-      gracefulRampDown: '10s',
-      exec: 'pageLoad',
-    },
-    ...(__ENV.K6_CUSTOMER_ID && __ENV.K6_ORDER_ID
+    ...(__ENV.K6_SWEEP_ONLY === 'true' ? {} : {
+      page_load: {
+        executor: 'ramping-vus',
+        startVUs: 0,
+        stages,
+        gracefulRampDown: '10s',
+        exec: 'pageLoad',
+      },
+    }),
+    ...(__ENV.K6_SWEEP_ONLY !== 'true' && __ENV.K6_CUSTOMER_ID && __ENV.K6_ORDER_ID
       ? {
           order_history_workflow: {
             executor: 'constant-vus',
@@ -78,7 +80,7 @@ export const options = {
           },
         }
       : {}),
-    ...(!!__ENV.K6_API_TOKEN
+    ...(__ENV.K6_SWEEP_ONLY !== 'true' && !!__ENV.K6_API_TOKEN
       ? {
           api_load: {
             executor: 'ramping-vus',
@@ -109,15 +111,20 @@ export const options = {
 };
 
 function checkPage(response, path) {
+  // These two registered aliases intentionally redirect to the targets index.
+  const targetAlias = path === '/targets/create' || path === '/targets/import';
   check(response, {
-    [`${path} returns HTTP 200`]: (r) => r.status === 200,
-    [`${path} returns HTML`]: (r) => String(r.headers['Content-Type'] || '').includes('text/html'),
+    [`${path} returns its documented status`]: (r) => targetAlias ? r.status === 302 : r.status === 200,
+    [`${path} matches its page contract`]: (r) => targetAlias
+      ? [ '/targets', `${BASE_URL}/targets` ].includes(String(r.headers.Location || ''))
+      : String(r.headers['Content-Type'] || '').includes('text/html'),
   });
 }
 
 function pageRequest(path, cookieHeader) {
   return http.get(`${BASE_URL}${path}`, {
     headers: { Cookie: cookieHeader },
+    redirects: 0,
     tags: { kind: 'page', path },
   });
 }
@@ -149,7 +156,7 @@ export function setup() {
     { _token: tokenMatch[1], email, password },
     { redirects: 0, tags: { kind: 'auth', path: '/login' } },
   );
-  if (![302, 303].includes(loginResponse.status)) {
+  if (![302, 303].includes(loginResponse.status) || String(loginResponse.headers.Location || '').split('?')[0].endsWith('/login')) {
     throw new Error(`Load-test account login failed (HTTP ${loginResponse.status}).`);
   }
 
@@ -161,6 +168,7 @@ export function setup() {
 
   const dashboard = http.get(`${BASE_URL}/`, {
     headers: { Cookie: cookieHeader },
+    redirects: 0,
     tags: { kind: 'auth', path: '/' },
   });
   if (dashboard.status !== 200) {
@@ -181,6 +189,7 @@ export function pageLoad(data) {
   const route = PAGE_ROUTES[index];
   const response = http.get(`${BASE_URL}${route}`, {
     headers: { Cookie: data.cookieHeader },
+    redirects: 0,
     tags: { kind: 'page', path: route },
   });
   checkPage(response, route);

@@ -114,17 +114,31 @@ class OrderReturnController extends Controller implements HasMiddleware
         $returns = $query->paginate($limit);
 
         if ($request->wantsJson() || $request->ajax()) {
+            // Keep the same filtered/paginated query and response types as the
+            // individual aggregates, but scan it once for all statistics.
+            $totals = (clone $query)->reorder()->toBase()->selectRaw("
+                COUNT(*) as total,
+                COALESCE(SUM(CASE WHEN order_returns.status = 'pending' THEN 1 ELSE 0 END), 0) as pending,
+                COALESCE(SUM(CASE WHEN order_returns.status = 'approved' THEN 1 ELSE 0 END), 0) as approved,
+                COALESCE(SUM(CASE WHEN order_returns.status = 'received' THEN 1 ELSE 0 END), 0) as received,
+                COALESCE(SUM(CASE WHEN order_returns.status = 'qc_in_progress' THEN 1 ELSE 0 END), 0) as qc_in_progress,
+                COALESCE(SUM(CASE WHEN order_returns.status IN ('pending', 'approved', 'received', 'qc_in_progress') THEN 1 ELSE 0 END), 0) as pending_qc,
+                COALESCE(SUM(CASE WHEN order_returns.status = 'completed' THEN 1 ELSE 0 END), 0) as completed,
+                COALESCE(SUM(CASE WHEN order_returns.status = 'rejected' THEN 1 ELSE 0 END), 0) as rejected,
+                SUM(order_returns.refund_amount) as total_refunded,
+                SUM(order_returns.credit_note_amount) as total_credited
+            ")->first();
             $stats = [
-                'total' => (clone $query)->count(),
-                'pending' => (clone $query)->where('order_returns.status', 'pending')->count(),
-                'approved' => (clone $query)->where('order_returns.status', 'approved')->count(),
-                'received' => (clone $query)->where('order_returns.status', 'received')->count(),
-                'qc_in_progress' => (clone $query)->where('order_returns.status', 'qc_in_progress')->count(),
-                'pending_qc' => (clone $query)->whereIn('order_returns.status', ['pending', 'approved', 'received', 'qc_in_progress'])->count(),
-                'completed' => (clone $query)->where('order_returns.status', 'completed')->count(),
-                'rejected' => (clone $query)->where('order_returns.status', 'rejected')->count(),
-                'total_refunded' => (clone $query)->sum('order_returns.refund_amount'),
-                'total_credited' => (clone $query)->sum('order_returns.credit_note_amount'),
+                'total' => (int) ($totals->total ?? 0),
+                'pending' => (int) ($totals->pending ?? 0),
+                'approved' => (int) ($totals->approved ?? 0),
+                'received' => (int) ($totals->received ?? 0),
+                'qc_in_progress' => (int) ($totals->qc_in_progress ?? 0),
+                'pending_qc' => (int) ($totals->pending_qc ?? 0),
+                'completed' => (int) ($totals->completed ?? 0),
+                'rejected' => (int) ($totals->rejected ?? 0),
+                'total_refunded' => ($totals->total_refunded ?? null) ?: 0,
+                'total_credited' => ($totals->total_credited ?? null) ?: 0,
             ];
 
             return response()->json([

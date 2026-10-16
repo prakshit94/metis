@@ -82,7 +82,7 @@ class AttendanceController extends Controller implements HasMiddleware
             )
             ->when(
                 $request->filled('date'),
-                fn ($q) => $q->whereDate('attendances.date', $request->input('date'))
+                fn ($q) => $q->where('attendances.date', Carbon::parse($request->input('date'))->toDateString())
             )
             ->when(
                 $request->filled('start_date') && $request->filled('end_date'),
@@ -348,8 +348,8 @@ class AttendanceController extends Controller implements HasMiddleware
             )
             ->when($isGlobalView && $filterUserId, fn ($q) => $q->where('user_id', $filterUserId))
             ->when($isGlobalView && ! $filterUserId, fn ($q) => $q->where('user_id', $request->user()->id))
-            ->whereYear('date', $year)
-            ->whereMonth('date', $m)
+            ->where('date', '>=', Carbon::create($year, $m, 1)->toDateString())
+            ->where('date', '<', Carbon::create($year, $m, 1)->addMonth()->toDateString())
             ->get();
 
         $groupedByUser = $attendances->groupBy('user_id');
@@ -433,8 +433,8 @@ class AttendanceController extends Controller implements HasMiddleware
             )
             ->when($isGlobalView && $filterUserId, fn ($q) => $q->where('user_id', $filterUserId))
             ->when($isGlobalView && ! $filterUserId, fn ($q) => $q->where('user_id', $request->user()->id))
-            ->whereYear('date', $year)
-            ->whereMonth('date', $m)
+            ->where('date', '>=', Carbon::create($year, $m, 1)->toDateString())
+            ->where('date', '<', Carbon::create($year, $m, 1)->addMonth()->toDateString())
             ->orderBy('date', 'asc')
             ->orderBy('check_in', 'asc')
             ->get();

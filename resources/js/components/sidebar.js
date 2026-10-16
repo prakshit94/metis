@@ -30,6 +30,8 @@ export class SidebarManager {
       this.toggleButton.setAttribute('aria-controls', this.sidebar.id);
     }
 
+    this.wasMobile = this.isMobile;
+    this.previousBodyOverflow = null;
     this.init();
     this.bindEvents();
     this.syncAria();
@@ -40,6 +42,9 @@ export class SidebarManager {
       ? this.sidebar.classList.contains('show')
       : !this.wrapper.classList.contains('sidebar-collapsed');
     this.toggleButton.setAttribute('aria-expanded', String(expanded));
+    this.toggleButton.setAttribute('aria-label', expanded ? 'Hide sidebar' : 'Show sidebar');
+    this.sidebar.inert = !expanded;
+    this.sidebar.setAttribute('aria-hidden', String(!expanded));
   }
 
   get isMobile() {
@@ -60,6 +65,9 @@ export class SidebarManager {
   bindEvents() {
     // Toggle button click
     this.toggleButton.addEventListener('click', () => this.toggle());
+
+    const closeButton = this.sidebar.querySelector('[data-sidebar-close]');
+    if (closeButton) closeButton.addEventListener('click', () => this.closeMobile());
 
     // Close sidebar when backdrop is clicked
     this.backdrop.addEventListener('click', () => this.closeMobile());
@@ -143,6 +151,7 @@ export class SidebarManager {
   openMobile() {
     this.sidebar.classList.add('show');
     this.backdrop.classList.add('show');
+    if (this.previousBodyOverflow === null) this.previousBodyOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden'; // prevent background scroll
     this.syncAria();
   }
@@ -150,29 +159,33 @@ export class SidebarManager {
   closeMobile() {
     this.sidebar.classList.remove('show');
     this.backdrop.classList.remove('show');
-    document.body.style.overflow = '';
+    if (this.previousBodyOverflow !== null) {
+      document.body.style.overflow = this.previousBodyOverflow;
+      this.previousBodyOverflow = null;
+    }
+    if (this.sidebar.contains(document.activeElement)) this.toggleButton.focus();
     this.syncAria();
   }
 
   // Clean up when crossing the mobile/desktop breakpoint
   handleResize() {
+    // Resizing within one layout must not unexpectedly close the open menu.
+    if (this.wasMobile === this.isMobile) return;
+    this.wasMobile = this.isMobile;
+    this.closeMobile();
     if (!this.isMobile) {
       // Switched to desktop: remove mobile overlay state
       this.sidebar.classList.remove('show');
       this.backdrop.classList.remove('show');
-      document.body.style.overflow = '';
 
       // Restore desktop collapsed state
       const isCollapsed = localStorage.getItem('sidebar-collapsed') === 'true';
-      if (isCollapsed) {
-        this.wrapper.classList.add('sidebar-collapsed');
-        this.toggleButton.classList.add('is-active');
-      }
+      this.wrapper.classList.toggle('sidebar-collapsed', isCollapsed);
+      this.toggleButton.classList.toggle('is-active', isCollapsed);
     } else {
       // Switched to mobile: ensure sidebar is hidden
       this.sidebar.classList.remove('show');
       this.backdrop.classList.remove('show');
-      document.body.style.overflow = '';
     }
     this.syncAria();
   }

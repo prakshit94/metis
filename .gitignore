@@ -58,3 +58,16 @@ dist/
 /storage/framework/views/*
 test_dropdown.js
 /storage/app/public/products/*
+
+# Regenerable diagnostic and scratch performance output
+/storage/eslint.json
+/storage/routes.json
+/tests/performance/summary.json
+/tests/performance/summary-corrected.json
+/tests/performance/apis-summary.json
+/tests/performance/apis-sweep.json
+/tests/performance/pages-40vus-detailed.json
+# Preserve resource evidence for the disposable HTTP performance runs.
+!/tests/performance/results/*-isolated/*-resources.csv
+!/tests/performance/results/*-isolated-stress/*-resources.csv
+!/tests/performance/results/*-isolated-*/*-resources.csv

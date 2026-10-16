@@ -35,3 +35,13 @@
     }
   }
 }
+
+.admin-sidebar {
+  max-width: calc(100vw - 3rem);
+  .sidebar-menu-toggle-label { font-size: 0.7rem; white-space: nowrap; }
+  .sidebar-content { overscroll-behavior: contain; }
+  .nav-link:focus-visible, #toggle-all-menus:focus-visible {
+    outline: 2px solid var(--bs-primary);
+    outline-offset: -2px;
+  }
+}

@@ -25,6 +25,10 @@ return new class extends Migration
             $table->softDeletes();
 
             $table->unique(['targetable_type', 'targetable_id', 'metric_type', 'period_type', 'start_date'], 'targets_unique_composite');
+            $table->index(
+                ['targetable_type', 'targetable_id', 'period_type', 'start_date'],
+                'targets_assignee_period_start_idx'
+            );
         });
     }
 

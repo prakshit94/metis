@@ -11,15 +11,15 @@
         'financial_year' => $exportDefaultYear,
     ], request()->query());
 @endphp
-<div class="user-management" x-data="targetsModule()">
+<div class="targets-page" x-data="targetsModule()">
     <!-- Page Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4 mb-lg-5 mb-xl-6">
+    <div class="targets-header d-flex flex-column gap-3 mb-4">
         <div>
             <h1 class="h3 mb-0"><i class="bi bi-award-fill text-primary me-2"></i>Targets &amp; Achievements</h1>
             <p class="text-muted mb-0">Manage performance metrics across Users, Teams, and Departments</p>
         </div>
-        <div class="d-flex gap-2 flex-wrap align-items-center">
-            <button type="button" class="btn btn-outline-primary shadow-sm bg-body-tertiary" onclick="window.location.reload()" data-bs-toggle="tooltip" title="Refresh data">
+        <div id="targetsActions" :inert="isFiltering" class="targets-actions d-flex gap-2 flex-wrap align-items-center">
+            <button type="button" class="btn btn-outline-primary shadow-sm bg-body-tertiary" onclick="window.location.reload()" data-bs-toggle="tooltip" title="Refresh data" aria-label="Refresh targets">
                 <i class="bi bi-arrow-clockwise icon-hover"></i>
             </button>
             @can('target-create')
@@ -32,7 +32,7 @@
                 <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                     <i class="bi bi-download me-2"></i>Export
                 </button>
-                <ul class="dropdown-menu shadow border-0 rounded-3 mt-2">
+                <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3 mt-2">
                     <li><h6 class="dropdown-header">Export by Period</h6></li>
                     <li><a class="dropdown-item d-flex align-items-center" href="{{ route('targets.export', array_merge($currentViewExportParams, ['period_type' => 'daily'])) }}"><i class="bi bi-calendar-day me-2 text-primary"></i>Daily Targets</a></li>
                     <li><a class="dropdown-item d-flex align-items-center" href="{{ route('targets.export', array_merge($currentViewExportParams, ['period_type' => 'monthly'])) }}"><i class="bi bi-calendar-month me-2 text-primary"></i>Monthly Targets</a></li>
@@ -102,8 +102,8 @@
     </div>
 
     <!-- Stats Row -->
-    <div id="targetsStatsRow" class="row g-4 g-lg-5 g-xl-6 mb-5 mb-lg-5 mb-xl-6">
-        <div class="col-xl-3 col-lg-6">
+    <div id="targetsStatsRow" class="row g-3 mb-4">
+        <div class="col-sm-6 col-xl-3">
             <div class="card stats-card h-100 shadow-sm rounded-4 border-start border-4 border-primary">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex align-items-center">
@@ -118,7 +118,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-xl-3 col-lg-6">
+        <div class="col-sm-6 col-xl-3">
             <div class="card stats-card h-100 shadow-sm rounded-4 border-start border-4 border-info">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex align-items-center">
@@ -133,12 +133,12 @@
                 </div>
             </div>
         </div>
-        <div class="col-xl-3 col-lg-6">
+        <div class="col-sm-6 col-xl-3">
             <div class="card stats-card h-100 shadow-sm rounded-4 border-start border-4 border-success">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-success bg-opacity-10 text-success me-3 rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
-                            <i class="bi bi-trophy-fill fs-4"></i>
+                            <i class="bi bi-check-circle-fill fs-4"></i>
                         </div>
                         <div>
                             <p class="h6 mb-0 text-muted" style="font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em;">Achieved</p>
@@ -148,7 +148,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-xl-3 col-lg-6">
+        <div class="col-sm-6 col-xl-3">
             <div class="card stats-card h-100 shadow-sm rounded-4 border-start border-4 border-danger">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex align-items-center">
@@ -166,13 +166,13 @@
     </div>
 
     <!-- Table -->
-    <div class="card shadow-sm border-start border-4 border-primary rounded-4">
+    <div class="card targets-directory shadow-sm rounded-4">
         <div class="card-header bg-body border-bottom p-4">
             <div class="row align-items-center g-3">
                 <div class="col">
                     <h2 class="h5 card-title mb-0 fw-bold"><i class="bi bi-list-task text-primary me-2"></i>Targets Directory</h2>
                 </div>
-                <div class="col-auto">
+                <div class="col-12">
                     @php
                         $currentMonth = (int)date('n');
                         $currentYear = (int)date('Y');
@@ -181,23 +181,27 @@
                         $selectedPeriod = request('period_type', 'daily');
                         $selectedMonth = request('month', $currentMonth);
                     @endphp
-                    <form method="GET" action="{{ route('targets.index') }}" class="d-flex flex-wrap gap-2 justify-content-end align-items-center" x-ref="searchForm" @submit.prevent="filterTable($refs.searchForm)" x-data="{ searchPeriodType: '{{ $selectedPeriod }}' }">
+                    <form method="GET" action="{{ route('targets.index') }}" class="targets-filters" x-ref="searchForm" @submit.prevent="filterTable($refs.searchForm)" x-data="{ searchPeriodType: '{{ $selectedPeriod }}' }">
                         @php
                             $searchQuery = request('search');
                             $selectedSearches = is_array($searchQuery) ? $searchQuery : ($searchQuery ? [$searchQuery] : []);
                         @endphp
-                        <div class="dropdown" x-data="{ filterSearch: '', selectedAssignees: {{ \Illuminate\Support\Js::from($selectedSearches) }}, get filterAssignees() { return [...(this.availableAssignees['User']||[]), ...(this.availableAssignees['Team']||[]), ...(this.availableAssignees['Department']||[])].filter(a => a.name && a.name.toLowerCase().includes(this.filterSearch.toLowerCase())); } }">
-                            <button class="btn btn-sm text-start d-flex justify-content-between align-items-center border border-secondary border-opacity-25 shadow-none" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="width: 200px; height: 36px; border-radius: 8px; background-color: var(--bs-body-bg);" data-bs-auto-close="outside">
+                        <div class="dropdown targets-assignee-filter" x-data="{ filterSearch: '', selectedAssignees: {{ \Illuminate\Support\Js::from($selectedSearches) }}, get filterAssignees() { return [...(this.availableAssignees['User']||[]), ...(this.availableAssignees['Team']||[]), ...(this.availableAssignees['Department']||[])].filter(a => a.name && a.name.toLowerCase().includes(this.filterSearch.toLowerCase())); } }">
+                            <label class="form-label" id="targetAssigneeFilterLabel">Assignee</label>
+                            <button aria-labelledby="targetAssigneeFilterLabel" class="btn btn-sm text-start d-flex justify-content-between align-items-center border border-secondary border-opacity-25 shadow-none" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="width: 200px; height: 36px; border-radius: 8px; background-color: var(--bs-body-bg);" data-bs-auto-close="outside">
                                 <span class="text-truncate" :class="selectedAssignees.length ? 'text-body-emphasis fw-medium' : 'text-muted'" x-text="selectedAssignees.length ? selectedAssignees.length + ' selected' : 'Search assignee...'"></span>
                                 <i class="bi bi-chevron-down ms-2 text-muted"></i>
                             </button>
-                            <div class="dropdown-menu shadow border-0 p-0" style="width: 250px;">
+                            <template x-for="name in [...new Set(selectedAssignees)]" :key="name">
+                                <input type="hidden" name="search[]" :value="name">
+                            </template>
+                            <div class="dropdown-menu shadow border-0 p-0" style="width: min(300px, calc(100vw - 2rem));">
                                 <div class="p-2 border-bottom bg-body-tertiary">
-                                    <input type="text" x-model="filterSearch" class="form-control form-control-sm shadow-none border-secondary border-opacity-25" placeholder="Search assignees..." autofocus>
+                                    <input type="text" x-model="filterSearch" class="form-control form-control-sm shadow-none border-secondary border-opacity-25" aria-label="Filter assignees" placeholder="Search assignees...">
                                 </div>
                                 <div class="p-2 border-bottom d-flex justify-content-between align-items-center" style="font-size: 11px;">
                                     <div>
-                                        <a href="#" @click.prevent="selectedAssignees = filterAssignees.map(a => a.name); filterTable($refs.searchForm)" class="text-decoration-none text-primary me-2">Select All</a>
+                                        <a href="#" @click.prevent="selectedAssignees = [...new Set(filterAssignees.map(a => a.name))]; filterTable($refs.searchForm)" class="text-decoration-none text-primary me-2">Select All</a>
                                         <a href="#" @click.prevent="selectedAssignees = []; filterTable($refs.searchForm)" class="text-decoration-none text-muted">Clear</a>
                                     </div>
                                     <span class="text-muted"><span x-text="selectedAssignees.length"></span> selected</span>
@@ -205,7 +209,7 @@
                                 <div class="list-group list-group-flush" style="max-height: 200px; overflow-y: auto;">
                                     <template x-for="assignee in filterAssignees" :key="assignee.id + '_' + assignee.name">
                                         <label class="list-group-item d-flex align-items-center gap-2 border-0 py-2 cursor-pointer" style="font-size: 13px;">
-                                            <input type="checkbox" name="search[]" :value="assignee.name" class="form-check-input mt-0" :checked="selectedAssignees.includes(assignee.name)" @change="if($el.checked) { selectedAssignees.push(assignee.name) } else { selectedAssignees = selectedAssignees.filter(n => n !== assignee.name) }; filterTable($refs.searchForm)">
+                                            <input type="checkbox" :value="assignee.name" class="form-check-input mt-0" :checked="selectedAssignees.includes(assignee.name)" @change="if($el.checked) { selectedAssignees.push(assignee.name) } else { selectedAssignees = selectedAssignees.filter(n => n !== assignee.name) }; filterTable($refs.searchForm)">
                                             <span x-text="assignee.name"></span>
                                         </label>
                                     </template>
@@ -213,13 +217,18 @@
                                 </div>
                             </div>
                         </div>
-                        <select name="per_page" class="form-select form-select-sm border-secondary border-opacity-25 shadow-none" style="width: 80px; height: 36px; border-radius: 8px;" @change="filterTable($refs.searchForm)">
+                        <div class="targets-filter-field">
+                            <label for="targetFilter_per_page" class="form-label">Rows per page</label>
+                            <select id="targetFilter_per_page" name="per_page" class="form-select form-select-sm border-secondary border-opacity-25 shadow-none" style="width: 80px; height: 36px; border-radius: 8px;" @change="filterTable($refs.searchForm)">
                             <option value="10" {{ request('per_page') == '10' ? 'selected' : '' }}>10</option>
                             <option value="20" {{ request('per_page', '20') == '20' ? 'selected' : '' }}>20</option>
                             <option value="50" {{ request('per_page') == '50' ? 'selected' : '' }}>50</option>
                             <option value="100" {{ request('per_page') == '100' ? 'selected' : '' }}>100</option>
                         </select>
-                        <select name="metric_type" class="form-select form-select-sm border-secondary border-opacity-25 shadow-none" style="width: 150px; height: 36px; border-radius: 8px;" @change="filterTable($refs.searchForm)">
+                        </div>
+                        <div class="targets-filter-field">
+                            <label for="targetFilter_metric_type" class="form-label">Metric</label>
+                            <select id="targetFilter_metric_type" name="metric_type" class="form-select form-select-sm border-secondary border-opacity-25 shadow-none" style="width: 150px; height: 36px; border-radius: 8px;" @change="filterTable($refs.searchForm)">
                             <option value="">All Metrics</option>
                             <option value="sales_revenue" {{ request('metric_type') == 'sales_revenue' ? 'selected' : '' }}>Sales Revenue</option>
                             <option value="orders_count" {{ request('metric_type') == 'orders_count' ? 'selected' : '' }}>Orders Count</option>
@@ -227,28 +236,39 @@
                             <option value="payment_collection" {{ request('metric_type') == 'payment_collection' ? 'selected' : '' }}>Payment Collection</option>
                             <option value="calls_made" {{ request('metric_type') == 'calls_made' ? 'selected' : '' }}>Outbound Call Attempts</option>
                         </select>
-                        <select name="period_type" class="form-select form-select-sm border-secondary border-opacity-25 shadow-none" style="width: 120px; height: 36px; border-radius: 8px;" x-model="searchPeriodType" @change="filterTable($refs.searchForm)">
+                        </div>
+                        <div class="targets-filter-field">
+                            <label for="targetFilter_period_type" class="form-label">Period</label>
+                            <select id="targetFilter_period_type" name="period_type" class="form-select form-select-sm border-secondary border-opacity-25 shadow-none" style="width: 120px; height: 36px; border-radius: 8px;" x-model="searchPeriodType" @change="filterTable($refs.searchForm)">
                             <option value="daily" {{ $selectedPeriod == 'daily' ? 'selected' : '' }}>Daily</option>
                             <option value="monthly" {{ $selectedPeriod == 'monthly' ? 'selected' : '' }}>Monthly</option>
                             <option value="yearly" {{ $selectedPeriod == 'yearly' ? 'selected' : '' }}>Yearly</option>
                         </select>
-                        <select name="month" class="form-select form-select-sm border-secondary border-opacity-25 shadow-none" style="width: 140px; height: 36px; border-radius: 8px;" :disabled="searchPeriodType === 'yearly'" @change="filterTable($refs.searchForm)">
+                        </div>
+                        <div class="targets-filter-field">
+                            <label for="targetFilter_month" class="form-label">Month</label>
+                            <select id="targetFilter_month" name="month" class="form-select form-select-sm border-secondary border-opacity-25 shadow-none" style="width: 140px; height: 36px; border-radius: 8px;" :disabled="searchPeriodType === 'yearly'" @change="filterTable($refs.searchForm)">
                             @foreach(range(1, 12) as $m)
                                 <option value="{{ $m }}" {{ $selectedMonth == $m ? 'selected' : '' }}>{{ date('F', mktime(0, 0, 0, $m, 1)) }}</option>
                             @endforeach
                         </select>
-                        <select name="financial_year" class="form-select form-select-sm border-secondary border-opacity-25 shadow-none" style="width: 130px; height: 36px; border-radius: 8px;" @change="filterTable($refs.searchForm)">
+                        </div>
+                        <div class="targets-filter-field">
+                            <label for="targetFilter_financial_year" class="form-label">Financial year</label>
+                            <select id="targetFilter_financial_year" name="financial_year" class="form-select form-select-sm border-secondary border-opacity-25 shadow-none" style="width: 130px; height: 36px; border-radius: 8px;" @change="filterTable($refs.searchForm)">
                             @foreach(range(date('Y') - 2, date('Y') + 2) as $y)
                                 <option value="{{ $y }}" {{ $selectedYear == $y ? 'selected' : '' }}>{{ $y }}-{{ substr($y + 1, -2) }}</option>
                             @endforeach
                         </select>
+                        </div>
                     </form>
                 </div>
             </div>
         </div>
-        <div class="card-body p-0" id="targetsTableBody">
-            <div class="table-responsive" style="min-height: 250px;">
-                <table class="table table-hover align-middle mb-0">
+        <div x-show="isFiltering" x-cloak class="px-4 py-2 small text-body-secondary border-bottom" role="status"><span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>Updating targets…</div>
+        <div class="card-body p-0" id="targetsTableBody" :aria-busy="isFiltering.toString()">
+            <div class="table-responsive targets-table-scroll" tabindex="0" role="region" aria-label="Targets directory">
+                <table class="table table-hover align-middle mb-0 {{ $targets->isEmpty() ? 'targets-table-empty' : '' }}">
                     <thead class="text-uppercase text-muted" style="font-size: 11px; letter-spacing: 0.5px;">
                         <tr class="table-light">
                             <th class="ps-4"><i class="bi bi-person-lines-fill me-1 text-muted opacity-50"></i> Assignee</th>
@@ -539,7 +559,7 @@
             </div>
 
             <!-- Pagination -->
-            <div class="d-flex justify-content-between align-items-center p-4 bg-body-tertiary border-top">
+            <div class="targets-pagination d-flex flex-wrap justify-content-between align-items-center p-3 bg-body-tertiary border-top">
                 <div class="w-100 m-0">
                     {{ $targets->appends(request()->query())->links('pagination::bootstrap-5') }}
                 </div>
@@ -548,7 +568,7 @@
     </div>
 
     {{-- Modal --}}
-    <div class="modal fade" id="targetModal" tabindex="-1" aria-hidden="true">
+    <div class="modal fade" id="targetModal" tabindex="-1" aria-labelledby="targetModalTitle" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
             <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden bg-body">
                 
@@ -559,7 +579,7 @@
                             <i class="bi bi-magic fs-4 text-primary"></i>
                         </div>
                         <div>
-                            <h4 class="mb-0 fw-bold text-body"><span x-text="isEdit ? 'Edit Target Details' : 'Create New Target'"></span></h4>
+                            <h2 id="targetModalTitle" class="h5 mb-0 fw-bold text-body"><span x-text="isEdit ? 'Edit Target Details' : 'Create New Target'"></span></h2>
                             <p class="mb-0 small text-muted">Configure performance metrics and assignment</p>
                         </div>
                     </div>
@@ -585,8 +605,8 @@
                                         </div>
                                         <div class="row g-4">
                                             <div class="col-md-6">
-                                                <label class="form-label mb-2 fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.1em;">Assignee Type *</label>
-                                                <select name="targetable_type" x-model="form.targetable_type" @change="clearAssignees()" class="form-select form-select-lg fw-semibold rounded-3 bg-body border-secondary border-opacity-25 shadow-none px-3" required style="font-size: 14px;" :disabled="isEdit">
+                                                <label class="form-label mb-2 fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.1em;" for="targetField1">Assignee Type *</label>
+                                                <select id="targetField1" name="targetable_type" x-model="form.targetable_type" @change="clearAssignees()" class="form-select form-select-lg fw-semibold rounded-3 bg-body border-secondary border-opacity-25 shadow-none px-3" required style="font-size: 14px;" :disabled="isEdit">
                                                     <option value="User">User</option>
                                                     <option value="Team">Team</option>
                                                     <option value="Department">Department</option>
@@ -597,10 +617,10 @@
                                             </div>
                                             
                                             <div class="col-md-6" x-show="!isEdit">
-                                                <label class="form-label mb-2 fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.1em;">Assignees (Multi-Select) *</label>
+                                                <label class="form-label mb-2 fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.1em;" for="targetField2">Assignees (Multi-Select) *</label>
                                                 <div class="card shadow-none border border-secondary border-opacity-25 rounded-3 overflow-hidden bg-body">
                                                     <div class="p-2 border-bottom bg-body-tertiary">
-                                                        <input type="text" x-model="searchQuery" class="form-control form-control-sm border-secondary border-opacity-25 shadow-none" placeholder="Search assignees...">
+                                                        <input id="targetField2" type="text" x-model="searchQuery" class="form-control form-control-sm border-secondary border-opacity-25 shadow-none" aria-label="Search target assignees" placeholder="Search assignees...">
                                                     </div>
                                                     <div class="p-2 border-bottom d-flex justify-content-between align-items-center" style="font-size: 11px;">
                                                         <div>
@@ -610,9 +630,10 @@
                                                         <span class="text-muted"><span x-text="form.targetable_ids.length"></span> selected</span>
                                                     </div>
                                                     <div class="list-group list-group-flush" style="max-height: 140px; overflow-y: auto;">
+                                                        <template x-for="id in form.targetable_ids" :key="id"><input type="hidden" name="targetable_ids[]" :value="id" :disabled="isEdit"></template>
                                                         <template x-for="assignee in filteredAssignees" :key="assignee.id">
                                                             <label class="list-group-item d-flex align-items-center gap-2 border-0 py-2 cursor-pointer" style="font-size: 13px;">
-                                                                <input type="checkbox" name="targetable_ids[]" :value="assignee.id" class="form-check-input mt-0" :checked="form.targetable_ids.includes(assignee.id)" @change="toggleAssignee(assignee.id)">
+                                                                <input type="checkbox" :value="assignee.id" class="form-check-input mt-0" :checked="form.targetable_ids.includes(assignee.id)" @change="toggleAssignee(assignee.id)">
                                                                 <span x-text="assignee.name"></span>
                                                             </label>
                                                         </template>
@@ -621,8 +642,8 @@
                                                 </div>
                                             </div>
                                             <div class="col-md-6" x-show="isEdit">
-                                                <label class="form-label mb-2 fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.1em;">Assignee *</label>
-                                                <input type="text" class="form-control form-control-lg fw-semibold rounded-3 bg-body border-secondary border-opacity-25 shadow-none px-3" disabled :value="form.assignee_name">
+                                                <label class="form-label mb-2 fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.1em;" for="targetEditAssignee">Assignee *</label>
+                                                <input id="targetEditAssignee" type="text" class="form-control form-control-lg fw-semibold rounded-3 bg-body border-secondary border-opacity-25 shadow-none px-3" disabled :value="form.assignee_name">
                                                 <input type="hidden" :name="isEdit ? 'targetable_ids[]' : ''" :value="form.targetable_id">
                                             </div>
                                         </div>
@@ -640,8 +661,8 @@
                                         </div>
                                         <div class="row g-4">
                                             <div class="col-md-4">
-                                                <label class="form-label mb-2 fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.1em;">Metric Type *</label>
-                                                <select name="metric_type" x-model="form.metric_type" class="form-select form-select-lg fw-semibold rounded-3 bg-body border-secondary border-opacity-25 shadow-none px-3" required style="font-size: 14px;" :disabled="isEdit">
+                                                <label class="form-label mb-2 fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.1em;" for="targetField4">Metric Type *</label>
+                                                <select id="targetField4" name="metric_type" x-model="form.metric_type" class="form-select form-select-lg fw-semibold rounded-3 bg-body border-secondary border-opacity-25 shadow-none px-3" required style="font-size: 14px;" :disabled="isEdit">
                                                     <option value="sales_revenue">Sales Revenue</option>
                                                     <option value="orders_count">Orders Count</option>
                                                     <option value="invoice_collection">Invoiced Amount</option>
@@ -654,17 +675,17 @@
                                                 </template>
                                             </div>
                                             <div class="col-md-4">
-                                                <label class="form-label mb-2 fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.1em;">Target Amount *</label>
+                                                <label class="form-label mb-2 fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.1em;" for="targetField5">Target Amount *</label>
                                                 <div class="input-group input-group-lg bg-body border border-secondary border-opacity-25 rounded-3 overflow-hidden">
                                                     <span x-show="!['orders_count', 'calls_made'].includes(form.metric_type)" class="input-group-text border-0 bg-transparent text-muted fw-bold">₹</span>
-                                                    <input type="number" step="0.01" name="target_amount" x-model="form.target_amount" class="form-control fw-semibold border-0 bg-transparent shadow-none px-2" required placeholder="50000" style="font-size: 14px;">
+                                                    <input id="targetField5" type="number" step="0.01" name="target_amount" x-model="form.target_amount" class="form-control fw-semibold border-0 bg-transparent shadow-none px-2" required placeholder="50000" style="font-size: 14px;">
                                                 </div>
                                             </div>
                                             <div class="col-md-4">
-                                                <label class="form-label mb-2 fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.1em;">Achieved Amount</label>
+                                                <label class="form-label mb-2 fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.1em;" for="targetField6">Achieved Amount</label>
                                                 <div class="input-group input-group-lg bg-body-tertiary border border-secondary border-opacity-25 rounded-3 overflow-hidden" title="Achieved amount is calculated automatically">
                                                     <span x-show="!['orders_count', 'calls_made'].includes(form.metric_type)" class="input-group-text border-0 bg-transparent text-muted fw-bold">₹</span>
-                                                    <input type="number" step="0.01" name="achieved_amount" x-model="form.achieved_amount" class="form-control fw-semibold border-0 bg-transparent shadow-none px-2" placeholder="0" style="font-size: 14px; cursor: not-allowed;" readonly>
+                                                    <input id="targetField6" type="number" step="0.01" name="achieved_amount" x-model="form.achieved_amount" class="form-control fw-semibold border-0 bg-transparent shadow-none px-2" placeholder="0" style="font-size: 14px; cursor: not-allowed;" readonly>
                                                 </div>
                                             </div>
                                         </div>
@@ -676,14 +697,14 @@
                                     <div class="card-body p-4">
                                         <div class="d-flex align-items-center gap-2 pb-3 mb-4 border-bottom border-secondary border-opacity-25">
                                             <div class="bg-warning bg-opacity-10 text-warning rounded-circle d-flex align-items-center justify-content-center" style="width: 28px; height: 28px;">
-                                                <i class="bi bi-calendar-range fs-6"></i>
+                                                <i class="bi bi-calendar3 fs-6"></i>
                                             </div>
                                             <h6 class="mb-0 fw-bolder text-uppercase text-body" style="font-size: 11px; letter-spacing: 1.5px;">Timeline & Status</h6>
                                         </div>
                                         <div class="row g-4">
                                             <div class="col-md-3">
-                                                <label class="form-label mb-2 fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.1em;">Period Type *</label>
-                                                <select name="period_type" x-model="form.period_type" class="form-select form-select-lg fw-semibold rounded-3 bg-body border-secondary border-opacity-25 shadow-none px-3" required style="font-size: 14px;" :disabled="isEdit">
+                                                <label class="form-label mb-2 fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.1em;" for="targetField7">Period Type *</label>
+                                                <select id="targetField7" name="period_type" x-model="form.period_type" class="form-select form-select-lg fw-semibold rounded-3 bg-body border-secondary border-opacity-25 shadow-none px-3" required style="font-size: 14px;" :disabled="isEdit">
                                                     <option value="daily">Daily</option>
                                                     <option value="monthly">Monthly</option>
                                                     <option value="yearly">Yearly</option>
@@ -694,8 +715,8 @@
                                             </div>
                                             
                                             <div class="col-md-3" x-show="form.period_type === 'monthly' && !isEdit" style="display: none;">
-                                                <label class="form-label mb-2 fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.1em;">Month *</label>
-                                                <select name="target_month" x-model="form.target_month" class="form-select form-select-lg fw-semibold rounded-3 bg-body border-secondary border-opacity-25 shadow-none px-3" :required="form.period_type === 'monthly' && !isEdit" style="font-size: 14px;" :disabled="form.period_type !== 'monthly' || isEdit">
+                                                <label class="form-label mb-2 fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.1em;" for="targetField8">Month *</label>
+                                                <select id="targetField8" name="target_month" x-model="form.target_month" class="form-select form-select-lg fw-semibold rounded-3 bg-body border-secondary border-opacity-25 shadow-none px-3" :required="form.period_type === 'monthly' && !isEdit" style="font-size: 14px;" :disabled="form.period_type !== 'monthly' || isEdit">
                                                     @foreach(range(1, 12) as $m)
                                                         <option value="{{ $m }}">{{ date('F', mktime(0, 0, 0, $m, 1)) }}</option>
                                                     @endforeach
@@ -703,8 +724,8 @@
                                             </div>
                                             
                                             <div class="col-md-3" x-show="(form.period_type === 'monthly' || form.period_type === 'yearly') && !isEdit" style="display: none;">
-                                                <label class="form-label mb-2 fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.1em;">Year *</label>
-                                                <select name="target_year" x-model="form.target_year" class="form-select form-select-lg fw-semibold rounded-3 bg-body border-secondary border-opacity-25 shadow-none px-3" :required="(form.period_type === 'monthly' || form.period_type === 'yearly') && !isEdit" style="font-size: 14px;" :disabled="(form.period_type !== 'monthly' && form.period_type !== 'yearly') || isEdit">
+                                                <label class="form-label mb-2 fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.1em;" for="targetField9">Year *</label>
+                                                <select id="targetField9" name="target_year" x-model="form.target_year" class="form-select form-select-lg fw-semibold rounded-3 bg-body border-secondary border-opacity-25 shadow-none px-3" :required="(form.period_type === 'monthly' || form.period_type === 'yearly') && !isEdit" style="font-size: 14px;" :disabled="(form.period_type !== 'monthly' && form.period_type !== 'yearly') || isEdit">
                                                     @foreach(range(date('Y') - 1, date('Y') + 3) as $y)
                                                         <option value="{{ $y }}">{{ $y }}</option>
                                                     @endforeach
@@ -712,19 +733,19 @@
                                             </div>
                                             
                                             <div class="col-md-3" x-show="form.period_type === 'daily' || isEdit">
-                                                <label class="form-label mb-2 fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.1em;">Start Date *</label>
-                                                <input type="date" name="start_date" x-model="form.start_date" class="form-control form-control-lg fw-semibold rounded-3 bg-body border-secondary border-opacity-25 shadow-none px-3" :required="form.period_type === 'daily' || isEdit" style="font-size: 14px;" :disabled="isEdit">
+                                                <label class="form-label mb-2 fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.1em;" for="targetField10">Start Date *</label>
+                                                <input id="targetField10" type="date" name="start_date" x-model="form.start_date" :max="form.end_date || null" class="form-control form-control-lg fw-semibold rounded-3 bg-body border-secondary border-opacity-25 shadow-none px-3" :required="form.period_type === 'daily' || isEdit" style="font-size: 14px;" :disabled="isEdit">
                                                 <template x-if="isEdit"><input type="hidden" name="start_date" :value="form.start_date"></template>
                                             </div>
                                             
                                             <div class="col-md-3" x-show="form.period_type === 'daily' || isEdit">
-                                                <label class="form-label mb-2 fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.1em;">End Date *</label>
-                                                <input type="date" name="end_date" x-model="form.end_date" class="form-control form-control-lg fw-semibold rounded-3 bg-body border-secondary border-opacity-25 shadow-none px-3" :required="form.period_type === 'daily' || isEdit" style="font-size: 14px;" :disabled="isEdit">
+                                                <label class="form-label mb-2 fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.1em;" for="targetField11">End Date *</label>
+                                                <input id="targetField11" type="date" name="end_date" x-model="form.end_date" :min="form.start_date || null" class="form-control form-control-lg fw-semibold rounded-3 bg-body border-secondary border-opacity-25 shadow-none px-3" :required="form.period_type === 'daily' || isEdit" style="font-size: 14px;" :disabled="isEdit">
                                                 <template x-if="isEdit"><input type="hidden" name="end_date" :value="form.end_date"></template>
                                             </div>
                                             <div class="col-md-3" x-show="isEdit">
-                                                <label class="form-label mb-2 fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.1em;">Status</label>
-                                                <select x-model="form.status" class="form-select form-select-lg fw-semibold rounded-3 bg-body-tertiary border-secondary border-opacity-25 shadow-none px-3" style="font-size: 14px; cursor: not-allowed;" disabled title="Status is calculated automatically">
+                                                <label class="form-label mb-2 fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.1em;" for="targetField12">Status</label>
+                                                <select id="targetField12" x-model="form.status" class="form-select form-select-lg fw-semibold rounded-3 bg-body-tertiary border-secondary border-opacity-25 shadow-none px-3" style="font-size: 14px; cursor: not-allowed;" disabled title="Status is calculated automatically">
                                                     <option value="active">Active</option>
                                                     <option value="achieved">Achieved</option>
                                                     <option value="failed">Failed</option>
@@ -732,9 +753,9 @@
                                                 <input type="hidden" name="status" :value="form.status">
                                             </div>
                                             <div class="col-md-3" x-show="daysCount > 0 && !isEdit">
-                                                <label class="form-label mb-2 fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.1em;">Total Days</label>
+                                                <label class="form-label mb-2 fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.1em;" id="targetWorkingDaysLabel">Total Days</label>
                                                 <div class="form-control form-control-lg fw-semibold rounded-3 bg-body-tertiary border-secondary border-opacity-25 shadow-none px-3 d-flex align-items-center" style="font-size: 14px;">
-                                                    <span x-text="daysCount"></span> <span class="ms-1 text-muted">Days</span>
+                                                    <span aria-labelledby="targetWorkingDaysLabel" x-text="daysCount"></span> <span class="ms-1 text-muted">Days</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -743,7 +764,7 @@
                             </div>
                         </div>
 
-                        <div class="d-flex justify-content-end gap-3 mt-4 pt-3 border-top">
+                        <div class="targets-modal-actions d-flex flex-wrap justify-content-end gap-3 mt-4 pt-3 border-top">
                             <button type="button" class="btn btn-lg btn-light border-secondary border-opacity-25 fw-semibold px-4 rounded-3 shadow-sm" data-bs-dismiss="modal" :disabled="isSubmitting">Cancel</button>
                             <button type="submit" class="btn btn-lg btn-primary fw-semibold px-5 rounded-3 shadow-sm" :disabled="isSubmitting">
                                 <span x-show="!isSubmitting">
@@ -761,7 +782,7 @@
     </div>
 
     {{-- Import Modal --}}
-    <div class="modal fade" id="importModal" tabindex="-1" aria-hidden="true">
+    <div class="modal fade" id="importModal" tabindex="-1" aria-labelledby="targetImportTitle" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden bg-body">
                 
@@ -771,7 +792,7 @@
                             <i class="bi bi-cloud-upload fs-4 text-primary"></i>
                         </div>
                         <div>
-                            <h4 class="mb-0 fw-bold text-body">Bulk Import</h4>
+                            <h2 id="targetImportTitle" class="h5 mb-0 fw-bold text-body">Bulk Import</h2>
                             <p class="mb-0 small text-muted">Upload an Excel or CSV file</p>
                         </div>
                     </div>
@@ -791,19 +812,19 @@
                             <div class="card-body p-4">
                                 <div class="d-flex align-items-center gap-2 pb-3 mb-4 border-bottom border-secondary border-opacity-25">
                                     <div class="bg-secondary bg-opacity-10 text-secondary rounded-circle d-flex align-items-center justify-content-center" style="width: 28px; height: 28px;">
-                                        <i class="bi bi-file-earmark-excel-fill fs-6"></i>
+                                        <i class="bi bi-file-earmark-text fs-6"></i>
                                     </div>
                                     <h6 class="mb-0 fw-bolder text-uppercase text-body" style="font-size: 11px; letter-spacing: 1.5px;">File Upload</h6>
                                 </div>
-                                <label class="form-label mb-2 fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.1em;">Select File (XLSX, CSV) *</label>
-                                <input type="file" name="file" class="form-control form-control-lg fw-semibold rounded-3 bg-body border-secondary border-opacity-25 shadow-none px-3" accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" required style="font-size: 14px;">
+                                <label class="form-label mb-2 fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.1em;" for="targetField13">Select File (XLSX, CSV) *</label>
+                                <input id="targetField13" type="file" name="file" class="form-control form-control-lg fw-semibold rounded-3 bg-body border-secondary border-opacity-25 shadow-none px-3" accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" required style="font-size: 14px;">
                                 <small class="text-muted d-block mt-3" style="font-size: 11px;">
                                     Headers must include: <code>targetable_type</code>, <code>targetable_identifier</code>, <code>metric_type</code>, <code>period_type</code>, <code>start_date</code>, <code>end_date</code>, <code>target_amount</code>, <code>achieved_amount</code>
                                 </small>
                             </div>
                         </div>
 
-                        <div class="d-flex justify-content-end gap-3 mt-4 pt-3 border-top">
+                        <div class="targets-modal-actions d-flex flex-wrap justify-content-end gap-3 mt-4 pt-3 border-top">
                             <button type="button" class="btn btn-lg btn-light border-secondary border-opacity-25 fw-semibold px-4 rounded-3 shadow-sm" data-bs-dismiss="modal">Cancel</button>
                             <button type="submit" class="btn btn-lg btn-primary fw-semibold px-5 rounded-3 shadow-sm">
                                 <i class="bi bi-upload me-2"></i>Process Import
@@ -830,6 +851,7 @@ document.addEventListener('DOMContentLoaded', function () {
 function targetsModule() {
     return {
         init() {
+            window.addEventListener('popstate', () => window.location.reload());
             document.addEventListener('click', e => {
                 let link = e.target.closest('#targetsTableBody .pagination a');
                 if (link) {
@@ -838,34 +860,35 @@ function targetsModule() {
                 }
             });
         },
+        isFiltering: false,
+        filterRequestId: 0,
         async fetchUrl(url) {
+            const requestId = ++this.filterRequestId;
+            this.isFiltering = true;
             try {
-                let response = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
-                let html = await response.text();
-                let doc = new DOMParser().parseFromString(html, 'text/html');
-                
-                let newTable = doc.querySelector('#targetsTableBody');
-                let oldTable = document.querySelector('#targetsTableBody');
-                
-                let newStats = doc.querySelector('#targetsStatsRow');
-                let oldStats = document.querySelector('#targetsStatsRow');
-                
-                if (newTable && oldTable) {
-                    oldTable.innerHTML = newTable.innerHTML;
-                    
-                    if (newStats && oldStats) {
-                        oldStats.innerHTML = newStats.innerHTML;
-                    }
-                    
-                    window.history.pushState({}, '', url);
-                } else {
+                const response = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+                if (requestId !== this.filterRequestId) return;
+                if (!response.ok) throw new Error('Unable to load targets');
+                const html = await response.text();
+                if (requestId !== this.filterRequestId) return;
+                const doc = new DOMParser().parseFromString(html, 'text/html');
+                const ids = ['targetsTableBody', 'targetsStatsRow', 'targetsActions'];
+                if (!ids.every(id => doc.getElementById(id) && document.getElementById(id))) {
                     window.location.href = url;
+                    return;
                 }
+                ids.forEach(id => {
+                    document.getElementById(id).innerHTML = doc.getElementById(id).innerHTML;
+                });
+                window.history.pushState({}, '', url);
             } catch (e) {
-                window.location.href = url;
+                if (requestId === this.filterRequestId) window.location.href = url;
+            } finally {
+                if (requestId === this.filterRequestId) this.isFiltering = false;
             }
         },
         async filterTable(form) {
+            await this.$nextTick();
             let formData = new FormData(form);
             let params = new URLSearchParams();
             for (let pair of formData.entries()) {
@@ -1011,7 +1034,7 @@ function targetsModule() {
                     end_date: ''
                 };
             }
-            new bootstrap.Modal(document.getElementById('targetModal')).show();
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('targetModal')).show();
         }
     }
 }

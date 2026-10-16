@@ -243,6 +243,7 @@
                         }
                     }
                 }"
+                @click.outside="clearSearch()"
                 x-init="$watch('searchQuery', value => { selectedIndex = -1; })">
                     <div class="position-relative d-flex align-items-center">
                         <div class="position-absolute start-0 ps-3 text-muted d-flex align-items-center" style="z-index: 10;">
@@ -255,15 +256,15 @@
                                style="font-size: 14px; letter-spacing: 0.5px; padding-left: 3rem !important; padding-right: 4rem !important;"
                                placeholder="Search or jump to..."
                                x-model="searchQuery"
-                               @keydown.window.prevent.cmd.k="$refs.searchInput.focus()"
-                               @keydown.window.prevent.ctrl.k="$refs.searchInput.focus()"
+                               @keydown.window.meta.k="if ($refs.searchInput.getClientRects().length) { $event.preventDefault(); $refs.searchInput.focus(); }"
+                               @keydown.window.ctrl.k="if ($refs.searchInput.getClientRects().length) { $event.preventDefault(); $refs.searchInput.focus(); }"
                                @keydown="handleKeydown($event)"
                                @keydown.escape="clearSearch()"
                                aria-label="Search pages">
                                
                         <div class="position-absolute end-0 pe-2 d-flex align-items-center gap-1" style="z-index: 10;">
                             <span class="badge bg-body-tertiary text-body border shadow-sm rounded-2 px-2 py-1 d-none d-lg-block" style="font-size: 10px;" x-show="searchQuery.length === 0">⌘K</span>
-                            <button type="button" class="btn btn-sm btn-link text-muted p-1 text-decoration-none" @click="clearSearch()" x-show="searchQuery.length > 0" x-cloak>
+                            <button type="button" class="btn btn-sm btn-link text-muted p-1 text-decoration-none" aria-label="Clear page search" @click="clearSearch()" x-show="searchQuery.length > 0" x-cloak>
                                 <i class="bi bi-x-circle-fill"></i>
                             </button>
                         </div>
@@ -301,7 +302,7 @@
             <div class="header-right-actions d-flex align-items-center justify-content-end gap-2 gap-sm-3 h-100 flex-shrink-0">
 
 {{-- Theme Toggle --}}
-                <div x-data="themeSwitch" class="h-100 d-flex align-items-center d-none d-md-flex">
+                <div x-data="themeSwitch" class="h-100 d-flex align-items-center">
                     <button class="header-icon-control btn btn-outline-secondary border-0 shadow-sm bg-body rounded-circle p-2 d-flex align-items-center justify-content-center transition-all hover-scale"
                             style="width: 42px; height: 42px;"
                             type="button"

@@ -4,7 +4,7 @@
 @section('page', 'users')
 
 @section('content')
-<div class="user-management" x-data="userTable">
+<div class="user-management user-admin-page" x-data="userTable">
     <div>
 <!-- Page Header -->
                     <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-4 pb-3 border-bottom">
@@ -12,7 +12,7 @@
                             <h1 class="h3 mb-0"><i class="bi bi-people-fill text-primary me-2"></i>User Management</h1>
                             <p class="text-muted mb-0">Manage users, roles, and permissions</p>
                         </div>
-                        <div class="d-flex align-items-center gap-2">
+                        <div class="users-page-actions d-flex flex-wrap align-items-center gap-2">
 
                             @can('user-import')
                             <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#importModal">
@@ -45,7 +45,7 @@
                                                 <h6 class="text-muted mb-1">Total Users</h6>
                                                 <div class="h3 mb-0" aria-live="polite"><span x-text="stats.total"></span></div>
                                                 <small class="trend-up text-success-emphasis">
-                                                    <i class="bi bi-arrow-up"></i> +12% from last month
+                                                    <i class="bi bi-arrow-up"></i> Matching current filters
                                                 </small>
                                             </div>
                                             <div class="stats-icon bg-primary bg-opacity-10 text-primary">
@@ -63,7 +63,7 @@
                                                 <h6 class="text-muted mb-1">Active Users</h6>
                                                 <div class="h3 mb-0" aria-live="polite"><span x-text="stats.active"></span></div>
                                                 <small class="trend-up text-success-emphasis">
-                                                    <i class="bi bi-arrow-up"></i> +8% from last week
+                                                    <i class="bi bi-arrow-up"></i> On this page
                                                 </small>
                                             </div>
                                             <div class="stats-icon bg-success bg-opacity-10 text-success">
@@ -81,7 +81,7 @@
                                                 <h6 class="text-muted mb-1">New This Month</h6>
                                                 <div class="h3 mb-0" aria-live="polite"><span x-text="stats.newThisMonth"></span></div>
                                                 <small class="trend-up text-success-emphasis">
-                                                    <i class="bi bi-arrow-up"></i> +15% growth
+                                                    <i class="bi bi-arrow-up"></i> On this page
                                                 </small>
                                             </div>
                                             <div class="stats-icon bg-info bg-opacity-10 text-info">
@@ -99,7 +99,7 @@
                                                 <h6 class="text-muted mb-1">Active Rate</h6>
                                                 <div class="h3 mb-0" aria-live="polite"><span x-text="`${Math.round(stats.activePercentage)}%`"></span></div>
                                                 <small class="text-muted">
-                                                    <i class="bi bi-clock"></i> Last 24h
+                                                    <i class="bi bi-clock"></i> On this page
                                                 </small>
                                             </div>
                                             <div id="activeUserChart" style="min-height: 40px; width: 50px;"></div>
@@ -312,16 +312,16 @@
                                             <div class="position-relative">
                                                 <input type="search" 
                                                        class="form-control form-control-sm shadow-sm border-0 bg-body-tertiary rounded-pill px-3" 
-                                                       placeholder="Search users..."
+                                                       aria-label="Search users" placeholder="Search users..."
                                                        x-model="searchQuery"
-                                                       @input="filterUsers()"
+                                                       @input.debounce.300ms="filterUsers()"
                                                        style="width: 200px;">
                                                 <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-3 text-muted"></i>
                                             </div>
                                             
                                             <!-- Status Filter -->
                                                 <select class="form-select form-select-sm shadow-sm border-0 bg-body-tertiary rounded-pill px-3" 
-                                                    x-model="statusFilter" 
+                                                    aria-label="User status" x-model="statusFilter"
                                                     @change="filterUsers()"
                                                     style="width: 150px;">
                                                 <option value="">All Status</option>
@@ -332,7 +332,7 @@
                                             
                                             <!-- Role Filter -->
                                             <select class="form-select form-select-sm shadow-sm border-0 bg-body-tertiary rounded-pill px-3" 
-                                                    x-model="roleFilter" 
+                                                    aria-label="User role" x-model="roleFilter"
                                                     @change="filterUsers()"
                                                     style="width: 150px;">
                                                 <option value="">All Roles</option>
@@ -343,7 +343,7 @@
                                             
                                             <!-- LOB Filter -->
                                             <select class="form-select form-select-sm shadow-sm border-0 bg-body-tertiary rounded-pill px-3" 
-                                                    x-model="teamFilter" 
+                                                    aria-label="User LOB" x-model="teamFilter"
                                                     @change="filterUsers()"
                                                     style="width: 150px;">
                                                 <option value="">All LOBs</option>
@@ -413,12 +413,13 @@
                                 </div>
 
                                 <!-- Table -->
-                                <div class="table-responsive" style="min-height: 350px;">
-                                    <table class="table table-hover align-middle mb-0">
+                                <p class="small text-body-secondary px-3 py-2 mb-0 border-bottom">Scroll horizontally to view all details and actions.</p>
+<div class="table-responsive directory-table-region" role="region" aria-label="Users directory" tabindex="0" style="min-height: 350px;">
+                                    <table class="table table-hover align-middle mb-0 users-directory-table">
                                         <thead class="table-active">
                                             <tr>
                                                 <th style="width: 50px;" class="ps-3">
-                                                    <input type="checkbox" 
+                                                    <input type="checkbox" aria-label="Select all users on this page"
                                                            class="user-select-checkbox"
                                                            @change="toggleAll($event.target.checked)"
                                                            :checked="paginatedUsers.length > 0 && paginatedUsers.every(u => selectedUsers.includes(String(u.id)))">
@@ -468,9 +469,9 @@
                                         </thead>
                                         <tbody>
                                             <template x-for="user in paginatedUsers" :key="user.id">
-                                                <tr :class="{ 'table-active': selectedUsers.includes(String(user.id)), 'user-row-active': user.status === 'active' && !user.is_suspended }">
+                                                <tr :class="{ 'table-active': selectedUsers.includes(String(user.id)), 'user-row-active': user.is_online && !user.is_suspended }">
                                                     <td class="ps-3">
-                                                        <input type="checkbox"
+                                                        <input type="checkbox" :aria-label="'Select ' + user.name"
                                                                class="user-select-checkbox"
                                                                :value="String(user.id)"
                                                                x-model="selectedUsers">
@@ -653,14 +654,14 @@
                                 </div>
 
                                 <!-- Pagination -->
-                                <div class="d-flex justify-content-between align-items-center p-3">
+                                <div class="d-flex flex-wrap gap-3 justify-content-between align-items-center p-3">
                                     <div class="text-muted">
                                         Showing <span x-text="pageFrom"></span> to
                                         <span x-text="pageTo"></span> of
                                         <span x-text="totalUsers"></span> results
                                     </div>
                                     <nav>
-                                        <ul class="pagination pagination-sm mb-0">
+                                        <ul class="pagination pagination-sm flex-wrap mb-0">
                                             <li class="page-item" :class="{ 'disabled': currentPage === 1 }">
                                                 <a class="page-link" href="#" @click.prevent="goToPage(currentPage - 1)">Previous</a>
                                             </li>
@@ -682,7 +683,7 @@
     </div> <!-- End showAnalytics wrapper -->
 
 {{-- ═══════════════════════ Add / Edit User Modal ═══════════════════════════ --}}
-<div class="modal fade" id="userModal" tabindex="-1" aria-labelledby="userModalLabel" aria-hidden="true" :class="{ 'view-mode-active': isViewMode }" x-data="userForm" aria-hidden="true">
+<div class="modal fade" id="userModal" tabindex="-1" aria-labelledby="userModalLabel" aria-hidden="true" :class="{ 'view-mode-active': isViewMode }" x-data="userForm">
     <div class="modal-dialog modal-xl modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header border-bottom-0 pb-0" x-show="!isViewMode">
@@ -927,31 +928,31 @@
                                     </div>
                                     <div class="row g-3">
                                         <div class="col-md-4">
-                                            <label class="form-label fw-medium text-muted small">First Name <span class="text-danger">*</span></label>
-                                            <input type="text" class="form-control form-control-sm" x-model="form.first_name" placeholder="e.g. Jane" required>
+                                            <label class="form-label fw-medium text-muted small" for="userFormField1">First Name <span class="text-danger">*</span></label>
+                                            <input id="userFormField1" type="text" class="form-control form-control-sm" x-model="form.first_name" placeholder="e.g. Jane" required>
                                         </div>
                                         <div class="col-md-4">
-                                            <label class="form-label fw-medium text-muted small">Middle Name</label>
-                                            <input type="text" class="form-control form-control-sm" x-model="form.middle_name" placeholder="e.g. Marie">
+                                            <label class="form-label fw-medium text-muted small" for="userFormField2">Middle Name</label>
+                                            <input id="userFormField2" type="text" class="form-control form-control-sm" x-model="form.middle_name" placeholder="e.g. Marie">
                                         </div>
                                         <div class="col-md-4">
-                                            <label class="form-label fw-medium text-muted small">Last Name</label>
-                                            <input type="text" class="form-control form-control-sm" x-model="form.last_name" placeholder="e.g. Smith">
+                                            <label class="form-label fw-medium text-muted small" for="userFormField3">Last Name</label>
+                                            <input id="userFormField3" type="text" class="form-control form-control-sm" x-model="form.last_name" placeholder="e.g. Smith">
                                         </div>
                                         <div class="col-md-4">
-                                            <label class="form-label fw-medium text-muted small">Date of Birth</label>
-                                            <input type="date" class="form-control form-control-sm" x-model="form.date_of_birth">
+                                            <label class="form-label fw-medium text-muted small" for="userFormField4">Date of Birth</label>
+                                            <input id="userFormField4" type="date" class="form-control form-control-sm" x-model="form.date_of_birth">
                                         </div>
                                         <div class="col-md-4">
-                                            <label class="form-label fw-medium text-muted small">Gender</label>
-                                            <select class="form-select form-select-sm" x-model="form.gender">
+                                            <label class="form-label fw-medium text-muted small" for="userFormField5">Gender</label>
+                                            <select id="userFormField5" class="form-select form-select-sm" x-model="form.gender">
                                                 <option value="Male">Male</option>
                                                 <option value="Female">Female</option>
                                             </select>
                                         </div>
                                         <div class="col-md-4">
-                                            <label class="form-label fw-medium text-muted small">Blood Group</label>
-                                            <select class="form-select form-select-sm" x-model="form.blood_group">
+                                            <label class="form-label fw-medium text-muted small" for="userFormField6">Blood Group</label>
+                                            <select id="userFormField6" class="form-select form-select-sm" x-model="form.blood_group">
                                                 <option value="">Unknown</option>
                                                 <option value="A+">A+</option>
                                                 <option value="A-">A-</option>
@@ -976,26 +977,26 @@
                                     </div>
                                     <div class="row g-3">
                                         <div class="col-md-6">
-                                            <label class="form-label fw-medium text-muted small">Email Address <span class="text-danger">*</span></label>
+                                            <label class="form-label fw-medium text-muted small" for="userFormField7">Email Address <span class="text-danger">*</span></label>
                                             <div class="input-group input-group-sm">
                                                 <span class="input-group-text bg-body-secondary"><i class="bi bi-envelope"></i></span>
-                                                <input type="email" class="form-control form-control-sm" x-model="form.email" placeholder="jane@example.com" required>
+                                                <input id="userFormField7" type="email" class="form-control form-control-sm" x-model="form.email" placeholder="jane@example.com" required>
                                             </div>
                                         </div>
                                         <div class="col-md-6">
-                                            <label class="form-label fw-medium text-muted small">Phone Number</label>
+                                            <label class="form-label fw-medium text-muted small" for="userFormField8">Phone Number</label>
                                             <div class="input-group input-group-sm">
                                                 <span class="input-group-text bg-body-secondary"><i class="bi bi-telephone"></i></span>
-                                                <input type="tel" class="form-control form-control-sm" x-model="form.phone" maxlength="10" minlength="10" pattern="\d{10}" oninput="this.value = this.value.replace(/[^0-9]/g, '')" placeholder="10-digit number">
+                                                <input id="userFormField8" type="tel" class="form-control form-control-sm" x-model="form.phone" maxlength="10" minlength="10" pattern="\d{10}" oninput="this.value = this.value.replace(/[^0-9]/g, '')" placeholder="10-digit number">
                                             </div>
                                         </div>
                                         <div class="col-md-6">
-                                            <label class="form-label fw-medium text-muted small">Emergency Contact Name</label>
-                                            <input type="text" class="form-control form-control-sm" x-model="form.emergency_contact_name" placeholder="Name">
+                                            <label class="form-label fw-medium text-muted small" for="userFormField9">Emergency Contact Name</label>
+                                            <input id="userFormField9" type="text" class="form-control form-control-sm" x-model="form.emergency_contact_name" placeholder="Name">
                                         </div>
                                         <div class="col-md-6">
-                                            <label class="form-label fw-medium text-muted small">Emergency Contact Phone</label>
-                                            <input type="tel" class="form-control form-control-sm" x-model="form.emergency_contact_phone" placeholder="10 digits" maxlength="10" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                                            <label class="form-label fw-medium text-muted small" for="userFormField10">Emergency Contact Phone</label>
+                                            <input id="userFormField10" type="tel" class="form-control form-control-sm" x-model="form.emergency_contact_phone" placeholder="10 digits" maxlength="10" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
                                         </div>
                                     </div>
                                 </div>
@@ -1010,21 +1011,21 @@
                                     </div>
                                     <div class="row g-3">
                                         <div class="col-md-6">
-                                            <label class="form-label fw-medium text-muted small">Address Line 1</label>
-                                            <input type="text" name="address_line_1" class="form-control form-control-sm" placeholder="House/Flat No., Street" x-model="form.address_line_1">
+                                            <label class="form-label fw-medium text-muted small" for="userFormField11">Address Line 1</label>
+                                            <input id="userFormField11" type="text" name="address_line_1" class="form-control form-control-sm" placeholder="House/Flat No., Street" x-model="form.address_line_1">
                                         </div>
                                         <div class="col-md-6">
-                                            <label class="form-label fw-medium text-muted small">Address Line 2</label>
-                                            <input type="text" name="address_line_2" class="form-control form-control-sm" placeholder="Landmark, Area" x-model="form.address_line_2">
+                                            <label class="form-label fw-medium text-muted small" for="userFormField12">Address Line 2</label>
+                                            <input id="userFormField12" type="text" name="address_line_2" class="form-control form-control-sm" placeholder="Landmark, Area" x-model="form.address_line_2">
                                         </div>
                                         
                                         <!-- Village Search -->
                                         <div class="col-12">
-                                            <label class="form-label fw-medium text-muted small">Village Search</label>
+                                            <label class="form-label fw-medium text-muted small" for="userFormField13">Village Search</label>
                                             <div class="position-relative">
                                                 <div class="input-group input-group-sm">
                                                     <span class="input-group-text bg-body-secondary"><i class="bi bi-search"></i></span>
-                                                    <input type="text" class="form-control form-control-sm" placeholder="Type 3 letters to search village..." x-model="villageSearchQuery" @input.debounce.300ms="searchVillages()">
+                                                    <input id="userFormField13" type="text" class="form-control form-control-sm" placeholder="Type 3 letters to search village..." x-model="villageSearchQuery" @input.debounce.300ms="searchVillages()">
                                                 </div>
                                                 <div class="position-absolute w-100 dropdown-menu show shadow overflow-auto mt-1" style="max-height: 200px; z-index: 1060;" x-show="villageResults.length > 0">
                                                     <template x-for="v in villageResults" :key="v.id">
@@ -1085,16 +1086,16 @@
                                             <div class="col-12 d-none">
                                                 <div class="row g-3">
                                                     <div class="col-md-4">
-                                                        <label class="form-label fw-medium text-muted small">City</label>
-                                                        <input type="text" name="city" class="form-control form-control-sm" x-model="form.city">
+                                                        <label class="form-label fw-medium text-muted small" for="userFormField14">City</label>
+                                                        <input id="userFormField14" type="text" name="city" class="form-control form-control-sm" x-model="form.city">
                                                     </div>
                                                     <div class="col-md-4">
-                                                        <label class="form-label fw-medium text-muted small">State</label>
-                                                        <input type="text" name="state" class="form-control form-control-sm" x-model="form.state">
+                                                        <label class="form-label fw-medium text-muted small" for="userFormField15">State</label>
+                                                        <input id="userFormField15" type="text" name="state" class="form-control form-control-sm" x-model="form.state">
                                                     </div>
                                                     <div class="col-md-4">
-                                                        <label class="form-label fw-medium text-muted small">Pincode</label>
-                                                        <input type="text" name="pincode" class="form-control form-control-sm" x-model="form.pincode">
+                                                        <label class="form-label fw-medium text-muted small" for="userFormField16">Pincode</label>
+                                                        <input id="userFormField16" type="text" name="pincode" class="form-control form-control-sm" x-model="form.pincode">
                                                     </div>
                                                 </div>
                                             </div>
@@ -1112,21 +1113,21 @@
                                     </div>
                                     <div class="row g-3">
                                         <div class="col-md-6">
-                                            <label class="form-label fw-medium text-muted small">Employee ID</label>
+                                            <label class="form-label fw-medium text-muted small" for="userFormField17">Employee ID</label>
                                             <div class="input-group input-group-sm">
-                                                <input type="text" class="form-control form-control-sm" x-model="form.employee_id" placeholder="e.g. EMP-1234">
+                                                <input id="userFormField17" type="text" class="form-control form-control-sm" x-model="form.employee_id" placeholder="e.g. EMP-1234">
                                                 <button class="btn btn-sm btn-outline-secondary bg-body" type="button" @click="generateEmployeeId" title="Auto Generate">
                                                     <i class="bi bi-magic"></i>
                                                 </button>
                                             </div>
                                         </div>
                                         <div class="col-md-6">
-                                            <label class="form-label fw-medium text-muted small">Joining Date</label>
-                                            <input type="date" class="form-control form-control-sm" x-model="form.joining_date">
+                                            <label class="form-label fw-medium text-muted small" for="userFormField18">Joining Date</label>
+                                            <input id="userFormField18" type="date" class="form-control form-control-sm" x-model="form.joining_date">
                                         </div>
                                         <div class="col-md-6">
-                                            <label class="form-label fw-medium text-muted small">Designation</label>
-                                            <select class="form-select form-select-sm" x-model="form.designation">
+                                            <label class="form-label fw-medium text-muted small" for="userFormField19">Designation</label>
+                                            <select id="userFormField19" class="form-select form-select-sm" x-model="form.designation">
                                                 <option value="">None</option>
                                                 <template x-for="desig in designations.filter(d => d.is_active)" :key="desig.id">
                                                     <option :value="desig.name" x-text="desig.name"></option>
@@ -1134,8 +1135,8 @@
                                             </select>
                                         </div>
                                         <div class="col-md-6">
-                                            <label class="form-label fw-medium text-muted small">Employment Type</label>
-                                            <select class="form-select form-select-sm" x-model="form.employment_type">
+                                            <label class="form-label fw-medium text-muted small" for="userFormField20">Employment Type</label>
+                                            <select id="userFormField20" class="form-select form-select-sm" x-model="form.employment_type">
                                                 <option value="">None</option>
                                                 <template x-for="emp in employmentTypes.filter(e => e.is_active)" :key="emp.id">
                                                     <option :value="emp.name" x-text="emp.name"></option>
@@ -1143,8 +1144,8 @@
                                             </select>
                                         </div>
                                         <div class="col-md-6">
-                                            <label class="form-label fw-medium text-muted small">Department</label>
-                                            <select class="form-select form-select-sm" x-model="form.department_id">
+                                            <label class="form-label fw-medium text-muted small" for="userFormField21">Department</label>
+                                            <select id="userFormField21" class="form-select form-select-sm" x-model="form.department_id">
                                                 <option value="">None</option>
                                                 <template x-for="dept in departments" :key="dept.id">
                                                     <option :value="dept.id" x-text="dept.name"></option>
@@ -1152,8 +1153,8 @@
                                             </select>
                                         </div>
                                         <div class="col-md-6">
-                                            <label class="form-label fw-medium text-muted small">Manager</label>
-                                            <select class="form-select form-select-sm" x-model="form.manager_id">
+                                            <label class="form-label fw-medium text-muted small" for="userFormField22">Manager</label>
+                                            <select id="userFormField22" class="form-select form-select-sm" x-model="form.manager_id">
                                                 <option value="">None</option>
                                                 <template x-for="mgr in managers" :key="mgr.id">
                                                     <option :value="mgr.id" x-text="mgr.name"></option>
@@ -1202,8 +1203,8 @@
                                     </div>
                                     <div class="row g-3">
                                         <div class="col-12">
-                                            <label class="form-label fw-medium text-muted small">Primary Role <span class="text-danger">*</span></label>
-                                            <select class="form-select form-select-sm" x-model="form.role" :required="!editingUserId" :disabled="roles.length === 0">
+                                            <label class="form-label fw-medium text-muted small" for="userFormField23">Primary Role <span class="text-danger">*</span></label>
+                                            <select id="userFormField23" class="form-select form-select-sm" x-model="form.role" :required="!editingUserId" :disabled="roles.length === 0">
                                                 <option value="" disabled x-text="roles.length === 0 ? 'No roles available' : 'Select a role'"></option>
                                                 <template x-for="r in roles" :key="r.id">
                                                     <option :value="r.name" x-text="r.name"></option>
@@ -1211,8 +1212,8 @@
                                             </select>
                                         </div>
                                         <div class="col-12 mt-2">
-                                            <label class="form-label fw-medium text-muted small">Assigned Team (LOB/State)</label>
-                                            <select class="form-select form-select-sm" x-model="form.team_id">
+                                            <label class="form-label fw-medium text-muted small" for="userFormField24">Assigned Team (LOB/State)</label>
+                                            <select id="userFormField24" class="form-select form-select-sm" x-model="form.team_id">
                                                 <option value="">Global / Master Context</option>
                                                 @if(isset($teams))
                                                     @foreach($teams as $team)
@@ -1222,21 +1223,21 @@
                                             </select>
                                         </div>
                                         <div class="col-12 mt-3 border-top pt-3">
-                                            <label class="form-label fw-medium text-muted small">
+                                            <label class="form-label fw-medium text-muted small" for="userFormField25">
                                                 Password
                                                 <span class="text-danger" x-show="!editingUserId">*</span>
                                             </label>
                                             <div class="input-group input-group-sm">
                                                 <span class="input-group-text bg-body-secondary"><i class="bi bi-key"></i></span>
-                                                <input type="password" class="form-control form-control-sm" x-model="form.password" :required="!editingUserId" placeholder="Min 8 characters">
+                                                <input id="userFormField25" type="password" class="form-control form-control-sm" x-model="form.password" :required="!editingUserId" placeholder="Min 8 characters">
                                             </div>
                                             <small class="text-muted mt-1" x-show="editingUserId" style="font-size: 11px;">Leave blank to keep current password.</small>
                                         </div>
                                         <div class="col-12">
-                                            <label class="form-label fw-medium text-muted small">Confirm Password</label>
+                                            <label class="form-label fw-medium text-muted small" for="userFormField26">Confirm Password</label>
                                             <div class="input-group input-group-sm">
                                                 <span class="input-group-text bg-body-secondary"><i class="bi bi-key-fill"></i></span>
-                                                <input type="password" class="form-control form-control-sm" x-model="form.password_confirmation" :required="!editingUserId && form.password.length > 0" placeholder="Repeat password">
+                                                <input id="userFormField26" type="password" class="form-control form-control-sm" x-model="form.password_confirmation" :required="!editingUserId && form.password.length > 0" placeholder="Repeat password">
                                             </div>
                                         </div>
                                         <div class="col-12 mt-3 border-top pt-3">

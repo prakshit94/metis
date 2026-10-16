@@ -65,6 +65,7 @@
 @import 'components/tables';
 @import 'components/navigation';
 @import 'components/modals';
+@import 'components/customer-modal';
 @import 'components/charts';
 @import 'components/icons';
 @import 'components/hamburger';
@@ -82,6 +83,7 @@
 @import 'pages/orders';
 @import 'pages/returns';
 @import 'pages/reports';
+@import 'pages/targets';
 @import 'pages/messages';
 @import 'pages/calendar';
 @import 'pages/files';
@@ -157,4 +159,47 @@
 
 .ts-dropdown .option:hover {
   background-color: rgba(var(--bs-secondary-rgb), 0.1) !important;
+}
+
+// Native option popups need an opaque surface; translucent input backgrounds
+// otherwise inherit the operating system's default palette in some browsers.
+.form-select option,
+.form-select optgroup {
+  background-color: var(--bs-body-bg);
+  color: var(--bs-body-color);
+}
+
+// Keep enhanced-select text and keyboard states in the active Bootstrap theme.
+.ts-control input,
+.ts-control .item,
+.ts-dropdown .optgroup-header {
+  color: var(--bs-body-color) !important;
+}
+
+.ts-control input::placeholder {
+  color: var(--bs-secondary-color) !important;
+}
+
+.ts-dropdown .option.selected {
+  background-color: var(--bs-primary-bg-subtle);
+  color: var(--bs-primary-text-emphasis);
+}
+
+.dropdown-menu .dropdown-item {
+  &:focus-visible {
+    outline: 2px solid var(--bs-primary);
+    outline-offset: -2px;
+  }
+
+  &.active,
+  &:active {
+    background-color: var(--bs-primary);
+    color: #fff;
+  }
+
+  &.disabled,
+  &:disabled {
+    color: var(--bs-tertiary-color);
+    background-color: transparent;
+  }
 }

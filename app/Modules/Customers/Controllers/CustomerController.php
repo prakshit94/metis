@@ -78,13 +78,8 @@ class CustomerController extends Controller implements HasMiddleware
             ->when(! $isGlobalView, fn ($q) => $q->where('created_by', $user->id))
             ->when($lobStateName, function ($q) use ($lobStateName) {
                 // Filter by default address state for LOB-scoped users
-                $q->whereExists(function ($query) use ($lobStateName) {
-                    $query->select(DB::raw(1))
-                          ->from('addresses')
-                          ->whereColumn('addresses.addressable_id', 'parties.id')
-                          ->where('addresses.addressable_type', \App\Modules\Customers\Models\Customer::class)
-                          ->where('addresses.state', $lobStateName)
-                          ->where('addresses.is_default', true);
+                $q->whereHas('addresses', function ($query) use ($lobStateName) {
+                    $query->where('state', $lobStateName)->where('is_default', true);
                 });
             })
             ->when($deletedFilter === 'with', fn ($q) => $q->withTrashed())
@@ -119,21 +114,28 @@ class CustomerController extends Controller implements HasMiddleware
             $customerIds = $customers->pluck('id')->toArray();
             
             if (!empty($customerIds)) {
-                $allInvoices = \App\Modules\Orders\Models\Invoice::join('orders', 'invoices.order_id', '=', 'orders.id')
-                  ->whereIn('orders.party_id', $customerIds)
-                  ->whereIn('invoices.status', ['unpaid', 'partially_paid'])
-                  ->select('invoices.*', 'orders.party_id as order_party_id')
-                  ->get();
-                
-                $customers->getCollection()->transform(function ($customer) use ($allInvoices) {
-                    $due = 0;
-                    $customerInvoices = $allInvoices->filter(function ($inv) use ($customer) {
-                        return $inv->order_party_id === $customer->id;
-                    });
-                    foreach ($customerInvoices as $invoice) {
-                        $due += $invoice->due_amount;
-                    }
-                    $customer->setAttribute('calculated_outstanding', (float) $due);
+                $paidAmounts = \App\Modules\Orders\Models\Payment::query()
+                    ->selectRaw('invoice_id, SUM(amount) as paid_amount')
+                    ->where('status', 'completed')
+                    ->whereIn('invoice_id', \App\Modules\Orders\Models\Invoice::query()
+                        ->select('invoices.id')
+                        ->join('orders', 'invoices.order_id', '=', 'orders.id')
+                        ->whereIn('orders.party_id', $customerIds)
+                        ->whereIn('invoices.status', ['unpaid', 'partially_paid']))
+                    ->groupBy('invoice_id');
+
+                $outstanding = \App\Modules\Orders\Models\Invoice::query()
+                    ->join('orders', 'invoices.order_id', '=', 'orders.id')
+                    ->leftJoinSub($paidAmounts, 'paid', 'paid.invoice_id', '=', 'invoices.id')
+                    ->whereIn('orders.party_id', $customerIds)
+                    ->whereIn('invoices.status', ['unpaid', 'partially_paid'])
+                    ->selectRaw('orders.party_id, SUM(GREATEST(0, invoices.net_amount - COALESCE(paid.paid_amount, 0))) as outstanding')
+                    ->groupBy('orders.party_id')
+                    ->pluck('outstanding', 'orders.party_id');
+
+                $customers->getCollection()->transform(function ($customer) use ($outstanding) {
+                    $customer->setAttribute('calculated_outstanding', (float) ($outstanding[$customer->id] ?? 0));
+
                     return $customer;
                 });
             }
@@ -142,23 +144,22 @@ class CustomerController extends Controller implements HasMiddleware
                 $baseQuery = Customer::query()
             ->when(! $isGlobalView, fn ($q) => $q->where('created_by', $user->id))
             ->when($lobStateName, function ($q) use ($lobStateName) {
-                $q->whereExists(function ($query) use ($lobStateName) {
-                    $query->select(DB::raw(1))
-                          ->from('addresses')
-                          ->whereColumn('addresses.addressable_id', 'parties.id')
-                          ->where('addresses.addressable_type', \App\Modules\Customers\Models\Customer::class)
-                          ->where('addresses.state', $lobStateName)
-                          ->where('addresses.is_default', true);
+                $q->whereHas('addresses', function ($query) use ($lobStateName) {
+                    $query->where('state', $lobStateName)->where('is_default', true);
                 });
             })
             ->when($deletedFilter === 'with', fn ($q) => $q->withTrashed())
             ->when($deletedFilter === 'only', fn ($q) => $q->onlyTrashed());
 
+        $counts = $baseQuery->toBase()->selectRaw("COUNT(*) as total,
+            COUNT(CASE WHEN status = 'active' THEN 1 END) as active,
+            COUNT(CASE WHEN is_blacklisted = 1 THEN 1 END) as blacklisted,
+            COUNT(CASE WHEN kyc_completed = 1 THEN 1 END) as kyc_completed")->first();
         $stats = [
-            'total' => (clone $baseQuery)->count(),
-            'active' => (clone $baseQuery)->where('status', 'active')->count(),
-            'blacklisted' => (clone $baseQuery)->where('is_blacklisted', true)->count(),
-            'kyc_completed' => (clone $baseQuery)->where('kyc_completed', true)->count(),
+            'total' => (int) $counts->total,
+            'active' => (int) $counts->active,
+            'blacklisted' => (int) $counts->blacklisted,
+            'kyc_completed' => (int) $counts->kyc_completed,
         ];
 
         return response()->json([
@@ -388,7 +389,7 @@ class CustomerController extends Controller implements HasMiddleware
             ->findOrFail($customer);
 
         if (class_exists(\App\Modules\Orders\Models\Invoice::class)) {
-            $invoices = \App\Modules\Orders\Models\Invoice::join('orders', 'invoices.order_id', '=', 'orders.id')
+            $invoices = \App\Modules\Orders\Models\Invoice::with('payments')->join('orders', 'invoices.order_id', '=', 'orders.id')
                 ->where('orders.party_id', $customer->id)
                 ->whereIn('invoices.status', ['unpaid', 'partially_paid'])
                 ->get();

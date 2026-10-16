@@ -71,7 +71,9 @@ class Payment extends Model implements Auditable
         };
 
         $syncAccounting = function ($payment) {
-            if (! Schema::hasTable('accounting_transactions')) {
+            if (! Schema::hasTable('accounting_transactions')
+                || ! Schema::hasTable('accounting_entries')
+                || ! Schema::hasTable('ledgers')) {
                 return;
             }
 
@@ -107,7 +109,9 @@ class Payment extends Model implements Auditable
         };
 
         $deleteAccounting = function ($payment) {
-            if (! Schema::hasTable('accounting_transactions')) {
+            if (! Schema::hasTable('accounting_transactions')
+                || ! Schema::hasTable('accounting_entries')
+                || ! Schema::hasTable('ledgers')) {
                 return;
             }
 

@@ -102,3 +102,71 @@
     border-color: var(--bs-primary);
   }
 }
+
+// User and access directories: readable columns and contained horizontal scrolling.
+.user-admin-page {
+  min-width: 0;
+  > .access-page-heading > .d-flex, .users-page-actions { flex-wrap: wrap; }
+  .card-header .row > .col-auto { max-width: 100%; }
+  .card-header .form-control, .card-header .form-select { min-height: 2.5rem; }
+  .users-directory-table { min-width: 1250px; }
+  .access-directory-table { min-width: 850px; }
+  .directory-table-region { overscroll-behavior-x: contain; }
+  .directory-table-region:focus-visible { outline: 2px solid var(--bs-primary); outline-offset: -2px; }
+  .table td { overflow-wrap: anywhere; }
+  @media (max-width: 767.98px) {
+    .card-header .col-auto { width: 100%; }
+    .card-header .justify-content-end { justify-content: flex-start !important; }
+    .card-header select, .card-header input[type='search'] { max-width: 100%; }
+    > .access-page-heading > div { width: 100%; }
+  }
+}
+#userModal, #accessModal {
+  .modal-header, .modal-footer { flex-shrink: 0; }
+  .modal-body { min-height: 0; overscroll-behavior: contain; }
+  .form-control, .form-select { color: var(--bs-body-color); background-color: var(--bs-body-bg); }
+  .form-check-label { overflow-wrap: anywhere; }
+}
+
+// Role/permission editor: one scrolling body and persistent actions.
+#accessModal {
+  .access-dialog { width: calc(100% - 3rem); max-width: 1400px; margin: 1.5rem auto; }
+  .modal-content { max-height: calc(100dvh - 3rem); border-radius: 1rem; overflow: hidden; }
+  .modal-header, .modal-footer { background: var(--bs-body-bg); padding: 1rem 1.5rem; }
+  .modal-body { padding: 1.5rem; }
+  .min-w-0 { min-width: 0; }
+  .permission-toolbar {
+    position: sticky; top: -1.5rem; z-index: 3;
+    background: var(--bs-body-bg); padding: 1rem 0;
+    border-bottom: 1px solid var(--bs-border-color);
+  }
+  .permission-search { flex: 1 1 22rem; max-width: 36rem; width: 100%; }
+  .permission-selection-tools { flex-shrink: 0; }
+  .permission-groups { display: grid; gap: 1rem; }
+  .permission-group { background: var(--bs-body-bg); overflow: clip; }
+  .permission-group-summary {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem;
+    padding: 1rem; cursor: pointer; background: var(--bs-tertiary-bg);
+    &::before { content: '›'; font-size: 1.5rem; line-height: 1; }
+    &::-webkit-details-marker { display: none; }
+    &:focus-visible { outline: 2px solid var(--bs-primary); outline-offset: -2px; }
+  }
+  details[open] > summary::before { transform: rotate(90deg); }
+  .permission-group-icon { display: grid; place-items: center; width: 2.25rem; height: 2.25rem; }
+  .permission-group-title { flex: 1; min-width: 5rem; overflow-wrap: anywhere; }
+  .permission-group-body { padding: 1rem; }
+  .permission-options-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 0.75rem; }
+  .permission-option { margin: 0; cursor: pointer; min-width: 0; }
+  .permission-code { overflow-wrap: anywhere; font-size: 0.75rem; }
+  .form-check-input { width: 1.125rem; height: 1.125rem; }
+  @media (max-width: 767.98px) {
+    .access-dialog { width: 100%; margin: 0; height: 100dvh; }
+    .modal-content { height: 100dvh; max-height: 100dvh; border-radius: 0; }
+    .modal-header, .modal-body, .modal-footer { padding: 1rem; }
+    .permission-toolbar { top: -1rem; }
+    .permission-search { flex-basis: auto; max-width: none; }
+    .permission-options-grid { grid-template-columns: minmax(0, 1fr); }
+    .access-footer-summary { flex-basis: 100%; }
+    .modal-footer > .btn { flex: 1; margin: 0; }
+  }
+}

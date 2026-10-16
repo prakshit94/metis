@@ -72,7 +72,7 @@ class PromotionsController extends Controller implements HasMiddleware
         }
         if (! empty($filters['status'])) {
             if ($filters['status'] === 'expired') {
-                $query->whereNotNull('expiry_date')->whereDate('expiry_date', '<', today());
+                $query->whereNotNull('expiry_date')->where('expiry_date', '<', today()->toDateString());
             } else {
                 $query->where('is_active', $filters['status'] === 'active');
             }
@@ -87,16 +87,19 @@ class PromotionsController extends Controller implements HasMiddleware
         });
 
         $today = today();
+        $counts = Coupon::query()->selectRaw("COUNT(*) as total,
+            COUNT(CASE WHEN is_active = 1 THEN 1 END) as active,
+            COUNT(CASE WHEN is_active = 0 THEN 1 END) as inactive,
+            COUNT(CASE WHEN expiry_date < ? THEN 1 END) as expired,
+            COUNT(CASE WHEN is_active = 1 AND expiry_date >= ? AND expiry_date <= ? THEN 1 END) as expiring_soon",
+            [$today->toDateString(), $today->toDateString(), $today->copy()->addDays(7)->toDateString()]
+        )->first();
         $stats = [
-            'total' => Coupon::count(),
-            'active' => Coupon::where('is_active', true)->count(),
-            'inactive' => Coupon::where('is_active', false)->count(),
-            'expired' => Coupon::whereNotNull('expiry_date')->whereDate('expiry_date', '<', $today)->count(),
-            'expiring_soon' => Coupon::where('is_active', true)
-                ->whereNotNull('expiry_date')
-                ->whereDate('expiry_date', '>=', $today)
-                ->whereDate('expiry_date', '<=', $today->copy()->addDays(7))
-                ->count(),
+            'total' => (int) $counts->total,
+            'active' => (int) $counts->active,
+            'inactive' => (int) $counts->inactive,
+            'expired' => (int) $counts->expired,
+            'expiring_soon' => (int) $counts->expiring_soon,
         ];
 
         return response()->json([
@@ -302,13 +305,21 @@ class PromotionsController extends Controller implements HasMiddleware
             return $offer;
         });
 
+        $totals = Offer::query()->toBase()->selectRaw("
+            COUNT(*) as total,
+            COALESCE(SUM(CASE WHEN is_active = 1 THEN 1 ELSE 0 END), 0) as active,
+            COALESCE(SUM(CASE WHEN ends_at < ? THEN 1 ELSE 0 END), 0) as expired,
+            COALESCE(SUM(CASE WHEN starts_at > ? THEN 1 ELSE 0 END), 0) as scheduled,
+            COALESCE(SUM(CASE WHEN type = 'bogo' THEN 1 ELSE 0 END), 0) as bogo,
+            COALESCE(SUM(CASE WHEN type = 'order_discount' THEN 1 ELSE 0 END), 0) as order_discount
+        ", [$currentTime, $currentTime])->first();
         $stats = [
-            'total'          => Offer::count(),
-            'active'         => Offer::where('is_active', true)->count(),
-            'expired'        => Offer::whereNotNull('ends_at')->where('ends_at', '<', $currentTime)->count(),
-            'scheduled'      => Offer::whereNotNull('starts_at')->where('starts_at', '>', $currentTime)->count(),
-            'bogo'           => Offer::where('type', 'bogo')->count(),
-            'order_discount' => Offer::where('type', 'order_discount')->count(),
+            'total' => (int) $totals->total,
+            'active' => (int) $totals->active,
+            'expired' => (int) $totals->expired,
+            'scheduled' => (int) $totals->scheduled,
+            'bogo' => (int) $totals->bogo,
+            'order_discount' => (int) $totals->order_discount,
         ];
 
         return response()->json(['data' => $offers, 'stats' => $stats]);

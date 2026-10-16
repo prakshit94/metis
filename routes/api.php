@@ -249,6 +249,8 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::get('/', [OrderController::class, 'index'])->name('index');
         Route::post('/preview', [OrderController::class, 'preview'])->name('preview');
         Route::post('/', [OrderController::class, 'store'])->name('store');
+        Route::get('/bulk-print', [OrderController::class, 'bulkPrint'])->name('bulk-print');
+        Route::get('/export', [OrderController::class, 'bulkExport'])->name('export');
         Route::get('/{order}', [OrderController::class, 'show'])->name('show');
         Route::patch('/{order}', [OrderController::class, 'update'])->name('update');
         Route::delete('/{order}', [OrderController::class, 'destroy'])->name('destroy');
@@ -267,8 +269,6 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::post('/bulk-status', [OrderController::class, 'bulkStatus'])->name('bulk-status');
         Route::post('/bulk-return', [\App\Modules\Orders\Controllers\OrderReturnController::class, 'bulkStore'])->name('bulk-return');
         Route::post('/bulk-generate-invoices', [OrderController::class, 'generateBulkInvoices'])->name('bulk-generate-invoices');
-        Route::get('/bulk-print', [OrderController::class, 'bulkPrint'])->name('bulk-print');
-        Route::get('/export', [OrderController::class, 'bulkExport'])->name('export');
         Route::post('/export-selected', [OrderController::class, 'exportSelected'])->name('export-selected');
         Route::post('/import', [OrderController::class, 'bulkImport'])->name('import');
     });
@@ -276,6 +276,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::prefix('complaints')->name('api.complaints.')->group(function (): void {
         Route::get('/stats', [OrderComplaintController::class, 'stats'])->name('stats');
         Route::get('/', [OrderComplaintController::class, 'index'])->name('index');
+        Route::get('/export', [OrderComplaintController::class, 'bulkExport'])->name('export');
         Route::get('/{complaint}', [OrderComplaintController::class, 'show'])->name('show');
         Route::post('/', [OrderComplaintController::class, 'store'])->name('store');
         Route::put('/{complaint}', [OrderComplaintController::class, 'update'])->name('update');
@@ -284,7 +285,6 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::patch('/{id}/restore', [OrderComplaintController::class, 'restore'])->name('restore');
         Route::delete('/{id}/force-delete', [OrderComplaintController::class, 'forceDelete'])->name('force-delete');
         Route::post('/bulk-action', [OrderComplaintController::class, 'bulkAction'])->name('bulk-action');
-        Route::get('/export', [OrderComplaintController::class, 'bulkExport'])->name('export');
         Route::post('/export-selected', [OrderComplaintController::class, 'exportSelected'])->name('export-selected');
     });
 

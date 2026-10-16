@@ -11,8 +11,8 @@
                         <i class="bi bi-person-plus-fill fs-4"></i>
                     </div>
                     <div>
-                        <h4 class="mb-0 fw-bold text-body"><span x-text="isEdit ? 'Edit Customer Profile' : 'Add New Customer'"></span></h4>
-                        <p class="mb-0 small text-muted">Register a new customer profile</p>
+                        <h2 id="addCustomerModalLabel" class="h5 mb-0 fw-bold text-body"><span x-text="isEdit ? 'Edit Customer Profile' : 'Add New Customer'"></span></h2>
+                        <p class="mb-0 small text-muted" x-text="isEdit ? 'Update customer profile details' : 'Register a new customer profile'"></p>
                     </div>
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -37,57 +37,57 @@
                                         <div class="position-relative">
                                             <div class="bg-secondary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center overflow-hidden border" style="width: 60px; height: 60px;">
                                                 <template x-if="avatarPreview">
-                                                    <img :src="avatarPreview" class="w-100 h-100 object-fit-cover">
+                                                    <img alt="Customer profile photo preview" :src="avatarPreview" class="w-100 h-100 object-fit-cover">
                                                 </template>
                                                 <template x-if="!avatarPreview">
                                                     <i class="bi bi-camera text-secondary fs-4"></i>
                                                 </template>
                                             </div>
-                                            <input type="file" name="avatar" class="position-absolute top-0 start-0 w-100 h-100 opacity-0 cursor-pointer" accept="image/*" @change="handleAvatarUpload">
+                                            <input id="customerAvatar" aria-label="Profile photo" type="file" name="avatar" class="position-absolute top-0 start-0 w-100 h-100 opacity-0 cursor-pointer" accept="image/*" @change="handleAvatarUpload">
                                         </div>
                                         <div>
-                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Profile Photo</label>
+                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;" for="customerAvatar">Profile Photo</label>
                                             <p class="mb-0 text-muted" style="font-size: 10px;">Click the icon to upload. Max 2MB (JPG, PNG)</p>
                                         </div>
                                     </div>
                                     <div class="row g-2">
                                         <div class="col-sm-4">
-                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">First Name *</label>
+                                            <label for="customerField1" class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">First Name *</label>
                                             <div class="input-group input-group-sm">
                                                 <span class="input-group-text bg-body text-muted border-end-0"><i class="bi bi-person"></i></span>
-                                                <input type="text" name="firstname" x-model="form.firstname" class="form-control border-start-0 ps-0 fw-semibold" style="font-size: 12px;" required>
+                                                <input id="customerField1" type="text" name="firstname" x-model="form.firstname" class="form-control border-start-0 ps-0 fw-semibold" style="font-size: 12px;" required>
                                             </div>
                                         </div>
                                         <div class="col-sm-4">
-                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Middle Name</label>
-                                            <input type="text" name="middlename" x-model="form.middlename" class="form-control form-control-sm fw-semibold" style="font-size: 12px;">
+                                            <label for="customerField2" class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Middle Name</label>
+                                            <input id="customerField2" type="text" name="middlename" x-model="form.middlename" class="form-control form-control-sm fw-semibold" style="font-size: 12px;">
                                         </div>
                                         <div class="col-sm-4">
-                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Last Name *</label>
-                                            <input type="text" name="lastname" x-model="form.lastname" class="form-control form-control-sm fw-semibold" style="font-size: 12px;" required>
+                                            <label for="customerField3" class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Last Name *</label>
+                                            <input id="customerField3" type="text" name="lastname" x-model="form.lastname" class="form-control form-control-sm fw-semibold" style="font-size: 12px;" required>
                                         </div>
                                         <div class="col-sm-4">
-                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Status *</label>
-                                            <select name="status" x-model="form.status" class="form-select form-select-sm fw-semibold" style="font-size: 12px;">
+                                            <label for="customerField4" class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Status *</label>
+                                            <select id="customerField4" name="status" x-model="form.status" class="form-select form-select-sm fw-semibold" style="font-size: 12px;">
                                                 <option value="active">Active</option>
                                                 <option value="inactive">Inactive</option>
                                                 <option value="suspended">Suspended</option>
                                             </select>
                                         </div>
                                         <div class="col-sm-4">
-                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Category</label>
-                                            <select name="category" x-model="form.category" class="form-select form-select-sm fw-semibold" style="font-size: 12px;">
+                                            <label for="customerField5" class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Category</label>
+                                            <select id="customerField5" name="category" x-model="form.category" class="form-select form-select-sm fw-semibold" style="font-size: 12px;">
                                                 <option value="">— Select —</option>
                                                 <option value="individual">Individual</option>
                                                 <option value="business">Business</option>
                                             </select>
                                         </div>
                                         <div class="col-sm-4">
-                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Referral Code</label>
+                                            <label for="customerField6" class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Referral Code</label>
                                             <div class="input-group input-group-sm">
                                                 <span class="input-group-text bg-body text-muted border-end-0" :class="{'bg-body-secondary': isEdit}"><i class="bi bi-person-heart"></i></span>
-                                                <input type="text" name="referred_by_code" x-model="form.referred_by_code" :readonly="isEdit" @input.debounce.500ms="checkReferralCode" class="form-control border-start-0 ps-0 fw-semibold text-uppercase font-monospace" :class="{'bg-body-secondary text-muted': isEdit}" style="font-size: 12px;" placeholder="Optional">
-                                                <span class="input-group-text bg-body border-start-0" x-show="form.referred_by_code && isValidatingReferral === false" :class="{'bg-body-secondary': isEdit}" x-cloak>
+                                                <input id="customerField6" type="text" name="referred_by_code" x-model="form.referred_by_code" :readonly="isEdit" @input.debounce.500ms="checkReferralCode" class="form-control border-start-0 ps-0 fw-semibold text-uppercase font-monospace" :class="{'bg-body-secondary text-muted': isEdit}" style="font-size: 12px;" placeholder="Optional">
+                                                <span class="input-group-text bg-body border-start-0" x-show="form.referred_by_code && referralCheckedCode === form.referred_by_code.trim().toUpperCase() && isValidatingReferral === false" :class="{'bg-body-secondary': isEdit}" x-cloak>
                                                     <i class="bi bi-check-circle-fill text-success" x-show="referralValid"></i>
                                                     <i class="bi bi-x-circle-fill text-danger" x-show="!referralValid && form.referred_by_code.length > 0"></i>
                                                 </span>
@@ -96,11 +96,11 @@
                                                 </span>
                                             </div>
                                             <div x-show="referralName" class="text-success small fw-bold mt-1" style="font-size: 10px;" x-text="'Referrer: ' + referralName" x-cloak></div>
-                                            <div x-show="!referralValid && form.referred_by_code && isValidatingReferral === false" class="text-danger small fw-bold mt-1" style="font-size: 10px;" x-cloak>Invalid Referral Code</div>
+                                            <div x-show="!referralValid && form.referred_by_code && referralCheckedCode === form.referred_by_code.trim().toUpperCase() && isValidatingReferral === false" class="text-danger small fw-bold mt-1" style="font-size: 10px;" x-cloak>Invalid Referral Code</div>
                                         </div>
                                         <div class="col-sm-4 position-relative" @click.away="showSourceDropdown = false">
                                             <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Lead Source</label>
-                                            <div @click="showSourceDropdown = !showSourceDropdown" class="form-control form-control-sm d-flex flex-wrap align-items-center gap-1 cursor-pointer bg-body" style="min-height: 31px; cursor: pointer;">
+                                            <div role="button" tabindex="0" aria-label="Lead source" :aria-expanded="showSourceDropdown.toString()" @keydown.enter.prevent="showSourceDropdown = !showSourceDropdown" @keydown.space.prevent="showSourceDropdown = !showSourceDropdown" @keydown.escape.stop="showSourceDropdown = false" @click="showSourceDropdown = !showSourceDropdown" class="form-control form-control-sm d-flex flex-wrap align-items-center gap-1 cursor-pointer bg-body" style="min-height: 31px; cursor: pointer;">
                                                 <template x-if="selectedSources.length === 0">
                                                     <span class="text-muted" style="font-size: 12px;">Select...</span>
                                                 </template>
@@ -112,10 +112,10 @@
                                                     </div>
                                                 </template>
                                             </div>
-                                            <div x-show="showSourceDropdown" class="position-absolute w-100 bg-body border rounded shadow-lg mt-1" style="max-height: 150px; overflow-y: auto; z-index: 1050;">
+                                            <div x-cloak x-show="showSourceDropdown" class="position-absolute w-100 bg-body border rounded shadow-lg mt-1" style="max-height: 150px; overflow-y: auto; z-index: 1050;">
                                                 <template x-for="source in sources" :key="source">
                                                     <div class="px-3 py-1 cursor-pointer custom-hover-bg d-flex align-items-center" @click.stop="toggleSource(source)">
-                                                        <input type="checkbox" :checked="selectedSources.includes(source)" class="me-2" style="cursor: pointer;">
+                                                        <input type="checkbox" :aria-label="source" :checked="selectedSources.includes(source)" class="me-2" style="cursor: pointer;">
                                                         <span style="font-size: 12px;" x-text="source"></span>
                                                     </div>
                                                 </template>
@@ -136,30 +136,30 @@
                                     </div>
                                     <div class="row g-2">
                                         <div class="col-sm-4">
-                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Email Address</label>
+                                            <label for="customerField7" class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Email Address</label>
                                             <div class="input-group input-group-sm">
                                                 <span class="input-group-text bg-body text-muted border-end-0"><i class="bi bi-envelope"></i></span>
-                                                <input type="email" name="email" x-model="form.email" class="form-control border-start-0 ps-0 fw-semibold" style="font-size: 12px;" pattern="[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}" title="Please enter a valid email address">
+                                                <input id="customerField7" type="email" name="email" x-model="form.email" class="form-control border-start-0 ps-0 fw-semibold" style="font-size: 12px;" pattern="[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}" title="Please enter a valid email address">
                                             </div>
                                         </div>
                                         <div class="col-sm-4">
-                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Primary Phone *</label>
+                                            <label for="customerField8" class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Primary Phone *</label>
                                             <div class="input-group input-group-sm">
                                                 <span class="input-group-text text-muted border-end-0" :class="isEdit ? 'bg-body-secondary' : 'bg-body'"><i class="bi bi-phone"></i></span>
-                                                <input type="text" name="phone" x-model="form.phone" class="form-control border-start-0 ps-0 fw-semibold" :class="isEdit ? 'bg-body-secondary text-muted opacity-75' : ''" style="font-size: 12px;" required pattern="\d{10}" minlength="10" maxlength="10" title="Must be exactly 10 digits" oninput="this.value = this.value.replace(/\D/g, '').substring(0,10)" :readonly="isEdit">
+                                                <input id="customerField8" type="text" name="phone" x-model="form.phone" class="form-control border-start-0 ps-0 fw-semibold" :class="isEdit ? 'bg-body-secondary text-muted opacity-75' : ''" style="font-size: 12px;" required pattern="\d{10}" minlength="10" maxlength="10" title="Must be exactly 10 digits" oninput="this.value = this.value.replace(/\D/g, '').substring(0,10)" :readonly="isEdit">
                                             </div>
                                         </div>
                                         <div class="col-sm-4">
-                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Alternate Mobile</label>
-                                            <input type="text" name="alternatemobile" x-model="form.alternatemobile" class="form-control form-control-sm fw-semibold" style="font-size: 12px;" pattern="\d{10}" minlength="10" maxlength="10" title="Must be exactly 10 digits" oninput="this.value = this.value.replace(/\D/g, '').substring(0,10)">
+                                            <label for="customerField9" class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Alternate Mobile</label>
+                                            <input id="customerField9" type="text" name="alternatemobile" x-model="form.alternatemobile" class="form-control form-control-sm fw-semibold" style="font-size: 12px;" pattern="\d{10}" minlength="10" maxlength="10" title="Must be exactly 10 digits" oninput="this.value = this.value.replace(/\D/g, '').substring(0,10)">
                                         </div>
                                         <div class="col-sm-4">
-                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Relative Name</label>
-                                            <input type="text" name="relative_name" x-model="form.relative_name" class="form-control form-control-sm fw-semibold" style="font-size: 12px;">
+                                            <label for="customerField10" class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Relative Name</label>
+                                            <input id="customerField10" type="text" name="relative_name" x-model="form.relative_name" class="form-control form-control-sm fw-semibold" style="font-size: 12px;">
                                         </div>
                                         <div class="col-sm-4">
-                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Relative Phone</label>
-                                            <input type="text" name="relative_phone" x-model="form.relative_phone" class="form-control form-control-sm fw-semibold" style="font-size: 12px;" pattern="\d{10}" minlength="10" maxlength="10" title="Must be exactly 10 digits" oninput="this.value = this.value.replace(/\D/g, '').substring(0,10)">
+                                            <label for="customerField11" class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Relative Phone</label>
+                                            <input id="customerField11" type="text" name="relative_phone" x-model="form.relative_phone" class="form-control form-control-sm fw-semibold" style="font-size: 12px;" pattern="\d{10}" minlength="10" maxlength="10" title="Must be exactly 10 digits" oninput="this.value = this.value.replace(/\D/g, '').substring(0,10)">
                                         </div>
                                     </div>
                                 </div>
@@ -181,22 +181,22 @@
                                     </div>
                                     <div class="row g-2">
                                         <div class="col-sm-6">
-                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Address Line 1</label>
+                                            <label for="customerField12" class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Address Line 1</label>
                                             <div class="input-group input-group-sm">
                                                 <span class="input-group-text bg-body text-muted border-end-0"><i class="bi bi-house"></i></span>
-                                                <input type="text" class="form-control border-start-0 ps-0 fw-semibold" style="font-size: 12px;" x-model="form.address_line_1" placeholder="House / Flat / Plot No.">
+                                                <input id="customerField12" type="text" class="form-control border-start-0 ps-0 fw-semibold" style="font-size: 12px;" x-model="form.address_line_1" placeholder="House / Flat / Plot No.">
                                             </div>
                                         </div>
                                         <div class="col-sm-6">
-                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Address Line 2</label>
+                                            <label for="customerField13" class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Address Line 2</label>
                                             <div class="input-group input-group-sm">
                                                 <span class="input-group-text bg-body text-muted border-end-0"><i class="bi bi-signpost"></i></span>
-                                                <input type="text" class="form-control border-start-0 ps-0 fw-semibold" style="font-size: 12px;" x-model="form.address_line_2">
+                                                <input id="customerField13" type="text" class="form-control border-start-0 ps-0 fw-semibold" style="font-size: 12px;" x-model="form.address_line_2">
                                             </div>
                                         </div>
                             
                                         <div class="col-12 position-relative" @click.away="villageResults = []">
-                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">
+                                            <label for="customerVillageSearch" class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">
                                                 Village Search <span class="text-danger">*</span>
                                             </label>
                                             <div class="input-group input-group-sm"
@@ -210,6 +210,7 @@
                                                        :class="!isEdit && !form.village_name && villageSearchQuery.length > 2 ? 'border-danger border-start-0' : ''"
                                                        style="font-size: 12px;"
                                                        placeholder="Type 3 letters to search village..."
+                                                       id="customerVillageSearch" x-ref="customerVillageSearch" aria-controls="customerVillageResults" :aria-expanded="(villageResults.length > 0).toString()" aria-autocomplete="list" @keydown.escape.stop="villageResults = []"
                                                        x-model="villageSearchQuery"
                                                        @input.debounce.300ms="searchVillages()"
                                                        aria-required="true">
@@ -223,7 +224,7 @@
                                                    tabindex="-1"
                                                    aria-hidden="true"
                                                    :value="form.village_name"
-                                                   :required="!isEdit"
+                                                   @invalid.prevent="$refs.customerVillageSearch.focus()" :required="!isEdit"
                                                    title="Please search and select a village from the list.">
 
                                             {{-- Inline error hint when typed but not selected --}}
@@ -241,7 +242,10 @@
                                                 <i class="bi bi-info-circle me-1"></i>Required — type at least 3 letters to search.
                                             </div>
 
-                                            <div class="position-absolute w-100 bg-body border rounded shadow-lg mt-1 overflow-auto" style="max-height: 200px; z-index: 1060;" x-show="villageResults.length > 0">
+                                            <div role="status" class="small text-body-secondary mt-1" x-show="isSearchingVillages" x-cloak>Searching villages…</div>
+                                            <div role="status" class="small text-danger mt-1" x-show="villageSearchError" x-text="villageSearchError" x-cloak></div>
+                                            <div role="status" class="small text-body-secondary mt-1" x-show="villageSearchQuery.length >= 3 && !isSearchingVillages && !villageSearchError && !villageResults.length" x-cloak>No matching villages found. Try another name or pincode.</div>
+                                            <div id="customerVillageResults" aria-label="Village search results" class="position-absolute w-100 bg-body border rounded shadow-lg mt-1 overflow-auto" style="max-height: 200px; z-index: 1060;" x-show="villageResults.length > 0">
                                                 <template x-for="v in villageResults" :key="v.id">
                                                     <button type="button" class="dropdown-item text-wrap w-100 text-start py-2 px-3 border-bottom custom-hover-bg" @click="selectVillage(v)">
                                                         <div class="d-flex justify-content-between align-items-start gap-2 mb-1">
@@ -321,27 +325,27 @@
                                     </div>
                                     <div class="row g-2">
                                         <div class="col-12">
-                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Company Name</label>
+                                            <label for="customerField14" class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Company Name</label>
                                             <div class="input-group input-group-sm">
                                                 <span class="input-group-text bg-body text-muted border-end-0"><i class="bi bi-building"></i></span>
-                                                <input type="text" name="company_name" x-model="form.company_name" class="form-control border-start-0 ps-0 fw-semibold" style="font-size: 12px;">
+                                                <input id="customerField14" type="text" name="company_name" x-model="form.company_name" class="form-control border-start-0 ps-0 fw-semibold" style="font-size: 12px;">
                                             </div>
                                         </div>
                                         <div class="col-sm-6">
-                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">GST Number</label>
-                                            <input type="text" name="gst_no" x-model="form.gst_no" class="form-control form-control-sm text-uppercase fw-semibold font-monospace" style="font-size: 12px;">
+                                            <label for="customerField15" class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">GST Number</label>
+                                            <input id="customerField15" type="text" name="gst_no" x-model="form.gst_no" class="form-control form-control-sm text-uppercase fw-semibold font-monospace" style="font-size: 12px;">
                                         </div>
                                         <div class="col-sm-6">
-                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">PAN Number</label>
-                                            <input type="text" name="pan_no" x-model="form.pan_no" class="form-control form-control-sm text-uppercase fw-semibold font-monospace" style="font-size: 12px;">
+                                            <label for="customerField16" class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">PAN Number</label>
+                                            <input id="customerField16" type="text" name="pan_no" x-model="form.pan_no" class="form-control form-control-sm text-uppercase fw-semibold font-monospace" style="font-size: 12px;">
                                         </div>
                                         <div class="col-sm-6">
-                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Tax No (Other)</label>
-                                            <input type="text" name="tax_no" x-model="form.tax_no" class="form-control form-control-sm text-uppercase fw-semibold font-monospace" style="font-size: 12px;">
+                                            <label for="customerField17" class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Tax No (Other)</label>
+                                            <input id="customerField17" type="text" name="tax_no" x-model="form.tax_no" class="form-control form-control-sm text-uppercase fw-semibold font-monospace" style="font-size: 12px;">
                                         </div>
                                         <div class="col-sm-6">
-                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Aadhaar (Last 4)</label>
-                                            <input type="text" name="aadhaar_last4" x-model="form.aadhaar_last4" class="form-control form-control-sm fw-semibold font-monospace" style="font-size: 12px; letter-spacing: 2px;" maxlength="4">
+                                            <label for="customerField18" class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Aadhaar (Last 4)</label>
+                                            <input id="customerField18" type="text" name="aadhaar_last4" x-model="form.aadhaar_last4" class="form-control form-control-sm fw-semibold font-monospace" style="font-size: 12px; letter-spacing: 2px;" maxlength="4">
                                         </div>
                                         <div class="col-12 mt-2">
                                             <div class="d-flex gap-4 pt-2">
@@ -372,10 +376,10 @@
                                     </div>
                                     <div class="row g-2">
                                         <div class="col-sm-6">
-                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Land Area & Unit</label>
+                                            <label for="customerField19" class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Land Area & Unit</label>
                                             <div class="input-group input-group-sm">
-                                                <input type="number" step="0.01" name="land_area" x-model="form.land_area" class="form-control w-50 fw-semibold" style="font-size: 12px;">
-                                                <select name="land_unit" x-model="form.land_unit" class="form-select w-50 fw-semibold" style="font-size: 12px;">
+                                                <input id="customerField19" type="number" step="0.01" name="land_area" x-model="form.land_area" class="form-control w-50 fw-semibold" style="font-size: 12px;">
+                                                <select aria-label="Land unit" name="land_unit" x-model="form.land_unit" class="form-select w-50 fw-semibold" style="font-size: 12px;">
                                                     <template x-for="unit in landUnits" :key="unit">
                                                         <option :value="unit" x-text="unit"></option>
                                                     </template>
@@ -384,7 +388,7 @@
                                         </div>
                                         <div class="col-sm-6 position-relative" @click.away="showIrrigationDropdown = false">
                                             <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Irrigation</label>
-                                            <div @click="showIrrigationDropdown = !showIrrigationDropdown" class="form-control form-control-sm d-flex flex-wrap align-items-center gap-1 cursor-pointer bg-body" style="min-height: 31px; cursor: pointer;">
+                                            <div role="button" tabindex="0" aria-label="Irrigation" :aria-expanded="showIrrigationDropdown.toString()" @keydown.enter.prevent="showIrrigationDropdown = !showIrrigationDropdown" @keydown.space.prevent="showIrrigationDropdown = !showIrrigationDropdown" @keydown.escape.stop="showIrrigationDropdown = false" @click="showIrrigationDropdown = !showIrrigationDropdown" class="form-control form-control-sm d-flex flex-wrap align-items-center gap-1 cursor-pointer bg-body" style="min-height: 31px; cursor: pointer;">
                                                 <template x-if="selectedIrrigation.length === 0">
                                                     <span class="text-muted" style="font-size: 12px;">Select...</span>
                                                 </template>
@@ -396,10 +400,10 @@
                                                     </div>
                                                 </template>
                                             </div>
-                                            <div x-show="showIrrigationDropdown" class="position-absolute w-100 bg-body border rounded shadow-lg mt-1" style="max-height: 150px; overflow-y: auto; z-index: 1050;">
+                                            <div x-cloak x-show="showIrrigationDropdown" class="position-absolute w-100 bg-body border rounded shadow-lg mt-1" style="max-height: 150px; overflow-y: auto; z-index: 1050;">
                                                 <template x-for="type in irrigationTypes" :key="type">
                                                     <div class="px-3 py-1 cursor-pointer custom-hover-bg d-flex align-items-center" @click.stop="toggleIrrigation(type)">
-                                                        <input type="checkbox" :checked="selectedIrrigation.includes(type)" class="me-2" style="cursor: pointer;">
+                                                        <input type="checkbox" :aria-label="type" :checked="selectedIrrigation.includes(type)" class="me-2" style="cursor: pointer;">
                                                         <span style="font-size: 12px;" x-text="type"></span>
                                                     </div>
                                                 </template>
@@ -416,13 +420,13 @@
                                                     </div>
                                                 </template>
                                                 <div class="flex-grow-1 position-relative" style="min-width: 100px;">
-                                                    <input x-ref="cropSearch" type="text" x-model="cropSearch" @focus="showCropsDropdown = true" placeholder="Search..." class="w-100 outline-none" style="font-size: 12px; outline: none !important; box-shadow: none;">
+                                                    <input x-ref="cropSearch" aria-label="Search crops" type="text" x-model="cropSearch" @focus="showCropsDropdown = true" placeholder="Search..." class="w-100 outline-none" style="font-size: 12px; outline: none !important; box-shadow: none;">
                                                 </div>
                                             </div>
-                                            <div x-show="showCropsDropdown && filteredCrops.length > 0" class="position-absolute w-100 bg-body border rounded shadow-lg mt-1" style="max-height: 150px; overflow-y: auto; z-index: 1050;">
+                                            <div x-cloak x-show="showCropsDropdown && filteredCrops.length > 0" class="position-absolute w-100 bg-body border rounded shadow-lg mt-1" style="max-height: 150px; overflow-y: auto; z-index: 1050;">
                                                 <template x-for="crop in filteredCrops" :key="crop">
                                                     <div class="px-3 py-1 cursor-pointer custom-hover-bg d-flex align-items-center" @click.stop="toggleCrop(crop)">
-                                                        <input type="checkbox" :checked="selectedCrops.includes(crop)" class="me-2" style="cursor: pointer;">
+                                                        <input type="checkbox" :aria-label="crop" :checked="selectedCrops.includes(crop)" class="me-2" style="cursor: pointer;">
                                                         <span style="font-size: 12px;" x-text="crop"></span>
                                                     </div>
                                                 </template>
@@ -441,7 +445,7 @@
                                         </div>
                                         <h6 class="mb-0 fw-bold text-uppercase text-body" style="font-size: 11px; letter-spacing: 1px;">Internal Notes</h6>
                                     </div>
-                                    <textarea name="internal_notes" x-model="form.internal_notes" rows="1" class="form-control form-control-sm fw-semibold" style="font-size: 12px;" placeholder="Administrative notes..."></textarea>
+                                    <textarea aria-label="Internal notes" name="internal_notes" x-model="form.internal_notes" rows="1" class="form-control form-control-sm fw-semibold" style="font-size: 12px;" placeholder="Administrative notes..."></textarea>
                                 </div>
                             </div>
 
@@ -456,24 +460,24 @@
                                     </div>
                                     <div class="row g-2">
                                         <div class="col-sm-6">
-                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Credit Limit (₹ )</label>
-                                            <input type="number" step="0.01" name="credit_limit" x-model="form.credit_limit" class="form-control form-control-sm fw-semibold" style="font-size: 12px;">
+                                            <label for="customerField20" class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Credit Limit (₹ )</label>
+                                            <input id="customerField20" type="number" step="0.01" name="credit_limit" x-model="form.credit_limit" class="form-control form-control-sm fw-semibold" style="font-size: 12px;">
                                         </div>
                                         <div class="col-sm-6">
-                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Credit Days</label>
-                                            <input type="number" name="credit_days" x-model="form.credit_days" class="form-control form-control-sm fw-semibold" style="font-size: 12px;">
+                                            <label for="customerField21" class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Credit Days</label>
+                                            <input id="customerField21" type="number" name="credit_days" x-model="form.credit_days" class="form-control form-control-sm fw-semibold" style="font-size: 12px;">
                                         </div>
                                         <div class="col-sm-6">
-                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Wallet Balance</label>
-                                            <input type="number" step="0.01" name="wallet_balance" x-model="form.wallet_balance" class="form-control form-control-sm fw-semibold" style="font-size: 12px;">
+                                            <label for="customerField22" class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Wallet Balance</label>
+                                            <input id="customerField22" type="number" step="0.01" name="wallet_balance" x-model="form.wallet_balance" class="form-control form-control-sm fw-semibold" style="font-size: 12px;">
                                         </div>
                                         <div class="col-sm-6">
-                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Outstanding Bal.</label>
-                                            <input type="number" step="0.01" name="outstanding_balance" x-model="form.outstanding_balance" class="form-control form-control-sm fw-semibold" style="font-size: 12px;">
+                                            <label for="customerField23" class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Outstanding Bal.</label>
+                                            <input id="customerField23" type="number" step="0.01" name="outstanding_balance" x-model="form.outstanding_balance" class="form-control form-control-sm fw-semibold" style="font-size: 12px;">
                                         </div>
                                         <div class="col-sm-6">
-                                            <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Validity Period</label>
-                                            <input type="date" name="credit_valid_till" x-model="form.credit_valid_till" class="form-control form-control-sm fw-semibold" style="font-size: 12px;">
+                                            <label for="customerField24" class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Validity Period</label>
+                                            <input id="customerField24" type="date" name="credit_valid_till" x-model="form.credit_valid_till" class="form-control form-control-sm fw-semibold" style="font-size: 12px;">
                                         </div>
                                     </div>
                                 </div>
@@ -481,28 +485,28 @@
                         </div>
                     </div>
                     
+                </form>
+            </div>
                     {{-- Form Actions --}}
-                    <div class="d-flex justify-content-end gap-3 mt-4 pt-3 border-top">
+                    <div class="modal-footer customer-form-actions d-flex flex-wrap justify-content-end gap-3">
+                    <div id="customerFormError" role="alert" aria-live="assertive" class="alert alert-danger w-100 mb-0 py-2 small fw-bold" x-show="formError" x-text="formError" x-cloak></div>
                         <button type="button" @click="$dispatch('close-modal', { name: 'global-add-customer-modal' })" data-bs-dismiss="modal" class="btn text-muted fw-bold text-uppercase" style="font-size: 11px; letter-spacing: 1px;">Cancel</button>
-                        <button type="submit" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm" :disabled="isSubmitting">
+                        <button type="submit" form="addCustomerForm" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm" :disabled="isSubmitting">
                             <span x-show="isSubmitting" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
                             <span x-text="isEdit ? 'Save Changes' : 'Create Customer Profile'"></span>
                         </button>
                     </div>
-                    <div class="alert alert-danger mt-3 mb-0 py-2 small fw-bold" x-show="formError" x-text="formError" x-cloak></div>
-                </form>
-            </div>
         </div>
     </div>
 </div>
 
 <style>
-.custom-hover-bg:hover { background-color: rgba(var(--bs-primary-rgb), 0.1); }
-input[type="text"]:focus, input[type="email"]:focus, input[type="number"]:focus, input[type="date"]:focus, select:focus, textarea:focus {
+#addCustomerModal .custom-hover-bg:hover { background-color: rgba(var(--bs-primary-rgb), 0.1); }
+#addCustomerModal input:focus, #addCustomerModal select:focus, #addCustomerModal textarea:focus {
     box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.15) !important;
     border-color: var(--bs-primary) !important;
 }
-.cursor-pointer { cursor: pointer; }
+#addCustomerModal .cursor-pointer { cursor: pointer; }
 </style>
 
 @push('scripts')
@@ -526,6 +530,11 @@ document.addEventListener('alpine:init', () => {
         isEdit: false,
         customerId: null,
         isValidatingReferral: false,
+        referralRequestId: 0,
+        referralCheckedCode: '',
+        villageRequestId: 0,
+        isSearchingVillages: false,
+        villageSearchError: '',
         referralValid: false,
         referralName: '',
         villageSearchQuery: '',
@@ -563,22 +572,28 @@ document.addEventListener('alpine:init', () => {
         },
 
         async checkReferralCode() {
-            if (!this.form.referred_by_code || this.form.referred_by_code.trim().length < 3) {
-                this.referralValid = false;
-                this.referralName = '';
-                return;
-            }
+            const requestId = ++this.referralRequestId;
+            this.referralCheckedCode = "";
+            const code = (this.form.referred_by_code || '').trim().toUpperCase();
+            this.referralValid = false;
+            this.referralName = '';
+            this.isValidatingReferral = false;
+            if (code.length < 3) return;
             this.isValidatingReferral = true;
             try {
-                const res = await fetch(`/api/customers/check-referral/${this.form.referred_by_code.trim().toUpperCase()}`);
+                const res = await fetch(`/api/customers/check-referral/${encodeURIComponent(code)}`);
+                if (!res.ok) throw new Error('Referral lookup failed');
                 const data = await res.json();
+                if (requestId !== this.referralRequestId) return;
                 this.referralValid = data.valid;
                 this.referralName = data.name || '';
             } catch(e) {
+                if (requestId !== this.referralRequestId) return;
                 this.referralValid = false;
                 this.referralName = '';
+            } finally {
+                if (requestId === this.referralRequestId) { this.isValidatingReferral = false; this.referralCheckedCode = code; }
             }
-            this.isValidatingReferral = false;
         },
 
         toggleSource(name) {
@@ -606,6 +621,16 @@ document.addEventListener('alpine:init', () => {
         },
 
         resetForm() {
+            this.referralRequestId++;
+            this.referralCheckedCode = "";
+            this.villageRequestId++;
+            this.isSearchingVillages = false;
+            this.villageSearchError = '';
+            this.showSourceDropdown = false;
+            this.showIrrigationDropdown = false;
+            this.showCropsDropdown = false;
+            this.cropSearch = '';
+            this.formError = '';
             this.villageSearchQuery = '';
             this.villageResults = [];
             this.selectedVillageServices = [];
@@ -624,7 +649,7 @@ document.addEventListener('alpine:init', () => {
             this.referralValid = false;
             this.referralName = '';
             this.avatarPreview = '{{ asset('assets/images/farmersprofileimage.png') }}';
-            const fileInput = document.querySelector('input[name="avatar"]');
+            const fileInput = document.querySelector('#addCustomerForm input[name="avatar"]');
             if (fileInput) fileInput.value = '';
         },
 
@@ -667,6 +692,7 @@ document.addEventListener('alpine:init', () => {
         },
 
         async submitForm(e) {
+            if (this.isSubmitting) return;
             this.formError = '';
             this.isSubmitting = true;
             
@@ -776,22 +802,30 @@ document.addEventListener('alpine:init', () => {
         },
 
         async searchVillages() {
-            if (!this.villageSearchQuery || this.villageSearchQuery.length < 3) {
-                this.villageResults = [];
-                return;
-            }
+            const requestId = ++this.villageRequestId;
+            this.villageResults = [];
+            this.villageSearchError = '';
+            this.isSearchingVillages = false;
+            if (!this.villageSearchQuery || this.villageSearchQuery.length < 3) return;
+            this.isSearchingVillages = true;
             try {
                 const res = await fetch(`/api/villages/search?q=${encodeURIComponent(this.villageSearchQuery)}`, {
                     headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
                 });
+                if (!res.ok) throw new Error('Village search failed');
                 const data = await res.json();
-                this.villageResults = data.data || [];
+                if (requestId === this.villageRequestId) this.villageResults = data.data || [];
             } catch (e) {
-                console.error('Village search failed:', e);
+                if (requestId === this.villageRequestId) this.villageSearchError = 'Unable to search villages. Please try again.';
+            } finally {
+                if (requestId === this.villageRequestId) this.isSearchingVillages = false;
             }
         },
 
         selectVillage(v) {
+            this.villageRequestId++;
+            this.isSearchingVillages = false;
+            this.villageSearchError = '';
             this.form.village_id = v.id;
             this.form.village_name = v.village_name || v.name || '';
             this.form.post_office = v.post_so_name || v.post_office || '';

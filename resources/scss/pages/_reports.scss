@@ -1,157 +1,87 @@
-// ==========================================================================
-// Reports Page Styles
-// ==========================================================================
-
-// Reports page specific styles
+// Reports UI: keep all colors scoped to the active Bootstrap theme.
 .reports-page {
-  background: var(--bs-body-bg);
-
-  .stats-card {
-    @include stats-card-hover();
+  .report-summary,
+  .report-export-card {
     background: var(--bs-body-bg);
     border: 1px solid var(--bs-border-color);
+    border-radius: 1rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
   }
 
-  .stats-icon {
-    @include stats-icon();
+  .report-summary .card-body {
+    padding: 1.25rem;
+    min-width: 0;
   }
 
-  .report-card {
-    @include admin-card();
-    cursor: pointer;
-    transition: all 0.2s ease-in-out;
-    border: 2px solid transparent;
-
-    &:hover {
-      border-color: var(--bs-primary);
-      transform: translateY(-2px);
-      box-shadow: 0 8px 25px rgba(99, 102, 241, 0.15);
-    }
-
-    &.selected {
-      border-color: var(--bs-primary);
-      background-color: var(--bs-primary-bg-subtle);
-    }
+  .report-summary-label {
+    font-size: 0.8125rem;
+    line-height: 1.4;
   }
 
-  .chart-container {
-    @include chart-container(350px, 350px);
-  }
-
-  .date-range-picker {
-    display: flex;
-    gap: 0.5rem;
+  .report-summary-icon {
+    width: 2.75rem;
+    height: 2.75rem;
+    flex: 0 0 2.75rem;
+    display: inline-flex;
     align-items: center;
+    justify-content: center;
+    border-radius: 0.75rem;
+    font-size: 1.25rem;
   }
 
-  .metric-value {
-    font-size: 2rem;
-    font-weight: 700;
-    line-height: 1.2;
-  }
-
-  .metric-change {
-    font-size: 0.875rem;
-    font-weight: 500;
-
-    &.positive {
-      color: var(--bs-success);
-    }
-
-    &.negative {
-      color: var(--bs-danger);
-    }
-
-    &.neutral {
-      color: var(--bs-secondary-color);
+  @each $tone in primary, success, warning, info {
+    .report-tone-#{$tone} {
+      background: var(--bs-#{$tone}-bg-subtle);
+      color: var(--bs-#{$tone}-text-emphasis);
     }
   }
 
-  .card {
-    @include admin-card();
-  }
+  .report-export-card {
+    overflow: hidden;
 
-  .card-header {
-    @include admin-card-header();
-  }
-
-  .hamburger-menu {
-    @include hamburger-menu();
-
-    .admin-wrapper.sidebar-collapsed & {
-      left: 1rem;
+    .card-header {
+      background: var(--bs-body-bg);
+      border-bottom: 1px solid var(--bs-border-color);
     }
   }
 
-  .report-filter {
-    background: var(--bs-secondary-bg);
-    border-radius: 8px;
-    padding: 1rem;
-    margin-bottom: 1.5rem;
+  .report-control {
+    min-height: 3rem;
+    width: 100%;
+    min-width: 0;
+    background-color: var(--bs-body-bg);
+    color: var(--bs-body-color);
     border: 1px solid var(--bs-border-color);
-  }
+    border-radius: 0.625rem;
 
-  .kpi-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 1.5rem;
-    margin-bottom: 2rem;
-  }
-
-  .progress-ring {
-    @include progress-ring();
-  }
-
-  .report-status-badge {
-    @include status-badge();
-
-    &.ready {
-      background-color: var(--bs-success-bg-subtle);
-      color: var(--bs-success-text-emphasis);
-      border: 1px solid var(--bs-success-border-subtle);
-    }
-
-    &.generating {
-      background-color: var(--bs-warning-bg-subtle);
-      color: var(--bs-warning-text-emphasis);
-      border: 1px solid var(--bs-warning-border-subtle);
-    }
-
-    &.failed {
-      background-color: var(--bs-danger-bg-subtle);
-      color: var(--bs-danger-text-emphasis);
-      border: 1px solid var(--bs-danger-border-subtle);
-    }
-  }
-
-  .export-format-selector {
-    .form-select {
+    &:focus {
       border-color: var(--bs-primary);
-
-      &:focus {
-        border-color: var(--bs-primary);
-        box-shadow: 0 0 0 0.25rem rgba(99, 102, 241, 0.25);
-      }
+      box-shadow: 0 0 0 0.2rem rgba(var(--bs-primary-rgb), 0.2);
     }
   }
 
-  .recent-reports-table {
-    .table {
-      margin-bottom: 0;
+  input[type='date'] {
+    // WebKit date controls otherwise retain an intrinsic width on small screens.
+    max-width: 100%;
+    appearance: auto;
+  }
 
-      th {
-        border-bottom: 2px solid var(--bs-border-color);
-        font-weight: 600;
-        color: var(--bs-emphasis-color);
-      }
+  .report-export-footer {
+    background: var(--bs-tertiary-bg);
+    border-top: 1px solid var(--bs-border-color);
+  }
 
-      td {
-        vertical-align: middle;
-      }
-    }
+  .report-download {
+    min-height: 3rem;
+    padding: 0.75rem 1.5rem;
+  }
 
-    .table-hover tbody tr:hover {
-      background-color: var(--bs-secondary-bg-subtle);
-    }
+  .reports-refresh {
+    width: 2.5rem;
+    height: 2.5rem;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 0.75rem;
   }
 }

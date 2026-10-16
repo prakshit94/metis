@@ -4,101 +4,78 @@
 @section('page', 'reports')
 
 @section('content')
-<!-- Page Header -->
-<div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-4 pb-3 border-bottom">
-    <div>
-        <h1 class="h3 mb-0 fw-bold">Reports & Analytics</h1>
-        <p class="text-muted mb-0">Generate insights and export business data</p>
-    </div>
-    <div class="d-flex align-items-center gap-2">
-        <button type="button" class="btn btn-outline-primary btn-sm rounded-pill px-3 shadow-sm bg-body-tertiary" onclick="window.location.reload()" data-bs-toggle="tooltip" title="Refresh data">
-            <i class="bi bi-arrow-clockwise icon-hover"></i>
-        </button>
-    </div>
-</div>
-
-<!-- Reports Management Container -->
 <div class="reports-page" x-data="reportsComponent">
+    <header class="reports-header d-flex justify-content-between align-items-start gap-3 mb-4">
+        <div>
+            <h1 class="h3 fw-bold mb-2">Reports & Analytics</h1>
+            <p class="text-body-secondary mb-0">Choose a report, set your dates, and export your business data.</p>
+        </div>
+        <button type="button" class="btn btn-outline-secondary reports-refresh flex-shrink-0" onclick="window.location.reload()" aria-label="Refresh reports" title="Refresh reports">
+            <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
+        </button>
+    </header>
 
-    <!-- KPI Widgets -->
-    <div class="row g-4 mb-4">
-        <div class="col-xl-3 col-lg-6">
-            <div class="card stats-card h-100 shadow-sm rounded-4 border-start border-4 border-primary">
-                <div class="card-body p-3">
-                    <div class="d-flex align-items-center">
-                        <div class="stats-icon bg-primary bg-opacity-10 text-primary me-3 rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
-                            <i class="bi bi-file-earmark-text fs-4"></i>
-                        </div>
-                        <div>
-                            <p class="h6 mb-0 text-muted" style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em;">Available Reports</p>
-                            <div class="h4 mb-0 fw-bold">16</div>
-                        </div>
+    <div class="row g-3 mb-4" aria-label="Report export information">
+        <div class="col-sm-6 col-xl-3">
+            <div class="card report-summary h-100">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <span class="report-summary-icon report-tone-primary" aria-hidden="true"><i class="bi bi-file-earmark-text"></i></span>
+                    <div class="min-w-0">
+                        <p class="report-summary-label text-body-secondary mb-1">Available reports</p>
+                        <p class="h5 fw-semibold mb-0">16</p>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-xl-3 col-lg-6">
-            <div class="card stats-card h-100 shadow-sm rounded-4 border-start border-4 border-success">
-                <div class="card-body p-3">
-                    <div class="d-flex align-items-center">
-                        <div class="stats-icon bg-success bg-opacity-10 text-success me-3 rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
-                            <i class="bi bi-cloud-download fs-4"></i>
-                        </div>
-                        <div>
-                            <p class="h6 mb-0 text-muted" style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em;">Export Status</p>
-                            <div class="h4 mb-0 fw-bold text-success">Online</div>
-                        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="card report-summary h-100">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <span class="report-summary-icon report-tone-success" aria-hidden="true"><i class="bi bi-download"></i></span>
+                    <div class="min-w-0">
+                        <p class="report-summary-label text-body-secondary mb-1">Export format</p>
+                        <p class="h5 fw-semibold mb-0">CSV</p>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-xl-3 col-lg-6">
-            <div class="card stats-card h-100 shadow-sm rounded-4 border-start border-4 border-warning">
-                <div class="card-body p-3">
-                    <div class="d-flex align-items-center">
-                        <div class="stats-icon bg-warning bg-opacity-10 text-warning me-3 rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
-                            <i class="bi bi-server fs-4"></i>
-                        </div>
-                        <div>
-                            <p class="h6 mb-0 text-muted" style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em;">Server Load</p>
-                            <div class="h4 mb-0 fw-bold">Normal</div>
-                        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="card report-summary h-100">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <span class="report-summary-icon report-tone-warning" aria-hidden="true"><i class="bi bi-sliders"></i></span>
+                    <div class="min-w-0">
+                        <p class="report-summary-label text-body-secondary mb-1">Report categories</p>
+                        <p class="h5 fw-semibold mb-0">6</p>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-xl-3 col-lg-6">
-            <div class="card stats-card h-100 shadow-sm rounded-4 border-start border-4 border-info">
-                <div class="card-body p-3">
-                    <div class="d-flex align-items-center">
-                        <div class="stats-icon bg-info bg-opacity-10 text-info me-3 rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
-                            <i class="bi bi-clock-history fs-4"></i>
-                        </div>
-                        <div>
-                            <p class="h6 mb-0 text-muted" style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em;">Last Refresh</p>
-                            <div class="h4 mb-0 fw-bold">Just Now</div>
-                        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="card report-summary h-100">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <span class="report-summary-icon report-tone-info" aria-hidden="true"><i class="bi bi-calendar3"></i></span>
+                    <div class="min-w-0">
+                        <p class="report-summary-label text-body-secondary mb-1">Date selection</p>
+                        <p class="h5 fw-semibold mb-0">Custom range</p>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Advanced Report Generation -->
-    <div class="card shadow-sm rounded-4 overflow-hidden mb-4 bg-body-tertiary border-start border-4 border-primary">
-        <div class="card-body p-4 p-lg-5 position-relative">
-            <!-- Background Icon Decoration -->
-            <div class="position-absolute end-0 bottom-0 opacity-10 me-4 mb-n4" style="pointer-events: none;">
-                <i class="bi bi-file-earmark-spreadsheet text-primary" style="font-size: 10rem;"></i>
+    <section class="card report-export-card" aria-labelledby="reportExportHeading">
+        <div class="card-header d-flex align-items-start gap-3 p-4">
+            <span class="report-summary-icon report-tone-primary flex-shrink-0" aria-hidden="true"><i class="bi bi-file-earmark-text"></i></span>
+            <div>
+                <h2 class="h5 fw-bold mb-2" id="reportExportHeading">Export a report</h2>
+                <p class="text-body-secondary mb-0">Download a CSV for accounting, auditing, or further analysis.</p>
             </div>
-            
-            <h4 class="fw-bold mb-2 text-body">Export Complete Datasets</h4>
-            <p class="mb-4 text-muted fs-6">Generate deep-dive CSV reports for accounting, auditing, and analysis.</p>
-            
-            <div class="row g-3 align-items-end position-relative z-1">
-                <div class="col-md-3">
-                    <label class="form-label fw-medium small text-uppercase text-muted">Report Type</label>
-                    <select class="form-select form-select-lg border-0 shadow-sm" x-model="reportType" style="font-size: 0.95rem;">
+        </div>
+        <form @submit.prevent="downloadAdvancedReport()" aria-labelledby="reportExportHeading">
+            <div class="card-body p-4">
+                <div class="row g-4">
+                    <div class="col-lg-6">
+                        <label for="reportType" class="form-label fw-semibold">Report type</label>
+                        <select id="reportType" name="type" class="form-select report-control" x-model="reportType" aria-describedby="reportTypeHelp" required>
                         <optgroup label="Sales & Revenue">
                             <option value="sales_overview">Sales Performance Overview</option>
                             <option value="product_sales">Product Sales (Bestsellers)</option>
@@ -127,23 +104,30 @@
                         <optgroup label="System Auditing">
                             <option value="audit_trail">System Audit Trail</option>
                         </optgroup>
-                    </select>
+                        </select>
+                        <div id="reportTypeHelp" class="form-text">Browse reports grouped by business area.</div>
+                    </div>
+                    <div class="col-sm-6 col-lg-3">
+                        <label for="reportDateFrom" class="form-label fw-semibold">Date from</label>
+                        <input id="reportDateFrom" name="from" type="date" class="form-control report-control" x-model="dateFrom" :max="dateTo || null" aria-describedby="reportDateHelp" required>
+                    </div>
+                    <div class="col-sm-6 col-lg-3">
+                        <label for="reportDateTo" class="form-label fw-semibold">Date to</label>
+                        <input id="reportDateTo" name="to" type="date" class="form-control report-control" x-model="dateTo" :min="dateFrom || null" aria-describedby="reportDateHelp" required>
+                    </div>
                 </div>
-                <div class="col-md-3">
-                    <label class="form-label fw-medium small text-uppercase text-muted">Date From</label>
-                    <input type="date" class="form-control form-control-lg border-0 shadow-sm" x-model="dateFrom" style="font-size: 0.95rem;">
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label fw-medium small text-uppercase text-muted">Date To</label>
-                    <input type="date" class="form-control form-control-lg border-0 shadow-sm" x-model="dateTo" style="font-size: 0.95rem;">
-                </div>
-                <div class="col-md-3 d-flex align-items-end">
-                    <button class="btn btn-primary btn-lg w-100 shadow-sm fw-bold d-flex align-items-center justify-content-center" @click="downloadAdvancedReport()">
-                        <i class="bi bi-download me-2"></i> Download CSV
-                    </button>
-                </div>
+                <p id="reportDateHelp" class="small text-body-secondary mt-3 mb-0 d-flex align-items-start gap-2">
+                    <i class="bi bi-info-circle flex-shrink-0" aria-hidden="true"></i>
+                    <span>Date filters apply where supported by the selected report.</span>
+                </p>
             </div>
-        </div>
-    </div>
-</div> <!-- End Reports Management Container -->
+            <div class="card-footer report-export-footer p-4 d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-3">
+                <p class="small text-body-secondary mb-0">CSV files open in Excel, Google Sheets, and other spreadsheet apps.</p>
+                <button type="submit" class="btn btn-primary report-download fw-semibold d-inline-flex align-items-center justify-content-center gap-2 flex-shrink-0">
+                    <i class="bi bi-download" aria-hidden="true"></i> Download CSV
+                </button>
+            </div>
+        </form>
+    </section>
+</div>
 @endsection

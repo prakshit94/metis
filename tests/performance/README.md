@@ -58,3 +58,74 @@ To include the read-only Order History path, set both `K6_CUSTOMER_ID` and `K6_O
 - Complete write-flow tests need a disposable database and purpose-built fixture users/products/orders. They must be run separately from this read-only load profile so inventory, financial, and order lifecycle state cannot be polluted.
 
 The thresholds are initial local-project targets (`p95 < 1.5s`, `p99 < 3s` for normal; `p95 < 2.5s`, `p99 < 5s` for stress). Treat them as provisional until measured against the intended deployment and agreed service-level objectives.
+
+## Disposable local HTTP verification (17 October 2026)
+
+Run the query regression fixtures and then both HTTP profiles against those
+synthetic records:
+
+```sh
+METIS_K6_ISOLATED=1 php tests/regression/query_performance.php
+```
+
+The runner copies table definitions into a uniquely named temporary MySQL database,
+adds synthetic users and permissions, starts a loopback server on port 18080,
+runs k6, terminates the server process group, and drops the fixture database. It
+requires database creation privileges, PHP `posix`, `setsid`, and a free port
+18080. No production records or carrier credentials are copied. Do not run two
+instances simultaneously on that port. The underlying schema is cloned from the
+configured database; use `schema_repairs.php` separately to verify fresh migrations.
+
+Select a single suite with `METIS_K6_PROFILES=site` or `apis`. Use
+`K6_SWEEP_ONLY=true METIS_K6_PROFILES=apis` for an API sweep without the load stage.
+Use `K6_PROFILE=stress` for the existing bounded ramps. Normal and stress outputs
+are saved separately in dated `results/*-isolated` and `results/*-isolated-stress`
+folders. A nonzero k6 exit fails the runner.
+
+The fixture deliberately uses separate browser and token users because login
+revokes a user's existing tokens. When credentials and a token are both supplied,
+`apis.js` also logs in the browser user so web-middleware helpers and documentation
+can be exercised. Session-required endpoints still require working browser auth.
+
+Both suites reject redirects back to login. Page requests disable redirect
+following; API checks reject authentication failures, redirects, status zero,
+and server errors. Missing resource 404/422 responses remain allowed but are
+recorded per route; they establish handling of absent fixtures, not success of
+the full feature.
+
+The runner writes one-second PHP process-group CPU tick and summed RSS samples.
+Summed RSS includes shared pages multiple times. Database and browser CPU are
+not included. Generate a per-route status/latency report with:
+
+```sh
+python3 tests/performance/tools/summarize.py tests/performance/results/YYYY-MM-DD-isolated
+php tests/performance/tools/audit-routes.php
+```
+
+`site.js` requests HTML only; it does not execute frontend JavaScript or browser
+polling. The HTTP suites remain read-focused. The separate schema/warehouse/query
+regressions validate selected write-service invariants, but are not comprehensive
+HTTP write-load tests.
+
+The targets create/import paths intentionally return HTTP 302 to `/targets`;
+the page suite checks those exact redirects. Documentation HTML/schema endpoints
+are swept once and excluded from repeated API traffic, just like exports.
+Schema generation can consume seconds of CPU per call and is a separate workload
+from the ordinary application read mix.
+
+For a fresh follow-up sweep of both suites without repeated load stages, use:
+
+```sh
+METIS_K6_ISOLATED=1 METIS_K6_RUN_LABEL=followup-final K6_SWEEP_ONLY=true \
+  php tests/regression/query_performance.php
+```
+
+`METIS_K6_RUN_LABEL` accepts lowercase letters, digits and hyphens and keeps
+outputs separate from earlier runs. The expanded follow-up fixtures are larger
+than the earlier stress fixture; their latency measurements are not direct
+before/after comparisons.
+
+API documentation is now included in Laravel's deployment optimization lifecycle:
+`php artisan optimize` warms its supported Scramble cache, and
+`php artisan optimize:clear` invalidates it. Regenerate it on deployment after
+source changes. The documentation routes retain their existing authorization.

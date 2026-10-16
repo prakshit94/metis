@@ -30,6 +30,7 @@ return new class extends Migration
 
             $table->index('created_at');
             $table->index(['status', 'created_at']);
+            $table->index(['status', 'payment_date'], 'payments_target_collection_idx');
         });
     }
 

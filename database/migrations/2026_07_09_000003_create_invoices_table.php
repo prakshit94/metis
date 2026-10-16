@@ -23,6 +23,7 @@ return new class extends Migration
 
             $table->index('created_at');
             $table->index(['status', 'created_at']);
+            $table->index(['status', 'invoice_date'], 'invoices_target_amount_idx');
         });
     }
 

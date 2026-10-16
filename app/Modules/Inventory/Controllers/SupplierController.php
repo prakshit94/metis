@@ -49,10 +49,15 @@ class SupplierController extends Controller implements HasMiddleware
             return response()->json($query->paginate($perPage));
         }
 
+        $totals = Supplier::query()->toBase()->selectRaw("
+            COUNT(*) as total,
+            COALESCE(SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END), 0) as active,
+            COALESCE(SUM(CASE WHEN status != 'active' THEN 1 ELSE 0 END), 0) as inactive
+        ")->first();
         $stats = [
-            'total' => Supplier::count(),
-            'active' => Supplier::where('status', 'active')->count(),
-            'inactive' => Supplier::where('status', '!=', 'active')->count(),
+            'total' => (int) $totals->total,
+            'active' => (int) $totals->active,
+            'inactive' => (int) $totals->inactive,
         ];
 
         return view('procurement.suppliers.index', compact('stats'));

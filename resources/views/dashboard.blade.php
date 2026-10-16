@@ -22,9 +22,9 @@
                 </button>
             </li>
         </ul>
-        <div x-show="activeTab === 'dashboard'" x-transition.opacity.duration.300ms class="d-flex align-items-center gap-2">
-            <label class="text-muted small fw-bold mb-0 text-nowrap"><i class="bi bi-calendar3 me-1"></i> Date Filter:</label>
-            <select class="form-select form-select-sm fw-semibold shadow-sm border-0 bg-body-tertiary rounded-pill px-3" style="min-width: 140px; cursor: pointer;" onchange="window.location.href = '?filter=' + this.value">
+        <div x-show="activeTab === 'dashboard'" x-transition.opacity.duration.300ms class="dashboard-filters d-flex flex-wrap align-items-center gap-2">
+            <label for="dashboardDateFilter" class="text-muted small fw-bold mb-0 text-nowrap"><i class="bi bi-calendar3 me-1"></i> Date Filter:</label>
+            <select id="dashboardDateFilter" class="form-select form-select-sm fw-semibold shadow-sm border-0 bg-body-tertiary rounded-pill ps-3" style="min-width: 140px; cursor: pointer;" onchange="window.location.href = '?filter=' + this.value">
                 <option value="today" {{ ($filter ?? 'today') === 'today' ? 'selected' : '' }}>Today</option>
                 <option value="yesterday" {{ ($filter ?? 'today') === 'yesterday' ? 'selected' : '' }}>Yesterday</option>
                 <option value="this_week" {{ ($filter ?? 'today') === 'this_week' ? 'selected' : '' }}>This Week</option>
@@ -162,6 +162,8 @@
                         </div>
                     </div>
 
+                </div> <!-- End stats row -->
+
                 <!-- Order Lifecycle & Performance Summary -->
                 <div class="row g-4 g-lg-5 g-xl-6 mb-5 mb-lg-5 mb-xl-6">
                     <!-- Inception & Processing -->
@@ -283,14 +285,13 @@
                         </div>
                     </div>
                 </div>
-                </div>
 
                 <div x-show="showAnalytics" x-transition>
                 <!-- Charts Row 1 -->
                 <div class="row g-4 g-lg-5 g-xl-6 mb-5 mb-lg-5 mb-xl-6">
                     <div class="col-lg-8">
                         <div class="card h-100 border-start border-4 border-success">
-                            <div class="card-header d-flex justify-content-between align-items-center">
+                            <div class="card-header d-flex flex-wrap gap-2 justify-content-between align-items-center">
                                 <h2 class="h5 card-title mb-0">Revenue Analytics</h2>
                                 <div class="btn-group btn-group-sm" role="group">
                                     <button type="button" class="btn btn-outline-secondary active" data-chart-period="7d">7D</button>
@@ -354,9 +355,9 @@
                                 <div class="d-flex flex-wrap align-items-center gap-3">
                                     <div class="position-relative">
                                         <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-2 text-muted z-1" style="font-size: 0.85rem;"></i>
-                                        <input type="search" class="form-control form-control-sm ps-4" placeholder="Search orders..." x-model="searchQuery" style="width: 200px;">
+                                        <input type="search" class="form-control form-control-sm ps-4" aria-label="Search orders" placeholder="Search orders..." x-model="searchQuery" style="width: 200px;">
                                     </div>
-                                    <select class="form-select form-select-sm" x-model.number="itemsPerPage" style="width: auto;">
+                                    <select aria-label="Orders per page" class="form-select form-select-sm" x-model.number="itemsPerPage" style="width: auto;">
                                         <option value="5">5 / page</option>
                                         <option value="10">10 / page</option>
                                         <option value="20">20 / page</option>
@@ -372,7 +373,7 @@
                                 </div>
                             </div>
                             <div class="card-body p-0">
-                                <div class="table-responsive" style="overflow: visible;">
+                                <div class="table-responsive dashboard-orders-scroll" tabindex="0" role="region" aria-label="Orders table">
                                     <table class="table table-hover mb-0">
                                         <thead class="table-light">
                                             <tr>
@@ -392,7 +393,7 @@
                                                         <span class="text-secondary opacity-75 me-2" x-text="((currentPage - 1) * itemsPerPage) + index + 1 + '.'"></span>
                                                         <a href="#" class="fw-bold text-decoration-none text-primary align-middle" @click.prevent="$dispatch('fetch-order', order.id)" x-text="order.order_no || order.id"></a>
                                                         <button type="button" class="btn btn-sm btn-link text-muted p-0 ms-2 align-middle" 
-                                                                title="Copy Order ID" 
+                                                                title="Copy Order ID" aria-label="Copy Order ID"
                                                                 @click.prevent="copyText(order.order_no || order.id).then((success) => { if (!success) return; $el.innerHTML = '<i class=\'bi bi-check2 text-success\'></i>'; setTimeout(() => $el.innerHTML = '<i class=\'bi bi-clipboard\'></i>', 1500); })">
                                                             <i class="bi bi-clipboard"></i>
                                                         </button>
@@ -402,7 +403,7 @@
                                                         <div class="text-muted small" x-text="order.phone || '—'"></div>
                                                     </td>
                                                     <td class="position-relative" x-data="{ showTooltip: false }" @mouseenter="showTooltip = true" @mouseleave="showTooltip = false">
-                                                        <div class="text-truncate text-muted small cursor-pointer" style="max-width: 200px;">
+                                                        <div class="text-truncate text-muted small cursor-pointer" style="max-width: 200px;" :title="(order.items || []).map(item => item.name + ' × ' + item.qty).join('\n')">
                                                              <span x-text="order.items && order.items.length > 0 ? order.items[0].name + (order.items.length > 1 ? ' (+' + (order.items.length - 1) + ' more)' : '') : '—'"></span>
                                                         </div>
                                                         <div x-show="showTooltip" 
@@ -477,7 +478,7 @@
                                     <nav aria-label="Orders pagination">
                                         <ul class="pagination pagination-sm mb-0">
                                             <li class="page-item" :class="{'disabled': currentPage === 1}">
-                                                <button class="page-link" @click="changePage(currentPage - 1)" :disabled="currentPage === 1">
+                                                <button class="page-link" aria-label="Previous orders page" @click="changePage(currentPage - 1)" :disabled="currentPage === 1">
                                                     <i class="bi bi-chevron-left"></i>
                                                 </button>
                                             </li>
@@ -489,7 +490,7 @@
                                             </template>
                                             
                                             <li class="page-item" :class="{'disabled': currentPage === totalPages}">
-                                                <button class="page-link" @click="changePage(currentPage + 1)" :disabled="currentPage === totalPages">
+                                                <button class="page-link" aria-label="Next orders page" @click="changePage(currentPage + 1)" :disabled="currentPage === totalPages">
                                                     <i class="bi bi-chevron-right"></i>
                                                 </button>
                                             </li>
@@ -684,5 +685,8 @@
                         </div>
                     </div>
 
-
+                </div>
+            </div>
+        </div>
+</div>
 @endpush

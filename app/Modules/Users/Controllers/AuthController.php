@@ -40,7 +40,7 @@ class AuthController extends Controller
 
     private const int TOKEN_EXPIRY_DAYS = 30;
 
-    private const string GENERIC_ERROR = 'These credentials do not match our records.';
+    private const string GENERIC_ERROR = 'Invalid email or password.';
 
     // ─── Login ────────────────────────────────────────────────────────────────
 
@@ -132,10 +132,7 @@ class AuthController extends Controller
 
             Event::dispatch(new Failed('web', $user, ['email' => $email]));
 
-            $until = $user->suspended_until
-                ->timezone(config('app.timezone'))
-                ->format('M j, Y g:i A');
-            $message = "This account is temporarily locked until {$until}. ".$this->loginAttemptDetails($emailKey, $ipKey);
+            $message = $this->retryNotice($emailKey, $ipKey, $user);
 
             return $this->suspensionFailure($request, $message);
         }
@@ -182,19 +179,11 @@ class AuthController extends Controller
         ?User $user = null
     ): JsonResponse|RedirectResponse
     {
-        $message = 'Sign in is temporarily blocked because a login attempt limit was reached. '
-            .$this->loginAttemptDetails($emailKey, $ipKey);
-
-        if ($user?->isSuspended()) {
-            $until = $user->suspended_until
-                ->timezone(config('app.timezone'))
-                ->format('M j, Y g:i A');
-            $message .= " Account unlock time: {$until}.";
-        }
+        $message = $this->retryNotice($emailKey, $ipKey, $user).' '.$this->attemptSummary($emailKey, $ipKey);
 
         return $this->isMobileRequest($request)
             ? response()->json(['message' => $message], 429)
-            : back()->with('error', $message)->withInput();
+            : back()->with('error', $message)->withInput($request->except(['password', 'password_confirmation']));
     }
 
     private function credentialFailureWithAttempts(
@@ -202,35 +191,48 @@ class AuthController extends Controller
         string $emailKey,
         string $ipKey
     ): JsonResponse|RedirectResponse {
-        $message = self::GENERIC_ERROR.' '.$this->loginAttemptDetails($emailKey, $ipKey);
+        $message = self::GENERIC_ERROR.' '.$this->attemptSummary($emailKey, $ipKey);
 
         return $this->isMobileRequest($request)
             ? response()->json(['message' => $message], 401)
-            : back()->with('error', $message)->withInput();
+            : back()->with('error', $message)->withInput($request->except(['password', 'password_confirmation']));
     }
 
-    private function loginAttemptDetails(string $emailKey, string $ipKey): string
+    private function attemptSummary(string $emailKey, string $ipKey): string
     {
-        $details = [];
+        // Either limiter can exhaust the budget for an unsuccessful sign-in.
+        $used = min(self::MAX_ATTEMPTS, max(
+            RateLimiter::attempts($emailKey),
+            RateLimiter::attempts($ipKey),
+        ));
+        $remaining = self::MAX_ATTEMPTS - $used;
 
-        foreach ([
-            'email' => $emailKey,
-            'network' => $ipKey,
-        ] as $label => $key) {
-            $attempts = RateLimiter::attempts($key);
-            $remaining = max(0, self::MAX_ATTEMPTS - $attempts);
-            $details[] = ucfirst($label)." attempts remaining: {$remaining}/".self::MAX_ATTEMPTS;
+        return "Failed attempts: {$used}/".self::MAX_ATTEMPTS.". Remaining: {$remaining}.";
+    }
 
-            if ($attempts > 0) {
-                $resetAt = now()
-                    ->addSeconds(max(1, RateLimiter::availableIn($key)))
-                    ->timezone(config('app.timezone'))
-                    ->format('M j, Y g:i:s A');
-                $details[] = ucfirst($label)." counter resets at {$resetAt}";
+    private function retryNotice(string $emailKey, string $ipKey, ?User $user = null): string
+    {
+        $wait = 0;
+        foreach ([$emailKey, $ipKey] as $key) {
+            if (RateLimiter::tooManyAttempts($key, self::MAX_ATTEMPTS)) {
+                $wait = max($wait, RateLimiter::availableIn($key));
             }
         }
+        $retryAt = now()->addSeconds($wait);
+        $format = fn ($date) => $date->copy()->timezone(config('app.timezone'))->format('M j, Y, g:i A');
 
-        return implode('. ', $details).'.';
+        if ($user?->isSuspended()) {
+            $until = $user->suspended_until;
+            $message = 'Suspended until '.$format($until).'.';
+            // A separately active rate limit can outlast an existing suspension.
+            if ($retryAt->gt($until)) {
+                $message .= ' Try again at '.$format($retryAt).'.';
+            }
+
+            return $message;
+        }
+
+        return 'Too many sign-in attempts. Try again at '.$format($retryAt).'.';
     }
 
     // ─── Logout ───────────────────────────────────────────────────────────────
@@ -398,12 +400,16 @@ class AuthController extends Controller
      */
     private function genericFailure(Request $request): JsonResponse|RedirectResponse
     {
+        $message = self::GENERIC_ERROR.' '.$this->attemptSummary(
+            'login_email:'.Str::lower((string) $request->input('email')),
+            'login_ip:'.($request->ip() ?? '0.0.0.0'),
+        );
         if ($this->isMobileRequest($request)) {
-            return response()->json(['message' => self::GENERIC_ERROR], 401);
+            return response()->json(['message' => $message], 401);
         }
 
         throw ValidationException::withMessages([
-            'email' => [self::GENERIC_ERROR],
+            'email' => [$message],
         ]);
     }
 
@@ -414,7 +420,7 @@ class AuthController extends Controller
             return response()->json(['message' => $message], 423);
         }
 
-        return back()->with('error', $message)->withInput();
+        return back()->with('error', $message)->withInput($request->except(['password', 'password_confirmation']));
     }
 
     /**

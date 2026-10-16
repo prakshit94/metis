@@ -20,7 +20,7 @@ class RefundController extends Controller implements HasMiddleware
 
     public function index(Request $request)
     {
-        $query = Refund::with(['order.party', 'invoice.payments', 'invoice.refunds', 'orderReturn', 'processedBy']);
+        $query = Refund::with(['order.party', 'order.orderReturns', 'order.shipments', 'invoice.payments', 'invoice.refunds', 'orderReturn', 'processedBy']);
 
         if ($request->filled('search')) {
             $s = trim($request->search);
@@ -57,6 +57,8 @@ class RefundController extends Controller implements HasMiddleware
 
         $refunds = $query->paginate($request->integer('limit', 10));
 
+        $refunds->getCollection()->each(fn ($refund) => $refund->order?->makeHidden(['orderReturns', 'shipments']));
+
         // Map status 'completed' -> 'processed' for the UI
         $refunds->getCollection()->transform(function ($refund) {
             if ($refund->status === 'completed') {
@@ -67,16 +69,18 @@ class RefundController extends Controller implements HasMiddleware
         });
 
         if ($request->wantsJson() || $request->ajax()) {
-            // 2 queries instead of 4: one grouped count, one targeted sum
-            $statusCounts = Refund::selectRaw('status, count(*) as total')
-                ->groupBy('status')
-                ->pluck('total', 'status');
-
+            $counts = Refund::query()->selectRaw("
+                COALESCE(SUM(CASE WHEN status = 'completed' THEN amount ELSE 0 END), 0) as total_refunded,
+                COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending,
+                COUNT(CASE WHEN status = 'failed' THEN 1 END) as failed,
+                COUNT(CASE WHEN status = 'completed' AND updated_at >= ? AND updated_at < ? THEN 1 END) as processed_today",
+                [today(), today()->addDay()]
+            )->first();
             $stats = [
-                'total_refunded'  => (float) Refund::where('status', 'completed')->sum('amount'),
-                'pending'         => $statusCounts->get('pending', 0),
-                'failed'          => $statusCounts->get('failed', 0),
-                'processed_today' => Refund::where('status', 'completed')->whereDate('updated_at', today())->count(),
+                'total_refunded' => (float) $counts->total_refunded,
+                'pending' => (int) $counts->pending,
+                'failed' => (int) $counts->failed,
+                'processed_today' => (int) $counts->processed_today,
             ];
 
             return response()->json([

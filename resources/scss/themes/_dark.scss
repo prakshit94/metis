@@ -15,6 +15,7 @@
   --bs-primary: #6366f1;
   --bs-primary-rgb: 99, 102, 241;
   --bs-secondary: #94a3b8;
+  --bs-secondary-rgb: 148, 163, 184;
   --bs-success: #10b981;
   --bs-info: #06b6d4;
   --bs-warning: #f59e0b;
@@ -178,7 +179,7 @@
 
   // Dropdowns
   .dropdown-menu {
-    background-color: rgba(30, 41, 59, 0.95);
+    background-color: var(--bs-secondary-bg);
     backdrop-filter: blur(12px);
     border: 1px solid var(--bs-border-color);
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
@@ -186,8 +187,9 @@
     .dropdown-item {
       color: rgba(255, 255, 255, 0.8);
 
-      &:hover {
-        background-color: rgba(255, 255, 255, 0.05);
+      &:hover,
+      &:focus {
+        background-color: var(--bs-tertiary-bg);
         color: #fff;
       }
     }
@@ -257,5 +259,4 @@
   .bg-body-tertiary {
     background-color: rgba(255, 255, 255, 0.02) !important;
   }
-
 }

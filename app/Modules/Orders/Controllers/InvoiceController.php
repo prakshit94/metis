@@ -26,7 +26,8 @@ class InvoiceController extends Controller implements HasMiddleware
 
     public function index(Request $request)
     {
-        $query = Invoice::with(['order.party', 'payments.recorder']);
+        $query = Invoice::with(['order.party', 'order.orderReturns', 'order.shipments', 'payments.recorder'])
+            ->withSum(['refunds as refunded_amount_total' => fn ($query) => $query->where('status', 'completed')], 'amount');
 
         if ($request->filled('search')) {
             $s = trim($request->search);
@@ -65,8 +66,15 @@ class InvoiceController extends Controller implements HasMiddleware
 
         $invoices = $query->paginate($request->integer('limit', 10));
 
+        // Preload lifecycle data without adding relationships to the API payload.
+        $invoices->getCollection()->each(function ($invoice) {
+            $invoice->makeHidden('refunded_amount_total');
+            $invoice->order?->makeHidden(['orderReturns', 'shipments']);
+        });
+
         if ($request->wantsJson() || $request->ajax()) {
-            $totalInvoiced = (float) $statsQuery()->sum('net_amount');
+            $amounts = $statsQuery()->toBase()->select([])->selectRaw('SUM(net_amount) as total, AVG(net_amount) as average')->first();
+            $totalInvoiced = (float) $amounts->total;
 
             // Subquery prevents packet limit / bindings explosion compared to pluck('id')
             $collectedAmount = (float) Payment::where('status', 'completed')
@@ -75,7 +83,7 @@ class InvoiceController extends Controller implements HasMiddleware
 
             $pendingAmount = max(0, $totalInvoiced - $collectedAmount);
 
-            $avgValue = (float) $statsQuery()->avg('net_amount');
+            $avgValue = (float) $amounts->average;
 
             $stats = [
                 'total_invoiced' => $totalInvoiced,

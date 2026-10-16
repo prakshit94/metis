@@ -25,14 +25,6 @@ async function apiFetch(url, options = {}) {
   if (!res.ok) {
     const validation = data?.errors ? Object.values(data.errors).flat().join(' ') : '';
     const message = validation || data?.message || data?.error || 'Request failed';
-    if (
-      res.status === 403 ||
-      message.toLowerCase().includes('authoriz') ||
-      message.toLowerCase().includes('forbidden')
-    ) {
-      window.location.href = '/';
-      return;
-    }
     throw new Error(message);
   }
 
@@ -322,6 +314,8 @@ document.addEventListener('alpine:init', () => {
     currentPage: 1,
     totalPages: 1,
     totalItems: 0,
+    rolesTotal: 0,
+    permissionsTotal: 0,
     itemsPerPage: 10,
     isLoading: false,
     activityPeriod: 7,
@@ -330,6 +324,10 @@ document.addEventListener('alpine:init', () => {
     _themeObserver: null,
 
     async init() {
+      const directory = document.querySelector('[x-data="rolesPermissionsTable"]');
+      this.canViewRoles = directory?.dataset.canViewRoles !== 'false';
+      this.canViewPermissions = directory?.dataset.canViewPermissions !== 'false';
+      if (!this.canViewRoles) this.activeTab = 'permissions';
       await Promise.all([this.loadRoles(), this.loadPermissions()]);
       this.$nextTick(() => {
         this.initCharts();
@@ -396,12 +394,18 @@ document.addEventListener('alpine:init', () => {
     },
 
     async loadRoles() {
+      if (this.canViewRoles === false) return;
+      const requestId = this._rolesRequestId = (this._rolesRequestId || 0) + 1;
+      const requestedTab = this.activeTab;
       if (this.activeTab === 'roles') this.isLoading = true;
       try {
         const data = await apiFetch(`/api/roles?${this.params()}`);
+        if (requestId !== this._rolesRequestId) return;
+        this.rolesTotal = data.total ?? (data.data ?? []).length;
         this.roles = (data.data ?? []).map((item) => this.mapItem(item));
-        if (this.activeTab === 'roles') this.applyPagination(data);
+        if (this.activeTab === 'roles' && requestedTab === this.activeTab) this.applyPagination(data);
       } catch (err) {
+        if (requestId !== this._rolesRequestId) return;
         const msg = err.message.toLowerCase();
         if (msg.includes('authoriz') || msg.includes('unauthorized') || msg.includes('forbidden') || msg.includes('cannot read properties of undefined')) {
           window.location.href = '/';
@@ -409,17 +413,23 @@ document.addEventListener('alpine:init', () => {
         }
         showToast(`Failed to load roles: ${err.message}`, 'danger');
       } finally {
-        this.isLoading = false;
+        if (requestId === this._rolesRequestId && this.activeTab === 'roles') this.isLoading = false;
       }
     },
 
     async loadPermissions() {
+      if (this.canViewPermissions === false) return;
+      const requestId = this._permissionsRequestId = (this._permissionsRequestId || 0) + 1;
+      const requestedTab = this.activeTab;
       if (this.activeTab === 'permissions') this.isLoading = true;
       try {
         const data = await apiFetch(`/api/permissions?${this.params()}`);
+        if (requestId !== this._permissionsRequestId) return;
+        this.permissionsTotal = data.total ?? (data.data ?? []).length;
         this.permissions = (data.data ?? []).map((item) => this.mapItem(item));
-        if (this.activeTab === 'permissions') this.applyPagination(data);
+        if (this.activeTab === 'permissions' && requestedTab === this.activeTab) this.applyPagination(data);
       } catch (err) {
+        if (requestId !== this._permissionsRequestId) return;
         const msg = err.message.toLowerCase();
         if (msg.includes('authoriz') || msg.includes('unauthorized') || msg.includes('forbidden') || msg.includes('cannot read properties of undefined')) {
           window.location.href = '/';
@@ -427,7 +437,7 @@ document.addEventListener('alpine:init', () => {
         }
         showToast(`Failed to load permissions: ${err.message}`, 'danger');
       } finally {
-        this.isLoading = false;
+        if (requestId === this._permissionsRequestId && this.activeTab === 'permissions') this.isLoading = false;
       }
     },
 
@@ -762,13 +772,13 @@ document.addEventListener('alpine:init', () => {
 
     get roleStats() {
       return {
-        total: this.activeTab === 'roles' ? this.totalItems : this.roles.length,
+        total: this.rolesTotal,
       };
     },
 
     get permissionStats() {
       return {
-        total: this.activeTab === 'permissions' ? this.totalItems : this.permissions.length,
+        total: this.permissionsTotal,
       };
     },
 
@@ -1080,6 +1090,7 @@ document.addEventListener('alpine:init', () => {
     },
 
     async saveItem() {
+      if (this.saving) return;
       if (!this.form.name) {
         showToast('Name is required.', 'warning');
         return;

@@ -427,10 +427,10 @@ class OrderController extends Controller implements HasMiddleware
 
         // Warehouse Stats Query (Cached)
         $warehouseStatsQuery = clone $query;
-        $warehouseStatsCacheKey = 'order_warehouse_stats_'.$statsVersion.'_'.auth()->id().'_'.$statsFilterHash;
+        $warehouseStatsCacheKey = 'order_warehouse_stats_v2_'.$statsVersion.'_'.auth()->id().'_'.$statsFilterHash;
         $warehouseStats = Cache::remember($warehouseStatsCacheKey, 300, function () use ($warehouseStatsQuery) {
             $warehouseStatsQuery->setEagerLoads([]);
-            $grouped = $warehouseStatsQuery->select('warehouse_id', 'status', DB::raw('COUNT(*) as total'), DB::raw('SUM(net_amount) as amount'))
+            $grouped = (clone $warehouseStatsQuery)->select('warehouse_id', 'status', DB::raw('COUNT(*) as total'), DB::raw('SUM(net_amount) as amount'))
                 ->groupBy('warehouse_id', 'status')
                 ->toBase()
                 ->get();
@@ -447,20 +447,50 @@ class OrderController extends Controller implements HasMiddleware
               ->get()
               ->keyBy('warehouse_id');
 
+            // Keep each aggregate independent so status grouping cannot leak into totals.
+            $unfulfillableGrouped = (clone $warehouseStatsQuery)->where('status', 'pending')
+                ->whereExists(function ($q) {
+                    $q->select(DB::raw(1))->from('order_items')
+                      ->leftJoin('stocks', function ($join) {
+                          $join->on('order_items.product_id', '=', 'stocks.product_id')
+                               ->whereColumn('stocks.warehouse_id', 'orders.warehouse_id');
+                      })->whereColumn('order_items.order_id', 'orders.id')
+                      ->where(function ($sub) {
+                          $sub->whereNull('stocks.id')
+                              ->orWhereRaw('order_items.quantity > (stocks.quantity - stocks.reserved_qty)');
+                      });
+                })->select('warehouse_id', DB::raw('COUNT(*) as total'), DB::raw('SUM(net_amount) as amount'))
+                ->groupBy('warehouse_id')->toBase()->get()->keyBy('warehouse_id');
+
+            $attemptedGrouped = (clone $warehouseStatsQuery)->where('status', 'dispatched')
+                ->whereExists(function ($q) {
+                    $q->select(DB::raw(1))->from('shipments')
+                      ->whereColumn('shipments.order_id', 'orders.id')
+                      ->where('shipments.delivery_attempts', '>', 0);
+                })->select('warehouse_id', DB::raw('COUNT(*) as total'), DB::raw('SUM(net_amount) as amount'))
+                ->groupBy('warehouse_id')->toBase()->get()->keyBy('warehouse_id');
+
             $warehouses = Warehouse::pluck('name', 'id')->toArray();
             
             $warehouseIds = $grouped->pluck('warehouse_id')->merge($returnsGrouped->keys())->unique();
 
-            return $warehouseIds->map(function ($warehouseId) use ($warehouses, $grouped, $returnsGrouped) {
+            return $warehouseIds->map(function ($warehouseId) use ($warehouses, $grouped, $returnsGrouped, $unfulfillableGrouped, $attemptedGrouped) {
                 $whGroup = $grouped->where('warehouse_id', $warehouseId);
                 $retGrp = $returnsGrouped->get($warehouseId);
+                $unfulfillable = $unfulfillableGrouped->get($warehouseId);
+                $attempted = $attemptedGrouped->get($warehouseId);
                 
                 return [
+                    'warehouse_id' => $warehouseId,
                     'name' => $warehouses[$warehouseId] ?? 'Unassigned',
                     'total' => (int) $whGroup->sum('total'),
                     'total_amount' => (float) $whGroup->sum('amount'),
-                    'pending' => (int) $whGroup->where('status', 'pending')->sum('total'),
-                    'pending_amount' => (float) $whGroup->where('status', 'pending')->sum('amount'),
+                    'future_order' => (int) $whGroup->where('status', 'future_order')->sum('total'),
+                    'future_order_amount' => (float) $whGroup->where('status', 'future_order')->sum('amount'),
+                    'unfulfillable' => (int) ($unfulfillable->total ?? 0),
+                    'unfulfillable_amount' => (float) ($unfulfillable->amount ?? 0),
+                    'pending' => (int) $whGroup->where('status', 'pending')->sum('total') - (int) ($unfulfillable->total ?? 0),
+                    'pending_amount' => (float) $whGroup->where('status', 'pending')->sum('amount') - (float) ($unfulfillable->amount ?? 0),
                     'pending_confirmation' => (int) $whGroup->where('status', 'pending_confirmation')->sum('total'),
                     'pending_confirmation_amount' => (float) $whGroup->where('status', 'pending_confirmation')->sum('amount'),
                     'confirmed' => (int) $whGroup->where('status', 'confirmed')->sum('total'),
@@ -469,8 +499,10 @@ class OrderController extends Controller implements HasMiddleware
                     'processing_amount' => (float) $whGroup->where('status', 'processing')->sum('amount'),
                     'ready_to_ship' => (int) $whGroup->where('status', 'ready_to_ship')->sum('total'),
                     'ready_to_ship_amount' => (float) $whGroup->where('status', 'ready_to_ship')->sum('amount'),
-                    'dispatched' => (int) $whGroup->whereIn('status', ['dispatched'])->sum('total'),
-                    'dispatched_amount' => (float) $whGroup->whereIn('status', ['dispatched'])->sum('amount'),
+                    'delivery_attempted' => (int) ($attempted->total ?? 0),
+                    'delivery_attempted_amount' => (float) ($attempted->amount ?? 0),
+                    'dispatched' => (int) $whGroup->whereIn('status', ['dispatched'])->sum('total') - (int) ($attempted->total ?? 0),
+                    'dispatched_amount' => (float) $whGroup->whereIn('status', ['dispatched'])->sum('amount') - (float) ($attempted->amount ?? 0),
                     'delivered' => (int) $whGroup->where('status', 'delivered')->sum('total'),
                     'delivered_amount' => (float) $whGroup->where('status', 'delivered')->sum('amount'),
                     'cancelled' => (int) $whGroup->where('status', 'cancelled')->sum('total'),
@@ -1669,142 +1701,145 @@ class OrderController extends Controller implements HasMiddleware
 
             foreach ($orders as $order) {
                 try {
-                    if ($targetStatus === 'confirmed') {
-                        if (in_array($order->status, ['pending', 'pending_confirmation'])) {
-                            $inventoryService->confirmOrder($order);
-                            $order->statusLogs()->create([
-                                'status' => 'confirmed',
-                                'notes' => 'Bulk status updated to confirmed.',
-                                'changed_by' => auth()->id(),
-                            ]);
-                            $count++;
-                        } else {
-                            $skipped++;
-                        }
-                    } elseif ($targetStatus === 'processing') {
-                        if ($order->status === 'confirmed') {
-                            $orderService->updateStatus($order, 'processing');
-                            $order->statusLogs()->create([
-                                'status' => 'processing',
-                                'notes' => 'Bulk status updated to processing.',
-                                'changed_by' => auth()->id(),
-                            ]);
-                            $count++;
-                        } else {
-                            $skipped++;
-                        }
-                    } elseif ($targetStatus === 'ready_to_ship') {
-                        if ($order->status === 'processing') {
-                            // Auto-assign top priority carrier if not provided
-                            $assignedCarrier = $validated['carrier_name'] ?? null;
-                            $assignedProviderId = $validated['service_provider_id'] ?? null;
-                            $hasCarrier = false;
+                    // Roll back only this order when a later shipment/log write fails.
+                    DB::transaction(function () use ($order, $targetStatus, $validated, $inventoryService, $orderService, $invoiceService, &$count, &$skipped, &$errors): void {
+                        if ($targetStatus === 'confirmed') {
+                            if (in_array($order->status, ['pending', 'pending_confirmation'])) {
+                                $inventoryService->confirmOrder($order);
+                                $order->statusLogs()->create([
+                                    'status' => 'confirmed',
+                                    'notes' => 'Bulk status updated to confirmed.',
+                                    'changed_by' => auth()->id(),
+                                ]);
+                                $count++;
+                            } else {
+                                $skipped++;
+                            }
+                        } elseif ($targetStatus === 'processing') {
+                            if ($order->status === 'confirmed') {
+                                $orderService->updateStatus($order, 'processing');
+                                $order->statusLogs()->create([
+                                    'status' => 'processing',
+                                    'notes' => 'Bulk status updated to processing.',
+                                    'changed_by' => auth()->id(),
+                                ]);
+                                $count++;
+                            } else {
+                                $skipped++;
+                            }
+                        } elseif ($targetStatus === 'ready_to_ship') {
+                            if ($order->status === 'processing') {
+                                // Auto-assign top priority carrier if not provided
+                                $assignedCarrier = $validated['carrier_name'] ?? null;
+                                $assignedProviderId = $validated['service_provider_id'] ?? null;
+                                $hasCarrier = false;
                             
-                            if ($order->shippingAddress && $order->shippingAddress->village && $order->shippingAddress->village->services) {
-                                $services = $order->shippingAddress->village->services->filter(function ($s) {
-                                    return $s->is_active && $s->pivot->is_available;
-                                })->sortBy(function ($s) {
-                                    return $s->pivot->priority ?? 9999;
-                                });
+                                if ($order->shippingAddress && $order->shippingAddress->village && $order->shippingAddress->village->services) {
+                                    $services = $order->shippingAddress->village->services->filter(function ($s) {
+                                        return $s->is_active && $s->pivot->is_available;
+                                    })->sortBy(function ($s) {
+                                        return $s->pivot->priority ?? 9999;
+                                    });
                                 
-                                if ($assignedCarrier) {
-                                    foreach ($services as $service) {
-                                        if ($service->name === $assignedCarrier) {
+                                    if ($assignedCarrier) {
+                                        foreach ($services as $service) {
+                                            if ($service->name === $assignedCarrier) {
+                                                $hasCarrier = true;
+                                                $topProvider = $service->providers->sortBy(function ($p) {
+                                                    return $p->pivot->priority ?? 9999;
+                                                })->first();
+                                                if (!$assignedProviderId && $topProvider) {
+                                                    $assignedProviderId = $topProvider->id;
+                                                }
+                                                break;
+                                            }
+                                        }
+                                    } else {
+                                        $topService = $services->first();
+                                        if ($topService) {
+                                            $assignedCarrier = $topService->name;
                                             $hasCarrier = true;
-                                            $topProvider = $service->providers->sortBy(function ($p) {
+                                            $topProvider = $topService->providers->sortBy(function ($p) {
                                                 return $p->pivot->priority ?? 9999;
                                             })->first();
-                                            if (!$assignedProviderId && $topProvider) {
-                                                $assignedProviderId = $topProvider->id;
-                                            }
-                                            break;
+                                            $assignedProviderId = $topProvider->id ?? null;
                                         }
                                     }
-                                } else {
-                                    $topService = $services->first();
-                                    if ($topService) {
-                                        $assignedCarrier = $topService->name;
-                                        $hasCarrier = true;
-                                        $topProvider = $topService->providers->sortBy(function ($p) {
-                                            return $p->pivot->priority ?? 9999;
-                                        })->first();
-                                        $assignedProviderId = $topProvider->id ?? null;
-                                    }
                                 }
-                            }
                             
-                            if (!$hasCarrier) {
-                                $errors[] = "Order #{$order->order_no}: No mapped service found.";
-                                $skipped++;
-                                continue;
-                            }
+                                if (!$hasCarrier) {
+                                    $errors[] = "Order #{$order->order_no}: No mapped service found.";
+                                    $skipped++;
+                                    return;
+                                }
 
-                            $inventoryService->readyToShipOrder($order, $assignedCarrier, $validated['tracking_no'] ?? null, $assignedProviderId);
-                            $order->statusLogs()->create([
-                                'status' => 'ready_to_ship',
-                                'notes' => 'Bulk status updated to ready to ship. Carrier: '.$assignedCarrier.', Tracking: '.($validated['tracking_no'] ?? 'Auto-generated/None'),
-                                'changed_by' => auth()->id(),
-                            ]);
-                            $count++;
-                        } else {
-                            $skipped++;
-                        }
-                    } elseif ($targetStatus === 'dispatched') {
-                        if ($order->status === 'ready_to_ship') {
-                            $shipment = $order->shipments()->first();
-                            if (! $shipment || ! $shipment->carrier_name) {
-                                $errors[] = "Order #{$order->order_no}: Cannot dispatch without a valid carrier.";
+                                $inventoryService->readyToShipOrder($order, $assignedCarrier, $validated['tracking_no'] ?? null, $assignedProviderId);
+                                $order->statusLogs()->create([
+                                    'status' => 'ready_to_ship',
+                                    'notes' => 'Bulk status updated to ready to ship. Carrier: '.$assignedCarrier.', Tracking: '.($validated['tracking_no'] ?? 'Auto-generated/None'),
+                                    'changed_by' => auth()->id(),
+                                ]);
+                                $count++;
+                            } else {
                                 $skipped++;
-                                continue;
                             }
-                            if (strtolower($shipment->carrier_name) === 'india post' && empty($shipment->tracking_no)) {
-                                $errors[] = "Order #{$order->order_no}: Cannot dispatch without valid India Post tracking details.";
+                        } elseif ($targetStatus === 'dispatched') {
+                            if ($order->status === 'ready_to_ship') {
+                                $shipment = $order->shipments()->first();
+                                if (! $shipment || ! $shipment->carrier_name) {
+                                    $errors[] = "Order #{$order->order_no}: Cannot dispatch without a valid carrier.";
+                                    $skipped++;
+                                    return;
+                                }
+                                if (strtolower($shipment->carrier_name) === 'india post' && empty($shipment->tracking_no)) {
+                                    $errors[] = "Order #{$order->order_no}: Cannot dispatch without valid India Post tracking details.";
+                                    $skipped++;
+                                    return;
+                                }
+                                if (! $order->invoice) {
+                                    $invoiceService->generateForOrder($order);
+                                }
+                                $inventoryService->dispatchOrder($order);
+                                $order->statusLogs()->create([
+                                    'status' => 'dispatched',
+                                    'notes' => 'Bulk status updated to dispatched.',
+                                    'changed_by' => auth()->id(),
+                                ]);
+                                $count++;
+                            } else {
                                 $skipped++;
-                                continue;
                             }
-                            if (! $order->invoice) {
-                                $invoiceService->generateForOrder($order);
+                        } elseif ($targetStatus === 'delivered') {
+                            if (in_array($order->status, ['dispatched'], true)) {
+                                $inventoryService->deliverOrder($order);
+                                $shipment = $order->shipments()->latest()->first();
+                                if ($shipment) {
+                                    $shipment->delivered_by = auth()->user()->name;
+                                    $shipment->save();
+                                }
+                                $order->statusLogs()->create([
+                                    'status' => 'delivered',
+                                    'notes' => 'Bulk status updated to delivered.',
+                                    'changed_by' => auth()->id(),
+                                ]);
+                                $count++;
+                            } else {
+                                $skipped++;
                             }
-                            $inventoryService->dispatchOrder($order);
-                            $order->statusLogs()->create([
-                                'status' => 'dispatched',
-                                'notes' => 'Bulk status updated to dispatched.',
-                                'changed_by' => auth()->id(),
-                            ]);
-                            $count++;
-                        } else {
-                            $skipped++;
-                        }
-                    } elseif ($targetStatus === 'delivered') {
-                        if (in_array($order->status, ['dispatched'], true)) {
-                            $inventoryService->deliverOrder($order);
-                            $shipment = $order->shipments()->latest()->first();
-                            if ($shipment) {
-                                $shipment->delivered_by = auth()->user()->name;
-                                $shipment->save();
+                        } elseif ($targetStatus === 'cancelled') {
+                            if (in_array($order->status, ['pending', 'pending_confirmation', 'confirmed', 'processing', 'ready_to_ship'], true)) {
+                                $inventoryService->cancelOrder($order);
+                                $order->statusLogs()->create([
+                                    'status' => 'cancelled',
+                                    'notes' => 'Bulk status updated to cancelled.',
+                                    'changed_by' => auth()->id(),
+                                ]);
+                                $count++;
+                            } else {
+                                $skipped++;
                             }
-                            $order->statusLogs()->create([
-                                'status' => 'delivered',
-                                'notes' => 'Bulk status updated to delivered.',
-                                'changed_by' => auth()->id(),
-                            ]);
-                            $count++;
-                        } else {
-                            $skipped++;
                         }
-                    } elseif ($targetStatus === 'cancelled') {
-                        if (in_array($order->status, ['pending', 'pending_confirmation', 'confirmed', 'processing', 'ready_to_ship'], true)) {
-                            $inventoryService->cancelOrder($order);
-                            $order->statusLogs()->create([
-                                'status' => 'cancelled',
-                                'notes' => 'Bulk status updated to cancelled.',
-                                'changed_by' => auth()->id(),
-                            ]);
-                            $count++;
-                        } else {
-                            $skipped++;
-                        }
-                    }
+                    });
                 } catch (ValidationException $e) {
                     $errors[] = "Order #{$order->order_no}: ".collect($e->validator->errors()->all())->first();
                     $skipped++;
@@ -2206,7 +2241,11 @@ class OrderController extends Controller implements HasMiddleware
             $query->orderBy('id', 'asc');
         }
 
-        $orders = $query->cursor();
+        // Keep the original cursor's row order and batch only relation loading.
+        $orders = $query->cursor()->chunk(500)->flatMap(
+            fn ($batch) => (new \Illuminate\Database\Eloquent\Collection($batch->all()))
+                ->load($query->getEagerLoads())
+        );
 
         $filename = 'orders-export-'.now()->format('Ymd_His').'.csv';
 
@@ -2233,7 +2272,11 @@ class OrderController extends Controller implements HasMiddleware
 
         $this->applyOrderActionPermissionScope($query, $user);
 
-        $orders = $query->cursor();
+        // Keep the original cursor's row order and batch only relation loading.
+        $orders = $query->cursor()->chunk(500)->flatMap(
+            fn ($batch) => (new \Illuminate\Database\Eloquent\Collection($batch->all()))
+                ->load($query->getEagerLoads())
+        );
 
         $filename = 'orders-export-selected-'.now()->format('Ymd_His').'.csv';
 

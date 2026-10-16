@@ -80,12 +80,19 @@ class OrderComplaintController extends Controller implements HasMiddleware
                 $perPage = (int) $request->input('per_page', 15);
                 $complaints = $query->paginate($perPage);
 
+                $totals = OrderComplaint::query()->toBase()->selectRaw("
+                    COUNT(*) as total,
+                    COALESCE(SUM(CASE WHEN status = 'open' THEN 1 ELSE 0 END), 0) as open_count,
+                    COALESCE(SUM(CASE WHEN status = 'in_progress' THEN 1 ELSE 0 END), 0) as in_progress,
+                    COALESCE(SUM(CASE WHEN status = 'resolved' THEN 1 ELSE 0 END), 0) as resolved,
+                    COALESCE(SUM(CASE WHEN status = 'closed' THEN 1 ELSE 0 END), 0) as closed
+                ")->first();
                 $stats = [
-                    'total' => OrderComplaint::count(),
-                    'open' => OrderComplaint::where('status', 'open')->count(),
-                    'in_progress' => OrderComplaint::where('status', 'in_progress')->count(),
-                    'resolved' => OrderComplaint::where('status', 'resolved')->count(),
-                    'closed' => OrderComplaint::where('status', 'closed')->count(),
+                    'total' => (int) $totals->total,
+                    'open' => (int) $totals->open_count,
+                    'in_progress' => (int) $totals->in_progress,
+                    'resolved' => (int) $totals->resolved,
+                    'closed' => (int) $totals->closed,
                 ];
 
                 $assignableUsers = User::where('is_active', true)->select('id', 'name', 'email')->get();
@@ -469,7 +476,11 @@ class OrderComplaintController extends Controller implements HasMiddleware
             $query->where('assigned_to', auth()->id());
         }
 
-        $complaints = $query->cursor();
+        // Keep the original cursor's row order and batch only relation loading.
+        $complaints = $query->cursor()->chunk(500)->flatMap(
+            fn ($batch) => (new \Illuminate\Database\Eloquent\Collection($batch->all()))
+                ->load($query->getEagerLoads())
+        );
 
         // Ensure user hasn't tried to export IDs they don't have access to
         if ($query->count() !== count($validated['ids'])) {
@@ -502,7 +513,11 @@ class OrderComplaintController extends Controller implements HasMiddleware
             $query->where('category', $request->category);
         }
 
-        $complaints = $query->cursor();
+        // Keep the original cursor's row order and batch only relation loading.
+        $complaints = $query->cursor()->chunk(500)->flatMap(
+            fn ($batch) => (new \Illuminate\Database\Eloquent\Collection($batch->all()))
+                ->load($query->getEagerLoads())
+        );
 
         $filename = 'complaints_bulk_export_'.now()->format('Ymd_His').'.csv';
 

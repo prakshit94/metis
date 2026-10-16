@@ -9,8 +9,11 @@
         <div class="px-3 mb-2 mt-2 d-flex flex-column">
             <div class="d-flex justify-content-between align-items-center">
                 <span class="text-muted small fw-bold text-uppercase text-truncate pe-2">Navigation</span>
-                <button class="btn btn-sm btn-link text-muted p-0 text-decoration-none" id="toggle-all-menus" title="Toggle all menus">
-                    <i class="bi bi-arrows-expand"></i>
+                <button type="button" class="btn btn-sm btn-link text-body-secondary p-1 text-decoration-none d-inline-flex align-items-center gap-1" id="toggle-all-menus" title="Show menus" aria-label="Show all navigation menus">
+                    <i class="bi bi-arrows-expand" aria-hidden="true"></i><span class="small sidebar-menu-toggle-label">Show menus</span>
+                </button>
+                <button type="button" class="btn btn-sm btn-link text-body-secondary d-lg-none p-1" data-sidebar-close aria-label="Close navigation">
+                    <i class="bi bi-x-lg" aria-hidden="true"></i>
                 </button>
             </div>
             @if(Auth::user()?->lob_state_name)
@@ -25,6 +28,15 @@
             document.addEventListener('DOMContentLoaded', function() {
                 var btn = document.getElementById('toggle-all-menus');
                 if(btn) {
+                    const updateMenuLabel = () => {
+                        const anyOpen = !!document.querySelector('.admin-sidebar .collapse.show');
+                        btn.querySelector('span').textContent = anyOpen ? 'Hide menus' : 'Show menus';
+                        btn.title = anyOpen ? 'Hide menus' : 'Show menus';
+                        btn.setAttribute('aria-label', anyOpen ? 'Hide all navigation menus' : 'Show all navigation menus');
+                    };
+                    document.getElementById('admin-sidebar').addEventListener('shown.bs.collapse', updateMenuLabel);
+                    document.getElementById('admin-sidebar').addEventListener('hidden.bs.collapse', updateMenuLabel);
+                    updateMenuLabel();
                     btn.addEventListener('click', function(e) {
                         e.preventDefault();
                         var collapses = document.querySelectorAll('.admin-sidebar .collapse');

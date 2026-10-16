@@ -19,11 +19,17 @@ class CallTagAdminController extends Controller
             }, 'formFields']);
         }])->whereNull('parent_id')->orderBy('sort_order')->get();
 
+        $totals = CallTag::query()->toBase()->selectRaw("
+            COUNT(*) as total,
+            COALESCE(SUM(CASE WHEN is_active = 1 THEN 1 ELSE 0 END), 0) as active,
+            COALESCE(SUM(CASE WHEN is_active = 0 THEN 1 ELSE 0 END), 0) as inactive,
+            COALESCE(SUM(CASE WHEN level = 1 THEN 1 ELSE 0 END), 0) as level_1
+        ")->first();
         $stats = [
-            'total' => CallTag::count(),
-            'active' => CallTag::where('is_active', true)->count(),
-            'inactive' => CallTag::where('is_active', false)->count(),
-            'level_1' => CallTag::where('level', 1)->count(),
+            'total' => (int) $totals->total,
+            'active' => (int) $totals->active,
+            'inactive' => (int) $totals->inactive,
+            'level_1' => (int) $totals->level_1,
         ];
 
         return view('call-tags.index', compact('tags', 'stats'));

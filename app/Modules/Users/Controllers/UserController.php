@@ -60,24 +60,16 @@ class UserController extends Controller implements HasMiddleware
 
         $deletedFilter = $request->input('deleted');
 
-        $activeSessionUserIds = DB::table('sessions')
-            ->where('last_activity', '>=', now()->subMinutes(15)->getTimestamp())
-            ->pluck('user_id')
-            ->filter()
-            ->toArray();
-
-        $activeApiUserIds = DB::table('personal_access_tokens')
+        $activeSessions = DB::table('sessions')->selectRaw('1')
+            ->whereColumn('sessions.user_id', 'users.id')
+            ->where('last_activity', '>=', now()->subMinutes(15)->getTimestamp());
+        $activeTokens = DB::table('personal_access_tokens')->selectRaw('1')
+            ->whereColumn('tokenable_id', 'users.id')
             ->where('tokenable_type', User::class)
             ->where(function ($q) {
                 $q->where('last_used_at', '>=', now()->subMinutes(15))
                     ->orWhere('created_at', '>=', now()->subMinutes(15));
-            })
-            ->pluck('tokenable_id')
-            ->filter()
-            ->toArray();
-
-        $allActiveUserIds = array_map('intval', array_unique(array_merge($activeSessionUserIds, $activeApiUserIds)));
-        $activeUserIdsString = empty($allActiveUserIds) ? '0' : implode(',', $allActiveUserIds);
+            });
 
         // LOB/State scoping: non-global users can only see users in their own team.
         // Resolved via model_has_roles pivot (same table used by allRoles relationship).
@@ -86,20 +78,21 @@ class UserController extends Controller implements HasMiddleware
 
         $users = User::query()
             ->select('users.*')
+            ->selectRaw(
+                '(EXISTS ('.$activeSessions->toSql().') OR EXISTS ('.$activeTokens->toSql().')) as is_online',
+                [...$activeSessions->getBindings(), ...$activeTokens->getBindings()]
+            )
             ->when($deletedFilter === 'with', fn ($q) => $q->withTrashed())
             ->when($deletedFilter === 'only', fn ($q) => $q->onlyTrashed())
-            ->with(['allRoles', 'permissions', 'department', 'manager'])
+            ->with(['allRoles', 'roles', 'permissions', 'department', 'manager'])
             // LOB restriction: if the requesting user belongs to a team, only
             // show users who are also assigned to that same team.
             ->when($lobTeamId, function ($q) use ($lobTeamId) {
                 $lobUserIds = DB::table('model_has_roles')
                     ->where('team_id', $lobTeamId)
                     ->where('model_type', User::class)
-                    ->pluck('model_id')
-                    ->map(fn ($id) => (int) $id)
-                    ->unique()
-                    ->toArray();
-                $q->whereIn('users.id', ! empty($lobUserIds) ? $lobUserIds : [0]);
+                    ->select('model_id');
+                $q->whereIn('users.id', $lobUserIds);
             })
             ->when(
                 $request->filled('search'),
@@ -125,28 +118,22 @@ class UserController extends Controller implements HasMiddleware
                         $globalUserIds = DB::table('model_has_roles')
                             ->whereNull('team_id')
                             ->where('model_type', User::class)
-                            ->pluck('model_id')
-                            ->map(fn ($id) => (int) $id)
-                            ->unique()
-                            ->toArray();
-                        $q->whereIn('users.id', !empty($globalUserIds) ? $globalUserIds : [0]);
+                            ->select('model_id');
+                        $q->whereIn('users.id', $globalUserIds);
                     } else {
                         $teamUserIds = DB::table('model_has_roles')
                             ->where('team_id', $teamId)
                             ->where('model_type', User::class)
-                            ->pluck('model_id')
-                            ->map(fn ($id) => (int) $id)
-                            ->unique()
-                            ->toArray();
-                        $q->whereIn('users.id', !empty($teamUserIds) ? $teamUserIds : [0]);
+                            ->select('model_id');
+                        $q->whereIn('users.id', $teamUserIds);
                     }
                 }
             )
             ->when(
                 $request->has('is_active'),
-                fn ($q) => $q->where('users.is_active', (bool) $request->input('is_active')),
+                fn ($q) => $q->where('users.is_active', $request->boolean('is_active')),
             )
-            ->orderByRaw("users.id IN ($activeUserIdsString) DESC")
+            ->orderByDesc('is_online')
             ->orderBy(in_array($sortBy, ['name', 'first_name', 'last_name', 'email', 'created_at', 'updated_at']) ? "users.{$sortBy}" : $sortBy, $sortDir)
             ->paginate($perPage);
 
@@ -171,9 +158,9 @@ class UserController extends Controller implements HasMiddleware
 
         $teamMap = \App\Modules\Users\Models\Team::pluck('name', 'id');
         
-        $users->getCollection()->transform(function ($user) use ($allActiveUserIds, $latestLoginHistories, $teamMap) {
+        $users->getCollection()->transform(function ($user) use ($latestLoginHistories, $teamMap) {
             $user->lob_team_name = $user->lob_team_id ? ($teamMap[$user->lob_team_id] ?? null) : null;
-            $user->is_online = in_array($user->id, $allActiveUserIds);
+            $user->is_online = (bool) $user->getAttribute('is_online');
 
             $latestLogin = $latestLoginHistories[$user->id] ?? null;
             $user->last_login_at = $latestLogin ? $latestLogin->attempted_at : null;
@@ -281,7 +268,7 @@ class UserController extends Controller implements HasMiddleware
         abort_unless($request->user()?->id == $user || $request->user()?->can('user-view'), 403);
 
         $user = User::withTrashed()
-            ->with(['allRoles', 'permissions', 'department', 'manager'])
+            ->with(['allRoles', 'roles', 'permissions', 'department', 'manager'])
             ->findOrFail($user);
 
         $user->setRelation('roles', $user->allRoles)->makeHidden('allRoles');
@@ -483,7 +470,7 @@ class UserController extends Controller implements HasMiddleware
         abort_unless($request->user()?->can('user-restore'), 403);
 
         $user = User::withTrashed()
-            ->with(['allRoles', 'permissions', 'department', 'manager'])
+            ->with(['allRoles', 'roles', 'permissions', 'department', 'manager'])
             ->findOrFail($user);
 
         $user->setRelation('roles', $user->allRoles)->makeHidden('allRoles');

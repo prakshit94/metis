@@ -75,6 +75,10 @@ class Invoice extends Model implements Auditable
 
     public function getRefundedAmountAttribute()
     {
+        if (array_key_exists('refunded_amount_total', $this->attributes)) {
+            return $this->attributes['refunded_amount_total'] ?? 0;
+        }
+
         if ($this->relationLoaded('refunds')) {
             return $this->refunds->where('status', 'completed')->sum('amount');
         }

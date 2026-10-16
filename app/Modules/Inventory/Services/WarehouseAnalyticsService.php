@@ -34,8 +34,10 @@ class WarehouseAnalyticsService
 
         if ($warehouseId) {
             $ordersQuery->where('warehouse_id', $warehouseId);
-            $transfersQuery->where('to_warehouse_id', $warehouseId)
-                ->orWhere('from_warehouse_id', $warehouseId);
+            $transfersQuery->where(function ($query) use ($warehouseId) {
+                $query->where('to_warehouse_id', $warehouseId)
+                    ->orWhere('from_warehouse_id', $warehouseId);
+            });
             $stocksQuery->where('warehouse_id', $warehouseId);
             $posQuery->where('warehouse_id', $warehouseId);
         }
@@ -54,9 +56,11 @@ class WarehouseAnalyticsService
             $posQuery->where('created_at', '<=', $dateEnd);
         }
 
+        $orderCounts = $ordersQuery->selectRaw("COUNT(*) as total, COUNT(CASE WHEN status IN ('pending', 'processing', 'ready_to_ship') THEN 1 END) as pending")->first();
+
         return [
-            'total_orders' => $ordersQuery->count(),
-            'pending_orders' => (clone $ordersQuery)->whereIn('status', ['pending', 'processing', 'ready_to_ship'])->count(),
+            'total_orders' => (int) $orderCounts->total,
+            'pending_orders' => (int) $orderCounts->pending,
             'pending_transfers' => (clone $transfersQuery)->where('status', 'pending')->count(),
             'pending_returns' => (clone $returnsQuery)->whereIn('status', ['requested', 'in_transit'])->count(),
             'low_stock_items' => (clone $stocksQuery)
@@ -83,22 +87,35 @@ class WarehouseAnalyticsService
         }
 
         if ($search) {
-            $movementsQuery->where(function ($q) use ($search) {
+            // Historical movements can store either morph aliases or full class names.
+            $referenceTypes = StockMovement::query()->distinct()->pluck('reference_type')->filter();
+            $movementsQuery->where(function ($q) use ($search, $referenceTypes) {
                 $q->whereHas('product', fn ($q) => $q->where('name', 'like', "%{$search}%"))
                     ->orWhere('reference_id', 'like', "%{$search}%")
-                    ->orWhereHasMorph('reference', '*', function ($q, $type) use ($search) {
-                        if ($type === Order::class) {
-                            $q->where('order_no', 'like', "%{$search}%");
-                        } elseif ($type === PurchaseOrder::class) {
-                            $q->where('po_number', 'like', "%{$search}%");
-                        } elseif ($type === InventoryAdjustment::class || $type === StockTransfer::class) {
-                            $q->where('reference_no', 'like', "%{$search}%");
-                        } elseif ($type === GoodsReceipt::class) {
-                            $q->where('grn_number', 'like', "%{$search}%");
-                        } elseif ($type === OrderReturn::class) {
-                            $q->where('return_no', 'like', "%{$search}%");
-                        } else {
-                            $q->where('id', 'like', "%{$search}%");
+                    ->orWhere(function ($references) use ($search, $referenceTypes) {
+                        $references->whereRaw('1 = 0');
+                        foreach ($referenceTypes as $storedType) {
+                            $type = \Illuminate\Database\Eloquent\Relations\Relation::getMorphedModel($storedType) ?? $storedType;
+                            if (! is_subclass_of($type, \Illuminate\Database\Eloquent\Model::class)) {
+                                continue;
+                            }
+                            $reference = new $type;
+                            $column = match ($type) {
+                                Order::class => 'order_no',
+                                PurchaseOrder::class => 'po_number',
+                                StockTransfer::class => 'transfer_no',
+                                InventoryAdjustment::class => 'reference_no',
+                                GoodsReceipt::class => 'grn_number',
+                                OrderReturn::class => 'return_no',
+                                default => $reference->getKeyName(),
+                            };
+                            $matchingReferences = $reference->newQuery()->selectRaw('1')
+                                ->whereColumn($reference->getQualifiedKeyName(), 'stock_movements.reference_id')
+                                ->where($column, 'like', "%{$search}%");
+                            $references->orWhere(function ($branch) use ($storedType, $matchingReferences) {
+                                $branch->where('stock_movements.reference_type', $storedType)
+                                    ->whereExists($matchingReferences->toBase());
+                            });
                         }
                     });
             });
@@ -204,10 +221,16 @@ class WarehouseAnalyticsService
             $query->where('created_at', '<=', $dateEnd);
         }
 
-        $total = $query->count();
-        $delivered = (clone $query)->whereIn('status', ['delivered', 'completed', 'returned'])->count();
-        $cancelled = (clone $query)->where('status', 'cancelled')->count();
-        $returned = (clone $query)->where('status', 'returned')->count();
+        $counts = $query->selectRaw("
+            COUNT(*) as total,
+            COUNT(CASE WHEN status IN ('delivered', 'completed', 'returned') THEN 1 END) as delivered,
+            COUNT(CASE WHEN status = 'cancelled' THEN 1 END) as cancelled,
+            COUNT(CASE WHEN status = 'returned' THEN 1 END) as returned
+        ")->first();
+        $total = (int) $counts->total;
+        $delivered = (int) $counts->delivered;
+        $cancelled = (int) $counts->cancelled;
+        $returned = (int) $counts->returned;
 
         $validTotal = $total - $cancelled;
         $rate = $validTotal > 0 ? round(($delivered / $validTotal) * 100, 1) : 0;
@@ -294,10 +317,11 @@ class WarehouseAnalyticsService
             $returnsReqQuery->where('created_at', '<=', $dateEnd);
         }
         
-        $returnsRequested = $returnsReqQuery->whereIn('status', ['requested', 'in_transit'])->get(['refund_amount']);
+        $returnsRequested = $returnsReqQuery->whereIn('status', ['requested', 'in_transit'])
+            ->selectRaw('COUNT(*) as total, COALESCE(SUM(refund_amount), 0) as amount')->first();
         $pipeline['returns_requested'] = [
-            'count' => $returnsRequested->count(),
-            'amount' => (float) $returnsRequested->sum('refund_amount'),
+            'count' => (int) $returnsRequested->total,
+            'amount' => (float) $returnsRequested->amount,
         ];
 
         return $pipeline;

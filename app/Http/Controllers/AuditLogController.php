@@ -138,11 +138,17 @@ class AuditLogController extends Controller implements HasMiddleware
             });
 
             // Calculate stats
+            $totals = Audit::query()->toBase()->selectRaw("
+                COUNT(*) as total,
+                COALESCE(SUM(CASE WHEN event = 'created' THEN 1 ELSE 0 END), 0) as created,
+                COALESCE(SUM(CASE WHEN event = 'updated' THEN 1 ELSE 0 END), 0) as updated,
+                COALESCE(SUM(CASE WHEN event = 'deleted' THEN 1 ELSE 0 END), 0) as deleted
+            ")->first();
             $stats = [
-                'total' => Audit::count(),
-                'created' => Audit::where('event', 'created')->count(),
-                'updated' => Audit::where('event', 'updated')->count(),
-                'deleted' => Audit::where('event', 'deleted')->count(),
+                'total' => (int) $totals->total,
+                'created' => (int) $totals->created,
+                'updated' => (int) $totals->updated,
+                'deleted' => (int) $totals->deleted,
             ];
 
             return response()->json([

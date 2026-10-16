@@ -37,6 +37,7 @@ return new class extends Migration
 
             $table->index('created_at');
             $table->index(['status', 'created_at']);
+            $table->json('india_post_tracking_response')->nullable();
         });
     }
 

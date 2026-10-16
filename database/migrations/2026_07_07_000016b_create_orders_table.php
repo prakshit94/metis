@@ -19,6 +19,7 @@ return new class extends Migration
             $table->decimal('discount_amount', 15, 2)->default(0);
             $table->string('coupon_code')->nullable();
             $table->foreignId('applied_offer_id')->nullable()->constrained('offers')->nullOnDelete();
+            $table->foreignId('selected_offer_id')->nullable()->constrained('offers')->nullOnDelete();
             $table->decimal('net_amount', 15, 2)->default(0);
             $table->decimal('wallet_amount_used', 15, 2)->default(0);
             $table->decimal('cashback_earned', 15, 2)->default(0);
@@ -93,38 +94,10 @@ return new class extends Migration
             $table->index(['warehouse_id', 'status']);
             $table->index(['shipping_district', 'shipping_village_name'], 'idx_order_geo');
         });
-
-        Schema::create('order_items', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('order_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('product_id')->constrained()->cascadeOnDelete();
-            $table->unsignedBigInteger('product_variant_id')->nullable();
-            $table->string('batch_number')->nullable();
-            $table->decimal('quantity', 15, 4);
-            $table->decimal('unit_price', 15, 2);
-            $table->decimal('tax_rate', 5, 2)->default(0);
-            $table->decimal('tax_amount', 15, 2)->default(0);
-            $table->decimal('discount_amount', 15, 2)->default(0);
-            $table->decimal('total_amount', 15, 2);
-            $table->timestamps();
-
-            $table->index(['order_id', 'product_id'], 'idx_order_items_lookup');
-        });
-
-        Schema::create('order_status_logs', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('order_id')->constrained()->cascadeOnDelete();
-            $table->string('status')->index();
-            $table->text('notes')->nullable();
-            $table->foreignId('changed_by')->nullable()->constrained('users')->nullOnDelete();
-            $table->timestamps();
-        });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('order_status_logs');
-        Schema::dropIfExists('order_items');
         Schema::dropIfExists('orders');
     }
 };

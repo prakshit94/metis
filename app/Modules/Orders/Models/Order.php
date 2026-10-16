@@ -268,6 +268,10 @@ class Order extends Model implements Auditable
 
     public function getTotalPaidAttribute(): float
     {
+        if (array_key_exists('total_paid_amount', $this->attributes)) {
+            return (float) ($this->attributes['total_paid_amount'] ?? 0);
+        }
+
         if ($this->relationLoaded('payments')) {
             return (float) $this->payments->where('status', 'completed')->sum('amount');
         }

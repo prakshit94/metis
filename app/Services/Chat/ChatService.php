@@ -315,12 +315,12 @@ class ChatService
             ->get()
             ->keyBy('user_id');
 
-        $todayOrders = \Illuminate\Support\Facades\Cache::remember('chat_today_orders_' . now()->toDateString(), 60, function () use ($userIds) {
+        $todayOrders = \Illuminate\Support\Facades\Cache::remember('chat_today_orders_' . now()->toDateString(), 60, function () {
             return DB::table('orders')
                 ->selectRaw('created_by, count(*) as today_orders, sum(net_amount) as today_revenue')
-                ->whereIn('created_by', $userIds)
                 ->whereNotIn('status', ['cancelled', 'future_order'])
-                ->whereDate('order_date', now()->toDateString())
+                ->where('order_date', '>=', today())
+                ->where('order_date', '<', today()->addDay())
                 ->groupBy('created_by')
                 ->get()
                 ->keyBy('created_by');
@@ -406,8 +406,8 @@ class ChatService
             ->when($term !== '', fn ($query) => $query->where('content', 'like', "%{$term}%"))
             ->when($filters['type'] ?? null, fn ($query, $type) => $query->where('type', $type))
             ->when($filters['conversation_id'] ?? null, fn ($query, $id) => $query->where('conversation_id', $id))
-            ->when($filters['date_from'] ?? null, fn ($query, $date) => $query->whereDate('created_at', '>=', $date))
-            ->when($filters['date_to'] ?? null, fn ($query, $date) => $query->whereDate('created_at', '<=', $date))
+            ->when($filters['date_from'] ?? null, fn ($query, $date) => $query->where('created_at', '>=', Carbon::parse($date)->startOfDay()))
+            ->when($filters['date_to'] ?? null, fn ($query, $date) => $query->where('created_at', '<', Carbon::parse($date)->startOfDay()->addDay()))
             ->latest()
             ->limit(25)
             ->get();

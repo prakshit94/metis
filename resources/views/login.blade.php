@@ -15,13 +15,13 @@
     $appLogo = \App\Models\SystemSetting::where('key', 'default_image_logo_png')->value('value');
     $logoImage = $appLogo ? $appLogo : asset('assets/images/logo.png');
 @endphp
-<div class="auth-page position-relative min-vh-100 d-flex align-items-center justify-content-center py-5" id="main-content" style="background: url('{{ $bgImage }}') center center / cover no-repeat fixed !important;">
+<main class="auth-page position-relative" id="main-content" tabindex="-1" style="--auth-background-image: url('{{ $bgImage }}');">
     
     <!-- Overlay for better contrast with the background image -->
     <div class="position-absolute top-0 start-0 w-100 h-100" style="background: rgba(0, 0, 0, 0.35);"></div>
 
     <!-- Theme-aware Glassmorphism Card (Now frosted for text legibility) -->
-    <div class="auth-card position-relative z-1 shadow-lg border border-secondary-subtle mx-3" x-data="loginApp()" style="background: rgba(var(--bs-body-bg-rgb, 255, 255, 255), 0.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-radius: 20px; max-width: 380px; width: 100%; padding: 2.5rem 2rem;">
+    <div class="auth-card position-relative z-1 shadow-lg border border-secondary-subtle" x-data="loginApp()" @pageshow.window="isSubmitting = false">
 
 
 
@@ -34,40 +34,44 @@
                 <div class="brand-logo-container rounded-4 d-inline-flex align-items-center justify-content-center transition-all hover-rotate mb-3" style="width: 72px; height: 72px;">
                     <img src="{{ $logoImage }}?v={{ file_exists(public_path('assets/images/logo.png')) ? filemtime(public_path('assets/images/logo.png')) : time() }}" alt="Ecommerce Logo" class="w-100 h-100 object-fit-contain shadow-sm rounded-circle bg-body">
                 </div>
-                <h4 class="fw-black text-body-emphasis mb-1 tracking-tight">Welcome Back</h4>
+                <h1 class="auth-title fw-black text-body-emphasis mb-1 tracking-tight">Welcome Back</h1>
                 <p class="text-secondary small fw-medium mb-0">Sign in to your Ecommerce Admin account</p>
             </div>
             {{-- ── Server-side session flash / validation errors ─────────── --}}
             @if (session('error'))
                 <div class="alert alert-danger d-flex align-items-center gap-2 mb-4 py-3 px-3 border-0 rounded-3 shadow-sm" role="alert">
                     <i class="bi bi-exclamation-octagon-fill fs-5"></i>
-                    <span class="fw-semibold">{{ session('error') }}</span>
+                    <span class="fw-semibold text-break">{{ session('error') }}</span>
                 </div>
             @endif
 
 
 
             {{-- ── Login Form (posts to real Laravel route) ─────────────── --}}
-            <form method="POST" action="{{ route('login.submit') }}" id="loginForm" @submit="isSubmitting = true" autocomplete="off">
+            <form method="POST" action="{{ route('login.submit') }}" id="loginForm" :aria-busy="isSubmitting.toString()" @submit="if (isSubmitting) { $event.preventDefault(); } else { isSubmitting = true; }" autocomplete="on">
                 @csrf
 
                 {{-- Email ------------------------------------------------- --}}
                 <div class="mb-4">
                     <label for="loginEmail" class="form-label fw-bold text-body small" style="letter-spacing: 0.3px;">Email Address</label>
                     <div class="input-group input-group-lg rounded-3 overflow-hidden border border-secondary-subtle focus-within-border-primary transition-all bg-body-tertiary">
-                        <span class="input-group-text bg-transparent border-0 text-secondary px-3"><i class="bi bi-envelope"></i></span>
+                        <span class="input-group-text bg-transparent border-0 text-secondary px-3"><i class="bi bi-envelope" aria-hidden="true"></i></span>
                         <input type="email"
                                class="form-control bg-transparent border-0 shadow-none fs-6 fw-medium text-body @error('email') is-invalid @enderror"
                                id="loginEmail"
                                name="email"
                                value="{{ old('email', request()->cookie('remembered_email')) }}"
                                placeholder="name@company.com"
-                               autocomplete="off"
+                               autocomplete="username"
+                               inputmode="email"
+                               autocapitalize="none"
+                               spellcheck="false"
+                               @error('email') aria-invalid="true" aria-describedby="loginEmailError" @enderror
                                autofocus
                                required>
                     </div>
                     @error('email')
-                        <div class="text-danger small mt-2 fw-medium"><i class="bi bi-info-circle me-1"></i>{{ $message }}</div>
+                        <div id="loginEmailError" class="text-danger small mt-2 fw-medium text-break" role="alert"><i class="bi bi-info-circle me-1" aria-hidden="true"></i>{{ $message }}</div>
                     @enderror
                 </div>
 
@@ -77,23 +81,27 @@
                         <label for="loginPassword" class="form-label fw-bold text-body small mb-0" style="letter-spacing: 0.3px;">Password</label>
                     </div>
                     <div class="input-group input-group-lg rounded-3 overflow-hidden border border-secondary-subtle focus-within-border-primary transition-all bg-body-tertiary">
-                        <span class="input-group-text bg-transparent border-0 text-secondary px-3"><i class="bi bi-lock"></i></span>
-                        <input :type="showPassword ? 'text' : 'password'"
+                        <span class="input-group-text bg-transparent border-0 text-secondary px-3"><i class="bi bi-lock" aria-hidden="true"></i></span>
+                        <input type="password" :type="showPassword ? 'text' : 'password'"
                                class="form-control bg-transparent border-0 shadow-none fs-6 fw-medium text-body @error('password') is-invalid @enderror"
                                id="loginPassword"
                                name="password"
                                placeholder="••••••••"
                                autocomplete="current-password"
+                               @error('password') aria-invalid="true" aria-describedby="loginPasswordError" @enderror
                                required>
                         <button class="btn btn-link text-secondary text-decoration-none border-0 px-3 hover-text-primary"
                                 type="button"
                                 @click="showPassword = !showPassword"
+                                aria-label="Show password"
+                                aria-controls="loginPassword"
+                                :aria-pressed="showPassword.toString()"
                                 :aria-label="showPassword ? 'Hide password' : 'Show password'">
-                            <i :class="showPassword ? 'bi bi-eye-slash-fill' : 'bi bi-eye-fill'"></i>
+                            <i aria-hidden="true" :class="showPassword ? 'bi bi-eye-slash-fill' : 'bi bi-eye-fill'"></i>
                         </button>
                     </div>
                     @error('password')
-                        <div class="text-danger small mt-2 fw-medium"><i class="bi bi-info-circle me-1"></i>{{ $message }}</div>
+                        <div id="loginPasswordError" class="text-danger small mt-2 fw-medium text-break" role="alert"><i class="bi bi-info-circle me-1" aria-hidden="true"></i>{{ $message }}</div>
                     @enderror
                 </div>
 
@@ -126,7 +134,7 @@
 
                     <span x-show.important="!isSubmitting" class="d-flex align-items-center justify-content-center gap-2 position-relative z-1">
                         Sign In to Account
-                        <i class="bi bi-arrow-right fw-bold fs-5 ms-1 transition-all group-hover-translate-x"></i>
+                        <i class="bi bi-arrow-right fw-bold fs-5 ms-1 transition-all group-hover-translate-x" aria-hidden="true"></i>
                     </span>
                     <span x-show.important="isSubmitting" style="display: none;" class="d-flex align-items-center justify-content-center gap-2 position-relative z-1">
                         <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
@@ -137,7 +145,7 @@
         </div>
     </div>{{-- /.auth-card --}}
 
-</div>{{-- /.auth-page --}}
+</main>{{-- /.auth-page --}}
 
 <style>
 /* Utilities for Login */

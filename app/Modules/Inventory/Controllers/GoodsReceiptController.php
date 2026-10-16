@@ -54,9 +54,14 @@ class GoodsReceiptController extends Controller implements HasMiddleware
             return response()->json($query->paginate(15));
         }
 
+        $monthStart = now()->startOfMonth();
+        $totals = GoodsReceipt::query()->toBase()->selectRaw("
+            COUNT(*) as total,
+            COALESCE(SUM(CASE WHEN received_date >= ? AND received_date < ? THEN 1 ELSE 0 END), 0) as this_month
+        ", [$monthStart->toDateString(), $monthStart->copy()->addMonth()->toDateString()])->first();
         $stats = [
-            'total' => GoodsReceipt::count(),
-            'this_month' => GoodsReceipt::whereMonth('received_date', date('m'))->whereYear('received_date', date('Y'))->count(),
+            'total' => (int) $totals->total,
+            'this_month' => (int) $totals->this_month,
             'pending' => 0, // Placeholder if you integrate putaway flow later
             'discrepancies' => GoodsReceiptItem::where('rejected_qty', '>', 0)->count(),
         ];

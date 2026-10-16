@@ -68,11 +68,15 @@ class StockTransferController extends Controller implements HasMiddleware
 
         $paginator = $query->paginate($perPage);
 
+        $counts = $statsQuery->toBase()->select([])->selectRaw("COUNT(*) as total,
+            COUNT(CASE WHEN status = 'draft' THEN 1 END) as draft,
+            COUNT(CASE WHEN status = 'sent' THEN 1 END) as pending,
+            COUNT(CASE WHEN status = 'received' THEN 1 END) as received")->first();
         $stats = [
-            'total' => (clone $statsQuery)->count(),
-            'draft' => (clone $statsQuery)->where('status', 'draft')->count(),
-            'pending' => (clone $statsQuery)->where('status', 'sent')->count(),
-            'received' => (clone $statsQuery)->where('status', 'received')->count(),
+            'total' => (int) $counts->total,
+            'draft' => (int) $counts->draft,
+            'pending' => (int) $counts->pending,
+            'received' => (int) $counts->received,
         ];
 
         return response()->json([

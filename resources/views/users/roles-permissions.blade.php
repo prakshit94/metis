@@ -4,8 +4,8 @@
 @section('page', 'roles-permissions')
 
 @section('content')
-<div class="user-management" x-data="rolesPermissionsTable">
-    <div class="d-flex justify-content-between align-items-center mb-4 mb-lg-5 mb-xl-6">
+<div class="user-management user-admin-page" x-data="rolesPermissionsTable" data-can-view-roles="{{ auth()->user()->can('role-view') ? 'true' : 'false' }}" data-can-view-permissions="{{ auth()->user()->can('permission-view') ? 'true' : 'false' }}">
+    <div class="access-page-heading d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4 mb-lg-5 mb-xl-6">
         <div>
             <h1 class="h3 mb-0"><i class="bi bi-shield-lock-fill text-primary me-2"></i>Roles & Permissions</h1>
             <p class="text-muted mb-0">Manage access roles, permissions, and assignments</p>
@@ -72,7 +72,7 @@
                         <div>
                             <p class="h6 mb-0 text-muted">Assignments</p>
                             <div class="h3 mb-0" aria-live="polite"><span x-text="assignmentCount"></span></div>
-                            <small class="text-muted"><i class="bi bi-shuffle"></i> Role permissions</small>
+                            <small class="text-muted"><i class="bi bi-shuffle"></i> On the loaded roles page</small>
                         </div>
                     </div>
                 </div>
@@ -88,7 +88,7 @@
                         <div>
                             <p class="h6 mb-0 text-muted">Deleted</p>
                             <div class="h3 mb-0" aria-live="polite"><span x-text="deletedCount"></span></div>
-                            <small class="text-muted"><i class="bi bi-arrow-counterclockwise"></i> Restorable items</small>
+                            <small class="text-muted"><i class="bi bi-arrow-counterclockwise"></i> On the current page</small>
                         </div>
                     </div>
                 </div>
@@ -110,26 +110,30 @@
                 <div class="col-auto">
                     <div class="d-flex flex-wrap gap-2 justify-content-end">
                         <div class="btn-group btn-group-sm" role="group" aria-label="Directory type">
+                            @can('role-view')
                             <input type="radio" class="btn-check" name="accessTab" id="rolesTab" value="roles" x-model="activeTab" @change="switchTab('roles')">
                             <label class="btn btn-outline-secondary" for="rolesTab">Roles</label>
+                            @endcan
+                            @can('permission-view')
                             <input type="radio" class="btn-check" name="accessTab" id="permissionsTab" value="permissions" x-model="activeTab" @change="switchTab('permissions')">
                             <label class="btn btn-outline-secondary" for="permissionsTab">Permissions</label>
+                            @endcan
                         </div>
                         <div class="position-relative">
-                            <input type="search" class="form-control form-control-sm" placeholder="Search access..." x-model="searchQuery" @input="filterItems()" style="width: 200px;">
+                            <input type="search" class="form-control form-control-sm" aria-label="Search roles and permissions" placeholder="Search access..." x-model="searchQuery" @input.debounce.300ms="filterItems()" style="width: 200px;">
                             <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-2 text-muted"></i>
                         </div>
-                        <select class="form-select form-select-sm" x-model="statusFilter" @change="filterItems()" style="width: 150px;">
+                        <select class="form-select form-select-sm" aria-label="Access status" x-model="statusFilter" @change="filterItems()" style="width: 150px;">
                             <option value="">All Status</option>
                             <option value="active">Active</option>
                             <option value="deleted">Deleted</option>
                         </select>
-                        <select class="form-select form-select-sm" x-model="guardFilter" @change="filterItems()" style="width: 130px;">
+                        <select class="form-select form-select-sm" aria-label="Access guard" x-model="guardFilter" @change="filterItems()" style="width: 130px;">
                             <option value="">All Guards</option>
                             <option value="web">web</option>
                             <option value="api">api</option>
                         </select>
-                        <select class="form-select form-select-sm" x-model.number="itemsPerPage" @change="filterItems()" style="width: 120px;">
+                        <select class="form-select form-select-sm" aria-label="Access rows per page" x-model.number="itemsPerPage" @change="filterItems()" style="width: 120px;">
                             <option value="10">10 / page</option>
                             <option value="15">15 / page</option>
                             <option value="20">20 / page</option>
@@ -170,12 +174,13 @@
                 </div>
             </div>
 
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
+            <p class="small text-body-secondary px-3 py-2 mb-0 border-bottom">Scroll horizontally to view all details and actions.</p>
+<div class="table-responsive directory-table-region" role="region" aria-label="Roles and permissions directory" tabindex="0">
+                <table class="access-directory-table table table-hover align-middle mb-0">
                     <thead class="table-active">
                         <tr>
                             <th style="width: 50px;" class="ps-3">
-                                <input type="checkbox"
+                                <input type="checkbox" aria-label="Select all access entries on this page"
                                        class="user-select-checkbox"
                                        @change="$event.isTrusted && toggleAll($event.target.checked)"
                                        :checked="selectedItems.length === currentItems.length && currentItems.length > 0">
@@ -194,10 +199,12 @@
                         </tr>
                     </thead>
                     <tbody>
+                        <tr x-show="isLoading" x-cloak><td colspan="7" class="text-center py-4" role="status">Loading directory…</td></tr>
+                        <tr x-show="!isLoading && currentItems.length === 0" x-cloak><td colspan="7" class="text-center text-body-secondary py-4" role="status">No entries match the current filters.</td></tr>
                         <template x-for="item in currentItems" :key="`${activeTab}-${item.id}`">
-                            <tr :class="{ 'table-active': selectedItems.includes(item.id) }">
+                            <tr x-show="!isLoading" :class="{ 'table-active': selectedItems.includes(item.id) }">
                                 <td class="ps-3">
-                                    <input type="checkbox"
+                                    <input type="checkbox" :aria-label="'Select ' + item.name"
                                            class="user-select-checkbox"
                                            :value="item.id"
                                            :checked="selectedItems.includes(item.id)"
@@ -239,7 +246,7 @@
                                 <td x-text="item.updatedAt"></td>
                                 <td>
                                     <div class="dropdown">
-                                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Access actions">
+                                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Access actions" :aria-label="'Actions for ' + item.name">
                                             <i class="bi bi-three-dots"></i>
                                         </button>
                                         <ul class="dropdown-menu">
@@ -291,12 +298,12 @@
                 </table>
             </div>
 
-            <div class="d-flex justify-content-between align-items-center p-3">
+            <div class="d-flex flex-wrap gap-3 justify-content-between align-items-center p-3">
                 <div class="text-muted">
                     Showing <span x-text="pageFrom"></span> to <span x-text="pageTo"></span> of <span x-text="totalItems"></span> results
                 </div>
                 <nav>
-                    <ul class="pagination pagination-sm mb-0">
+                    <ul class="pagination pagination-sm flex-wrap mb-0">
                         <li class="page-item" :class="{ 'disabled': currentPage === 1 }">
                             <a class="page-link" href="#" @click.prevent="goToPage(currentPage - 1)">Previous</a>
                         </li>
@@ -315,45 +322,46 @@
     </div>
 </div>
 
-<div class="modal fade user-management" id="accessModal" aria-labelledby="accessModalLabel">
-    <div class="modal-dialog modal-fullscreen modal-dialog-scrollable" x-data="accessForm">
+<div class="modal fade user-management" id="accessModal" tabindex="-1" aria-labelledby="accessModalLabel">
+    <div class="modal-dialog modal-dialog-scrollable access-dialog" x-data="accessForm">
         <form class="modal-content" @submit.prevent="saveItem()">
                 <div class="modal-header">
-                    <h5 class="modal-title d-flex align-items-center" id="accessModalLabel">
+                    <div class="min-w-0"><h2 class="h5 modal-title d-flex align-items-center" id="accessModalLabel">
                         <i class="bi me-2" :class="type === 'roles' ? 'bi-shield-lock text-primary' : 'bi-key text-primary'"></i>
                         <span x-text="title"></span>
-                    </h5>
+                    </h2><p class="small text-body-secondary mb-0 mt-1" x-text="type === 'roles' ? 'Set role details and choose the permissions it grants.' : 'Set permission details and choose its assigned roles.'"></p></div>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="row g-4 pt-2">
+                    <div class="row g-3">
                         <div class="col-md-8">
-                            <div class="form-floating mb-3">
-                                <input type="text" class="form-control" id="accessName" x-model="form.name" required placeholder="e.g. user-create">
-                                <label for="accessName">Name <span class="text-danger">*</span></label>
+                            <div class="access-detail-field">
+                                <label class="form-label fw-semibold" for="accessName"><span x-text="type === 'roles' ? 'Role name' : 'Permission name'"></span> <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="accessName" x-model="form.name" maxlength="100" required :placeholder="type === 'roles' ? 'e.g. Sales Manager' : 'e.g. user-create'" autocomplete="off">
                             </div>
                         </div>
                         <div class="col-md-4">
-                            <div class="form-floating mb-3">
-                                <input type="text" class="form-control" id="accessGuard" x-model="form.guard_name" placeholder="web">
-                                <label for="accessGuard">Guard</label>
+                            <div class="access-detail-field">
+                                <label class="form-label fw-semibold" for="accessGuard">Authentication guard</label>
+                                <input type="text" class="form-control" id="accessGuard" x-model="form.guard_name" maxlength="100" placeholder="web" aria-describedby="accessGuardHelp">
+                                <div id="accessGuardHelp" class="form-text">Use the guard configured for this role or permission.</div>
                             </div>
                         </div>
                         <template x-if="type === 'roles'">
                             <div class="col-12">
-                                <label class="form-label fw-semibold">Permissions</label>
-                                <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-3">
-                                    <div class="input-group input-group-sm border rounded" style="max-width: 300px;">
+                                <h3 class="h6 fw-semibold mb-1">Permissions</h3><p class="small text-body-secondary mb-3">Choose individual permissions or select the visible permissions in a group.</p>
+                                <div class="permission-toolbar d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3">
+                                    <div class="permission-search input-group border rounded">
                                         <span class="input-group-text bg-transparent border-0 text-muted"><i class="bi bi-search"></i></span>
-                                        <input type="text" class="form-control border-0 shadow-none ps-0" placeholder="Search permissions..." x-model="permissionSearch">
+                                        <input type="text" class="form-control border-0 shadow-none ps-0" id="rolePermissionSearch" aria-label="Search role permissions" placeholder="Search by permission or module..." x-model="permissionSearch">
                                     </div>
-                                    <div class="d-flex gap-2 align-items-center">
-                                        <span class="small text-muted me-2" x-text="`${form.permissions.length} selected`"></span>
+                                    <div class="permission-selection-tools d-flex flex-wrap gap-2 align-items-center">
+                                        <span class="badge text-bg-primary-subtle text-primary-emphasis" role="status" x-text="`${form.permissions.length} / ${permissions.length} selected`"></span>
                                         <button type="button" class="btn btn-sm btn-outline-primary" @click="selectAllPermissions()">
-                                            <i class="bi bi-check-all me-1"></i>Select All
+                                            <i class="bi bi-check-all me-1" aria-hidden="true"></i>Select all permissions
                                         </button>
                                         <button type="button" class="btn btn-sm btn-outline-secondary" @click="clearPermissions()" x-show="form.permissions.length > 0">
-                                            <i class="bi bi-x-circle me-1"></i>Clear
+                                            <i class="bi bi-x-circle me-1" aria-hidden="true"></i>Clear selection
                                         </button>
                                     </div>
                                 </div>
@@ -370,70 +378,45 @@
                                 </template>
                                 <template x-if="!permissionsLoading && !permissionsError">
                                     <div class="permissions-container mt-3">
-                                        <div class="table-responsive border rounded" x-show="groupedPermissions.length > 0">
-                                            <table class="table table-hover mb-0 align-middle">
-                                                <thead class="table-active">
-                                                    <tr>
-                                                        <th scope="col" style="width: 250px;" class="py-3 ps-4 text-nowrap border-0">Module / Feature</th>
-                                                        <th scope="col" style="width: 120px;" class="text-center py-3 text-nowrap border-0">Select All</th>
-                                                        <th scope="col" class="py-3 border-0">Permissions</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    <template x-for="group in groupedPermissions" :key="group.key">
-                                                        <tr>
-                                                            <td class="ps-4">
-                                                                <div class="d-flex align-items-center">
-                                                                    <div class="stats-icon bg-primary bg-opacity-10 text-primary me-3 rounded-2 d-flex justify-content-center align-items-center flex-shrink-0" style="width: 36px; height: 36px;">
-                                                                        <i class="bi fs-5" :class="`bi-${group.icon}`"></i>
-                                                                    </div>
-                                                                    <div>
-                                                                        <h6 class="mb-0 fw-bold text-body" x-text="group.label"></h6>
-                                                                        <small class="text-muted" x-text="`${selectedPermissionCount(group)} / ${group.items.length} selected`"></small>
-                                                                    </div>
+                                        <div class="permission-groups" x-show="groupedPermissions.length > 0">
+                                            <template x-for="group in groupedPermissions" :key="group.key">
+                                                <details class="permission-group border rounded-3" open>
+                                                    <summary class="permission-group-summary">
+                                                        <span class="permission-group-icon text-primary bg-primary-subtle rounded-3"><i class="bi" :class="`bi-${group.icon}`" aria-hidden="true"></i></span>
+                                                        <span class="permission-group-title fw-semibold" x-text="group.label"></span>
+                                                        <span class="small text-body-secondary" x-text="`${selectedPermissionCount(group)} / ${group.items.length} selected`"></span>
+                                                    </summary>
+                                                    <div class="permission-group-body border-top">
+                                                        <label class="d-inline-flex align-items-center gap-2 mb-3 fw-medium small cursor-pointer">
+                                                            <input class="form-check-input m-0" type="checkbox"
+                                                                   :checked="isPermissionGroupSelected(group)"
+                                                                   :indeterminate="selectedPermissionCount(group) > 0 && !isPermissionGroupSelected(group)"
+                                                                   @change="togglePermissionGroup(group)">
+                                                            <span>Select visible group permissions</span>
+                                                        </label>
+                                                        <template x-for="(subGroup, index) in group.subGroups" :key="index">
+                                                            <div :class="index > 0 ? 'mt-3 pt-3 border-top' : ''">
+                                                                <h4 class="small fw-semibold text-body-secondary mb-3" x-text="subGroup.label" x-show="group.subGroups.length > 1 || subGroup.label !== group.label"></h4>
+                                                                <div class="permission-options-grid">
+                                                                    <template x-for="permission in subGroup.items" :key="permission.id">
+                                                                        <label class="permission-option d-flex align-items-start gap-2 rounded-3 border p-3" :class="isPermissionSelected(permission.name) ? 'border-primary bg-primary-subtle' : 'border-secondary-subtle'">
+                                                                            <input class="form-check-input flex-shrink-0" type="checkbox" :value="permission.name" x-model="form.permissions">
+                                                                            <span class="min-w-0">
+                                                                                <span class="fw-medium text-body d-block" x-text="permission.actionLabel"></span>
+                                                                                <span class="small text-body-secondary permission-code d-block mt-1" x-text="permission.name"></span>
+                                                                            </span>
+                                                                        </label>
+                                                                    </template>
                                                                 </div>
-                                                            </td>
-                                                            <td class="text-center bg-body-tertiary bg-opacity-50 align-middle">
-                                                                <div class="d-flex justify-content-center mb-0">
-                                                                    <input class="user-select-checkbox cursor-pointer shadow-sm" type="checkbox" :id="`toggle-all-${group.key}`" 
-                                                                           :checked="isPermissionGroupSelected(group)" 
-                                                                           @change="togglePermissionGroup(group)"
-                                                                           style="width: 1.25em; height: 1.25em;">
-                                                                </div>
-                                                            </td>
-                                                            <td class="py-3 pe-3">
-                                                                <template x-for="(subGroup, index) in group.subGroups" :key="index">
-                                                                    <div :class="index > 0 ? 'mt-3 pt-3 border-top border-secondary-subtle' : ''">
-                                                                        <h6 class="fw-semibold text-muted small mb-2 text-uppercase" style="letter-spacing: 0.05em;" x-text="subGroup.label" x-show="group.subGroups.length > 1 || subGroup.label !== group.label"></h6>
-                                                                        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 row-cols-xl-4 g-3 w-100 m-0">
-                                                                            <template x-for="permission in subGroup.items" :key="permission.id">
-                                                                                <div class="col px-1">
-                                                                                    <div class="mb-0 h-100 d-flex align-items-start">
-                                                                                        <input class="user-select-checkbox cursor-pointer flex-shrink-0 shadow-sm" 
-                                                                                               type="checkbox" 
-                                                                                               :id="`perm-${permission.id}`" 
-                                                                                               :value="permission.name" 
-                                                                                               x-model="form.permissions"
-                                                                                               style="width: 1.2em; height: 1.2em; margin-top: 0.15em;">
-                                                                                        <label class="w-100 cursor-pointer ms-2" :for="`perm-${permission.id}`">
-                                                                                            <span class="fw-medium text-body d-block" x-text="permission.actionLabel"></span>
-                                                                                            <span class="text-muted" style="font-size: 0.7rem; word-break: break-all;" x-text="permission.name"></span>
-                                                                                        </label>
-                                                                                    </div>
-                                                                                </div>
-                                                                            </template>
-                                                                        </div>
-                                                                    </div>
-                                                                </template>
-                                                            </td>
-                                                        </tr>
-                                                    </template>
-                                                </tbody>
-                                            </table>
+                                                            </div>
+                                                        </template>
+                                                    </div>
+                                                </details>
+                                            </template>
                                         </div>
                                         <div class="border rounded p-4 text-muted text-center" x-show="groupedPermissions.length === 0">
                                             <i class="bi bi-shield-x fs-2 d-block mb-2"></i>
-                                            No permissions available. Create permissions first, then add them to this role.
+                                            <span x-text="permissionSearch ? 'No permissions match your search. Try another name or module.' : 'No permissions available. Create permissions first, then add them to this role.'"></span>
                                         </div>
                                     </div>
                                 </template>
@@ -461,12 +444,13 @@
                         </template>
                     </div>
                 </div>
-                <div class="modal-footer">
+                <div class="modal-footer gap-2">
+                    <span class="access-footer-summary small text-body-secondary me-auto" x-show="type === 'roles'" x-text="`${form.permissions.length} permissions selected`"></span>
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
                     @canany(['role-create', 'role-edit', 'permission-create', 'permission-edit'])
                     <button type="submit" class="btn btn-primary px-4" :disabled="saving">
                         <span x-show="saving" class="spinner-border spinner-border-sm me-2"></span>
-                        <span x-text="editingId ? 'Save Changes' : 'Create Access'"></span>
+                        <span x-text="saving ? 'Saving…' : (editingId ? 'Save changes' : (type === 'roles' ? 'Create role' : 'Create permission'))"></span>
                     </button>
                     @endcanany
                 </div>

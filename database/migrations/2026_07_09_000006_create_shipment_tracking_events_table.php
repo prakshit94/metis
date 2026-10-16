@@ -17,6 +17,12 @@ return new class extends Migration
             $table->string('reschedule_reason')->nullable();
             $table->dateTime('occurred_at');
             $table->timestamps();
+            $table->string('provider')->nullable()->index();
+            $table->string('provider_event_code')->nullable()->index();
+            $table->string('provider_office_id')->nullable();
+            $table->text('provider_remarks')->nullable();
+            $table->boolean('provider_is_rts')->nullable();
+            $table->json('provider_payload')->nullable();
         });
     }
 

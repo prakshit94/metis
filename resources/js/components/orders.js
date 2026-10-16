@@ -7,6 +7,7 @@ import { createSearchComponent } from '../utils/search-component.js';
 // methods (for example AbortController.abort and Promise.then) require their
 // original receiver and fail when called through a Proxy.
 const orderLoadControllers = new WeakMap();
+const orderThemeObservers = new WeakMap();
 let orderApexChartsPromise;
 let OrderApexCharts;
 const DEFAULT_ORDER_FILTER_STATUSES = [
@@ -142,8 +143,9 @@ document.addEventListener('alpine:init', () => {
     sortDirection: 'desc',
     isLoading: false,
     _loadRequestId: 0,
+    _initialized: false,
+    _themeHandler: null,
     _searchDebounce: null,
-    _analyticsToggleHandler: null,
     _normalizeInitialFullStatusSelection: false,
 
     // ApexCharts settings
@@ -242,6 +244,14 @@ document.addEventListener('alpine:init', () => {
     scheduledConfirmDate: '',
     scheduleReason: '',
     confirmNotes: '',
+
+    // Delivery Modal state must exist before Alpine evaluates the hidden modal.
+    deliverModalOrder: null,
+    deliverAction: 'now',
+    scheduledDeliveryDate: '',
+    scheduleDeliveryReason: '',
+    deliveredBy: '',
+    deliverNotes: '',
 
     // Cancel Modal state
     cancelModalOrder: null,
@@ -399,6 +409,13 @@ document.addEventListener('alpine:init', () => {
     },
 
     init() {
+      if (this._initialized) return;
+      this._initialized = true;
+      // Alpine invokes init before x-init supplies the server-rendered lists.
+      this.$nextTick(() => this.initializeOrders());
+    },
+
+    initializeOrders() {
       const params = new URLSearchParams(window.location.search);
 
       if (params.has('search')) this.searchQuery = params.get('search');
@@ -462,35 +479,39 @@ document.addEventListener('alpine:init', () => {
       }
 
       this.$watch('visibleWarehouseStat', (value) => {
-        let whId = '';
-        if (value) {
-          const wh = Object.values(this.warehousesList || {}).find((w) => w.name === value);
-          if (wh) whId = wh.id;
-        }
-        if (this.warehouseFilter !== whId) {
-          this.warehouseFilter = whId;
+        // Multiple table selections intentionally show the combined warehouse view.
+        if (!value && this.warehouseFilter.length !== 1) return;
+        const warehouse = Object.values(this.warehousesList || {}).find((w) => w.name === value);
+        const next = warehouse ? [Number(warehouse.id)] : [];
+        if (JSON.stringify(this.warehouseFilter) !== JSON.stringify(next)) {
+          this.warehouseFilter = next;
           this.filterOrders();
         }
       });
 
-      this.$watch('warehouseFilter', (value) => {
-        let whName = '';
-        if (value) {
-          const wh = Object.values(this.warehousesList || {}).find((w) => w.id == value);
-          if (wh) whName = wh.name;
-        }
-        if (this.visibleWarehouseStat !== whName) {
-          this.visibleWarehouseStat = whName;
-        }
+      this.$watch('warehouseFilter', (ids) => {
+        const warehouse = ids.length === 1
+          ? Object.values(this.warehousesList || {}).find((w) => Number(w.id) === Number(ids[0]))
+          : null;
+        const name = warehouse?.name || '';
+        if (this.visibleWarehouseStat !== name) this.visibleWarehouseStat = name;
       });
 
-      const analyticsToggle = document.getElementById('ordersAnalyticsToggle');
-      if (analyticsToggle) {
-        this._analyticsToggleHandler = () => {
-          if (analyticsToggle.checked) requestAnimationFrame(() => this.initCharts());
-        };
-        analyticsToggle.addEventListener('change', this._analyticsToggleHandler);
+      // URL filters are assigned before watchers are registered during initialization.
+      if (this.warehouseFilter.length === 1) {
+        const initialWarehouse = Object.values(this.warehousesList || {}).find(
+          (warehouse) => Number(warehouse.id) === Number(this.warehouseFilter[0])
+        );
+        this.visibleWarehouseStat = initialWarehouse?.name || '';
       }
+
+      this._themeHandler = () => {
+        Object.values(this.charts).forEach((chart) => chart?.updateOptions(this.chartThemeOptions()));
+      };
+      // The header and system preference manager both update this attribute.
+      const themeObserver = new MutationObserver(this._themeHandler);
+      themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-bs-theme'] });
+      orderThemeObservers.set(this, themeObserver);
 
       if (params.has('success')) {
         showToast(params.get('success'));
@@ -525,16 +546,15 @@ document.addEventListener('alpine:init', () => {
     },
 
     destroy() {
+      orderThemeObservers.get(this)?.disconnect();
+      orderThemeObservers.delete(this);
       orderLoadControllers.get(this)?.abort();
       orderLoadControllers.delete(this);
       if (this._searchDebounce) {
         clearTimeout(this._searchDebounce);
         this._searchDebounce = null;
       }
-      const analyticsToggle = document.getElementById('ordersAnalyticsToggle');
-      if (analyticsToggle && this._analyticsToggleHandler) {
-        analyticsToggle.removeEventListener('change', this._analyticsToggleHandler);
-      }
+
       if (this._resizeHandler) {
         window.removeEventListener('resize', this._resizeHandler);
         this._resizeHandler = null;
@@ -553,6 +573,7 @@ document.addEventListener('alpine:init', () => {
     },
 
     initResizeHandler() {
+      if (this._resizeHandler) return;
       this._resizeHandler = () => {
         Object.values(this.charts).forEach((chart) => {
           if (chart && typeof chart.updateOptions === 'function') {
@@ -793,7 +814,7 @@ document.addEventListener('alpine:init', () => {
               this.trendsData = data.trends;
             }
             if (data.warehouseStats) {
-              this.warehouseStats = data.warehouseStats;
+              this.warehouseStats = Object.values(data.warehouseStats);
             }
 
             this.initCharts();
@@ -2418,12 +2439,32 @@ document.addEventListener('alpine:init', () => {
 
 
 
+    chartThemeOptions() {
+      const styles = getComputedStyle(document.documentElement);
+      const mode = document.documentElement.getAttribute('data-bs-theme') === 'dark' ? 'dark' : 'light';
+      return {
+        theme: { mode },
+        chart: { background: 'transparent', foreColor: styles.getPropertyValue('--bs-body-color').trim() },
+        grid: { borderColor: styles.getPropertyValue('--bs-border-color').trim() },
+        tooltip: { theme: mode },
+      };
+    },
+
+    themedChartOptions(options) {
+      const theme = this.chartThemeOptions();
+      return { ...options, ...theme,
+        chart: { ...options.chart, ...theme.chart },
+        tooltip: { ...options.tooltip, ...theme.tooltip },
+        grid: { ...options.grid, ...theme.grid },
+      };
+    },
+
     async initCharts() {
       const analyticsToggle = document.getElementById('ordersAnalyticsToggle');
       const chartElements = ['orderTrendsChart', 'statusChart']
         .map((id) => document.getElementById(id))
         .filter(Boolean);
-      if (!chartElements.length || (analyticsToggle && !analyticsToggle.checked)) return;
+      if (!chartElements.length || (analyticsToggle && analyticsToggle.getAttribute('aria-expanded') !== 'true')) return;
 
       try {
         if (!OrderApexCharts) {
@@ -2431,6 +2472,7 @@ document.addEventListener('alpine:init', () => {
           OrderApexCharts = await orderApexChartsPromise;
         }
 
+        if (analyticsToggle && analyticsToggle.getAttribute('aria-expanded') !== 'true') return;
         if (this.chartsInitialized) {
           if (this.charts.status) {
             this.charts.status.updateSeries(this.statusStats.map((stat) => stat.count));
@@ -2536,7 +2578,7 @@ document.addEventListener('alpine:init', () => {
           },
         };
 
-        this.charts.orderTrends = new OrderApexCharts(chartElement, trendsData);
+        this.charts.orderTrends = new OrderApexCharts(chartElement, this.themedChartOptions(trendsData));
         this.charts.orderTrends.render();
       } catch (error) {
         console.error('Error rendering order trends chart:', error);
@@ -2571,7 +2613,7 @@ document.addEventListener('alpine:init', () => {
           },
         };
 
-        this.charts.status = new OrderApexCharts(chartElement, chartData);
+        this.charts.status = new OrderApexCharts(chartElement, this.themedChartOptions(chartData));
         this.charts.status.render();
       } catch (error) {
         console.error('Error rendering status chart:', error);

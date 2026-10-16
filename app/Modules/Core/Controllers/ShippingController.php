@@ -34,7 +34,7 @@ class ShippingController extends Controller implements HasMiddleware
     public function shipmentsIndex(Request $request): JsonResponse
     {
 
-        $query = Shipment::with(['order.items.product', 'order.party', 'order.shippingAddress', 'order.warehouse', 'service.providers:id,name,email,phone,department_id,is_active']);
+        $query = Shipment::with(['order.orderReturns', 'order.shipments', 'order.items.product', 'order.party', 'order.shippingAddress', 'order.warehouse', 'service.providers:id,name,email,phone,department_id,is_active']);
 
         if ($search = $request->query('search')) {
             $query->where(function ($q) use ($search) {
@@ -65,11 +65,11 @@ class ShippingController extends Controller implements HasMiddleware
         }
 
         if ($fromDate = $request->query('from_date')) {
-            $query->whereDate($dateField, '>=', $fromDate);
+            $query->where($dateField, '>=', \Illuminate\Support\Carbon::parse($fromDate)->startOfDay());
         }
 
         if ($toDate = $request->query('to_date')) {
-            $query->whereDate($dateField, '<=', $toDate);
+            $query->where($dateField, '<', \Illuminate\Support\Carbon::parse($toDate)->startOfDay()->addDay());
         }
 
         $sortBy = $request->query('sort_by', 'id');
@@ -82,7 +82,10 @@ class ShippingController extends Controller implements HasMiddleware
         $perPage = (int) $request->query('per_page', 10);
         $perPage = min(max($perPage, 1), 100);
 
-        return response()->json($query->paginate($perPage));
+        $shipments = $query->paginate($perPage);
+        $shipments->getCollection()->each(fn ($shipment) => $shipment->order?->makeHidden(['orderReturns', 'shipments']));
+
+        return response()->json($shipments);
     }
 
     /**

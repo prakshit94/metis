@@ -18,23 +18,28 @@
 ">
     <div x-data="{ showAnalytics: localStorage.getItem('orders_show_analytics') === 'true' }" x-init="$watch('showAnalytics', val => localStorage.setItem('orders_show_analytics', val))">
 <!-- Page Header -->
-<div class="d-flex flex-column flex-md-row justify-content-end align-items-md-center mb-4 gap-3">
+<div class="mb-4"><h1 class="h3 fw-bold mb-2">Orders</h1><p class="text-body-secondary mb-0">Review orders, track fulfillment, and manage your order workflow.</p></div>
+<div class="orders-toolbar d-flex flex-column flex-xl-row align-items-start align-items-xl-center justify-content-between mb-4 gap-3">
     <div class="d-flex flex-wrap align-items-center gap-2">
         <!-- Refresh Button -->
-        <button type="button" class="btn btn-outline-primary shadow-sm bg-body-tertiary" onclick="window.location.reload()" data-bs-toggle="tooltip" title="Refresh data">
+        <button type="button" class="btn btn-outline-primary shadow-sm bg-body-tertiary" onclick="window.location.reload()" data-bs-toggle="tooltip" title="Refresh data" aria-label="Refresh orders">
             <i class="bi bi-arrow-clockwise icon-hover"></i>
         </button>
-        <!-- Analytics Toggle -->
-        <div class="form-check form-switch m-0 cursor-pointer d-flex align-items-center gap-2">
-            <input class="form-check-input m-0" type="checkbox" role="switch" id="ordersAnalyticsToggle" x-model="showAnalytics" style="cursor: pointer; width: 2.5em; height: 1.25em;">
-            <label class="form-check-label small fw-bold text-muted mb-0 ms-1" for="ordersAnalyticsToggle" style="cursor: pointer; padding-top: 2px;">Analytics</label>
-        </div>
-        
-        <!-- Warehouse Ops Toggle -->
-        <div class="form-check form-switch m-0 me-2 pe-3 border-end cursor-pointer d-none d-md-flex align-items-center gap-2" x-show="warehouseStats && warehouseStats.length > 0" x-cloak>
-            <input class="form-check-input m-0" type="checkbox" role="switch" id="warehouseStatsToggleHeader" x-model="showWarehouseStats" style="cursor: pointer; width: 2.5em; height: 1.25em;">
-            <label class="form-check-label small fw-bold text-muted mb-0 ms-1 cursor-pointer user-select-none" for="warehouseStatsToggleHeader" style="padding-top: 2px;">Warehouse Ops</label>
-        </div>
+        <!-- Match the show/hide controls used by Local Selling Insights. -->
+        <button type="button" id="ordersAnalyticsToggle" class="btn btn-sm" :class="showAnalytics ? 'btn-outline-secondary' : 'btn-info'"
+                @click="showAnalytics = !showAnalytics; if (showAnalytics) $nextTick(() => initCharts())"
+                :aria-expanded="showAnalytics.toString()" aria-controls="ordersAnalyticsPanel">
+            <i class="bi me-1" :class="showAnalytics ? 'bi-eye-slash' : 'bi-eye'" aria-hidden="true"></i>
+            <span x-text="showAnalytics ? 'Hide analytics' : 'Show analytics'"></span>
+        </button>
+        <button type="button" class="btn btn-sm" :class="showWarehouseStats ? 'btn-outline-secondary' : 'btn-info'"
+                @click="showWarehouseStats = !showWarehouseStats" :aria-expanded="showWarehouseStats.toString()" aria-controls="ordersWarehousePanel"
+                x-show="(warehousesList && warehousesList.length > 0) || (warehouseStats && warehouseStats.length > 0)" x-cloak>
+            <i class="bi me-1" :class="showWarehouseStats ? 'bi-eye-slash' : 'bi-eye'" aria-hidden="true"></i>
+            <span x-text="showWarehouseStats ? 'Hide warehouse ops' : 'Show warehouse ops'"></span>
+        </button>
+    </div>
+    <div class="orders-primary-actions d-flex flex-wrap align-items-center gap-2">
         @can('orders.export')
         <button type="button" class="btn btn-outline-secondary" @click="exportOrders()">
             <i class="bi bi-download me-2"></i>Export
@@ -100,7 +105,7 @@
 </form>
 
 <!-- Order Stats Widgets & Analytics -->
-<div x-show="showAnalytics" x-transition.opacity.duration.300ms x-cloak>
+<div id="ordersAnalyticsPanel" x-show="showAnalytics" x-transition.opacity.duration.300ms x-cloak>
     <!-- Order Stats Scrollable Row -->
     <div class="d-flex flex-nowrap overflow-x-auto gap-3 pb-3 mb-4 hide-scrollbar" style="scrollbar-width: thin;">
         <div class="flex-shrink-0" style="width: 260px;">
@@ -403,13 +408,13 @@
 </div> <!-- End showAnalytics Wrapper -->
 
 <!-- Warehouse Operations Overview -->
-<div class="mb-5 mb-lg-5 mb-xl-6" x-show="showWarehouseStats" x-transition x-cloak>
-    <div class="d-flex align-items-center mb-3 gap-3">
-        <h2 class="h5 mb-0 fw-bold d-flex align-items-center text-nowrap">
+<div id="ordersWarehousePanel" class="warehouse-ops mb-5 mb-lg-5 mb-xl-6" x-show="showWarehouseStats" x-transition x-cloak>
+    <div class="warehouse-ops-heading d-flex flex-wrap align-items-center mb-3 gap-3">
+        <h2 class="h5 mb-0 fw-bold d-flex align-items-center">
             <i class="bi bi-buildings text-primary me-2 fs-4"></i>Warehouse Operations Overview
         </h2>
         <div class="flex-grow-1 border-bottom border-secondary-subtle"></div>
-        <select class="form-select form-select-sm w-auto" x-tom-select x-model="visibleWarehouseStat" aria-label="Toggle Warehouse Visibility">
+        <select class="form-select warehouse-ops-select" x-model="visibleWarehouseStat" :title="visibleWarehouseStat || 'All Warehouses'" aria-label="Toggle Warehouse Visibility">
             <option value="">All Warehouses</option>
             @foreach($warehousesList as $wh)
                 <option value="{{ $wh->name }}">{{ $wh->name }}</option>
@@ -417,9 +422,12 @@
         </select>
     </div>
     
-    <div class="row g-4">
+    <p class="small text-body-secondary mb-3">Counts and values follow the current order filters. Return requests can overlap order statuses. Delivery rate is delivered orders divided by matching orders.</p>
+    <div class="alert alert-info" role="status" x-show="isLoading" x-cloak>Updating warehouse details…</div>
+    <div class="alert alert-secondary" role="status" x-show="!isLoading && !warehouseStats.some(wh => !visibleWarehouseStat || wh.name === visibleWarehouseStat)" x-cloak>No orders match the current filters for this warehouse selection.</div>
+    <div class="row g-4" x-show="!isLoading">
         <template x-for="(wh, idx) in warehouseStats" :key="idx">
-            <div class="col-12" x-show="!visibleWarehouseStat || visibleWarehouseStat === wh.name" x-transition>
+            <div class="col-12" x-show="!visibleWarehouseStat || visibleWarehouseStat === wh.name" >
                 <div class="card shadow-sm border-start border-4 border-primary rounded-4 overflow-hidden position-relative">
                     <!-- Left accent line -->
                     <div class="position-absolute top-0 bottom-0 start-0 bg-primary" style="width: 4px;"></div>
@@ -443,103 +451,106 @@
                                         <span class="small fw-bold text-success" x-text="`${wh.total > 0 ? Math.round((wh.delivered / wh.total) * 100) : 0}%`"></span>
                                     </div>
                                     <div class="progress rounded-pill bg-success bg-opacity-10" style="height: 6px;">
-                                        <div class="progress-bar bg-success rounded-pill" role="progressbar" :style="`width: ${wh.total > 0 ? (wh.delivered / wh.total) * 100 : 0}%`"></div>
+                                        <div class="progress-bar bg-success rounded-pill" role="progressbar" aria-label="Warehouse delivery rate" aria-valuemin="0" aria-valuemax="100" :aria-valuenow="wh.total > 0 ? Math.round((wh.delivered / wh.total) * 100) : 0" :style="`width: ${wh.total > 0 ? (wh.delivered / wh.total) * 100 : 0}%`"></div>
                                     </div>
                                 </div>
                             </div>
 
                             <!-- Status Breakdown Section -->
                             <div class="col-lg-9 col-md-12 ps-lg-4">
-                                <div class="d-flex justify-content-between align-items-center mb-3">
-                                    <p class="text-muted small fw-bold text-uppercase tracking-wide mb-0" style="font-size: 0.75rem; letter-spacing: 0.5px;">Fulfillment Pipeline</p>
-                                    
-                                    <!-- Exceptions / Returns Badge -->
-                                    @can('orders.view.return_requested')
-                                    <div class="badge bg-danger bg-opacity-10 border border-danger border-opacity-25 text-danger-emphasis py-1 px-3 rounded-pill d-flex align-items-center gap-2" x-show="wh.return_requested > 0" x-transition>
-                                        <i class="bi bi-exclamation-triangle-fill"></i>
-                                        <span x-text="`${wh.return_requested} Return(s) Req (₹ ${formatCurrency(wh.return_requested_amount)})`"></span>
+                                <h4 class="h6 text-body-secondary mb-3">Order Status Breakdown</h4>
+                                <div class="warehouse-status-grid">
+                                    @can('orders.view.future_order')
+                                    <div class="warehouse-status-tile rounded-3 border border-secondary-subtle bg-secondary-subtle text-secondary-emphasis p-3">
+                                        <span class="d-block small fw-semibold">Future Orders</span>
+                                        <span class="d-block fs-4 fw-bold my-1" x-text="wh.future_order ?? 0"></span>
+                                        <span class="d-block small" x-text="`₹ ${formatCurrency(wh.future_order_amount ?? 0)}`"></span>
                                     </div>
                                     @endcan
-                                </div>
-
-                                <!-- Horizontal Pipeline -->
-                                <div class="d-flex align-items-stretch flex-nowrap overflow-x-auto pb-2 gap-2" style="scrollbar-width: thin;">
-                                    
-                                    <!-- Pending -->
                                     @can('orders.view.pending')
-                                    <div class="flex-fill p-3 rounded-4 bg-warning bg-opacity-10 border border-warning border-opacity-25 d-flex flex-column text-center position-relative transition-hover" style="min-width: 130px;">
-                                        <span class="small text-warning-emphasis fw-bold mb-2 text-uppercase tracking-wide" style="font-size: 0.65rem;">Pending</span>
-                                        <span class="fw-bold fs-4 text-warning-emphasis lh-1 mb-1 d-block" x-text="wh.pending"></span>
-                                        <small class="text-warning-emphasis opacity-75 fw-medium" style="font-size: 0.75rem;" x-text="`₹ ${formatCurrency(wh.pending_amount)}`"></small>
-                                        <i class="bi bi-caret-right-fill position-absolute top-50 start-100 translate-middle text-warning opacity-50 d-none d-sm-block" style="font-size: 1.5rem; transform: translate(-50%, -50%) !important; z-index: 2;"></i>
+                                    <div class="warehouse-status-tile rounded-3 border border-warning-subtle bg-warning-subtle text-warning-emphasis p-3">
+                                        <span class="d-block small fw-semibold">Pending</span>
+                                        <span class="d-block fs-4 fw-bold my-1" x-text="wh.pending ?? 0"></span>
+                                        <span class="d-block small" x-text="`₹ ${formatCurrency(wh.pending_amount ?? 0)}`"></span>
                                     </div>
                                     @endcan
-
-                                    <!-- Confirmed -->
+                                    @can('orders.view.unfulfillable')
+                                    <div class="warehouse-status-tile rounded-3 border border-danger-subtle bg-danger-subtle text-danger-emphasis p-3">
+                                        <span class="d-block small fw-semibold">Unfulfillable (OOS)</span>
+                                        <span class="d-block fs-4 fw-bold my-1" x-text="wh.unfulfillable ?? 0"></span>
+                                        <span class="d-block small" x-text="`₹ ${formatCurrency(wh.unfulfillable_amount ?? 0)}`"></span>
+                                    </div>
+                                    @endcan
+                                    @can('orders.view.pending_confirmation')
+                                    <div class="warehouse-status-tile rounded-3 border border-info-subtle bg-info-subtle text-info-emphasis p-3">
+                                        <span class="d-block small fw-semibold">Pending Confirmation</span>
+                                        <span class="d-block fs-4 fw-bold my-1" x-text="wh.pending_confirmation ?? 0"></span>
+                                        <span class="d-block small" x-text="`₹ ${formatCurrency(wh.pending_confirmation_amount ?? 0)}`"></span>
+                                    </div>
+                                    @endcan
                                     @can('orders.view.confirmed')
-                                    <div class="flex-fill p-3 rounded-4 bg-info bg-opacity-10 border border-info border-opacity-25 d-flex flex-column text-center position-relative transition-hover" style="min-width: 130px;">
-                                        <span class="small text-info-emphasis fw-bold mb-2 text-uppercase tracking-wide" style="font-size: 0.65rem;">Confirmed</span>
-                                        <span class="fw-bold fs-4 text-info-emphasis lh-1 mb-1 d-block" x-text="wh.confirmed"></span>
-                                        <small class="text-info-emphasis opacity-75 fw-medium" style="font-size: 0.75rem;" x-text="`₹ ${formatCurrency(wh.confirmed_amount)}`"></small>
-                                        <i class="bi bi-caret-right-fill position-absolute top-50 start-100 translate-middle text-info opacity-50 d-none d-sm-block" style="font-size: 1.5rem; transform: translate(-50%, -50%) !important; z-index: 2;"></i>
+                                    <div class="warehouse-status-tile rounded-3 border border-info-subtle bg-info-subtle text-info-emphasis p-3">
+                                        <span class="d-block small fw-semibold">Confirmed</span>
+                                        <span class="d-block fs-4 fw-bold my-1" x-text="wh.confirmed ?? 0"></span>
+                                        <span class="d-block small" x-text="`₹ ${formatCurrency(wh.confirmed_amount ?? 0)}`"></span>
                                     </div>
                                     @endcan
-
-                                    <!-- Processing -->
                                     @can('orders.view.processing')
-                                    <div class="flex-fill p-3 rounded-4 bg-primary bg-opacity-10 border border-primary border-opacity-25 d-flex flex-column text-center position-relative transition-hover" style="min-width: 130px;">
-                                        <span class="small text-primary-emphasis fw-bold mb-2 text-uppercase tracking-wide" style="font-size: 0.65rem;">Processing</span>
-                                        <span class="fw-bold fs-4 text-primary-emphasis lh-1 mb-1 d-block" x-text="wh.processing"></span>
-                                        <small class="text-primary-emphasis opacity-75 fw-medium" style="font-size: 0.75rem;" x-text="`₹ ${formatCurrency(wh.processing_amount)}`"></small>
-                                        <i class="bi bi-caret-right-fill position-absolute top-50 start-100 translate-middle text-primary opacity-50 d-none d-sm-block" style="font-size: 1.5rem; transform: translate(-50%, -50%) !important; z-index: 2;"></i>
+                                    <div class="warehouse-status-tile rounded-3 border border-primary-subtle bg-primary-subtle text-primary-emphasis p-3">
+                                        <span class="d-block small fw-semibold">Processing</span>
+                                        <span class="d-block fs-4 fw-bold my-1" x-text="wh.processing ?? 0"></span>
+                                        <span class="d-block small" x-text="`₹ ${formatCurrency(wh.processing_amount ?? 0)}`"></span>
                                     </div>
                                     @endcan
-
-                                    <!-- Ready -->
                                     @can('orders.view.ready_to_ship')
-                                    <div class="flex-fill p-3 rounded-4 bg-warning-subtle bg-opacity-50 border border-warning border-opacity-25 d-flex flex-column text-center position-relative transition-hover" style="min-width: 130px;">
-                                        <span class="small text-warning-emphasis fw-bold mb-2 text-uppercase tracking-wide" style="font-size: 0.65rem;">Ready</span>
-                                        <span class="fw-bold fs-4 text-warning-emphasis lh-1 mb-1 d-block" x-text="wh.ready_to_ship"></span>
-                                        <small class="text-warning-emphasis opacity-75 fw-medium" style="font-size: 0.75rem;" x-text="`₹ ${formatCurrency(wh.ready_to_ship_amount)}`"></small>
-                                        <i class="bi bi-caret-right-fill position-absolute top-50 start-100 translate-middle text-warning opacity-50 d-none d-sm-block" style="font-size: 1.5rem; transform: translate(-50%, -50%) !important; z-index: 2;"></i>
+                                    <div class="warehouse-status-tile rounded-3 border border-warning-subtle bg-warning-subtle text-warning-emphasis p-3">
+                                        <span class="d-block small fw-semibold">Ready to Ship</span>
+                                        <span class="d-block fs-4 fw-bold my-1" x-text="wh.ready_to_ship ?? 0"></span>
+                                        <span class="d-block small" x-text="`₹ ${formatCurrency(wh.ready_to_ship_amount ?? 0)}`"></span>
                                     </div>
                                     @endcan
-
-                                    <!-- Dispatched -->
                                     @can('orders.view.dispatched')
-                                    <div class="flex-fill p-3 rounded-4 bg-secondary bg-opacity-10 border border-secondary border-opacity-25 d-flex flex-column text-center position-relative transition-hover" style="min-width: 130px;">
-                                        <span class="small text-secondary-emphasis fw-bold mb-2 text-uppercase tracking-wide" style="font-size: 0.65rem;">Dispatched</span>
-                                        <span class="fw-bold fs-4 text-secondary-emphasis lh-1 mb-1 d-block" x-text="wh.dispatched"></span>
-                                        <small class="text-secondary-emphasis opacity-75 fw-medium" style="font-size: 0.75rem;" x-text="`₹ ${formatCurrency(wh.dispatched_amount)}`"></small>
-                                        <i class="bi bi-caret-right-fill position-absolute top-50 start-100 translate-middle text-secondary opacity-50 d-none d-sm-block" style="font-size: 1.5rem; transform: translate(-50%, -50%) !important; z-index: 2;"></i>
+                                    <div class="warehouse-status-tile rounded-3 border border-secondary-subtle bg-secondary-subtle text-secondary-emphasis p-3">
+                                        <span class="d-block small fw-semibold">Dispatched</span>
+                                        <span class="d-block fs-4 fw-bold my-1" x-text="wh.dispatched ?? 0"></span>
+                                        <span class="d-block small" x-text="`₹ ${formatCurrency(wh.dispatched_amount ?? 0)}`"></span>
                                     </div>
                                     @endcan
-
-                                    <!-- Delivered -->
+                                    @can('orders.view.delivery_attempted')
+                                    <div class="warehouse-status-tile rounded-3 border border-warning-subtle bg-warning-subtle text-warning-emphasis p-3">
+                                        <span class="d-block small fw-semibold">Delivery Attempted</span>
+                                        <span class="d-block fs-4 fw-bold my-1" x-text="wh.delivery_attempted ?? 0"></span>
+                                        <span class="d-block small" x-text="`₹ ${formatCurrency(wh.delivery_attempted_amount ?? 0)}`"></span>
+                                    </div>
+                                    @endcan
                                     @can('orders.view.delivered')
-                                    <div class="flex-fill p-3 rounded-4 bg-success bg-opacity-10 border border-success border-opacity-25 d-flex flex-column text-center transition-hover" style="min-width: 130px;">
-                                        <span class="small text-success-emphasis fw-bold mb-2 text-uppercase tracking-wide" style="font-size: 0.65rem;">Delivered</span>
-                                        <span class="fw-bold fs-4 text-success-emphasis lh-1 mb-1 d-block" x-text="wh.delivered"></span>
-                                        <small class="text-success-emphasis opacity-75 fw-medium" style="font-size: 0.75rem;" x-text="`₹ ${formatCurrency(wh.delivered_amount)}`"></small>
+                                    <div class="warehouse-status-tile rounded-3 border border-success-subtle bg-success-subtle text-success-emphasis p-3">
+                                        <span class="d-block small fw-semibold">Delivered</span>
+                                        <span class="d-block fs-4 fw-bold my-1" x-text="wh.delivered ?? 0"></span>
+                                        <span class="d-block small" x-text="`₹ ${formatCurrency(wh.delivered_amount ?? 0)}`"></span>
                                     </div>
                                     @endcan
-                                </div>
-                                
-                                <!-- Non-Lifecycle Statuses -->
-                                <div class="d-flex gap-3 mt-3">
                                     @can('orders.view.returned')
-                                    <div class="d-flex align-items-center gap-2" x-show="wh.returned > 0">
-                                        <div class="bg-secondary rounded-circle" style="width: 8px; height: 8px;"></div>
-                                        <span class="small text-secondary-emphasis fw-medium">Returned: <span x-text="wh.returned"></span></span>
+                                    <div class="warehouse-status-tile rounded-3 border border-secondary-subtle bg-secondary-subtle text-secondary-emphasis p-3">
+                                        <span class="d-block small fw-semibold">Returned</span>
+                                        <span class="d-block fs-4 fw-bold my-1" x-text="wh.returned ?? 0"></span>
+                                        <span class="d-block small" x-text="`₹ ${formatCurrency(wh.returned_amount ?? 0)}`"></span>
                                     </div>
                                     @endcan
                                     @can('orders.view.cancelled')
-                                    <div class="d-flex align-items-center gap-2" x-show="wh.cancelled > 0">
-                                        <div class="bg-secondary rounded-circle" style="width: 8px; height: 8px;"></div>
-                                        <span class="small text-body-emphasis fw-medium">Cancelled: <span x-text="wh.cancelled"></span></span>
+                                    <div class="warehouse-status-tile rounded-3 border border-danger-subtle bg-danger-subtle text-danger-emphasis p-3">
+                                        <span class="d-block small fw-semibold">Cancelled</span>
+                                        <span class="d-block fs-4 fw-bold my-1" x-text="wh.cancelled ?? 0"></span>
+                                        <span class="d-block small" x-text="`₹ ${formatCurrency(wh.cancelled_amount ?? 0)}`"></span>
                                     </div>
                                     @endcan
                                 </div>
+                                @can('orders.view.return_requested')
+                                <div class="mt-3 p-3 rounded-3 border border-danger-subtle bg-danger-subtle text-danger-emphasis">
+                                    <span class="fw-semibold">Open Return Requests: </span>
+                                    <span x-text="`${wh.return_requested ?? 0} order(s) · ₹ ${formatCurrency(wh.return_requested_amount ?? 0)}`"></span>
+                                </div>
+                                @endcan
                             </div>
                         </div>
                     </div>
@@ -550,20 +561,21 @@
 </div>
 
 <!-- Orders Table -->
-<div class="card">
+<div class="card orders-directory">
     <div class="card-header">
-        <div class="row align-items-center">
+        <div class="row align-items-center g-3">
             <div class="col">
                 <h2 class="h5 card-title mb-0">All Orders</h2>
             </div>
-            <div class="col-auto">
-                <div class="d-flex flex-wrap gap-2 justify-content-end">
+            <div class="col-12">
+                <div class="orders-quick-filters d-flex flex-wrap gap-2">
                     <!-- Search -->
-                    <div class="position-relative">
-                        <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-2 text-muted z-1" style="font-size: 0.85rem;"></i>
-                        <input type="search" 
+                    <div class="orders-search position-relative">
+                        <label for="ordersSearch" class="orders-filter-label">Search</label>
+                        <i class="bi bi-search orders-search-icon position-absolute start-0 ms-2 text-muted z-1" style="font-size: 0.85rem;"></i>
+                        <input id="ordersSearch" type="search"
                                class="form-control form-control-sm ps-4" 
-                               placeholder="Search orders, customers, or tracking ID..."
+                               aria-label="Search orders" placeholder="Search orders, customers, or tracking ID..."
                                x-model="searchQuery"
                                @input="filterOrdersDebounced()"
                                style="width: 200px;">
@@ -572,7 +584,8 @@
                     <!-- Status Filter -->
                     @can('orders.filter_status')
                     <div class="position-relative" @click.away="showStatusDropdown = false" :style="showStatusDropdown ? 'z-index: 1050;' : ''">
-                        <div class="form-control form-control-sm d-flex flex-nowrap align-items-center gap-1" style="min-height: 31px; cursor: pointer; width: 150px; overflow: hidden;" @click="showStatusDropdown = !showStatusDropdown">
+                        <span class="orders-filter-label">Status</span>
+                        <div role="button" tabindex="0" aria-label="Order statuses" :aria-expanded="showStatusDropdown.toString()" @keydown.enter.prevent="showStatusDropdown = !showStatusDropdown" @keydown.space.prevent="showStatusDropdown = !showStatusDropdown" @keydown.escape="showStatusDropdown = false" class="orders-status-trigger position-relative form-control form-control-sm d-flex flex-nowrap align-items-center gap-1" style="min-height: 31px; cursor: pointer; width: 150px; overflow: hidden;" @click="showStatusDropdown = !showStatusDropdown">
                             <template x-if="statusFilter.length === 0">
                                 <span class="text-body-secondary" style="font-size: 13px;">No Statuses</span>
                             </template>
@@ -591,14 +604,14 @@
                             </template>
                             <i class="bi bi-chevron-down position-absolute text-muted" style="right: 8px; font-size: 12px; top: 50%; transform: translateY(-50%);"></i>
                         </div>
-                        <div x-show="showStatusDropdown" class="position-absolute bg-body border rounded shadow-lg mt-1" style="max-height: 250px; overflow-y: auto; z-index: 1050; min-width: 180px; right: 0;">
+                        <div x-cloak x-show="showStatusDropdown" class="position-absolute bg-body border rounded shadow-lg mt-1" style="max-height: 250px; overflow-y: auto; z-index: 1050; min-width: 180px; right: 0;">
                             <div class="px-3 py-2 cursor-pointer border-bottom bg-body-tertiary d-flex align-items-center" @click.stop="toggleAllFilter('status')">
                                 <input type="checkbox" :checked="statusFilter.length > 0 && statusFilter.length === allowedFilterStatuses.length" class="me-2" style="cursor: pointer;">
                                 <span style="font-size: 12px; font-weight: bold;">Select All</span>
                             </div>
                             <template x-for="status in allowedFilterStatuses" :key="status">
                                 <div class="px-3 py-1 cursor-pointer custom-hover-bg d-flex align-items-center" @click.stop="toggleFilter('status', status)">
-                                    <input type="checkbox" :checked="statusFilter.includes(status)" class="me-2" style="cursor: pointer;">
+                                    <input type="checkbox" :aria-label="status.replace(/_/g, ' ')" :checked="statusFilter.includes(status)" class="me-2" style="cursor: pointer;">
                                     <span style="font-size: 12px;" x-text="status.charAt(0).toUpperCase() + status.slice(1).replace(/_/g, ' ')"></span>
                                 </div>
                             </template>
@@ -608,9 +621,9 @@
                     
                     <!-- Date Range -->
                     @can('orders.filter_date')
-                    <select class="form-select form-select-sm" 
-                            x-tom-select
-                            x-model="dateFilter" 
+                    <div class="orders-filter-field"><label for="ordersDateRange" class="orders-filter-label">Order date</label>
+                    <select id="ordersDateRange" class="form-select form-select-sm"
+                            aria-label="Order date range" x-model="dateFilter"
                             @change="onDatePresetChange()"
                             style="width: 150px;">
                         <option value="">All Dates</option>
@@ -621,20 +634,20 @@
                         <option value="this_month">This Month</option>
                         <option value="last_month">Last Month</option>
                         <option value="this_year">This Year</option>
-                    </select>
+                    </select></div>
                     @endcan
 
                     <!-- Items Per Page -->
-                    <select class="form-select form-select-sm"
-                            x-tom-select
-                            x-model.number="itemsPerPage"
+                    <div class="orders-filter-field"><label for="ordersPageSize" class="orders-filter-label">Rows per page</label>
+                    <select id="ordersPageSize" class="form-select form-select-sm"
+                            aria-label="Orders per page" x-model.number="itemsPerPage"
                             @change="filterOrders()"
                             style="width: 120px;">
                         <option value="25">25 / page</option>
                         <option value="50">50 / page</option>
                         <option value="100">100 / page</option>
                         <option value="200">200 / page</option>
-                    </select>
+                    </select></div>
 
 
 
@@ -644,7 +657,7 @@
                             :class="hasActiveAdvancedFilters() ? 'btn-primary' : 'btn-outline-secondary'"
                             type="button"
                             data-bs-toggle="collapse"
-                            data-bs-target="#advancedFilters"
+                            data-bs-target="#advancedFilters" aria-controls="advancedFilters" aria-label="Advanced filters"
                             aria-expanded="false">
                         <i class="bi bi-funnel me-1"></i>Filters
                     </button>
@@ -672,7 +685,7 @@
                             </div>
                         </template>
                         <div class="flex-grow-1 position-relative" style="min-width: 50px;">
-                            <input x-ref="productSearch" type="text" x-model="productSearch" @focus="showProductDropdown = true" placeholder="Search Products..." class="border-0 w-100 bg-transparent text-body" style="font-size: 12px; outline: none !important; box-shadow: none;">
+                            <input x-ref="productSearch" type="text" aria-label="Search products" x-model="productSearch" @focus="showProductDropdown = true" placeholder="Search Products..." class="border-0 w-100 bg-transparent text-body" style="font-size: 12px; outline: none !important; box-shadow: none;">
                         </div>
                     </div>
                     <div x-show="showProductDropdown && filteredProducts.length > 0" class="position-absolute w-100 bg-body border rounded shadow-lg mt-1" style="max-height: 200px; overflow-y: auto; z-index: 1050;">
@@ -682,7 +695,7 @@
                         </div>
                         <template x-for="product in filteredProducts" :key="product.id">
                             <div class="px-3 py-1 cursor-pointer custom-hover-bg d-flex align-items-center" @click.stop="toggleFilter('product', product.id)">
-                                <input type="checkbox" :checked="productFilter.includes(product.id)" class="me-2" style="cursor: pointer;">
+                                <input type="checkbox" :aria-label="product.name" :checked="productFilter.includes(product.id)" class="me-2" style="cursor: pointer;">
                                 <span style="font-size: 12px;" x-text="product.name + ' (' + product.sku + ')'"></span>
                             </div>
                         </template>
@@ -694,7 +707,7 @@
                 @can('orders.filter_fulfillment')
                 <div class="col-md-3">
                     <label class="form-label small fw-semibold text-body-secondary">Fulfillment Status</label>
-                    <select class="form-select form-select-sm" x-tom-select x-model="fulfillmentFilter" @change="filterOrders()">
+                    <select class="form-select form-select-sm" x-tom-select aria-label="Fulfillment status" x-model="fulfillmentFilter" @change="filterOrders()">
                         <option value="">All</option>
                         <option value="fulfillable">Fulfillable</option>
                         <option value="unfulfillable">Unfulfillable</option>
@@ -716,7 +729,7 @@
                             </div>
                         </template>
                         <div class="flex-grow-1 position-relative" style="min-width: 50px;">
-                            <input x-ref="carrierSearch" type="text" x-model="carrierSearch" @focus="showCarrierDropdown = true" placeholder="Search Carriers..." class="border-0 w-100 bg-transparent text-body" style="font-size: 12px; outline: none !important; box-shadow: none;">
+                            <input x-ref="carrierSearch" type="text" aria-label="Search carriers" x-model="carrierSearch" @focus="showCarrierDropdown = true" placeholder="Search Carriers..." class="border-0 w-100 bg-transparent text-body" style="font-size: 12px; outline: none !important; box-shadow: none;">
                         </div>
                     </div>
                     <div x-show="showCarrierDropdown && filteredCarriers.length > 0" class="position-absolute w-100 bg-body border rounded shadow-lg mt-1" style="max-height: 200px; overflow-y: auto; z-index: 1050;">
@@ -726,7 +739,7 @@
                         </div>
                         <template x-for="carrier in filteredCarriers" :key="carrier">
                             <div class="px-3 py-1 cursor-pointer custom-hover-bg d-flex align-items-center" @click.stop="toggleFilter('carrier', carrier)">
-                                <input type="checkbox" :checked="carrierFilter.includes(carrier)" class="me-2" style="cursor: pointer;">
+                                <input type="checkbox" :aria-label="carrier" :checked="carrierFilter.includes(carrier)" class="me-2" style="cursor: pointer;">
                                 <span style="font-size: 12px;" x-text="carrier"></span>
                             </div>
                         </template>
@@ -748,7 +761,7 @@
                             </div>
                         </template>
                         <div class="flex-grow-1 position-relative" style="min-width: 50px;">
-                            <input x-ref="warehouseSearch" type="text" x-model="warehouseSearch" @focus="showWarehouseDropdown = true" placeholder="Search Warehouses..." class="border-0 w-100 bg-transparent text-body" style="font-size: 12px; outline: none !important; box-shadow: none;">
+                            <input x-ref="warehouseSearch" type="text" aria-label="Search warehouses" x-model="warehouseSearch" @focus="showWarehouseDropdown = true" placeholder="Search Warehouses..." class="border-0 w-100 bg-transparent text-body" style="font-size: 12px; outline: none !important; box-shadow: none;">
                         </div>
                     </div>
                     <div x-show="showWarehouseDropdown && filteredWarehouses.length > 0" class="position-absolute w-100 bg-body border rounded shadow-lg mt-1" style="max-height: 200px; overflow-y: auto; z-index: 1050;">
@@ -758,7 +771,7 @@
                         </div>
                         <template x-for="warehouse in filteredWarehouses" :key="warehouse.id">
                             <div class="px-3 py-1 cursor-pointer custom-hover-bg d-flex align-items-center" @click.stop="toggleFilter('warehouse', warehouse.id)">
-                                <input type="checkbox" :checked="warehouseFilter.includes(warehouse.id)" class="me-2" style="cursor: pointer;">
+                                <input type="checkbox" :aria-label="warehouse.name" :checked="warehouseFilter.includes(warehouse.id)" class="me-2" style="cursor: pointer;">
                                 <span style="font-size: 12px;" x-text="warehouse.name"></span>
                             </div>
                         </template>
@@ -770,23 +783,23 @@
                 @can('orders.filter_date')
                 <div class="col-md-3">
                     <label class="form-label small fw-semibold text-body-secondary">From Date</label>
-                    <input type="date" class="form-control form-control-sm" x-model="fromDate" @change="onCustomDateChange()">
+                    <input type="date" class="form-control form-control-sm" aria-label="From date" x-model="fromDate" @change="onCustomDateChange()">
                 </div>
 
                 <!-- Date Range To -->
                 <div class="col-md-3">
                     <label class="form-label small fw-semibold text-body-secondary">To Date</label>
-                    <input type="date" class="form-control form-control-sm" x-model="toDate" @change="onCustomDateChange()">
+                    <input type="date" class="form-control form-control-sm" aria-label="To date" x-model="toDate" @change="onCustomDateChange()">
                 </div>
 
                 <div class="col-md-3">
                     <label class="form-label small fw-semibold text-body-secondary">Dispatch From</label>
-                    <input type="date" class="form-control form-control-sm" x-model="dispatchFromDate" @change="onDispatchDateChange()">
+                    <input type="date" class="form-control form-control-sm" aria-label="Dispatch from" x-model="dispatchFromDate" @change="onDispatchDateChange()">
                 </div>
 
                 <div class="col-md-3">
                     <label class="form-label small fw-semibold text-body-secondary">Dispatch To</label>
-                    <input type="date" class="form-control form-control-sm" x-model="dispatchToDate" @change="onDispatchDateChange()">
+                    <input type="date" class="form-control form-control-sm" aria-label="Dispatch to" x-model="dispatchToDate" @change="onDispatchDateChange()">
                 </div>
                 @endcan
 
@@ -804,7 +817,7 @@
                             </div>
                         </template>
                         <div class="flex-grow-1 position-relative" style="min-width: 50px;">
-                            <input x-ref="stateSearch" type="text" x-model="stateSearch" @focus="showStateDropdown = true" placeholder="Search States..." class="border-0 w-100 bg-transparent text-body" style="font-size: 12px; outline: none !important; box-shadow: none;">
+                            <input x-ref="stateSearch" type="text" aria-label="Search states" x-model="stateSearch" @focus="showStateDropdown = true" placeholder="Search States..." class="border-0 w-100 bg-transparent text-body" style="font-size: 12px; outline: none !important; box-shadow: none;">
                         </div>
                     </div>
                     <div x-show="showStateDropdown && filteredStates.length > 0" class="position-absolute w-100 bg-body border rounded shadow-lg mt-1" style="max-height: 200px; overflow-y: auto; z-index: 1050;">
@@ -814,7 +827,7 @@
                         </div>
                         <template x-for="state in filteredStates" :key="state">
                             <div class="px-3 py-1 cursor-pointer custom-hover-bg d-flex align-items-center" @click.stop="toggleFilter('state', state)">
-                                <input type="checkbox" :checked="stateFilter.includes(state)" class="me-2" style="cursor: pointer;">
+                                <input type="checkbox" :aria-label="state" :checked="stateFilter.includes(state)" class="me-2" style="cursor: pointer;">
                                 <span style="font-size: 12px;" x-text="state"></span>
                             </div>
                         </template>
@@ -836,7 +849,7 @@
                             </div>
                         </template>
                         <div class="flex-grow-1 position-relative" style="min-width: 50px;">
-                            <input x-ref="districtSearch" type="text" x-model="districtSearch" @focus="showDistrictDropdown = true" placeholder="Search Districts..." class="border-0 w-100 bg-transparent text-body" style="font-size: 12px; outline: none !important; box-shadow: none;">
+                            <input x-ref="districtSearch" type="text" aria-label="Search districts" x-model="districtSearch" @focus="showDistrictDropdown = true" placeholder="Search Districts..." class="border-0 w-100 bg-transparent text-body" style="font-size: 12px; outline: none !important; box-shadow: none;">
                         </div>
                     </div>
                     <div x-show="showDistrictDropdown && filteredDistricts.length > 0" class="position-absolute w-100 bg-body border rounded shadow-lg mt-1" style="max-height: 200px; overflow-y: auto; z-index: 1050;">
@@ -846,7 +859,7 @@
                         </div>
                         <template x-for="district in filteredDistricts" :key="district">
                             <div class="px-3 py-1 cursor-pointer custom-hover-bg d-flex align-items-center" @click.stop="toggleFilter('district', district)">
-                                <input type="checkbox" :checked="districtFilter.includes(district)" class="me-2" style="cursor: pointer;">
+                                <input type="checkbox" :aria-label="district" :checked="districtFilter.includes(district)" class="me-2" style="cursor: pointer;">
                                 <span style="font-size: 12px;" x-text="district"></span>
                             </div>
                         </template>
@@ -868,7 +881,7 @@
                             </div>
                         </template>
                         <div class="flex-grow-1 position-relative" style="min-width: 50px;">
-                            <input x-ref="talukaSearch" type="text" x-model="talukaSearch" @focus="showTalukaDropdown = true" placeholder="Search Talukas..." class="border-0 w-100 bg-transparent text-body" style="font-size: 12px; outline: none !important; box-shadow: none;">
+                            <input x-ref="talukaSearch" type="text" aria-label="Search talukas" x-model="talukaSearch" @focus="showTalukaDropdown = true" placeholder="Search Talukas..." class="border-0 w-100 bg-transparent text-body" style="font-size: 12px; outline: none !important; box-shadow: none;">
                         </div>
                     </div>
                     <div x-show="showTalukaDropdown && filteredTalukas.length > 0" class="position-absolute w-100 bg-body border rounded shadow-lg mt-1" style="max-height: 200px; overflow-y: auto; z-index: 1050;">
@@ -878,7 +891,7 @@
                         </div>
                         <template x-for="taluka in filteredTalukas" :key="taluka">
                             <div class="px-3 py-1 cursor-pointer custom-hover-bg d-flex align-items-center" @click.stop="toggleFilter('taluka', taluka)">
-                                <input type="checkbox" :checked="talukaFilter.includes(taluka)" class="me-2" style="cursor: pointer;">
+                                <input type="checkbox" :aria-label="taluka" :checked="talukaFilter.includes(taluka)" class="me-2" style="cursor: pointer;">
                                 <span style="font-size: 12px;" x-text="taluka"></span>
                             </div>
                         </template>
@@ -900,7 +913,7 @@
                             </div>
                         </template>
                         <div class="flex-grow-1 position-relative" style="min-width: 50px;">
-                            <input x-ref="villageSearch" type="text" x-model="villageSearch" @focus="showVillageDropdown = true" placeholder="Search Villages..." class="border-0 w-100 bg-transparent text-body" style="font-size: 12px; outline: none !important; box-shadow: none;">
+                            <input x-ref="villageSearch" type="text" aria-label="Search villages" x-model="villageSearch" @focus="showVillageDropdown = true" placeholder="Search Villages..." class="border-0 w-100 bg-transparent text-body" style="font-size: 12px; outline: none !important; box-shadow: none;">
                         </div>
                     </div>
                     <div x-show="showVillageDropdown && filteredVillages.length > 0" class="position-absolute w-100 bg-body border rounded shadow-lg mt-1" style="max-height: 200px; overflow-y: auto; z-index: 1050;">
@@ -910,7 +923,7 @@
                         </div>
                         <template x-for="village in filteredVillages" :key="village">
                             <div class="px-3 py-1 cursor-pointer custom-hover-bg d-flex align-items-center" @click.stop="toggleFilter('village', village)">
-                                <input type="checkbox" :checked="villageFilter.includes(village)" class="me-2" style="cursor: pointer;">
+                                <input type="checkbox" :aria-label="village" :checked="villageFilter.includes(village)" class="me-2" style="cursor: pointer;">
                                 <span style="font-size: 12px;" x-text="village"></span>
                             </div>
                         </template>
@@ -1052,16 +1065,18 @@
         </div>
 
         <!-- Table -->
-        <div class="table-responsive">
+        <p class="orders-table-hint small text-body-secondary px-3 py-2 mb-0 border-bottom"><i class="bi bi-arrow-left-right me-2" aria-hidden="true"></i>Scroll horizontally to view all order details.</p>
+        <div class="table-responsive orders-table-scroll" tabindex="0" role="region" aria-label="Orders table" :aria-busy="isLoading.toString()">
             <table class="table table-hover mb-0">
+                <colgroup><col style="width:40px"><col style="width:205px"><col style="width:210px"><col style="width:165px"><col style="width:190px"><col style="width:95px"><col style="width:150px"><col style="width:120px"><col style="width:85px"></colgroup>
                 <thead class="table-light">
                     <tr>
                         <th style="width: 40px;">
                             <input type="checkbox" 
                                    class="form-check-input"
                                    style="cursor: pointer; appearance: auto; -webkit-appearance: checkbox;"
-                                   @change="toggleAll($event.target.checked)"
-                                   :checked="selectedOrders.length === orders.length && orders.length > 0">
+                                   aria-label="Select all orders on this page" :disabled="isLoading || !orders.length" @change="toggleAll($event.target.checked)"
+                                   :checked="orders.length > 0 && orders.every(o => selectedOrders.includes(String(o.id)))" x-effect="$el.indeterminate = orders.some(o => selectedOrders.includes(String(o.id))) && !orders.every(o => selectedOrders.includes(String(o.id)))">
                         </th>
                         <th scope="col"
                             role="button"
@@ -1113,12 +1128,12 @@
                                 <input type="checkbox" 
                                        class="form-check-input"
                                        style="cursor: pointer; appearance: auto; -webkit-appearance: checkbox;"
-                                       :value="String(order.id)"
+                                       :aria-label="'Select order ' + order.orderNumber" :value="String(order.id)"
                                        x-model="selectedOrders">
                             </td>
                             <td>
                                 <div class="d-inline-flex align-items-center gap-1">
-                                    <a href="#" class="fw-bold text-decoration-none text-primary" @click.prevent="viewOrder(order)" x-text="order.orderNumber"></a>
+                                    <a href="#" class="fw-bold text-decoration-none text-primary text-nowrap" @click.prevent="viewOrder(order)" x-text="order.orderNumber"></a>
                                     <i class="bi opacity-50 cursor-pointer text-primary-hover" x-data="{ copied: false }" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'" style="font-size: 0.85em;" title="Copy" @click="copyText(order.orderNumber).then((success) => { if (success) { copied = true; setTimeout(() => copied = false, 2000); } })"></i>
                                 </div>
                                 <div class="d-flex align-items-center flex-wrap gap-1 mt-1">
@@ -1139,7 +1154,7 @@
                                          :alt="order.createdBy.name">
                                     <div>
                                         <div class="fw-medium small" x-text="order.createdBy.name"></div>
-                                        <small class="text-muted cursor-pointer d-inline-flex align-items-center gap-1" title="Click to copy" x-data="{ copied: false }" @click="copyText(order.createdBy.email).then((success) => { if (success) { copied = true; setTimeout(() => copied = false, 2000); } })"><span x-text="order.createdBy.email"></span><i class="bi opacity-50" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'" style="font-size: 0.8em;"></i></small>
+                                        <small class="text-muted cursor-pointer d-inline-flex align-items-center gap-1" title="Click to copy" x-data="{ copied: false }" @click="copyText(order.createdBy.email).then((success) => { if (success) { copied = true; setTimeout(() => copied = false, 2000); } })"><span class="orders-creator-email" :title="order.createdBy.email" x-text="order.createdBy.email"></span><i class="bi opacity-50" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'" style="font-size: 0.8em;"></i></small>
                                     </div>
                                 </div>
                             </td>
@@ -1158,10 +1173,10 @@
                                             </span>
                                         </template>
                                     </div>
-                                    <small class="text-muted d-block mt-1" style="max-width: 200px;" x-text="order.items.length > 0 ? order.items[0].name + (order.itemCount > 1 ? ' +' + (order.itemCount - 1) + ' more' : '') : '—'"></small>
+                                    <small class="orders-item-description text-muted d-block mt-1" :title="order.items.length ? order.items[0].name : ''" style="max-width: 200px;" x-text="order.items.length > 0 ? order.items[0].name + (order.itemCount > 1 ? ' +' + (order.itemCount - 1) + ' more' : '') : '—'"></small>
                                 </div>
                             </td>
-                            <td class="fw-medium small" x-text="`₹ ${order.total}`"></td>
+                            <td class="fw-medium small text-nowrap" x-text="`₹ ${order.total}`"></td>
                             <td>
                                 <span class="badge small" 
                                       :class="`bg-${getStatusTheme(order.status)}-subtle text-${getStatusTheme(order.status)}-emphasis border border-${getStatusTheme(order.status)}-subtle`"
@@ -1239,8 +1254,8 @@
                             <td>
                                 <div class="dropdown">
                                     <button class="btn btn-sm btn-outline-secondary dropdown-toggle" 
-                                            type="button" 
-                                            data-bs-toggle="dropdown">
+                                            type="button" :aria-label="'Actions for ' + order.orderNumber"
+                                            data-bs-config='{"popperConfig":{"strategy":"fixed"}}' data-bs-toggle="dropdown">
                                         <i class="bi bi-three-dots"></i>
                                     </button>
                                     <ul class="dropdown-menu dropdown-menu-end">
@@ -1326,29 +1341,30 @@
                             </td>
                         </tr>
                     </template>
-                    <template x-if="orders.length === 0">
+                    <template x-if="orders.length === 0 && !isLoading">
                         <tr>
-                            <td colspan="8" class="text-center py-5 text-muted">
+                            <td colspan="9" class="text-center py-5 text-muted">
                                 <i class="bi bi-inbox fs-1 d-block mb-2"></i>
                                 No orders found matching current criteria.
                             </td>
                         </tr>
                     </template>
+                    <template x-if="orders.length === 0 && isLoading"><tr><td colspan="9" class="text-center text-body-secondary py-5" role="status"><span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>Loading orders…</td></tr></template>
                 </tbody>
             </table>
         </div>
 
         <!-- Pagination -->
-        <div class="d-flex justify-content-between align-items-center p-3 border-top">
+        <div class="orders-pagination d-flex flex-wrap gap-3 justify-content-between align-items-center p-3 border-top">
             <div class="text-muted small">
-                Showing <span x-text="(currentPage - 1) * itemsPerPage + 1"></span> to 
+                Showing <span x-text="totalOrders ? (currentPage - 1) * itemsPerPage + 1 : 0"></span> to
                 <span x-text="Math.min(currentPage * itemsPerPage, totalOrders)"></span> of 
                 <span x-text="totalOrders"></span> results
             </div>
-            <nav>
+            <nav aria-label="Orders pagination">
                 <ul class="pagination pagination-sm mb-0">
                     <li class="page-item" :class="{ 'disabled': currentPage === 1 }">
-                        <a class="page-link" href="#" @click.prevent="goToPage(currentPage - 1)">Previous</a>
+                        <button type="button" class="page-link" :disabled="currentPage <= 1 || isLoading" @click="goToPage(currentPage - 1)">Previous</button>
                     </li>
                     <template x-for="(page, index) in visiblePages" :key="`page-${index}`">
                         <li class="page-item" :class="{ 'active': page === currentPage, 'disabled': page === '...' }">
@@ -1356,7 +1372,7 @@
                         </li>
                     </template>
                     <li class="page-item" :class="{ 'disabled': currentPage === totalPages }">
-                        <a class="page-link" href="#" @click.prevent="goToPage(currentPage + 1)">Next</a>
+                        <button type="button" class="page-link" :disabled="currentPage >= totalPages || isLoading" @click="goToPage(currentPage + 1)">Next</button>
                     </li>
                 </ul>
             </nav>
@@ -1368,21 +1384,3 @@
 @include('orders.partials.modals')
 </div> <!-- End Order Management Container -->
 @endsection
-
-@push('scripts')
-<script>
-    document.addEventListener('show.bs.dropdown', function (event) {
-        var responsiveContainer = event.target.closest('.table-responsive');
-        if (responsiveContainer) {
-            responsiveContainer.style.overflow = 'visible';
-        }
-    });
-    
-    document.addEventListener('hide.bs.dropdown', function (event) {
-        var responsiveContainer = event.target.closest('.table-responsive');
-        if (responsiveContainer) {
-            responsiveContainer.style.overflow = '';
-        }
-    });
-</script>
-@endpush

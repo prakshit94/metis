@@ -36,7 +36,7 @@ const API_ROUTES = API_ROUTE_TEMPLATES.map(({ uri, action }) => ({
   action,
 }));
 const API_LOAD_ROUTES = API_ROUTES.filter(({ path }) =>
-  !/(\/export(?:\/|$)|\/bulk-print(?:\/|$)|\/pdf(?:\/|$)|\/import-template(?:\/|$)|\/preview(?:\/|$))/.test(path),
+  !path.startsWith('/docs/') && !/(\/export(?:\/|$)|\/bulk-print(?:\/|$)|\/pdf(?:\/|$)|\/import-template(?:\/|$)|\/preview(?:\/|$))/.test(path),
 );
 
 const peakVus = Number(__ENV.K6_PEAK_API_VUS || (PROFILE === 'stress' ? 20 : 5));
@@ -79,7 +79,7 @@ export const options = {
   summaryTrendStats: ['avg', 'med', 'p(90)', 'p(95)', 'p(99)', 'max'],
 };
 
-const expectedApiStatuses = http.expectedStatuses(200, 201, 202, 204, 301, 302, 304, 400, 404, 422);
+const expectedApiStatuses = http.expectedStatuses(200, 201, 202, 204, 304, 400, 404, 422);
 
 function headers(data) {
   const result = {
@@ -96,6 +96,7 @@ function headers(data) {
 function request(route, data) {
   return http.get(`${BASE_URL}${route.path}`, {
     headers: headers(data),
+    redirects: 0,
     responseCallback: expectedApiStatuses,
     tags: { kind: 'api', route: route.template },
   });
@@ -106,8 +107,14 @@ function checkResponse(response, route) {
   const statusTag = String(response.status);
   apiRouteDuration.add(response.timings.duration, { route: routeTag, status: statusTag });
   apiRouteStatuses.add(1, { route: routeTag, status: statusTag });
+  const expected = {
+    '/api/orders/export': [200],
+    '/api/complaints/export': [200],
+    // No IDs/type are supplied: this GET can generate invoices when valid.
+    '/api/orders/bulk-print': [422],
+  }[route.template] || [200, 201, 202, 204, 304, 400, 404, 422];
   check(response, {
-    [`${route.template} did not return a server error`]: (r) => r.status < 500,
+    [`${route.template} returned an allowed HTTP status`]: (r) => expected.includes(r.status),
   });
 }
 
@@ -115,7 +122,7 @@ export function setup() {
   const apiToken = __ENV.K6_API_TOKEN || '';
   let cookieHeader = '';
 
-  if (!apiToken) {
+  if (!apiToken || (__ENV.K6_EMAIL && __ENV.K6_PASSWORD)) {
     const email = __ENV.K6_EMAIL;
     const password = __ENV.K6_PASSWORD;
     if (!email || !password) {
@@ -133,9 +140,9 @@ export function setup() {
     const loginResponse = http.post(
       `${BASE_URL}/login`,
       { _token: tokenMatch[1], email, password },
-      { redirects: 0, tags: { kind: 'auth', path: '/login' } },
+      { redirects: 0, headers: { Accept: 'application/json' }, tags: { kind: 'auth', path: '/login' } },
     );
-    if (![302, 303].includes(loginResponse.status)) {
+    if (![302, 303].includes(loginResponse.status) || String(loginResponse.headers.Location || '').split('?')[0].endsWith('/login')) {
       throw new Error(`Load-test account login failed (HTTP ${loginResponse.status}).`);
     }
 
@@ -149,6 +156,7 @@ export function setup() {
   const data = { cookieHeader, apiToken };
   const probe = http.get(`${BASE_URL}/api/dashboard`, {
     headers: headers(data),
+    redirects: 0,
     responseCallback: expectedApiStatuses,
     tags: { kind: 'auth', path: '/api/dashboard' },
   });

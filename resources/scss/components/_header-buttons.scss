@@ -81,3 +81,17 @@
     font-size: 0.875rem;
   }
 }
+
+// Header icons sit close together on small screens; anchor menus to the viewport
+// so opening a left-hand icon cannot push its menu outside the visible page.
+@media (max-width: 767.98px) {
+  .admin-header .header-floating-menu {
+    position: fixed !important;
+    inset: calc(var(--header-height) + 0.5rem) 0.5rem auto !important;
+    transform: none !important;
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: calc(100vw - 1rem);
+    margin-top: 0 !important;
+  }
+}

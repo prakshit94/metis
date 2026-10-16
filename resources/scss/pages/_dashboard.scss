@@ -83,3 +83,37 @@
 .btn-group [data-chart-period].active {
   z-index: 1;
 }
+
+body[data-page='dashboard'] {
+  .dashboard-filters .form-select {
+    width: auto;
+    padding-right: 2.25rem;
+  }
+
+  .dashboard-orders-scroll {
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+
+    > .table {
+      min-width: 960px;
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--bs-primary);
+      outline-offset: 2px;
+    }
+  }
+
+  .metric-card .h3 {
+    overflow-wrap: anywhere;
+  }
+}
+
+// Semantic text must retain contrast on the tinted lifecycle cards.
+body[data-page='dashboard'] #main-content {
+  @each $color in primary, success, info, warning, danger {
+    .text-#{$color} {
+      color: var(--bs-#{$color}-text-emphasis) !important;
+    }
+  }
+}

@@ -71,10 +71,15 @@ class PurchaseOrderController extends Controller implements HasMiddleware
             });
         }
 
+        $totals = $poQuery->toBase()->selectRaw("
+            COUNT(*) as total,
+            COALESCE(SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END), 0) as pending,
+            COALESCE(SUM(CASE WHEN status = 'received' THEN 1 ELSE 0 END), 0) as completed
+        ")->first();
         $stats = [
-            'total' => (clone $poQuery)->count(),
-            'pending' => (clone $poQuery)->where('status', 'pending')->count(),
-            'completed' => (clone $poQuery)->where('status', 'received')->count(),
+            'total' => (int) $totals->total,
+            'pending' => (int) $totals->pending,
+            'completed' => (int) $totals->completed,
         ];
 
         $suppliers = Supplier::select('id', 'company_name', 'firstname', 'lastname')->get();
