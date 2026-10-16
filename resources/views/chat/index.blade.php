@@ -32,11 +32,10 @@
             pollInterval: @js($pollInterval),
             currentUserData: @js($currentUserData),
         })"
-        x-init="init()"
     >
         <div class="row g-0 h-100">
             <!-- Left Sidebar: Conversations -->
-            <aside class="col-12 col-lg-3 flex-column border-end bg-body-tertiary h-100"
+            <aside class="col-12 col-lg-4 col-xl-3 flex-column border-end bg-body-tertiary h-100"
                    :class="activeConversation ? 'd-none d-lg-flex' : 'd-flex'">
                 <div class="p-3 border-bottom">
                     <div class="d-flex align-items-center justify-content-between mb-3">
@@ -92,11 +91,12 @@
                         </div>
                     </template>
 
+                    <div x-show="search && filteredConversations.length === 0 && searchResults.users.length === 0" x-cloak class="text-center p-4 text-muted" role="status">No chats or people found.</div>
                     <!-- Empty state -->
                     <div x-show="filteredConversations.length === 0 && !search" class="text-center p-5 text-muted">
                         <i class="bi bi-chat-dots fs-1 d-block mb-2 opacity-50"></i>
                         <p class="small mb-0">No conversations yet</p>
-                        <p class="small">Start a chat from the users panel</p>
+                        <p class="small">Search for a person above to start a chat</p>
                     </div>
 
                     <!-- Conversation List -->
@@ -107,7 +107,7 @@
                             onmouseover="if(this.className.indexOf('bg-primary') === -1) this.style.backgroundColor = 'var(--bs-secondary-bg)'"
                             onmouseout="if(this.className.indexOf('bg-primary') === -1) this.style.backgroundColor = ''">
                             <div class="position-relative flex-shrink-0">
-                                <img :src="getConversationPhotoUrl(conversation)" class="rounded-circle object-fit-cover shadow-sm border border-2 border-body" style="width: 42px; height: 42px; ">
+                                <img :src="getConversationPhotoUrl(conversation)" class="rounded-circle object-fit-cover shadow-sm border border-2 border-body flex-shrink-0" style="width: 42px; height: 42px; " alt="">
                                 <span x-show="isOnline(conversation)"
                                       class="position-absolute bottom-0 end-0 rounded-circle border-2 border-body bg-success"
                                       style="width:11px;height:11px;"></span>
@@ -141,34 +141,34 @@
             </aside>
 
             <!-- Center: Main Chat Area -->
-            <section class="col-12 col-lg-6 flex-column h-100 position-relative bg-body"
+            <section class="col-12 col-lg-8 col-xl-6 flex-column h-100 position-relative bg-body"
                      :class="activeConversation ? 'd-flex' : 'd-none d-lg-flex'">
                 <template x-if="activeConversation">
                     <div class="d-flex flex-column h-100">
                         <header class="d-flex align-items-center justify-content-between p-3 border-bottom shadow-sm z-1">
-                            <div class="d-flex align-items-center gap-3 min-w-0">
-                                <button type="button" class="btn btn-outline-secondary d-lg-none p-2 rounded-circle" @click="activeConversation = null; replyTo = null; errorMessage = ''">
+                            <div class="d-flex align-items-center gap-2 min-w-0 flex-grow-1 overflow-hidden">
+                                <button type="button" class="btn btn-outline-secondary d-lg-none p-2 rounded-circle" @click="if (!sendingMessage) { conversationDrafts[activeConversation.id] = { draft, attachments: pendingAttachments }; activeConversation = null; replyTo = null; errorMessage = ''; }" aria-label="Back to conversations">
                                     <i class="bi bi-arrow-left"></i>
                                 </button>
-                                <img :src="getConversationPhotoUrl(activeConversation)" class="rounded-circle object-fit-cover shadow-sm border border-2 border-body" style="width: 42px; height: 42px; ">
-                                <div class="min-w-0">
+                                <img :src="getConversationPhotoUrl(activeConversation)" class="rounded-circle object-fit-cover shadow-sm border border-2 border-body flex-shrink-0" style="width: 42px; height: 42px; " alt="">
+                                <div class="min-w-0 flex-grow-1">
                                     <div class="d-flex align-items-center gap-2">
                                         <h6 class="mb-0 fw-bold text-truncate flex-grow-1" x-text="conversationTitle(activeConversation)"></h6>
-                                        <small class="text-muted flex-shrink-0" style="font-size:12px;" x-show="conversationLocation(activeConversation)">
+                                        <small class="text-muted d-none d-xl-block text-truncate" style="font-size:12px; max-width:160px;" x-show="conversationLocation(activeConversation)">
                                             <i class="bi bi-geo-alt"></i> <span x-text="conversationLocation(activeConversation)"></span>
                                         </small>
                                     </div>
                                     <small class="text-muted text-truncate d-block" x-text="conversationSubtitle(activeConversation)"></small>
                                 </div>
                             </div>
-                            <div class="d-flex gap-2 shrink-0">
-                                <button type="button" @click="togglePin" class="btn btn-sm" :class="activeConversation.is_pinned ? 'btn-warning' : 'btn-outline-secondary'" :title="activeConversation.is_pinned ? 'Unpin chat' : 'Pin chat'">
+                            <div class="d-flex gap-1 flex-shrink-0 ms-2">
+                                <button type="button" @click="togglePin" class="btn btn-sm" :class="activeConversation.is_pinned ? 'btn-warning' : 'btn-outline-secondary'" :aria-label="activeConversation.is_pinned ? 'Unpin chat' : 'Pin chat'" :title="activeConversation.is_pinned ? 'Unpin chat' : 'Pin chat'">
                                     <i class="bi" :class="activeConversation.is_pinned ? 'bi-star-fill text-white' : 'bi-star'"></i>
                                 </button>
-                                <button type="button" @click="toggleArchive" class="btn btn-sm" :class="activeConversation.is_archived ? 'btn-secondary' : 'btn-outline-secondary'" :title="activeConversation.is_archived ? 'Unarchive chat' : 'Archive chat'">
+                                <button type="button" @click="toggleArchive" class="btn btn-sm" :class="activeConversation.is_archived ? 'btn-secondary' : 'btn-outline-secondary'" :aria-label="activeConversation.is_archived ? 'Unarchive chat' : 'Archive chat'" :title="activeConversation.is_archived ? 'Unarchive chat' : 'Archive chat'">
                                     <i class="bi" :class="activeConversation.is_archived ? 'bi-archive-fill text-white' : 'bi-archive'"></i>
                                 </button>
-                                <button type="button" x-show="activeConversation?.type === 'group'" @click="openGroupSettings" class="btn btn-outline-secondary btn-sm" title="Group settings">
+                                <button type="button" x-show="activeConversation?.type === 'group'" @click="openGroupSettings" class="btn btn-outline-secondary btn-sm" title="Group settings" aria-label="Group settings">
                                     <i class="bi bi-gear-fill"></i>
                                 </button>
                             </div>
@@ -228,8 +228,9 @@
                                                     <template x-for="attachment in message.attachments" :key="attachment.path || attachment.name">
                                                         <div>
                                                             <template x-if="isImageAttachment(attachment)">
-                                                                <a :href="formatAttachmentUrl(attachment.path)" target="_blank" class="d-block rounded overflow-hidden position-relative">
-                                                                    <img :src="formatAttachmentUrl(attachment.path)" class="img-fluid" style="max-height: 200px; object-fit: cover; width: 100%;">
+                                                                <a :href="formatAttachmentUrl(attachment.path)" target="_blank" class="d-block rounded overflow-hidden position-relative" x-data="{ previewFailed: false }" rel="noopener noreferrer" :aria-label="attachment.name || 'Open image attachment'">
+                                                                    <img x-show="!previewFailed" x-on:error="previewFailed = true" :src="formatAttachmentUrl(attachment.path)" :alt="attachment.name || 'Image attachment'" class="img-fluid" style="max-height: 200px; object-fit: cover; width: 100%;">
+                                                                    <span x-show="previewFailed" x-cloak class="d-block p-2 small text-break" :class="message.sender_id == currentUserId ? 'text-white' : 'text-body'">Preview unavailable. Open attachment</span>
                                                                 </a>
                                                             </template>
                                                             <template x-if="!isImageAttachment(attachment)">
@@ -309,22 +310,22 @@
                                 <input x-ref="attachmentInput" type="file" multiple class="d-none" @change="handleAttachmentSelection">
                                 <button type="button" @click="$refs.attachmentInput.click()"
                                         class="btn btn-outline-secondary rounded-circle flex-shrink-0 d-flex align-items-center justify-content-center"
-                                        style="width:40px;height:40px;" title="Attach">
+                                        style="width:40px;height:40px;" title="Attach" aria-label="Attach files">
                                     <i class="bi bi-paperclip"></i>
                                 </button>
                                 <textarea
                                     x-model="draft"
                                     x-ref="composer"
                                     rows="1"
-                                    @keydown.enter.prevent="!$event.shiftKey && sendMessage()"
+                                    @keydown.enter="if (!$event.shiftKey && !$event.isComposing) { $event.preventDefault(); sendMessage(); }"
                                     @input="$el.style.height = 'auto'; $el.style.height = Math.min($el.scrollHeight, 120) + 'px'"
-                                    placeholder="Type a message… (Enter to send, Shift+Enter for newline)"
+                                    placeholder="Type a message…" aria-label="Message" title="Enter to send, Shift+Enter for a new line"
                                     class="form-control flex-grow-1 chat-composer-textarea">
                                 </textarea>
                                 <button type="submit"
                                         :disabled="sendingMessage || (!(draft || '').trim() && !pendingAttachments.length)"
                                         class="btn btn-primary rounded-circle flex-shrink-0 d-flex align-items-center justify-content-center shadow-sm"
-                                        style="width:40px;height:40px;">
+                                        style="width:40px;height:40px;" aria-label="Send message">
                                     <span x-show="sendingMessage" class="spinner-border spinner-border-sm"></span>
                                     <i x-show="!sendingMessage" class="bi bi-send"></i>
                                 </button>
@@ -352,7 +353,7 @@
             </section>
 
             <!-- Right Sidebar: Online Users -->
-            <aside class="d-none d-lg-flex col-lg-3 flex-column border-start bg-body-tertiary h-100">
+            <aside class="d-none d-xl-flex col-xl-3 flex-column border-start bg-body-tertiary h-100">
                 <div class="p-3 border-bottom">
                     <div class="d-flex align-items-center justify-content-between mb-3">
                         <div>
@@ -763,6 +764,7 @@
                 : null,
 
             draft: '',
+            conversationDrafts: {},
             replyTo: null,
             editingMessageId: null,
             editingDraft: '',
@@ -789,8 +791,30 @@
             },
 
             pollTimer: null,
+            polling: false,
+            initialized: false,
+            selectionVersion: 0,
+            messageVersion: 0,
+
+            destroy() {
+                clearInterval(this.pollTimer);
+                this.selectionVersion++;
+                const attachments = new Set([
+                    ...this.pendingAttachments,
+                    ...Object.values(this.conversationDrafts).flatMap(value => value.attachments),
+                ]);
+                attachments.forEach(item => {
+                    if (item.previewUrl) URL.revokeObjectURL(item.previewUrl);
+                });
+            },
 
             init() {
+                if (this.initialized) return;
+                this.initialized = true;
+                this.$watch('draft', () => this.$nextTick(() => {
+                    const composer = this.$refs.composer;
+                    if (composer) { composer.style.height = 'auto'; composer.style.height = Math.min(composer.scrollHeight, 120) + 'px'; }
+                }));
                 this.$watch('filter', val => localStorage.setItem('metis_chat_filter_' + this.currentUserId, val));
                 this.$watch('userFilter', val => localStorage.setItem('metis_chat_userFilter_' + this.currentUserId, val));
                 this.$watch('userSort', val => localStorage.setItem('metis_chat_userSort_' + this.currentUserId, val));
@@ -931,6 +955,8 @@
             },
             
             async poll() {
+                if (this.polling) return;
+                this.polling = true;
                 try {
                     const [convRes, userRes] = await Promise.all([
                         axios.get('/api/chat/conversations'),
@@ -960,24 +986,29 @@
                         const updated = this.conversations.find(c => c.id == this.activeConversation.id);
                         if (updated) this.activeConversation = updated;
 
-                        const msgRes = await axios.get(`/api/chat/conversations/${this.activeConversation.id}/messages`);
+                        const conversationId = this.activeConversation.id;
+                        const selectionVersion = this.selectionVersion;
+                        const messageVersion = this.messageVersion;
+                        const scroller = this.$refs.messageScroller;
+                        const nearBottom = !scroller || scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < 80;
+                        const msgRes = await axios.get(`/api/chat/conversations/${conversationId}/messages`);
+                        if (this.activeConversation?.id != conversationId || this.selectionVersion !== selectionVersion || this.messageVersion !== messageVersion || this.sendingMessage) return;
                         // Backend returns paginated: { data: { data: [...], current_page, ... } }
                         const paginatedData = msgRes.data.data;
                         const newMessages = (Array.isArray(paginatedData)
                             ? paginatedData
                             : (paginatedData?.data || [])).slice().reverse();
-                        const lastOldId = this.messages.length ? this.messages[this.messages.length - 1]?.id : null;
-                        const lastNewId = newMessages.length ? newMessages[newMessages.length - 1]?.id : null;
-                        if (lastOldId != lastNewId) {
-                            this.messages = newMessages;
-                            this.scrollToBottom();
-                        }
+                        const lastOldId = this.messages.at(-1)?.id;
+                        this.messages = newMessages;
+                        if (nearBottom && lastOldId != newMessages.at(-1)?.id) this.scrollToBottom();
                     }
 
                     // Mark ourselves online
                     axios.post('/api/chat/active-status', { status: 'online' }).catch(() => {});
                 } catch (e) {
                     console.error('Poll failed:', e);
+                } finally {
+                    this.polling = false;
                 }
             },
 
@@ -992,6 +1023,15 @@
             },
             
             async selectConversation(conversation) {
+                // Keep an in-flight send and its attachments tied to their original chat.
+                if (this.sendingMessage) return;
+                const selectionVersion = ++this.selectionVersion;
+                if (this.activeConversation) {
+                    this.conversationDrafts[this.activeConversation.id] = { draft: this.draft, attachments: this.pendingAttachments };
+                }
+                const savedDraft = this.conversationDrafts[conversation.id];
+                this.draft = savedDraft?.draft || '';
+                this.pendingAttachments = savedDraft?.attachments || [];
                 this.activeConversation = conversation;
                 this.messages = [];
                 this.errorMessage = '';
@@ -1000,6 +1040,7 @@
 
                 try {
                     const res = await axios.get(`/api/chat/conversations/${conversation.id}/messages`);
+                    if (this.selectionVersion !== selectionVersion || this.activeConversation?.id != conversation.id) return;
                     // Backend returns paginated LengthAwarePaginator inside data key
                     const paginatedData = res.data.data;
                     this.messages = (Array.isArray(paginatedData)
@@ -1014,12 +1055,14 @@
                         conversation.unread_count = 0;
                     }
                 } catch (e) {
+                    if (this.selectionVersion !== selectionVersion || this.activeConversation?.id != conversation.id) return;
                     this.errorMessage = 'Failed to load messages. Please try again.';
                     console.error(e);
                 }
             },
             
             async startDirect(userId) {
+                if (this.startingUserId || this.sendingMessage) return;
                 this.startingUserId = userId;
                 this.errorMessage = '';
                 try {
@@ -1044,7 +1087,7 @@
             },
             
             handleAttachmentSelection(event) {
-                const files = Array.from(event.target.files || []);
+                const files = Array.from(event.target.files || []).slice(0, Math.max(0, 10 - this.pendingAttachments.length));
                 const processed = files.map(file => {
                     let previewUrl = null;
                     if (file.type.startsWith('image/')) {
@@ -1077,10 +1120,15 @@
             },
             
             async sendMessage() {
+                if (this.sendingMessage) return;
                 const draftContent = (this.draft || '').trim();
                 if (!draftContent && !this.pendingAttachments.length) return;
                 if (!this.activeConversation) return;
 
+                const conversationId = this.activeConversation.id;
+                const submittedDraft = this.draft;
+                const submittedAttachments = [...this.pendingAttachments];
+                const submittedReply = this.replyTo;
                 this.sendingMessage = true;
                 this.errorMessage = '';
 
@@ -1088,7 +1136,7 @@
                 // Backend validates: content, parent_id, files[]
                 if (draftContent) formData.append('content', draftContent);
                 if (this.replyTo?.id) formData.append('parent_id', this.replyTo.id);
-                this.pendingAttachments.forEach(item => {
+                submittedAttachments.forEach(item => {
                     if (item && item.file) {
                         formData.append('files[]', item.file);
                     }
@@ -1096,23 +1144,25 @@
 
                 try {
                     const res = await axios.post(
-                        `/api/chat/conversations/${this.activeConversation.id}/messages`,
+                        `/api/chat/conversations/${conversationId}/messages`,
                         formData,
                         { headers: { 'Content-Type': 'multipart/form-data' } }
                     );
                     const newMessage = res.data.data || res.data.message || res.data;
-                    this.messages.push(newMessage);
+                    this.messageVersion++;
+                    if (this.activeConversation?.id == conversationId && !this.messages.some(m => m.id == newMessage.id)) this.messages.push(newMessage);
 
                     // Cleanup
-                    this.draft = '';
-                    this.pendingAttachments.forEach(item => { if (item.previewUrl) URL.revokeObjectURL(item.previewUrl); });
-                    this.pendingAttachments = [];
+                    if (this.draft === submittedDraft) this.draft = '';
+                    submittedAttachments.forEach(item => { if (item.previewUrl) URL.revokeObjectURL(item.previewUrl); });
+                    this.pendingAttachments = this.pendingAttachments.filter(item => !submittedAttachments.includes(item));
+                    delete this.conversationDrafts[conversationId];
                     if (this.$refs.attachmentInput) this.$refs.attachmentInput.value = '';
-                    this.replyTo = null;
+                    if (this.replyTo === submittedReply) this.replyTo = null;
                     this.scrollToBottom();
 
                     // Update conversation's last message in sidebar
-                    const conv = this.conversations.find(c => c.id == this.activeConversation.id);
+                    const conv = this.conversations.find(c => c.id == conversationId);
                     if (conv) { conv.updated_at = newMessage.created_at; conv.last_message = newMessage; }
                 } catch (e) {
                     this.errorMessage = e.response?.data?.message || 'Failed to send message.';
@@ -1138,12 +1188,14 @@
             
             async saveEdit(message) {
                 if (!this.editingDraft.trim()) return;
+                const content = this.editingDraft;
                 
                 try {
-                    const res = await axios.put(`/api/chat/messages/${message.id}`, { content: this.editingDraft });
-                    message.content = this.editingDraft;
+                    const res = await axios.put(`/api/chat/messages/${message.id}`, { content });
+                    this.messageVersion++;
+                    message.content = content;
                     message.edited_at = new Date().toISOString();
-                    this.cancelEdit();
+                    if (this.editingMessageId == message.id && this.editingDraft === content) this.cancelEdit();
                 } catch (e) {
                     this.errorMessage = 'Failed to edit message';
                 }
@@ -1153,6 +1205,7 @@
                 this.busyMessageId = message.id;
                 try {
                     await axios.delete(`/api/chat/messages/${message.id}`);
+                    this.messageVersion++;
                     this.messages = this.messages.filter(m => m.id != message.id);
                 } catch (e) {
                     this.errorMessage = 'Failed to delete message';
@@ -1331,11 +1384,12 @@
             },
             
             scrollToBottom() {
-                setTimeout(() => {
-                    if (this.$refs.messageScroller) {
+                const selectionVersion = this.selectionVersion;
+                this.$nextTick(() => {
+                    if (this.selectionVersion === selectionVersion && this.$refs.messageScroller) {
                         this.$refs.messageScroller.scrollTop = this.$refs.messageScroller.scrollHeight;
                     }
-                }, 100);
+                });
             },
             
             formatAttachmentUrl(path) {

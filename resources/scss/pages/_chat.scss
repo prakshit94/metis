@@ -13,6 +13,12 @@ body[data-page="chat"] .admin-footer {
 // Chat workspace fills exactly the space between header and bottom of viewport
 .chat-workspace {
   height: calc(100vh - var(--header-height));
+  height: calc(100dvh - var(--header-height));
+
+  > .row, section, aside, .chat-scroll-area {
+    min-height: 0;
+    min-width: 0;
+  }
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -225,4 +231,10 @@ body[data-page="chat"] .admin-footer {
     background-color: var(--bs-secondary-bg);
     border-radius: 4px;
   }
+}
+
+.chat-workspace {
+  aside { overflow-x: hidden; }
+  .min-w-0 { min-width: 0; }
+  .chat-bubble { overflow-wrap: anywhere; }
 }
