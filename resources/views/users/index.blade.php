@@ -1127,39 +1127,35 @@
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label fw-medium text-muted small" for="userFormField19">Designation</label>
-                                            <select id="userFormField19" class="form-select form-select-sm" x-model="form.designation">
-                                                <option value="">None</option>
-                                                <template x-for="desig in designations.filter(d => d.is_active)" :key="desig.id">
-                                                    <option :value="desig.name" x-text="desig.name"></option>
-                                                </template>
-                                            </select>
+                                            @include('users.partials.employment-select', [
+                                                'fieldId' => 'userFormField19', 'label' => 'Designation',
+                                                'options' => 'designations.filter(d => d.is_active)', 'model' => 'form.designation',
+                                                'valueField' => 'name', 'keyField' => 'id',
+                                            ])
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label fw-medium text-muted small" for="userFormField20">Employment Type</label>
-                                            <select id="userFormField20" class="form-select form-select-sm" x-model="form.employment_type">
-                                                <option value="">None</option>
-                                                <template x-for="emp in employmentTypes.filter(e => e.is_active)" :key="emp.id">
-                                                    <option :value="emp.name" x-text="emp.name"></option>
-                                                </template>
-                                            </select>
+                                            @include('users.partials.employment-select', [
+                                                'fieldId' => 'userFormField20', 'label' => 'Employment Type',
+                                                'options' => 'employmentTypes.filter(e => e.is_active)', 'model' => 'form.employment_type',
+                                                'valueField' => 'name', 'keyField' => 'id',
+                                            ])
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label fw-medium text-muted small" for="userFormField21">Department</label>
-                                            <select id="userFormField21" class="form-select form-select-sm" x-model="form.department_id">
-                                                <option value="">None</option>
-                                                <template x-for="dept in departments" :key="dept.id">
-                                                    <option :value="dept.id" x-text="dept.name"></option>
-                                                </template>
-                                            </select>
+                                            @include('users.partials.employment-select', [
+                                                'fieldId' => 'userFormField21', 'label' => 'Department',
+                                                'options' => 'departments', 'model' => 'form.department_id',
+                                                'valueField' => 'id', 'keyField' => 'id',
+                                            ])
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label fw-medium text-muted small" for="userFormField22">Manager</label>
-                                            <select id="userFormField22" class="form-select form-select-sm" x-model="form.manager_id">
-                                                <option value="">None</option>
-                                                <template x-for="mgr in managers" :key="mgr.id">
-                                                    <option :value="mgr.id" x-text="mgr.name"></option>
-                                                </template>
-                                            </select>
+                                            @include('users.partials.employment-select', [
+                                                'fieldId' => 'userFormField22', 'label' => 'Manager',
+                                                'options' => "managers.map(manager => ({ ...manager, name: [manager.name, manager.lob_team_code || 'Global', manager.designation || 'No designation'].join(' · ') }))", 'model' => 'form.manager_id',
+                                                'valueField' => 'id', 'keyField' => 'id',
+                                            ])
                                         </div>
                                     </div>
                                 </div>

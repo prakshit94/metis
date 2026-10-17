@@ -23,6 +23,7 @@
                     </span>
                 </div>
                 <div class="d-flex gap-2">
+                    @if($isGlobalHr)
                     @can('leave-edit')
                     <button class="btn btn-sm btn-success" @click="bulkAction('approve')">
                         <i class="bi bi-check-circle me-1"></i>Approve
@@ -31,6 +32,7 @@
                         <i class="bi bi-x-circle me-1"></i>Reject
                     </button>
                     @endcan
+                    @endif
                     @can('leave-delete')
                     <button class="btn btn-sm btn-danger" @click="bulkAction('delete')">
                         <i class="bi bi-trash me-1"></i>Delete
@@ -50,7 +52,7 @@
                         <th style="width: 50px;" class="ps-3">
                             <input type="checkbox" class="form-check-input"
                                    @change="toggleAll($event.target.checked)"
-                                   :checked="items.length > 0 && items.every(i => selectedItems.includes(String(i.id)))">
+                                   :checked="items.some(i => canManage(i)) && items.filter(i => canManage(i)).every(i => selectedItems.includes(String(i.id)))" :disabled="!items.some(i => canManage(i))" aria-label="Select pending requests on this page">
                         </th>
                         <th scope="col" class="ps-2">Employee</th>
                         <th scope="col">Type</th>
@@ -79,9 +81,9 @@
                         </tr>
                     </template>
                     <template x-for="item in items" :key="item.id">
-                        <tr>
+                        <tr x-show="!isLoading">
                             <td class="ps-3">
-                                <input type="checkbox" class="form-check-input" :value="String(item.id)" x-model="selectedItems" x-show="item.status === 'Pending'">
+                                <input type="checkbox" class="form-check-input" :value="String(item.id)" x-model="selectedItems" x-show="canManage(item)">
                             </td>
                             <td class="ps-2 fw-medium">
                                 <span x-text="item.user ? item.user.name : '—'"></span>
@@ -91,9 +93,9 @@
                             </td>
                             <td>
                                 <div class="small">
-                                    <span class="text-muted">From:</span> <span x-text="new Date(item.start_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })"></span><br>
-                                    <span class="text-muted">To:</span> <span x-text="new Date(item.end_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })"></span><br>
-                                    <span class="fw-medium text-primary"><span x-text="Math.max(1, Math.ceil((new Date(item.end_date) - new Date(item.start_date)) / (1000 * 60 * 60 * 24)) + 1)"></span> Days</span>
+                                    <span class="text-muted">From:</span> <span x-text="new Date(item.start_date + 'T00:00:00').toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })"></span><br>
+                                    <span class="text-muted">To:</span> <span x-text="new Date(item.end_date + 'T00:00:00').toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })"></span><br>
+                                    <span class="fw-medium text-primary"><span x-text="Math.max(1, Math.round((new Date(item.end_date) - new Date(item.start_date)) / (1000 * 60 * 60 * 24)) + 1)"></span> Days</span>
                                 </div>
                             </td>
                             <td>
@@ -124,7 +126,7 @@
                             </td>
                             <td>
                                 <div class="dropdown">
-                                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Actions" x-show="item.status === 'Pending'">
+                                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Actions" x-show="canManage(item)">
                                         <i class="bi bi-three-dots"></i>
                                     </button>
                                     <span class="text-muted small" x-show="item.status !== 'Pending'" title="Processed leaves cannot be modified">

@@ -58,7 +58,15 @@ class PageController extends Controller
             } else {
                 $orderQuery->whereIn('status', $allowedStatuses);
                 if (! ($user && $user->can('view_all_order'))) {
-                    $orderQuery->where('created_by', $user->id);
+                    // Dashboard ownership includes direct reportees configured
+                    // through Users > Manager. Keep status and LOB filters outside
+                    // this group so reporting relationships cannot bypass them.
+                    $orderQuery->where(function ($query) use ($user) {
+                        $query->where('created_by', $user->id)
+                            ->orWhereIn('created_by', User::query()
+                                ->select('id')
+                                ->where('manager_id', $user->id));
+                    });
                 }
             }
         }

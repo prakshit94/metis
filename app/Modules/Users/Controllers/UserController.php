@@ -156,10 +156,12 @@ class UserController extends Controller implements HasMiddleware
             }
         }
 
-        $teamMap = \App\Modules\Users\Models\Team::pluck('name', 'id');
+        $teamMap = \App\Modules\Users\Models\Team::get(['id', 'name', 'code'])->keyBy('id');
         
         $users->getCollection()->transform(function ($user) use ($latestLoginHistories, $teamMap) {
-            $user->lob_team_name = $user->lob_team_id ? ($teamMap[$user->lob_team_id] ?? null) : null;
+            $team = $user->lob_team_id ? $teamMap->get($user->lob_team_id) : null;
+            $user->lob_team_name = $team?->name;
+            $user->lob_team_code = $team?->code;
             $user->is_online = (bool) $user->getAttribute('is_online');
 
             $latestLogin = $latestLoginHistories[$user->id] ?? null;

@@ -4,7 +4,10 @@
 @section('page', 'leaves')
 
 @section('content')
-<div class="user-management" x-data="{ currentTab: sessionStorage.getItem('leavesTab') || 'requests' }" x-init="$watch('currentTab', val => { sessionStorage.setItem('leavesTab', val); window.dispatchEvent(new CustomEvent('refresh-tab-' + val)); })">
+@php
+    $isGlobalHr = auth()->user()->hasRole(['Super Admin', 'Admin']) || auth()->user()->can('view-all-data');
+@endphp
+<div class="user-management" x-data="{ currentTab: ['requests', 'history', 'balances', 'holidays'].includes(sessionStorage.getItem('leavesTab')) ? sessionStorage.getItem('leavesTab') : 'requests' }" x-init="$watch('currentTab', val => { sessionStorage.setItem('leavesTab', val); window.dispatchEvent(new CustomEvent('refresh-tab-' + val)); })">
     <div class="d-flex justify-content-between align-items-center mb-4 mb-lg-5 mb-xl-6">
         <div>
             <h1 class="h3 mb-0"><i class="bi bi-calendar-minus-fill text-primary me-2"></i>Leave Management</h1>
@@ -129,7 +132,7 @@
                                 </tr>
                             </template>
                             <template x-for="item in items" :key="item.id">
-                                <tr>
+                                <tr x-show="!isLoading">
                                     <td class="ps-3">
                                         <input type="checkbox" class="form-check-input" :value="String(item.id)" x-model="selectedItems">
                                     </td>
@@ -201,9 +204,9 @@
                                 </tr>
                             </template>
                             <template x-for="item in items" :key="item.id">
-                                <tr>
+                                <tr x-show="!isLoading">
                                     <td class="ps-3 fw-medium" x-text="item.name"></td>
-                                    <td x-text="new Date(item.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })"></td>
+                                    <td x-text="new Date(item.date.split('T')[0] + 'T00:00:00').toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })"></td>
                                     <td><span class="badge bg-info" x-text="item.type"></span></td>
                                     <td>
                                         <div class="dropdown">
@@ -234,35 +237,29 @@
     <div class="modal-dialog modal-dialog-centered" x-data="leaveForm">
         <form class="modal-content" @submit.prevent="saveItem()">
             <div class="modal-header">
-                <h5 class="modal-title d-flex align-items-center">
+                <h5 class="modal-title d-flex align-items-center" id="leaveModalLabel">
                     <i class="bi bi-calendar-minus-fill text-primary me-2"></i>
                     <span x-text="editingId ? 'Edit Leave Request' : 'Request Leave'"></span>
                 </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <div class="alert alert-danger" x-show="error" x-text="error" style="display: none;"></div>
-                
-                <div class="form-floating mb-3">
-                    <select class="form-select" id="leaveUser" x-model="form.user_id" required>
+
+                <div class="mb-3">
+<label class="form-label" for="leaveUser">Employee <span class="text-danger">*</span></label>
+<x-searchable-select model="form.user_id" label="Leave employee">
+<select x-ref="native" aria-hidden="true" tabindex="-1" @focus="$refs.trigger.focus()" @invalid.prevent="validationMessage = $event.target.validationMessage; $refs.trigger.focus()" class="visually-hidden" id="leaveUser" x-model="form.user_id" required @disabled(!$isGlobalHr)>
                         <option value="">Select Employee</option>
                         <template x-for="user in users" :key="user.id">
-                            <option :value="user.id" x-text="user.name"></option>
+                            <option :value="user.id" :selected="String(user.id) === String(form.user_id)" x-text="user.name"></option>
                         </template>
                     </select>
-                    <label for="leaveUser">Employee <span class="text-danger">*</span></label>
-                </div>
-                
-                <div class="form-floating mb-3">
-                    <select class="form-select" id="leaveType" x-model="form.leave_type" required :disabled="isLoadingBalances || userBalances.length === 0">
-                        <option value="">Select Leave Type</option>
-                        <template x-for="balance in userBalances" :key="balance.id">
-                            <option :value="balance.leave_type" 
-                                    x-text="`${balance.leave_type} Leave (Balance: ${balance.balance})`"
-                                    :disabled="balance.balance <= 0 && balance.leave_type !== originalLeaveType"></option>
-                        </template>
-                    </select>
-                    <label for="leaveType">Leave Type <span class="text-danger">*</span></label>
+</x-searchable-select>
+</div>
+
+                <div class="mb-3">
+<label class="form-label" for="leaveType">Leave Type <span class="text-danger">*</span></label>
                     <div class="form-text text-warning" x-show="form.user_id && userBalances.length === 0 && !isLoadingBalances">
                         No active leave balances found for this employee.
                     </div>
@@ -273,11 +270,21 @@
                         <div class="form-floating mb-3">
                             <input type="date" class="form-control" id="leaveStart" x-model="form.start_date" required>
                             <label for="leaveStart">Start Date <span class="text-danger">*</span></label>
-                        </div>
+<x-searchable-select model="form.leave_type" label="Leave type">
+<select x-ref="native" aria-hidden="true" tabindex="-1" @focus="$refs.trigger.focus()" @invalid.prevent="validationMessage = $event.target.validationMessage; $refs.trigger.focus()" class="visually-hidden" id="leaveType" x-model="form.leave_type" required :disabled="isLoadingBalances || userBalances.length === 0">
+                        <option value="">Select Leave Type</option>
+                        <template x-for="balance in userBalances" :key="balance.id">
+                            <option :value="balance.leave_type"
+                                    x-text="`${balance.leave_type} Leave (Balance: ${balance.balance})`"
+                                    :disabled="balance.balance <= 0 && balance.leave_type !== originalLeaveType"></option>
+                        </template>
+                    </select>
+</x-searchable-select>
+</div>
                     </div>
                     <div class="col-6">
                         <div class="form-floating mb-3">
-                            <input type="date" class="form-control" id="leaveEnd" x-model="form.end_date" required>
+                            <input type="date" class="form-control" id="leaveEnd" x-model="form.end_date" :min="form.start_date" required>
                             <label for="leaveEnd">End Date <span class="text-danger">*</span></label>
                         </div>
                     </div>
@@ -288,14 +295,16 @@
                     <label for="leaveReason">Reason <span class="text-danger">*</span></label>
                 </div>
 
-                <div class="form-floating mb-3" x-show="editingId">
-                    <select class="form-select" id="leaveStatus" x-model="form.status">
+                <div class="mb-3" x-show="editingId" @if(!$isGlobalHr) style="display: none !important;" @endif>
+<label class="form-label" for="leaveStatus">Status</label>
+<x-searchable-select model="form.status" label="Leave status">
+<select x-ref="native" aria-hidden="true" tabindex="-1" @focus="$refs.trigger.focus()" @invalid.prevent="validationMessage = $event.target.validationMessage; $refs.trigger.focus()" class="visually-hidden" id="leaveStatus" x-model="form.status">
                         <option value="Pending">Pending</option>
                         <option value="Approved">Approved</option>
                         <option value="Rejected">Rejected</option>
                     </select>
-                    <label for="leaveStatus">Status</label>
-                </div>
+</x-searchable-select>
+</div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -313,27 +322,34 @@
     <div class="modal-dialog modal-dialog-centered" x-data="balanceForm">
         <form class="modal-content" @submit.prevent="saveItem()">
             <div class="modal-header">
-                <h5 class="modal-title d-flex align-items-center">
+                <h5 class="modal-title d-flex align-items-center" id="balanceModalLabel">
                     <i class="bi bi-wallet2 text-primary me-2"></i>
                     <span x-text="editingId ? 'Edit Balance' : 'Add Balance'"></span>
                 </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <div class="alert alert-danger" x-show="error" x-text="error" style="display: none;"></div>
-                
-                <div class="form-floating mb-3">
-                    <select class="form-select" x-model="form.user_id" required :disabled="editingId">
+
+                <div class="mb-3">
+<label class="form-label" for="balanceEmployee">Employee <span class="text-danger">*</span></label>
+<x-searchable-select model="form.user_id" label="Balance employee">
+<select x-ref="native" aria-hidden="true" tabindex="-1" @focus="$refs.trigger.focus()" @invalid.prevent="validationMessage = $event.target.validationMessage; $refs.trigger.focus()" class="visually-hidden" id="balanceEmployee" x-model="form.user_id" required :disabled="editingId">
                         <option value="">Select Employee</option>
                         <template x-for="user in users" :key="user.id">
-                            <option :value="user.id" x-text="user.name"></option>
+                            <option :value="user.id" :selected="String(user.id) === String(form.user_id)" x-text="user.name"></option>
                         </template>
                     </select>
-                    <label>Employee <span class="text-danger">*</span></label>
-                </div>
+</x-searchable-select>
+</div>
 
-                <div class="form-floating mb-3">
-                    <select class="form-select" x-model="form.leave_type" required :disabled="editingId">
+                <div class="mb-3">
+<label class="form-label" for="balanceType">Leave Type <span class="text-danger">*</span></label>
+<x-searchable-select model="form.leave_type" label="Balance leave type">
+<select x-ref="native" aria-hidden="true" tabindex="-1" @focus="$refs.trigger.focus()" @invalid.prevent="validationMessage = $event.target.validationMessage; $refs.trigger.focus()" class="visually-hidden" id="balanceType" x-model="form.leave_type" required :disabled="editingId">
+                        <template x-if="editingId && !['Sick', 'Casual', 'Annual', 'Maternity', 'Paternity', 'Unpaid'].includes(form.leave_type)">
+                            <option :value="form.leave_type" selected x-text="form.leave_type + ' Leave'"></option>
+                        </template>
                         <option value="Sick">Sick Leave</option>
                         <option value="Casual">Casual Leave</option>
                         <option value="Annual">Annual Leave</option>
@@ -341,20 +357,20 @@
                         <option value="Paternity">Paternity Leave</option>
                         <option value="Unpaid">Unpaid Leave</option>
                     </select>
-                    <label>Leave Type <span class="text-danger">*</span></label>
-                </div>
+</x-searchable-select>
+</div>
 
                 <div class="row">
                     <div class="col-6">
                         <div class="form-floating mb-3">
-                            <input type="number" step="0.5" class="form-control" x-model="form.total_leaves" required min="0">
-                            <label>Total Leaves <span class="text-danger">*</span></label>
+                            <input type="number" step="0.5" class="form-control" id="balanceTotal" x-model="form.total_leaves" required min="0">
+                            <label for="balanceTotal">Total Leaves <span class="text-danger">*</span></label>
                         </div>
                     </div>
                     <div class="col-6">
                         <div class="form-floating mb-3">
-                            <input type="number" step="0.5" class="form-control" x-model="form.used_leaves" required min="0">
-                            <label>Used Leaves <span class="text-danger">*</span></label>
+                            <input type="number" step="0.5" class="form-control" id="balanceUsed" x-model="form.used_leaves" required min="0">
+                            <label for="balanceUsed">Used Leaves <span class="text-danger">*</span></label>
                         </div>
                     </div>
                 </div>
@@ -374,33 +390,35 @@
     <div class="modal-dialog modal-dialog-centered" x-data="holidayForm">
         <form class="modal-content" @submit.prevent="saveItem()">
             <div class="modal-header">
-                <h5 class="modal-title d-flex align-items-center">
+                <h5 class="modal-title d-flex align-items-center" id="holidayModalLabel">
                     <i class="bi bi-calendar-event text-primary me-2"></i>
                     <span x-text="editingId ? 'Edit Holiday' : 'Add Holiday'"></span>
                 </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <div class="alert alert-danger" x-show="error" x-text="error" style="display: none;"></div>
-                
+
                 <div class="form-floating mb-3">
-                    <input type="text" class="form-control" x-model="form.name" required>
-                    <label>Holiday Name <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="holidayName" x-model="form.name" required>
+                    <label for="holidayName">Holiday Name <span class="text-danger">*</span></label>
                 </div>
 
                 <div class="form-floating mb-3">
-                    <input type="date" class="form-control" x-model="form.date" required>
-                    <label>Date <span class="text-danger">*</span></label>
+                    <input type="date" class="form-control" id="holidayDate" x-model="form.date" required>
+                    <label for="holidayDate">Date <span class="text-danger">*</span></label>
                 </div>
 
-                <div class="form-floating mb-3">
-                    <select class="form-select" x-model="form.type" required>
+                <div class="mb-3">
+<label class="form-label" for="holidayType">Type <span class="text-danger">*</span></label>
+<x-searchable-select model="form.type" label="Holiday type">
+<select x-ref="native" aria-hidden="true" tabindex="-1" @focus="$refs.trigger.focus()" @invalid.prevent="validationMessage = $event.target.validationMessage; $refs.trigger.focus()" class="visually-hidden" id="holidayType" x-model="form.type" required>
                         <option value="National">National</option>
                         <option value="Optional">Optional</option>
                         <option value="Company">Company</option>
                     </select>
-                    <label>Type <span class="text-danger">*</span></label>
-                </div>
+</x-searchable-select>
+</div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -414,97 +432,134 @@
 
 @push('scripts')
 <script>
+    async function hrFetch(url, options = {}) {
+        const response = await fetch(url, { ...options, headers: { Accept: 'application/json', ...(options.headers || {}) } });
+        if (response.redirected || response.status === 401 || response.status === 419) {
+            throw new Error('Your session has expired. Reload the page and sign in again.');
+        }
+        if (!response.ok) {
+            const data = await response.json().catch(() => ({}));
+            throw new Error(data.errors ? Object.values(data.errors).flat().join(' ') : data.message || 'Request failed. Please retry.');
+        }
+        return response;
+    }
+    async function hrAll(url) {
+        const items = [];
+        let page = 1, lastPage = 1;
+        do {
+            const separator = url.includes('?') ? '&' : '?';
+            const response = await hrFetch(`${url}${separator}per_page=100&page=${page}`);
+            const data = await response.json();
+            items.push(...(data.data || []));
+            lastPage = data.last_page || 1;
+            page++;
+        } while (page <= lastPage);
+        return items;
+    }
+    async function hrUsers() {
+        try { return await hrAll('/api/users'); }
+        catch { return [@json(['id' => auth()->id(), 'name' => auth()->user()->name])]; }
+    }
+    function hrFailure(error) {
+        window.Swal.fire({ icon: 'error', title: 'Unable to complete request', text: error.message || 'Please retry.' });
+    }
+    async function hrConfirmDelete() {
+        return (await window.Swal.fire({ title: 'Delete this record?', text: 'This action cannot be undone.', icon: 'warning', showCancelButton: true, confirmButtonText: 'Delete', focusCancel: true })).isConfirmed;
+    }
     document.addEventListener('alpine:init', () => {
         let leaveModalInstance = null;
         let balanceModalInstance = null;
         let holidayModalInstance = null;
-        
+
         Alpine.data('leavesTable', (mode) => ({
             items: [],
             selectedItems: [],
             isLoading: true,
+            _requestId: 0,
             currentPage: 1,
             totalPages: 1,
             totalItems: 0,
             perPage: 15,
             mode: mode,
-            
+
             init() {
                 this.loadItems();
                 if (!leaveModalInstance) {
-                    leaveModalInstance = new bootstrap.Modal(document.getElementById('leaveModal'));
+                    leaveModalInstance = bootstrap.Modal.getOrCreateInstance(document.getElementById('leaveModal'));
                 }
-                
+
                 window.addEventListener('leave-saved', () => {
                     this.loadItems();
                     if(leaveModalInstance) leaveModalInstance.hide();
                 });
-                
-                window.addEventListener('open-leave-modal', (e) => {
-                    leaveModalInstance.show();
-                });
-                
+
+
                 window.addEventListener('refresh-tab-' + (this.mode === 'pending' ? 'requests' : 'history'), () => {
                     this.loadItems();
                 });
             },
-            
+
             async loadItems() {
+                const requestId = this._requestId = (this._requestId || 0) + 1;
                 this.isLoading = true;
                 try {
                     let url = `/api/leaves?page=${this.currentPage}&per_page=${this.perPage}`;
                     if (this.mode === 'pending') {
                         url += '&status=Pending';
                     } else if (this.mode === 'history') {
-                        url += '&history=1'; // Handled via status in some cases, assuming API filters all non-pending if we pass custom param or handle it in client
+                        url += '&history=1';
                     }
-                    
-                    const res = await fetch(url);
+
+                    const res = await hrFetch(url);
                     if (res.ok) {
                         const json = await res.json();
                         let data = json.data || [];
-                        
-                        // Client-side filtering if API doesn't support 'history=1'
-                        if (this.mode === 'pending') {
-                            data = data.filter(i => i.status === 'Pending');
-                        } else if (this.mode === 'history') {
-                            data = data.filter(i => i.status !== 'Pending');
-                        }
-                        
+
+                        if (requestId !== this._requestId) return;
+                        if (json.total > 0 && this.currentPage > json.last_page) { this.currentPage = json.last_page; return this.loadItems(); }
                         this.items = data;
+                        this.selectedItems = [];
                         this.currentPage = json.current_page || 1;
                         this.totalPages = json.last_page || 1;
                         this.totalItems = json.total || 0;
                     }
                 } catch(e) {
-                    console.error('Failed to load leaves', e);
+                    if (requestId === this._requestId) hrFailure(e);
                 }
-                this.isLoading = false;
+                if (requestId === this._requestId) this.isLoading = false;
             },
-            
+
             goToPage(page) {
                 if (page >= 1 && page <= this.totalPages) {
                     this.currentPage = page;
                     this.loadItems();
                 }
             },
-            
+
             get visiblePages() {
-                return [1]; // Simplified for brevity in this example
+                const pages = [1];
+                for (let page = Math.max(2, this.currentPage - 2); page <= Math.min(this.totalPages - 1, this.currentPage + 2); page++) pages.push(page);
+                if (pages[1] > 2) pages.splice(1, 0, '...');
+                if (this.totalPages > 1) { if (pages[pages.length - 1] < this.totalPages - 1) pages.push('...'); pages.push(this.totalPages); }
+                return pages;
             },
-            
+
             get pageFrom() {
                 return this.totalItems === 0 ? 0 : (this.currentPage - 1) * this.perPage + 1;
             },
-            
+
             get pageTo() {
                 return Math.min(this.currentPage * this.perPage, this.totalItems);
             },
-            
+
+            canManage(item) {
+                return item.status === 'Pending' && ({{ $isGlobalHr ? 'true' : 'false' }} || String(item.user_id) === '{{ auth()->id() }}');
+            },
+
             editItem(item) {
                 window.dispatchEvent(new CustomEvent('open-leave-modal-detail', { detail: item }));
             },
-            
+
             async deleteItem(id) {
                 const result = await window.Swal.fire({
                     title: 'Are you sure?',
@@ -519,7 +574,7 @@
                 });
                 if (!result.isConfirmed) return;
                 try {
-                    const res = await fetch(`/api/leaves/${id}`, {
+                    const res = await hrFetch(`/api/leaves/${id}`, {
                         method: 'DELETE',
                         headers: {
                             'Accept': 'application/json',
@@ -530,18 +585,18 @@
                         this.loadItems();
                     }
                 } catch(e) {
-                    console.error('Delete failed', e);
+                    hrFailure(e);
                 }
             },
-            
+
             toggleAll(checked) {
                 if (checked) {
-                    this.selectedItems = this.items.map(i => String(i.id));
+                    this.selectedItems = this.items.filter(i => this.canManage(i)).map(i => String(i.id));
                 } else {
                     this.selectedItems = [];
                 }
             },
-            
+
             async bulkAction(action) {
                 if (this.selectedItems.length === 0) return;
                 let message = 'Are you sure you want to perform this action?';
@@ -561,7 +616,7 @@
                     confirmBtnText = 'Yes, reject them';
                     confirmBtnColor = '#ffc107'; // bootstrap warning
                 }
-                
+
                 const result = await window.Swal.fire({
                     title: 'Are you sure?',
                     text: message,
@@ -577,7 +632,7 @@
                 if (!result.isConfirmed) return;
 
                 try {
-                    const res = await fetch('/api/leaves/bulk-action', {
+                    const res = await hrFetch('/api/leaves/bulk-action', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -586,63 +641,65 @@
                         },
                         body: JSON.stringify({ action: action, ids: Array.from(this.selectedItems).map(id => parseInt(id, 10)) })
                     });
-                    
+
                     if (res.ok) {
                         this.selectedItems = [];
                         this.loadItems();
                     }
                 } catch(e) {
-                    console.error('Bulk action failed', e);
+                    hrFailure(e);
                 }
             }
         }));
-        
+
         Alpine.data('balancesTable', () => ({
             items: [],
             selectedItems: [],
             isLoading: true,
-            
+            _requestId: 0,
+
             init() {
                 this.loadItems();
                 if (!balanceModalInstance) {
-                    balanceModalInstance = new bootstrap.Modal(document.getElementById('balanceModal'));
+                    balanceModalInstance = bootstrap.Modal.getOrCreateInstance(document.getElementById('balanceModal'));
                 }
-                
+
                 window.addEventListener('balance-saved', () => {
                     this.loadItems();
                     if(balanceModalInstance) balanceModalInstance.hide();
                 });
-                
+
                 window.addEventListener('open-balance-modal', () => {
                     window.dispatchEvent(new CustomEvent('reset-balance-form'));
                     balanceModalInstance.show();
                 });
-                
+
                 window.addEventListener('refresh-tab-balances', () => {
                     this.loadItems();
                 });
             },
-            
+
             async loadItems() {
+                const requestId = this._requestId = (this._requestId || 0) + 1;
                 this.isLoading = true;
                 try {
-                    const res = await fetch(`/api/leave-balances`);
-                    if (res.ok) {
-                        const json = await res.json();
-                        this.items = json.data || [];
-                    }
-                } catch(e) {}
-                this.isLoading = false;
+                    const items = await hrAll('/api/leave-balances');
+                    if (requestId !== this._requestId) return;
+                    this.items = items;
+                    if (this.selectedItems) this.selectedItems = [];
+                } catch(e) { hrFailure(e); }
+                if (requestId === this._requestId) this.isLoading = false;
             },
-            
+
             editItem(item) {
                 window.dispatchEvent(new CustomEvent('edit-balance-form', { detail: item }));
                 balanceModalInstance.show();
             },
-            
+
             async deleteItem(id) {
+                if (!await hrConfirmDelete()) return;
                 try {
-                    const res = await fetch(`/api/leave-balances/${id}`, {
+                    const res = await hrFetch(`/api/leave-balances/${id}`, {
                         method: 'DELETE',
                         headers: {
                             'Accept': 'application/json',
@@ -652,21 +709,22 @@
                     if(res.ok) {
                         this.loadItems();
                     }
-                } catch(e) {}
+                } catch(e) { hrFailure(e); }
             },
-            
+
             toggleAll(checked) {
                 if (checked) {
-                    this.selectedItems = this.items.map(i => String(i.id));
+                    this.selectedItems = this.items.filter(i => i.status === undefined || i.status === 'Pending').map(i => String(i.id));
                 } else {
                     this.selectedItems = [];
                 }
             },
-            
+
             async bulkAction(action) {
                 if (this.selectedItems.length === 0) return;
+                if (!await hrConfirmDelete()) return;
                 try {
-                    const res = await fetch('/api/leave-balances/bulk-action', {
+                    const res = await hrFetch('/api/leave-balances/bulk-action', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -675,60 +733,62 @@
                         },
                         body: JSON.stringify({ action: action, ids: Array.from(this.selectedItems).map(id => parseInt(id, 10)) })
                     });
-                    
+
                     if (res.ok) {
                         this.selectedItems = [];
                         this.loadItems();
                     }
-                } catch(e) {}
+                } catch(e) { hrFailure(e); }
             }
         }));
 
         Alpine.data('holidaysTable', () => ({
             items: [],
             isLoading: true,
-            
+            _requestId: 0,
+
             init() {
                 this.loadItems();
                 if (!holidayModalInstance) {
-                    holidayModalInstance = new bootstrap.Modal(document.getElementById('holidayModal'));
+                    holidayModalInstance = bootstrap.Modal.getOrCreateInstance(document.getElementById('holidayModal'));
                 }
-                
+
                 window.addEventListener('holiday-saved', () => {
                     this.loadItems();
                     if(holidayModalInstance) holidayModalInstance.hide();
                 });
-                
+
                 window.addEventListener('open-holiday-modal', () => {
                     window.dispatchEvent(new CustomEvent('reset-holiday-form'));
                     holidayModalInstance.show();
                 });
-                
+
                 window.addEventListener('refresh-tab-holidays', () => {
                     this.loadItems();
                 });
             },
-            
+
             async loadItems() {
+                const requestId = this._requestId = (this._requestId || 0) + 1;
                 this.isLoading = true;
                 try {
-                    const res = await fetch(`/api/holidays`);
-                    if (res.ok) {
-                        const json = await res.json();
-                        this.items = json.data || [];
-                    }
-                } catch(e) {}
-                this.isLoading = false;
+                    const items = await hrAll('/api/holidays');
+                    if (requestId !== this._requestId) return;
+                    this.items = items;
+                    if (this.selectedItems) this.selectedItems = [];
+                } catch(e) { hrFailure(e); }
+                if (requestId === this._requestId) this.isLoading = false;
             },
-            
+
             editItem(item) {
                 window.dispatchEvent(new CustomEvent('edit-holiday-form', { detail: item }));
                 holidayModalInstance.show();
             },
-            
+
             async deleteItem(id) {
+                if (!await hrConfirmDelete()) return;
                 try {
-                    const res = await fetch(`/api/holidays/${id}`, {
+                    const res = await hrFetch(`/api/holidays/${id}`, {
                         method: 'DELETE',
                         headers: {
                             'Accept': 'application/json',
@@ -738,10 +798,10 @@
                     if(res.ok) {
                         this.loadItems();
                     }
-                } catch(e) {}
+                } catch(e) { hrFailure(e); }
             }
         }));
-        
+
         Alpine.data('leaveForm', () => ({
             editingId: null,
             originalLeaveType: null,
@@ -750,10 +810,11 @@
             users: [],
             userBalances: [],
             isLoadingBalances: false,
+            _balanceRequestId: 0,
             form: {
                 user_id: '', leave_type: '', start_date: '', end_date: '', reason: '', status: 'Pending'
             },
-            
+
             init() {
                 this.loadUsers();
                 window.addEventListener('open-leave-modal', () => {
@@ -766,6 +827,8 @@
                     this.form.end_date = '';
                     this.form.reason = '';
                     this.form.status = 'Pending';
+                    this.fetchBalances(this.form.user_id);
+                    leaveModalInstance.show();
                 });
                 window.addEventListener('open-leave-modal-detail', (e) => {
                     this.error = null;
@@ -774,6 +837,7 @@
                     this.form = { ...e.detail };
                     if (this.form.start_date) this.form.start_date = this.form.start_date.split('T')[0].split(' ')[0];
                     if (this.form.end_date) this.form.end_date = this.form.end_date.split('T')[0].split(' ')[0];
+                    this.fetchBalances(this.form.user_id);
                     leaveModalInstance.show();
                 });
 
@@ -783,13 +847,14 @@
             },
 
             async fetchBalances(userId) {
+                const requestId = this._balanceRequestId = (this._balanceRequestId || 0) + 1;
                 const prevType = this.form.leave_type;
                 this.userBalances = [];
-                if (!userId) return;
-                
+                if (!userId) { this.isLoadingBalances = false; return; }
+
                 this.isLoadingBalances = true;
                 try {
-                    const res = await fetch(`/api/leave-balances?user_id=${userId}&is_active=1&per_page=100`, {
+                    const res = await hrFetch(`/api/leave-balances?user_id=${userId}&is_active=1&per_page=100`, {
                         headers: {
                             'Accept': 'application/json',
                             'X-Requested-With': 'XMLHttpRequest'
@@ -797,41 +862,32 @@
                     });
                     if (res.ok) {
                         const json = await res.json();
+                        if (requestId !== this._balanceRequestId) return;
                         this.userBalances = json.data || [];
                         this.$nextTick(() => {
                             if (prevType) this.form.leave_type = prevType;
                         });
                     }
                 } catch (e) {
-                    console.error("Failed to load balances");
+                    if (requestId === this._balanceRequestId) this.error = e.message;
                 }
-                this.isLoadingBalances = false;
+                if (requestId === this._balanceRequestId) this.isLoadingBalances = false;
             },
-            
+
             async loadUsers() {
-                try {
-                    const res = await fetch('/api/users?per_page=100', {
-                        headers: {
-                            'Accept': 'application/json',
-                            'X-Requested-With': 'XMLHttpRequest'
-                        }
-                    });
-                    if (res.ok) {
-                        const json = await res.json();
-                        this.users = json.data || json;
-                    }
-                } catch(e) {}
+                this.users = await hrUsers();
             },
-            
+
             async saveItem() {
+                if (this.saving) return;
                 this.saving = true;
                 this.error = null;
-                
+
                 try {
                     const method = this.editingId ? 'PUT' : 'POST';
                     const url = this.editingId ? `/api/leaves/${this.editingId}` : '/api/leaves';
-                    
-                    const res = await fetch(url, {
+
+                    const res = await hrFetch(url, {
                         method: method,
                         headers: {
                             'Content-Type': 'application/json',
@@ -840,7 +896,7 @@
                         },
                         body: JSON.stringify(this.form)
                     });
-                    
+
                     if (res.ok) {
                         window.dispatchEvent(new CustomEvent('leave-saved'));
                     } else {
@@ -848,9 +904,9 @@
                         this.error = err.message || 'Validation error.';
                     }
                 } catch(e) {
-                    this.error = 'Network error saving record.';
+                    this.error = e.message || 'Network error saving record.';
                 }
-                
+
                 this.saving = false;
             }
         }));
@@ -863,7 +919,7 @@
             form: {
                 user_id: '', leave_type: 'Sick', total_leaves: 0, used_leaves: 0
             },
-            
+
             init() {
                 this.loadUsers();
                 window.addEventListener('reset-balance-form', () => {
@@ -877,31 +933,21 @@
                     this.form = { ...e.detail };
                 });
             },
-            
+
             async loadUsers() {
-                try {
-                    const res = await fetch('/api/users?per_page=100', {
-                        headers: {
-                            'Accept': 'application/json',
-                            'X-Requested-With': 'XMLHttpRequest'
-                        }
-                    });
-                    if (res.ok) {
-                        const json = await res.json();
-                        this.users = json.data || json;
-                    }
-                } catch(e) {}
+                this.users = await hrUsers();
             },
-            
+
             async saveItem() {
+                if (this.saving) return;
                 this.saving = true;
                 this.error = null;
-                
+
                 try {
                     const method = this.editingId ? 'PUT' : 'POST';
                     const url = this.editingId ? `/api/leave-balances/${this.editingId}` : '/api/leave-balances';
-                    
-                    const res = await fetch(url, {
+
+                    const res = await hrFetch(url, {
                         method: method,
                         headers: {
                             'Content-Type': 'application/json',
@@ -910,7 +956,7 @@
                         },
                         body: JSON.stringify(this.form)
                     });
-                    
+
                     if (res.ok) {
                         window.dispatchEvent(new CustomEvent('balance-saved'));
                     } else {
@@ -918,9 +964,9 @@
                         this.error = err.message || 'Validation error.';
                     }
                 } catch(e) {
-                    this.error = 'Network error saving record.';
+                    this.error = e.message || 'Network error saving record.';
                 }
-                
+
                 this.saving = false;
             }
         }));
@@ -932,7 +978,7 @@
             form: {
                 name: '', date: '', type: 'National'
             },
-            
+
             init() {
                 window.addEventListener('reset-holiday-form', () => {
                     this.error = null;
@@ -949,16 +995,17 @@
                     }
                 });
             },
-            
+
             async saveItem() {
+                if (this.saving) return;
                 this.saving = true;
                 this.error = null;
-                
+
                 try {
                     const method = this.editingId ? 'PUT' : 'POST';
                     const url = this.editingId ? `/api/holidays/${this.editingId}` : '/api/holidays';
-                    
-                    const res = await fetch(url, {
+
+                    const res = await hrFetch(url, {
                         method: method,
                         headers: {
                             'Content-Type': 'application/json',
@@ -967,7 +1014,7 @@
                         },
                         body: JSON.stringify(this.form)
                     });
-                    
+
                     if (res.ok) {
                         window.dispatchEvent(new CustomEvent('holiday-saved'));
                     } else {
@@ -975,9 +1022,9 @@
                         this.error = err.message || 'Validation error.';
                     }
                 } catch(e) {
-                    this.error = 'Network error saving record.';
+                    this.error = e.message || 'Network error saving record.';
                 }
-                
+
                 this.saving = false;
             }
         }));

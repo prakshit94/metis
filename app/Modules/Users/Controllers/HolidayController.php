@@ -23,7 +23,7 @@ class HolidayController extends Controller implements HasMiddleware
 
     public function index(Request $request): JsonResponse
     {
-        $holidays = Holiday::orderBy('date', 'asc')->paginate((int) $request->input('per_page', 15));
+        $holidays = Holiday::orderBy('date', 'asc')->paginate(min(max($request->integer('per_page', 15), 1), 100));
 
         return response()->json($holidays);
     }

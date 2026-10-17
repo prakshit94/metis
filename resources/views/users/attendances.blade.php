@@ -4,7 +4,10 @@
 @section('page', 'attendances')
 
 @section('content')
-<div class="user-management" x-data="attendancesTable({{ auth()->id() }})">
+@php
+    $isGlobalHr = auth()->user()->hasRole(['Super Admin', 'Admin']) || auth()->user()->can('view-all-data');
+@endphp
+<div class="user-management" x-data="attendancesTable({{ auth()->id() }}, { global: @js($isGlobalHr), edit: @js(auth()->user()->can('attendance-edit')), create: @js(auth()->user()->can('attendance-create')), leaveEdit: @js(auth()->user()->can('leave-edit')) })">
     <div class="d-flex justify-content-between align-items-center mb-4 mb-lg-5 mb-xl-6">
         <div>
             <h1 class="h3 mb-0"><i class="bi bi-calendar-check-fill text-primary me-2"></i>Attendances</h1>
@@ -12,10 +15,10 @@
         </div>
         <div class="d-flex gap-2">
             <div class="btn-group me-2 shadow-sm">
-                <button type="button" class="btn btn-outline-secondary" :class="{ 'active': currentView === 'list' }" @click="switchView('list')">
+                <button type="button" class="btn btn-outline-secondary" aria-label="Attendance list view" :class="{ 'active': currentView === 'list' }" @click="switchView('list')">
                     <i class="bi bi-list-ul"></i>
                 </button>
-                <button type="button" class="btn btn-outline-secondary" :class="{ 'active': currentView === 'calendar' }" @click="switchView('calendar')">
+                <button type="button" class="btn btn-outline-secondary" aria-label="Attendance calendar view" :class="{ 'active': currentView === 'calendar' }" @click="switchView('calendar')">
                     <i class="bi bi-calendar3"></i>
                 </button>
             </div>
@@ -52,6 +55,7 @@
         </div>
     </div>
 
+    <div class="alert alert-danger" x-show="error" x-text="error" x-cloak role="alert"></div>
     <!-- Stats Widgets -->
     <div class="row g-4 g-lg-5 g-xl-6 mb-5 mb-lg-5 mb-xl-6">
         <div class="col-xl-3 col-lg-6">
@@ -77,7 +81,7 @@
                             <i class="bi bi-check-circle-fill"></i>
                         </div>
                         <div>
-                            <p class="h6 mb-0 text-muted">Present</p>
+                            <p class="h6 mb-0 text-muted" title="Counts loaded records grouped by employee and day">Present</p>
                             <div class="h3 mb-0" aria-live="polite"><span x-text="stats.present"></span></div>
                         </div>
                     </div>
@@ -92,7 +96,7 @@
                             <i class="bi bi-x-circle-fill"></i>
                         </div>
                         <div>
-                            <p class="h6 mb-0 text-muted">Absent</p>
+                            <p class="h6 mb-0 text-muted" title="Counts loaded records grouped by employee and day">Absent</p>
                             <div class="h3 mb-0" aria-live="polite"><span x-text="stats.absent"></span></div>
                         </div>
                     </div>
@@ -107,7 +111,7 @@
                             <i class="bi bi-clock-fill"></i>
                         </div>
                         <div>
-                            <p class="h6 mb-0 text-muted">Late / Half-Day</p>
+                            <p class="h6 mb-0 text-muted" title="Counts loaded records grouped by employee and day">Late / Half-Day</p>
                             <div class="h3 mb-0" aria-live="polite"><span x-text="stats.late + stats.halfDay"></span></div>
                         </div>
                     </div>
@@ -116,6 +120,7 @@
         </div>
     </div>
 
+    <p class="small text-muted mb-4">Status counts reflect loaded records, grouped by employee and day.</p>
     <!-- My Leave Balances Widget -->
     @php
         $userLeaveBalances = \App\Modules\Users\Models\LeaveBalance::where('user_id', auth()->id())->where('is_active', true)->get();
@@ -157,7 +162,7 @@
                 <i class="bi bi-list-ul text-primary me-2"></i>Attendance List
             </h2>
             <div class="d-flex flex-column flex-md-row gap-2 w-100 w-md-auto align-items-md-center">
-                
+
                 <!-- Month Nav (Calendar View Only) -->
                 <div class="btn-group input-group-sm me-2" x-show="currentView === 'calendar'">
                     <button class="btn btn-outline-secondary" @click="previousMonth()"><i class="bi bi-chevron-left"></i></button>
@@ -170,23 +175,27 @@
                     <input type="text" class="form-control border-start-0 ps-0" placeholder="Search by name/ID..."
                            x-model="searchQuery" @keyup.debounce.300ms="filterItems()">
                 </div>
-                
+
                 <input type="date" class="form-control form-control-sm" x-model="dateFilter" @change="filterItems()" style="max-width: 150px;" x-show="currentView === 'list'">
-                
-                <select class="form-select form-select-sm" x-model="statusFilter" @change="filterItems()" style="max-width: 150px;">
+
+                <x-searchable-select model="statusFilter" label="Attendance status filter" small width="150px">
+<select x-ref="native" aria-hidden="true" tabindex="-1" @focus="$refs.trigger.focus()" @invalid.prevent="validationMessage = $event.target.validationMessage; $refs.trigger.focus()" class="visually-hidden" x-model="statusFilter" @change="filterItems()">
                     <option value="">All Statuses</option>
                     <option value="Present">Present</option>
                     <option value="Absent">Absent</option>
                     <option value="Late">Late</option>
                     <option value="Half-Day">Half-Day</option>
                 </select>
-                
-                <select class="form-select form-select-sm" x-model="userFilter" @change="filterItems()" style="max-width: 150px;" x-show="usersList.length > 0" style="display: none;">
+</x-searchable-select>
+
+                <x-searchable-select model="userFilter" label="Attendance employee filter" small width="200px">
+<select x-ref="native" aria-hidden="true" tabindex="-1" @focus="$refs.trigger.focus()" @invalid.prevent="validationMessage = $event.target.validationMessage; $refs.trigger.focus()" class="visually-hidden" x-model="userFilter" @change="filterItems()" x-show="usersList.length > 0" aria-label="Attendance employee">
                     <option value="" disabled selected>Select Employee</option>
                     <template x-for="u in usersList" :key="u.id">
-                        <option :value="u.id" x-text="u.name"></option>
+                        <option :value="u.id" :selected="String(u.id) === String(userFilter)" x-text="u.name"></option>
                     </template>
                 </select>
+</x-searchable-select>
 
                 <div class="dropdown" x-show="currentView === 'list'">
                     <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" :disabled="selectedItems.length === 0">
@@ -203,7 +212,7 @@
                         @endcan
                     </ul>
                 </div>
-                
+
                 <button class="btn btn-sm btn-outline-secondary" type="button" @click="loadItems()" :disabled="isLoading" title="Refresh">
                     <i class="bi bi-arrow-clockwise" :class="isLoading ? 'spin' : ''"></i>
                 </button>
@@ -223,22 +232,22 @@
                                            @change="toggleAll($event.target.checked)">
                                 </div>
                             </th>
-                            <th scope="col" class="sortable" @click="sortBy('date')">
+                            <th scope="col" class="sortable" @click="sortBy('date')" role="button" tabindex="0" @keydown.enter.prevent="sortBy('date')" @keydown.space.prevent="sortBy('date')">
                                 Date <i class="bi" :class="sortField === 'date' ? (sortDirection === 'asc' ? 'bi-sort-up' : 'bi-sort-down') : 'bi-arrow-down-up text-muted'"></i>
                             </th>
-                            <th scope="col" class="sortable" @click="sortBy('user')">
+                            <th scope="col" class="sortable" @click="sortBy('user')" role="button" tabindex="0" @keydown.enter.prevent="sortBy('user')" @keydown.space.prevent="sortBy('user')">
                                 Employee <i class="bi" :class="sortField === 'user' ? (sortDirection === 'asc' ? 'bi-sort-up' : 'bi-sort-down') : 'bi-arrow-down-up text-muted'"></i>
                             </th>
-                            <th scope="col" class="sortable" @click="sortBy('check_in')">
+                            <th scope="col" class="sortable" @click="sortBy('check_in')" role="button" tabindex="0" @keydown.enter.prevent="sortBy('check_in')" @keydown.space.prevent="sortBy('check_in')">
                                 Check In <i class="bi" :class="sortField === 'check_in' ? (sortDirection === 'asc' ? 'bi-sort-up' : 'bi-sort-down') : 'bi-arrow-down-up text-muted'"></i>
                             </th>
-                            <th scope="col" class="sortable" @click="sortBy('check_out')">
+                            <th scope="col" class="sortable" @click="sortBy('check_out')" role="button" tabindex="0" @keydown.enter.prevent="sortBy('check_out')" @keydown.space.prevent="sortBy('check_out')">
                                 Check Out <i class="bi" :class="sortField === 'check_out' ? (sortDirection === 'asc' ? 'bi-sort-up' : 'bi-sort-down') : 'bi-arrow-down-up text-muted'"></i>
                             </th>
                             <th scope="col">
                                 Total Time
                             </th>
-                            <th scope="col" class="sortable" @click="sortBy('status')">
+                            <th scope="col" class="sortable" @click="sortBy('status')" role="button" tabindex="0" @keydown.enter.prevent="sortBy('status')" @keydown.space.prevent="sortBy('status')">
                                 Status <i class="bi" :class="sortField === 'status' ? (sortDirection === 'asc' ? 'bi-sort-up' : 'bi-sort-down') : 'bi-arrow-down-up text-muted'"></i>
                             </th>
                             <th scope="col" class="text-end pe-4" style="width: 120px;">Actions</th>
@@ -309,18 +318,18 @@
                                     </div>
                                 </td>
                                 <td>
-                                    <span class="badge rounded-pill" 
+                                    <span class="badge rounded-pill"
                                           :class="{
                                               'bg-success-subtle text-success': item.status === 'Present',
                                               'bg-danger-subtle text-danger': item.status === 'Absent',
                                               'bg-warning-subtle text-warning': item.status === 'Late',
                                               'bg-info-subtle text-info': item.status === 'Half-Day'
-                                          }" 
+                                          }"
                                           x-text="item.status"></span>
                                 </td>
                                 <td class="text-end pe-4">
                                     <div class="dropdown">
-                                        <button class="btn btn-sm btn-outline-secondary btn-icon rounded-circle shadow-sm" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Actions">
+                                        <button x-show="@js($isGlobalHr) || String(item.user_id) === '{{ auth()->id() }}'" class="btn btn-sm btn-outline-secondary btn-icon rounded-circle shadow-sm" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Actions">
                                             <i class="bi bi-three-dots-vertical"></i>
                                         </button>
                                         <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
@@ -347,12 +356,12 @@
                     </tbody>
                 </table>
             </div>
-            
+
             <div class="card-footer bg-body border-top p-3 p-lg-4" x-show="currentView === 'list' && totalItems > 0">
                 <div class="d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
                     <p class="text-muted small mb-0">
-                        Showing <span class="fw-medium text-body" x-text="pageFrom"></span> to 
-                        <span class="fw-medium text-body" x-text="pageTo"></span> of 
+                        Showing <span class="fw-medium text-body" x-text="pageFrom"></span> to
+                        <span class="fw-medium text-body" x-text="pageTo"></span> of
                         <span class="fw-medium text-body" x-text="totalItems"></span> entries
                     </p>
                     <nav aria-label="Table navigation">
@@ -372,7 +381,7 @@
                     </nav>
                 </div>
             </div>
-            
+
             <!-- Calendar View -->
             <div class="calendar-page pb-0" x-show="currentView === 'calendar'" style="display: none; min-height: 800px; height: auto;">
                 <div class="calendar-container m-0 border-0 shadow-none rounded-0">
@@ -389,12 +398,12 @@
                         <div class="month-header-day">Friday</div>
                         <div class="month-header-day">Saturday</div>
                     </div>
-                    
+
                     <div class="month-grid" style="grid-template-rows: repeat(6, minmax(140px, 1fr));">
                         <template x-for="day in calendarDays" :key="day.date">
-                            <div class="month-day" 
-                                 :class="{ 
-                                     'today': day.isToday, 
+                            <div class="month-day"
+                                 :class="{
+                                     'today': day.isToday,
                                      'other-month': day.isOtherMonth,
                                      'has-events': day.events && day.events.length > 0
                                  }"
@@ -402,12 +411,12 @@
                                 <div class="day-number" x-text="day.day"></div>
                                 <div class="day-events" style="height: 100%; overflow: visible;">
                                     <template x-for="event in day.events" :key="event.id">
-                                        <div class="day-event mb-1 p-2 rounded shadow-sm" 
+                                        <div class="day-event mb-1 p-2 rounded shadow-sm"
                                              :class="event.type"
-                                             @click.stop="editItem(event.raw)"
+                                             @click.stop="editItem(event.raw)" role="button" tabindex="0" @keydown.enter.stop.prevent="editItem(event.raw)" @keydown.space.stop.prevent="editItem(event.raw)" :aria-label="event.status + ' on ' + day.date"
                                              style="cursor: pointer; white-space: normal !important; overflow: visible !important;">
                                             <div class="d-flex justify-content-between align-items-center mb-1">
-                                                <span class="fw-bold" style="font-size: 0.8rem;" x-text="event.status"></span>
+                                                <span class="fw-bold" style="font-size: 0.8rem;" x-text="event.status"></span><span class="small ms-1" x-show="event.userName" x-text="event.userName"></span>
                                             </div>
                                             <div style="font-size: 0.75rem; line-height: 1.2;">
                                                 <div class="d-flex justify-content-between">
@@ -445,17 +454,19 @@
             </div>
             <div class="modal-body p-4">
                 <div class="alert alert-danger" x-show="error" x-text="error" style="display: none;"></div>
-                
+
                 <div class="mb-3">
                     <label for="attUser" class="form-label fw-semibold">Employee <span class="text-danger">*</span></label>
-                    <select class="form-select" id="attUser" x-model="form.user_id" required>
+                    <x-searchable-select model="form.user_id" label="Attendance employee">
+<select x-ref="native" aria-hidden="true" tabindex="-1" @focus="$refs.trigger.focus()" @invalid.prevent="validationMessage = $event.target.validationMessage; $refs.trigger.focus()" class="visually-hidden" id="attUser" x-model="form.user_id" required @disabled(!$isGlobalHr)>
                         <option value="">Select Employee</option>
                         <template x-for="user in users" :key="user.id">
-                            <option :value="user.id" x-text="user.name + (user.employee_id ? ` (${user.employee_id})` : '')"></option>
+                            <option :value="user.id" :selected="String(user.id) === String(form.user_id)" x-text="user.name + (user.employee_id ? ` (${user.employee_id})` : '')"></option>
                         </template>
                     </select>
+</x-searchable-select>
                 </div>
-                
+
                 <div class="mb-3">
                     <label for="attDate" class="form-label fw-semibold">Date <span class="text-danger">*</span></label>
                     <input type="date" class="form-control" id="attDate" x-model="form.date" required>
@@ -474,14 +485,16 @@
 
                 <div class="mb-3">
                     <label for="attStatus" class="form-label fw-semibold">Status <span class="text-danger">*</span></label>
-                    <select class="form-select" id="attStatus" x-model="form.status" required>
+                    <x-searchable-select model="form.status" label="Attendance status">
+<select x-ref="native" aria-hidden="true" tabindex="-1" @focus="$refs.trigger.focus()" @invalid.prevent="validationMessage = $event.target.validationMessage; $refs.trigger.focus()" class="visually-hidden" id="attStatus" x-model="form.status" required>
                         <option value="Present">Present</option>
                         <option value="Absent">Absent</option>
                         <option value="Late">Late</option>
                         <option value="Half-Day">Half-Day</option>
                     </select>
+</x-searchable-select>
                 </div>
-                
+
                 <div class="mb-0">
                     <label for="attNotes" class="form-label fw-semibold">Notes</label>
                     <textarea class="form-control" id="attNotes" x-model="form.notes" style="height: 100px;" placeholder="Add any optional notes here..."></textarea>
@@ -497,10 +510,8 @@
         </form>
     </div>
 </div>
-@endsection
-
 <div class="modal fade" id="leaveModal" tabindex="-1" aria-labelledby="leaveModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" x-data="leaveForm">
+    <div class="modal-dialog modal-dialog-centered" x-data="leaveForm({{ auth()->id() }})">
         <form class="modal-content" @submit.prevent="saveItem()">
             <div class="modal-header">
                 <h5 class="modal-title d-flex align-items-center" id="leaveModalLabel">
@@ -511,27 +522,21 @@
             </div>
             <div class="modal-body">
                 <div class="alert alert-danger" x-show="error" x-text="error" style="display: none;"></div>
-                
-                <div class="form-floating mb-3">
-                    <select class="form-select" id="leaveUser" x-model="form.user_id" required>
+
+                <div class="mb-3">
+<label class="form-label" for="leaveUser">Employee <span class="text-danger">*</span></label>
+<x-searchable-select model="form.user_id" label="Leave employee">
+<select x-ref="native" aria-hidden="true" tabindex="-1" @focus="$refs.trigger.focus()" @invalid.prevent="validationMessage = $event.target.validationMessage; $refs.trigger.focus()" class="visually-hidden" id="leaveUser" x-model="form.user_id" required @disabled(!$isGlobalHr)>
                         <option value="">Select Employee</option>
                         <template x-for="user in users" :key="user.id">
-                            <option :value="user.id" x-text="user.name"></option>
+                            <option :value="user.id" :selected="String(user.id) === String(form.user_id)" x-text="user.name"></option>
                         </template>
                     </select>
-                    <label for="leaveUser">Employee <span class="text-danger">*</span></label>
-                </div>
-                
-                <div class="form-floating mb-3">
-                    <select class="form-select" id="leaveType" x-model="form.leave_type" required :disabled="isLoadingBalances || userBalances.length === 0">
-                        <option value="">Select Leave Type</option>
-                        <template x-for="balance in userBalances" :key="balance.id">
-                            <option :value="balance.leave_type" 
-                                    x-text="`${balance.leave_type} Leave (Balance: ${balance.balance})`"
-                                    :disabled="balance.balance <= 0 && balance.leave_type !== originalLeaveType"></option>
-                        </template>
-                    </select>
-                    <label for="leaveType">Leave Type <span class="text-danger">*</span></label>
+</x-searchable-select>
+</div>
+
+                <div class="mb-3">
+<label class="form-label" for="leaveType">Leave Type <span class="text-danger">*</span></label>
                     <div class="form-text text-warning" x-show="form.user_id && userBalances.length === 0 && !isLoadingBalances">
                         No active leave balances found for this employee.
                     </div>
@@ -542,11 +547,21 @@
                         <div class="form-floating mb-3">
                             <input type="date" class="form-control" id="leaveStart" x-model="form.start_date" required>
                             <label for="leaveStart">Start Date <span class="text-danger">*</span></label>
-                        </div>
+<x-searchable-select model="form.leave_type" label="Leave type">
+<select x-ref="native" aria-hidden="true" tabindex="-1" @focus="$refs.trigger.focus()" @invalid.prevent="validationMessage = $event.target.validationMessage; $refs.trigger.focus()" class="visually-hidden" id="leaveType" x-model="form.leave_type" required :disabled="isLoadingBalances || userBalances.length === 0">
+                        <option value="">Select Leave Type</option>
+                        <template x-for="balance in userBalances" :key="balance.id">
+                            <option :value="balance.leave_type"
+                                    x-text="`${balance.leave_type} Leave (Balance: ${balance.balance})`"
+                                    :disabled="balance.balance <= 0 && balance.leave_type !== originalLeaveType"></option>
+                        </template>
+                    </select>
+</x-searchable-select>
+</div>
                     </div>
                     <div class="col-6">
                         <div class="form-floating mb-3">
-                            <input type="date" class="form-control" id="leaveEnd" x-model="form.end_date" required>
+                            <input type="date" class="form-control" id="leaveEnd" x-model="form.end_date" :min="form.start_date" required>
                             <label for="leaveEnd">End Date <span class="text-danger">*</span></label>
                         </div>
                     </div>
@@ -557,14 +572,16 @@
                     <label for="leaveReason">Reason <span class="text-danger">*</span></label>
                 </div>
 
-                <div class="form-floating mb-3" x-show="editingId">
-                    <select class="form-select" id="leaveStatus" x-model="form.status">
+                <div class="mb-3" x-show="editingId" @if(!$isGlobalHr) style="display: none !important;" @endif>
+<label class="form-label" for="leaveStatus">Status</label>
+<x-searchable-select model="form.status" label="Leave status">
+<select x-ref="native" aria-hidden="true" tabindex="-1" @focus="$refs.trigger.focus()" @invalid.prevent="validationMessage = $event.target.validationMessage; $refs.trigger.focus()" class="visually-hidden" id="leaveStatus" x-model="form.status">
                         <option value="Pending">Pending</option>
                         <option value="Approved">Approved</option>
                         <option value="Rejected">Rejected</option>
                     </select>
-                    <label for="leaveStatus">Status</label>
-                </div>
+</x-searchable-select>
+</div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -576,3 +593,5 @@
         </form>
     </div>
 </div>
+
+@endsection

@@ -36,7 +36,7 @@ class LeaveBalanceController extends Controller implements HasMiddleware
             $query->where('is_active', $request->boolean('is_active'));
         }
 
-        $balances = $query->paginate((int) $request->input('per_page', 15));
+        $balances = $query->paginate(min(max($request->integer('per_page', 15), 1), 100));
 
         return response()->json($balances);
     }

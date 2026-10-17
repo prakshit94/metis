@@ -1,5 +1,4 @@
 import Alpine from 'alpinejs';
-import ApexCharts from 'apexcharts';
 import { Modal } from 'bootstrap';
 import Swal from 'sweetalert2';
 
@@ -17,13 +16,19 @@ async function apiFetch(url, options = {}) {
   };
 
   const res = await fetch(url, { headers: fetchHeaders, ...otherOptions });
+  if (res.status === 401 || res.status === 419 || res.redirected) {
+    throw new Error('Your session has expired. Reload the page and sign in again.');
+  }
   const text = await res.text();
-  const data = text ? JSON.parse(text) : {};
-
+  let data;
+  try {
+    data = text ? JSON.parse(text) : {};
+  } catch {
+    throw new Error('The server returned an unexpected response. Please retry.');
+  }
   if (!res.ok) {
     const validation = data?.errors ? Object.values(data.errors).flat().join(' ') : '';
-    const message = validation || data?.message || data?.error || 'Request failed';
-    throw new Error(message);
+    throw new Error(validation || data?.message || data?.error || 'Request failed');
   }
   return data;
 }
@@ -68,8 +73,30 @@ function getModal(selector) {
   return el ? Modal.getOrCreateInstance(el) : null;
 }
 
+function localDate(date = new Date()) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
+async function loadUserOptions(currentUserId) {
+  const users = [];
+  let page = 1;
+  try {
+    let result;
+    do {
+      result = await apiFetch(`/api/users?per_page=100&page=${page++}`);
+      users.push(...(result.data ?? result));
+    } while (page <= (result.last_page ?? 1));
+  } catch (error) {
+    // A viewer need not have permission to browse the employee directory.
+  }
+  if (currentUserId && !users.some((user) => String(user.id) === String(currentUserId))) {
+    users.unshift({ id: currentUserId, name: 'Current user' });
+  }
+  return users;
+}
+
 document.addEventListener('alpine:init', () => {
-  Alpine.data('attendancesTable', (currentUserId = '') => ({
+  Alpine.data('attendancesTable', (currentUserId = '', access = {}) => ({
     items: [],
     leaves: [],
     selectedItems: [],
@@ -81,6 +108,10 @@ document.addEventListener('alpine:init', () => {
     sortField: 'date',
     sortDirection: 'desc',
     isLoading: false,
+    error: null,
+    _loadRequestId: 0,
+    _initialized: false,
+    _onSaved: null,
 
     currentView: 'calendar',
     currentMonthDate: new Date(),
@@ -94,31 +125,29 @@ document.addEventListener('alpine:init', () => {
     stats: { present: 0, absent: 0, late: 0, halfDay: 0, total: 0 },
 
     init() {
+      if (this._initialized) return;
+      this._initialized = true;
       this.generateCalendarDays();
       this.loadUsersList();
       this.loadItems();
-      window.addEventListener('attendance-saved', () => {
-        this.loadItems();
-      });
+      this._onSaved = () => this.loadItems();
+      window.addEventListener('attendance-saved', this._onSaved);
+    },
 
-      this.$watch('usersList', () => {
-        if (currentUserId) {
-          this.$nextTick(() => {
-            this.userFilter = String(currentUserId);
-          });
-        }
-      });
+    destroy() {
+      this._loadRequestId++;
+      window.removeEventListener('attendance-saved', this._onSaved);
     },
 
     async loadUsersList() {
-      try {
-        const res = await apiFetch('/api/users?per_page=100');
-        this.usersList = res.data ?? res;
-      } catch (e) {}
+      this.usersList = await loadUserOptions(currentUserId);
+      if (this.currentView === 'calendar') this.mapEventsToCalendar();
     },
 
     async loadItems() {
+      const requestId = ++this._loadRequestId;
       this.isLoading = true;
+      this.error = null;
       try {
         const params = new URLSearchParams({
           page: this.currentPage,
@@ -140,9 +169,21 @@ document.addEventListener('alpine:init', () => {
         }
 
         const data = await apiFetch(`/api/attendances?${params}`);
+        if (requestId !== this._loadRequestId) return;
         this.items = data.data ?? [];
+        this.selectedItems = this.selectedItems.filter((id) =>
+          this.items.some((item) => String(item.id) === String(id))
+        );
         this.leaves = data.leaves ?? [];
         this.totalItems = data.total ?? this.items.length;
+        if (
+          this.currentView === 'list' &&
+          this.totalItems > 0 &&
+          this.currentPage > (data.last_page || 1)
+        ) {
+          this.currentPage = data.last_page || 1;
+          return this.loadItems();
+        }
         this.totalPages = data.last_page ?? 1;
         this.currentPage = data.current_page ?? 1;
 
@@ -152,9 +193,11 @@ document.addEventListener('alpine:init', () => {
 
         this.calculateStats();
       } catch (err) {
+        if (requestId !== this._loadRequestId) return;
+        this.error = err.message;
         showToast('Failed to load attendances: ' + err.message, 'danger');
       } finally {
-        this.isLoading = false;
+        if (requestId === this._loadRequestId) this.isLoading = false;
       }
     },
 
@@ -162,10 +205,11 @@ document.addEventListener('alpine:init', () => {
       // Group items by date to get unique days
       const uniqueDays = {};
       this.items.forEach((i) => {
-        if (!uniqueDays[i.date]) {
-          uniqueDays[i.date] = i.status;
+        const dayKey = `${i.user_id}:${i.date}`;
+        if (!uniqueDays[dayKey]) {
+          uniqueDays[dayKey] = i.status;
         } else {
-          if (i.status !== 'Absent') uniqueDays[i.date] = i.status; // Prioritize non-absent
+          if (i.status !== 'Absent') uniqueDays[dayKey] = i.status; // Prioritize non-absent
         }
       });
 
@@ -186,13 +230,19 @@ document.addEventListener('alpine:init', () => {
     exportSummary() {
       const pad = (n) => String(n).padStart(2, '0');
       const monthStr = `${this.currentMonthDate.getFullYear()}-${pad(this.currentMonthDate.getMonth() + 1)}`;
-      window.open(`/api/attendances/export/summary?month=${monthStr}`, '_blank');
+      window.open(
+        `/api/attendances/export/summary?${new URLSearchParams({ month: monthStr, ...(this.userFilter ? { user_id: this.userFilter } : {}) })}`,
+        '_blank'
+      );
     },
 
     exportDetailed() {
       const pad = (n) => String(n).padStart(2, '0');
       const monthStr = `${this.currentMonthDate.getFullYear()}-${pad(this.currentMonthDate.getMonth() + 1)}`;
-      window.open(`/api/attendances/export/detailed?month=${monthStr}`, '_blank');
+      window.open(
+        `/api/attendances/export/detailed?${new URLSearchParams({ month: monthStr, ...(this.userFilter ? { user_id: this.userFilter } : {}) })}`,
+        '_blank'
+      );
     },
 
     get currentMonthYear() {
@@ -201,6 +251,8 @@ document.addEventListener('alpine:init', () => {
 
     switchView(view) {
       this.currentView = view;
+      this.currentPage = 1;
+      this.selectedItems = [];
       if (view === 'calendar') {
         this.generateCalendarDays();
       }
@@ -245,7 +297,7 @@ document.addEventListener('alpine:init', () => {
       for (let i = firstDayOfWeek; i > 0; i--) {
         const d = new Date(year, month, 1 - i);
         days.push({
-          date: d.toISOString().split('T')[0],
+          date: localDate(d),
           day: d.getDate(),
           isOtherMonth: true,
           isToday: d.toDateString() === today.toDateString(),
@@ -313,50 +365,56 @@ document.addEventListener('alpine:init', () => {
 
         // Add Attendance events
         if (itemsByDate[day.date]) {
-          const items = itemsByDate[day.date];
-          let firstCheckIn = null;
-          let lastCheckOut = null;
-          let totalMins = 0;
-          let overallStatus = 'Absent';
-          let hasActiveSession = false;
+          const userGroups = itemsByDate[day.date].reduce((groups, item) => {
+            (groups[item.user_id] ||= []).push(item);
+            return groups;
+          }, {});
+          Object.values(userGroups).forEach((items) => {
+            let firstCheckIn = null;
+            let lastCheckOut = null;
+            let totalMins = 0;
+            let overallStatus = 'Absent';
+            let hasActiveSession = false;
 
-          items.forEach((item) => {
-            if (item.status !== 'Absent') overallStatus = item.status; // Priorities: Present > Absent
+            items.forEach((item) => {
+              if (item.status !== 'Absent') overallStatus = item.status; // Priorities: Present > Absent
 
-            if (item.check_in) {
-              if (!firstCheckIn || item.check_in < firstCheckIn) firstCheckIn = item.check_in;
-            }
-            if (item.check_out) {
-              if (!lastCheckOut || item.check_out > lastCheckOut) lastCheckOut = item.check_out;
-            } else if (item.check_in) {
-              hasActiveSession = true;
-            }
-
-            if (item.total_time) {
-              const parts = item.total_time.split(' ');
-              if (parts.length === 2) {
-                const h = parseInt(parts[0].replace('h', '')) || 0;
-                const m = parseInt(parts[1].replace('m', '')) || 0;
-                totalMins += h * 60 + m;
+              if (item.check_in) {
+                if (!firstCheckIn || item.check_in < firstCheckIn) firstCheckIn = item.check_in;
               }
+              if (item.check_out) {
+                if (!lastCheckOut || item.check_out > lastCheckOut) lastCheckOut = item.check_out;
+              } else if (item.check_in) {
+                hasActiveSession = true;
+              }
+
+              if (item.total_time) {
+                const parts = item.total_time.split(' ');
+                if (parts.length === 2) {
+                  const h = parseInt(parts[0].replace('h', '')) || 0;
+                  const m = parseInt(parts[1].replace('m', '')) || 0;
+                  totalMins += h * 60 + m;
+                }
+              }
+            });
+
+            let totalTimeStr = '--h --m';
+            if (totalMins > 0) {
+              const h = Math.floor(totalMins / 60);
+              const m = String(totalMins % 60).padStart(2, '0');
+              totalTimeStr = `${h}h ${m}m`;
             }
-          });
 
-          let totalTimeStr = '--h --m';
-          if (totalMins > 0) {
-            const h = Math.floor(totalMins / 60);
-            const m = String(totalMins % 60).padStart(2, '0');
-            totalTimeStr = `${h}h ${m}m`;
-          }
-
-          day.events.push({
-            id: items[0].id,
-            status: overallStatus,
-            type: this.getEventClass(overallStatus),
-            checkIn: firstCheckIn ? firstCheckIn.substring(0, 5) : '--:--',
-            checkOut: lastCheckOut ? lastCheckOut.substring(0, 5) : '--:--',
-            totalTime: totalTimeStr,
-            raw: items[0],
+            day.events.push({
+              id: items[0].id,
+              status: overallStatus,
+              userName: items[0].user?.name || '',
+              type: this.getEventClass(overallStatus),
+              checkIn: firstCheckIn ? firstCheckIn.substring(0, 5) : '--:--',
+              checkOut: lastCheckOut ? lastCheckOut.substring(0, 5) : '--:--',
+              totalTime: totalTimeStr,
+              raw: items[0],
+            });
           });
         }
       });
@@ -376,7 +434,12 @@ document.addEventListener('alpine:init', () => {
       }
 
       this.calendarDays.forEach((day) => {
-        if (day.events.length === 0 && day.date <= todayDateStr && !day.isOtherMonth) {
+        if (
+          this.userFilter &&
+          day.events.length === 0 &&
+          day.date <= todayDateStr &&
+          !day.isOtherMonth
+        ) {
           if (joiningDateStr && day.date < joiningDateStr) return;
 
           // Parse date properly across timezones avoiding shift
@@ -407,8 +470,11 @@ document.addEventListener('alpine:init', () => {
     },
 
     addEventForDay(day) {
+      if (access.create === false) return;
       window.dispatchEvent(
-        new CustomEvent('open-attendance-modal', { detail: { date: day.date } })
+        new CustomEvent('open-attendance-modal', {
+          detail: { date: day.date, user_id: this.userFilter || currentUserId },
+        })
       );
     },
 
@@ -489,9 +555,26 @@ document.addEventListener('alpine:init', () => {
 
     editItem(item) {
       if (!item) return;
+      if (!item.id) {
+        this.addEventForDay({ date: item.date });
+        return;
+      }
+      const ownRecord = String(item.user_id) === String(currentUserId);
       if (item.isLeave) {
+        if (
+          item.status !== 'Pending' ||
+          access.leaveEdit === false ||
+          (!access.global && !ownRecord)
+        ) {
+          showToast('This leave is read-only.', 'info');
+          return;
+        }
         window.dispatchEvent(new CustomEvent('open-leave-modal', { detail: item }));
       } else {
+        if (access.edit === false || (!access.global && !ownRecord)) {
+          showToast('This attendance is read-only.', 'info');
+          return;
+        }
         window.dispatchEvent(new CustomEvent('open-attendance-modal', { detail: item }));
       }
     },
@@ -546,6 +629,7 @@ document.addEventListener('alpine:init', () => {
     users: [],
     userBalances: [],
     isLoadingBalances: false,
+    _balanceRequestId: 0,
     form: {
       user_id: currentUserId,
       leave_type: '',
@@ -582,6 +666,7 @@ document.addEventListener('alpine:init', () => {
           this.form.reason = '';
           this.form.status = 'Pending';
         }
+        this.fetchBalances(this.form.user_id);
         getModal('#leaveModal')?.show();
       });
 
@@ -599,15 +684,20 @@ document.addEventListener('alpine:init', () => {
     },
 
     async fetchBalances(userId) {
+      const requestId = (this._balanceRequestId = (this._balanceRequestId || 0) + 1);
       const prevType = this.form.leave_type;
       this.userBalances = [];
-      if (!userId) return;
+      if (!userId) {
+        this.isLoadingBalances = false;
+        return;
+      }
 
       this.isLoadingBalances = true;
       try {
         const res = await apiFetch(
           `/api/leave-balances?user_id=${userId}&is_active=1&per_page=100`
         );
+        if (requestId !== this._balanceRequestId) return;
         if (res && res.data) {
           this.userBalances = res.data;
           this.$nextTick(() => {
@@ -615,25 +705,17 @@ document.addEventListener('alpine:init', () => {
           });
         }
       } catch (e) {
-        console.error('Failed to load balances');
+        if (requestId === this._balanceRequestId) this.error = e.message;
       }
-      this.isLoadingBalances = false;
+      if (requestId === this._balanceRequestId) this.isLoadingBalances = false;
     },
 
     async loadUsers() {
-      try {
-        const res = await apiFetch('/api/users?per_page=100');
-        this.users = res.data ?? res;
-
-        if (!this.editingId && currentUserId) {
-          this.$nextTick(() => {
-            this.form.user_id = currentUserId;
-          });
-        }
-      } catch (e) {}
+      this.users = await loadUserOptions(currentUserId);
     },
 
     async saveItem() {
+      if (this.saving) return;
       this.saving = true;
       this.error = null;
 
@@ -659,11 +741,12 @@ document.addEventListener('alpine:init', () => {
 
   Alpine.data('attendanceForm', (currentUserId = '') => ({
     editingId: null,
+    error: null,
     saving: false,
     users: [],
     form: {
       user_id: currentUserId,
-      date: new Date().toISOString().split('T')[0],
+      date: localDate(),
       check_in_time: '',
       check_out_time: '',
       status: 'Present',
@@ -673,15 +756,26 @@ document.addEventListener('alpine:init', () => {
     init() {
       this.loadUsers();
       window.addEventListener('open-attendance-modal', (e) => {
-        if (e.detail) {
+        this.error = null;
+        if (e.detail?.id) {
           this.editingId = e.detail.id;
           this.form.user_id = e.detail.user_id;
 
           const dateStr = e.detail.date ? e.detail.date.split('T')[0] : '';
           this.form.date = dateStr;
 
-          this.form.check_in_time = e.detail.check_in ? `${dateStr}T${e.detail.check_in}` : '';
-          this.form.check_out_time = e.detail.check_out ? `${dateStr}T${e.detail.check_out}` : '';
+          this.form.check_in_time = e.detail.check_in
+            ? `${dateStr}T${e.detail.check_in.slice(0, 5)}`
+            : '';
+          let checkoutDate = dateStr;
+          if (e.detail.check_in && e.detail.check_out && e.detail.check_out < e.detail.check_in) {
+            const next = new Date(`${dateStr}T12:00:00`);
+            next.setDate(next.getDate() + 1);
+            checkoutDate = localDate(next);
+          }
+          this.form.check_out_time = e.detail.check_out
+            ? `${checkoutDate}T${e.detail.check_out.slice(0, 5)}`
+            : '';
           this.form.status = e.detail.status;
           this.form.notes = e.detail.notes || '';
 
@@ -691,6 +785,8 @@ document.addEventListener('alpine:init', () => {
               '<i class="bi bi-calendar-check-fill text-primary me-2"></i>Edit Attendance';
         } else {
           this.resetForm();
+          if (e.detail?.date) this.form.date = e.detail.date;
+          if (e.detail?.user_id) this.form.user_id = e.detail.user_id;
           const title = document.querySelector('#attendanceModalLabel');
           if (title)
             title.innerHTML =
@@ -710,9 +806,10 @@ document.addEventListener('alpine:init', () => {
 
     resetForm() {
       this.editingId = null;
+      this.error = null;
       this.form = {
         user_id: currentUserId,
-        date: new Date().toISOString().split('T')[0],
+        date: localDate(),
         check_in_time: '',
         check_out_time: '',
         status: 'Present',
@@ -722,19 +819,11 @@ document.addEventListener('alpine:init', () => {
     },
 
     async loadUsers() {
-      try {
-        const res = await apiFetch('/api/users?per_page=100');
-        this.users = res.data ?? res;
-
-        if (!this.editingId && currentUserId) {
-          this.$nextTick(() => {
-            this.form.user_id = currentUserId;
-          });
-        }
-      } catch (e) {}
+      this.users = await loadUserOptions(currentUserId);
     },
 
     async saveItem() {
+      if (this.saving) return;
       this.saving = true;
       try {
         const method = this.editingId ? 'PUT' : 'POST';
@@ -748,6 +837,7 @@ document.addEventListener('alpine:init', () => {
         getModal('#attendanceModal')?.hide();
         this.resetForm();
       } catch (err) {
+        this.error = err.message;
         showToast(err.message, 'danger');
       } finally {
         this.saving = false;
