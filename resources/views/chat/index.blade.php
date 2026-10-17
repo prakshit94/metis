@@ -72,7 +72,7 @@
                             <template x-for="user in searchResults.users" :key="user.id">
                                 <button type="button" @click="startDirect(user.id)" class="btn btn-outline-secondary text-start w-100 d-flex align-items-center gap-2 mb-1 p-2 border-0">
                                     <div class="position-relative flex-shrink-0">
-                                        <img :src="getUserPhotoUrl(user)" class="rounded-circle object-fit-cover shadow-sm" style="width: 36px; height: 36px;">
+                                        <img x-on:error="handlePhotoError($event)" :src="getUserPhotoUrl(user)" class="rounded-circle object-fit-cover shadow-sm" style="width: 36px; height: 36px;">
                                         <span class="position-absolute bottom-0 end-0 rounded-circle border border-body" style="width: 10px; height: 10px;" :class="user.is_online ? 'bg-success' : 'bg-secondary'"></span>
                                     </div>
                                     <div class="min-w-0 flex-grow-1">
@@ -107,7 +107,7 @@
                             onmouseover="if(this.className.indexOf('bg-primary') === -1) this.style.backgroundColor = 'var(--bs-secondary-bg)'"
                             onmouseout="if(this.className.indexOf('bg-primary') === -1) this.style.backgroundColor = ''">
                             <div class="position-relative flex-shrink-0">
-                                <img :src="getConversationPhotoUrl(conversation)" class="rounded-circle object-fit-cover shadow-sm border border-2 border-body flex-shrink-0" style="width: 42px; height: 42px; " alt="">
+                                <img x-on:error="handlePhotoError($event)" :src="getConversationPhotoUrl(conversation)" class="rounded-circle object-fit-cover shadow-sm border border-2 border-body flex-shrink-0" style="width: 42px; height: 42px; " alt="">
                                 <span x-show="isOnline(conversation)"
                                       class="position-absolute bottom-0 end-0 rounded-circle border-2 border-body bg-success"
                                       style="width:11px;height:11px;"></span>
@@ -150,7 +150,7 @@
                                 <button type="button" class="btn btn-outline-secondary d-lg-none p-2 rounded-circle" @click="if (!sendingMessage) { conversationDrafts[activeConversation.id] = { draft, attachments: pendingAttachments }; activeConversation = null; replyTo = null; errorMessage = ''; }" aria-label="Back to conversations">
                                     <i class="bi bi-arrow-left"></i>
                                 </button>
-                                <img :src="getConversationPhotoUrl(activeConversation)" class="rounded-circle object-fit-cover shadow-sm border border-2 border-body flex-shrink-0" style="width: 42px; height: 42px; " alt="">
+                                <img x-on:error="handlePhotoError($event)" :src="getConversationPhotoUrl(activeConversation)" class="rounded-circle object-fit-cover shadow-sm border border-2 border-body flex-shrink-0" style="width: 42px; height: 42px; " alt="">
                                 <div class="min-w-0 flex-grow-1">
                                     <div class="d-flex align-items-center gap-2">
                                         <h6 class="mb-0 fw-bold text-truncate flex-grow-1" x-text="conversationTitle(activeConversation)"></h6>
@@ -181,7 +181,7 @@
                                     <div style="max-width: 75%;">
                                         <div class="d-flex align-items-center gap-2 mb-1 text-muted" style="font-size: 10px;" :class="message.sender_id == currentUserId ? 'justify-content-end' : 'justify-content-start'">
                                             <template x-if="message.sender?.photo">
-                                                <img :src="formatAttachmentUrl(message.sender.photo)" class="rounded-circle object-fit-cover shadow-sm" style="width:16px; height:16px;">
+                                                <img x-on:error="handlePhotoError($event)" :src="getUserPhotoUrl(message.sender)" class="rounded-circle object-fit-cover shadow-sm" style="width:16px; height:16px;">
                                             </template>
                                             <strong class="text-uppercase" x-text="message.sender?.name || 'User'"></strong>
                                             <span x-show="senderLocation(message)" class="opacity-75">
@@ -358,7 +358,7 @@
                     <div class="d-flex align-items-center justify-content-between mb-3">
                         <div>
                             <h6 class="mb-0 fw-bold text-uppercase" style="font-size:0.75rem; letter-spacing:0.5px;">Online Users</h6>
-                            <p class="mb-0 text-muted" style="font-size: 11px;" x-text="`${onlineUsers.length} active, ${users.length} available`"></p>
+                            <p class="mb-0 text-muted" style="font-size: 11px;" x-text="`${onlineUsers.length} active, ${presenceUsers.length} available`"></p>
                         </div>
                         <div class="d-flex gap-1">
                             @can('chat-export')
@@ -401,7 +401,7 @@
                                 :style="user.isMe ? 'cursor: default;' : ''"
                                 :disabled="startingUserId == user.id">
                             <div class="position-relative flex-shrink-0 mt-1">
-                                <img :src="getUserPhotoUrl(user)" class="rounded-circle object-fit-cover shadow-sm" style="width: 36px; height: 36px;"
+                                <img x-on:error="handlePhotoError($event)" :src="getUserPhotoUrl(user)" class="rounded-circle object-fit-cover shadow-sm" style="width: 36px; height: 36px;"
                                      :class="user.isMe ? 'border border-2 border-primary' : ''">
                                 <span class="position-absolute bottom-0 end-0 rounded-circle border border-2 border-body"
                                       style="width: 12px; height: 12px;"
@@ -545,7 +545,7 @@
                                            :for="'newUserCheck_' + user.id" 
                                            style="cursor: pointer;">
                                         
-                                        <img :src="getUserPhotoUrl(user)" class="rounded-circle object-fit-cover shadow-sm flex-shrink-0" style="width: 28px; height: 28px;">
+                                        <img x-on:error="handlePhotoError($event)" :src="getUserPhotoUrl(user)" class="rounded-circle object-fit-cover shadow-sm flex-shrink-0" style="width: 28px; height: 28px;">
                                         
                                         <div class="min-w-0 flex-grow-1 text-truncate">
                                             <div class="d-flex align-items-center gap-2 mb-1">
@@ -663,7 +663,7 @@
                                              onmouseover="this.style.backgroundColor='var(--bs-secondary-bg)'" 
                                              onmouseout="this.style.backgroundColor='transparent'">
                                             <div class="d-flex align-items-center gap-2">
-                                                <img :src="getUserPhotoUrl(user)" class="rounded-circle object-fit-cover shadow-sm" style="width: 28px; height: 28px;">
+                                                <img x-on:error="handlePhotoError($event)" :src="getUserPhotoUrl(user)" class="rounded-circle object-fit-cover shadow-sm" style="width: 28px; height: 28px;">
                                                 <div class="min-w-0 flex-grow-1 text-truncate" style="max-width: 140px;">
                                                     <div class="d-flex align-items-center gap-1 text-truncate mb-1">
                                                         <span class="small fw-semibold text-truncate flex-grow-1" x-text="user.name"></span>
@@ -688,7 +688,7 @@
                                          onmouseout="this.style.backgroundColor='transparent'">
                                         <div class="d-flex align-items-center gap-3">
                                             <div class="position-relative">
-                                                <img :src="getUserPhotoUrl(member.user)" class="rounded-circle object-fit-cover shadow-sm" style="width: 36px; height: 36px;">
+                                                <img x-on:error="handlePhotoError($event)" :src="getUserPhotoUrl(member.user)" class="rounded-circle object-fit-cover shadow-sm" style="width: 36px; height: 36px;">
                                                 <span class="position-absolute bottom-0 end-0 rounded-circle border-2 border-body" style="width: 12px; height: 12px;" :class="member.user?.is_online ? 'bg-success' : 'bg-secondary'"></span>
                                             </div>
                                             <div class="min-w-0 flex-grow-1 text-truncate">
@@ -842,13 +842,19 @@
                 }
             },
 
+            get presenceUsers() {
+                const users = this.users.filter(u => Number(u.id) !== Number(this.currentUserId));
+                if (this.selfUser) users.push(this.selfUser);
+                return users;
+            },
+
             get onlineUsers() {
-                return this.users.filter(u => u.is_online);
+                return this.presenceUsers.filter(u => u.is_online);
             },
 
             get onlineLabel() {
                 const count = this.onlineUsers.length;
-                return count + (count === 1 ? ' online now' : ' online now');
+                return count + ' online now';
             },
 
             get filteredConversations() {
@@ -884,12 +890,8 @@
 
             get visibleUsers() {
                 // Build full list: other users + inject self (logged-in user)
-                let allUsers = Array.isArray(this.users) ? [...this.users] : [];
-                if (this.selfUser) {
-                    // Remove stale self entry if server happens to include it, then prepend
-                    allUsers = allUsers.filter(u => u.id !== this.currentUserId);
-                    allUsers.push({ ...this.selfUser });
-                }
+                let allUsers = [...this.presenceUsers];
+
 
                 // ── Compute global revenue rank on the FULL unsorted/unfiltered list ──
                 // Sort a clone by revenue desc to get the true global position
@@ -1407,13 +1409,34 @@
                 return `/storage/${path}`;
             },
             
-            getUserPhotoUrl(user) {
-                if (!user) return '/assets/images/default_avatar.jpeg';
-                const photo = user.photo || user.avatar;
-                if (!photo) return user.gender === 'Male' ? '/assets/images/default_male.png' : (user.gender === 'Female' ? '/assets/images/default_female.png' : '/assets/images/default_avatar.jpeg');
-                return this.formatAttachmentUrl(photo);
+            failedPhotoUrls: {},
+
+            defaultUserPhoto(user) {
+                return user?.gender === 'Male' ? '/assets/images/default_male.png' : (user?.gender === 'Female' ? '/assets/images/default_female.png' : '/assets/images/default_avatar.jpeg');
             },
-            
+
+            handlePhotoError(event) {
+                const image = event.target;
+                const source = image.getAttribute('src');
+                if (source) this.failedPhotoUrls[source] = true;
+                if (source !== '/assets/images/default_avatar.jpeg') {
+                    image.src = '/assets/images/default_avatar.jpeg';
+                }
+            },
+
+            getUserPhotoUrl(user) {
+                const photo = (user?.photo || user?.avatar || '').trim();
+                if (!photo) return this.defaultUserPhoto(user);
+                // Older profiles store public/storage prefixes and Windows separators.
+                let path = photo.replaceAll('\\', '/');
+                if (!/^https?:\/\//i.test(path)) {
+                    path = path.replace(/^\/?public\//, '').replace(/^\/+/, '');
+                    if (path.startsWith('storage/') || path.startsWith('assets/')) path = '/' + path;
+                }
+                const url = this.formatAttachmentUrl(path);
+                return this.failedPhotoUrls[url] ? this.defaultUserPhoto(user) : url;
+            },
+
             getConversationPhotoUrl(conv) {
                 if (!conv) return '/assets/images/default_avatar.jpeg';
                 if (conv.type === 'group') {

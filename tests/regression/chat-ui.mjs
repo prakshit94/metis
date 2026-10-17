@@ -76,3 +76,22 @@ const page = messages => ({data: {data: {data: messages}}});
 assert.ok(!view.includes('x-init="init()"'));
 assert.ok(!view.includes('@keydown.enter.prevent'));
 console.log('Chat UI regression checks passed (initialization, races, drafts, sending, polling, attachments, keyboard).');
+{
+    const s = workspace();
+    s.users = [{id:2,is_online:false}, {id:3,is_online:true}, {id:'1',is_online:false}];
+    s.selfUser = {id:1,isMe:true,is_online:true};
+    assert.equal(s.presenceUsers.length, 3, 'presence totals include self exactly once across ID types');
+    assert.equal(s.onlineLabel, '2 online now', 'both headers count the same online users as the sidebar');
+    s.userFilter = 'online';
+    assert.equal(s.visibleUsers.length, 2, 'online filter agrees with header count');
+    assert.equal(s.getUserPhotoUrl({photo:'public/storage/photos/a.jpg'}), '/storage/photos/a.jpg');
+    assert.equal(s.getUserPhotoUrl({photo:'storage/photos/a.jpg'}), '/storage/photos/a.jpg');
+    assert.equal(s.getUserPhotoUrl({photo:'uploads\\a.jpg'}), '/storage/uploads/a.jpg');
+    assert.equal(s.getUserPhotoUrl({photo:'assets/images/default_male.png'}), '/assets/images/default_male.png');
+    const image = {getAttribute: () => '/storage/missing.jpg'};
+    s.handlePhotoError({target:image});
+    assert.equal(image.src, '/assets/images/default_avatar.jpeg');
+    assert.equal(s.getUserPhotoUrl({photo:'missing.jpg',gender:'Female'}), '/assets/images/default_female.png');
+    assert.equal(s.getUserPhotoUrl({photo:null}), '/assets/images/default_avatar.jpeg');
+}
+console.log('Chat avatar and presence count regression checks passed.');
