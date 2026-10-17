@@ -113,7 +113,7 @@
         <main id="main-content" class="admin-main" style="{{ $hideSidebar ? 'margin-left: 0;' : '' }}">
             <div class="container-fluid p-4 p-lg-5">
                 {{-- ACTIVE PATH BREADCRUMBS --}}
-                @if(!request()->routeIs('dashboard') && !request()->routeIs('inventory.dashboard'))
+                @if(!View::hasSection('hideBreadcrumbs') && !request()->routeIs('dashboard') && !request()->routeIs('inventory.dashboard'))
                     @php
                         $segmentMap = [
                             'orders' => 'Order Management',

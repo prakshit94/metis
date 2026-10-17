@@ -2,6 +2,7 @@
 
 @section('title', 'Order Management')
 @section('page', 'orders')
+@section('hideBreadcrumbs', '1')
 
 @section('content')
 <div class="order-management" x-data="orderTable" x-init="
@@ -17,8 +18,6 @@
     init();
 ">
     <div x-data="{ showAnalytics: localStorage.getItem('orders_show_analytics') === 'true' }" x-init="$watch('showAnalytics', val => localStorage.setItem('orders_show_analytics', val))">
-<!-- Page Header -->
-<div class="mb-4"><h1 class="h3 fw-bold mb-2">Orders</h1><p class="text-body-secondary mb-0">Review orders, track fulfillment, and manage your order workflow.</p></div>
 <div class="orders-toolbar d-flex flex-column flex-xl-row align-items-start align-items-xl-center justify-content-between mb-4 gap-3">
     <div class="d-flex flex-wrap align-items-center gap-2">
         <!-- Refresh Button -->
