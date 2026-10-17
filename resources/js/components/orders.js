@@ -1213,15 +1213,32 @@ document.addEventListener('alpine:init', () => {
         createdBy: {
           name: o.creator ? (o.creator.name || '').trim() : 'N/A',
           email: o.creator ? o.creator.email || '' : '',
-          avatar:
-            o.creator && (o.creator.avatar || o.creator.photo)
-              ? (o.creator.avatar || o.creator.photo)
-              : '/assets/images/default_avatar.jpeg',
+          avatar: this.creatorPhotoUrl(o.creator?.photo || o.creator?.avatar),
         },
         updatedBy: o.updater ? `${o.updater.name || ''}`.trim() : 'N/A',
         isUnfulfillable: o.is_unfulfillable || false,
         original: o,
       };
+    },
+
+    creatorPhotoUrl(photo) {
+      const fallback = '/assets/images/default_avatar.jpeg';
+      if (typeof photo !== 'string' || !photo.trim()) return fallback;
+      let path = photo.trim().replaceAll('\\', '/');
+      if (/^https?:\/\//i.test(path)) {
+        try {
+          const url = new URL(path);
+          // Uploaded profile URLs can retain the host used during development.
+          if (['localhost', '127.0.0.1', window.location.hostname].includes(url.hostname)) {
+            return url.pathname + url.search;
+          }
+        } catch (_) {
+          return fallback;
+        }
+        return path;
+      }
+      path = path.replace(/^\/?public\//, '').replace(/^\/+/, '');
+      return /^(storage|assets)\//.test(path) ? '/' + path : '/storage/' + path;
     },
 
     formatCurrency(value) {

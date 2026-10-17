@@ -95,3 +95,20 @@ console.log('Chat UI regression checks passed (initialization, races, drafts, se
     assert.equal(s.getUserPhotoUrl({photo:null}), '/assets/images/default_avatar.jpeg');
 }
 console.log('Chat avatar and presence count regression checks passed.');
+{
+    const s = workspace();
+    get = async () => page([{id:10,content:'Loaded'}]);
+    post = async () => { throw new Error('Read receipt unavailable'); };
+    const originalError = console.error; console.error = () => {};
+    try {
+        const conversation = {id:1,unread_count:2};
+        await s.selectConversation(conversation);
+        assert.equal(s.messages[0].id,10);
+        assert.equal(s.errorMessage,'','read receipt failures do not report message loading failure');
+        assert.equal(conversation.unread_count,2,'failed receipt preserves unread count');
+        get = async () => { throw {response:{status:419}}; };
+        await s.selectConversation({id:2});
+        assert.match(s.errorMessage,/session has expired/);
+    } finally { console.error = originalError; }
+}
+console.log('Message loading and read receipt failure checks passed.');

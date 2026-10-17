@@ -24,6 +24,7 @@ const context = {
   },
   MutationObserver: class {observe() {observed++;} disconnect() {disconnected++;}},
   URLSearchParams,
+  URL,
   setTimeout: () => 1,
   clearTimeout: () => {},
 };
@@ -72,3 +73,11 @@ singleWarehouse.init();
 assert.equal(singleWarehouse.visibleWarehouseStat, 'Second', 'Warehouse URL must initialize the overview selector');
 singleWarehouse.destroy();
 console.log('PASS: single warehouse URL initializes the overview selection.');
+
+assert.equal(ui.creatorPhotoUrl(null), '/assets/images/default_avatar.jpeg');
+assert.equal(ui.creatorPhotoUrl('users/photos/user.jpg'), '/storage/users/photos/user.jpg');
+assert.equal(ui.creatorPhotoUrl('public/storage/users/photos/user.jpg'), '/storage/users/photos/user.jpg');
+assert.equal(ui.creatorPhotoUrl('storage/users/photos/user.jpg'), '/storage/users/photos/user.jpg');
+assert.equal(ui.creatorPhotoUrl('http://127.0.0.1:8000/storage/users/photos/user.jpg'), '/storage/users/photos/user.jpg');
+assert.equal(ui.creatorPhotoUrl('https://images.example.com/user.jpg'), 'https://images.example.com/user.jpg');
+console.log('PASS: creator avatars normalize upload paths and local URLs while preserving external images.');

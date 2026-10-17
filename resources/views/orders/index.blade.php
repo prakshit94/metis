@@ -1068,7 +1068,7 @@
         <p class="orders-table-hint small text-body-secondary px-3 py-2 mb-0 border-bottom"><i class="bi bi-arrow-left-right me-2" aria-hidden="true"></i>Scroll horizontally to view all order details.</p>
         <div class="table-responsive orders-table-scroll" tabindex="0" role="region" aria-label="Orders table" :aria-busy="isLoading.toString()">
             <table class="table table-hover mb-0">
-                <colgroup><col style="width:40px"><col style="width:205px"><col style="width:210px"><col style="width:165px"><col style="width:190px"><col style="width:95px"><col style="width:150px"><col style="width:120px"><col style="width:85px"></colgroup>
+
                 <thead class="table-light">
                     <tr>
                         <th style="width: 40px;">
@@ -1091,7 +1091,8 @@
                             <i class="bi bi-arrow-down" x-show="sortField === 'order_no' && sortDirection === 'desc'" aria-hidden="true"></i>
                         </th>
                         <th scope="col">Placed By</th>
-                        <th scope="col">Customer</th>
+                        <th scope="col">Village</th>
+                        <th scope="col">Taluka</th>
                         <th scope="col">Items</th>
                         <th scope="col"
                             role="button"
@@ -1136,34 +1137,24 @@
                                     <a href="#" class="fw-bold text-decoration-none text-primary text-nowrap" @click.prevent="viewOrder(order)" x-text="order.orderNumber"></a>
                                     <i class="bi opacity-50 cursor-pointer text-primary-hover" x-data="{ copied: false }" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'" style="font-size: 0.85em;" title="Copy" @click="copyText(order.orderNumber).then((success) => { if (success) { copied = true; setTimeout(() => copied = false, 2000); } })"></i>
                                 </div>
-                                <div class="d-flex align-items-center flex-wrap gap-1 mt-1">
-                                    <small class="text-muted" x-text="'ID: ' + order.id"></small>
-                                    <template x-if="order.warehouse">
-                                        <span class="badge text-bg-secondary-subtle text-secondary-emphasis ms-1" style="font-size: 0.65rem;" title="Fulfillment Warehouse">
-                                            <i class="bi bi-building me-1"></i><span x-text="order.warehouse.name"></span>
-                                        </span>
-                                    </template>
-                                </div>
                             </td>
                             <td>
                                 <div class="d-flex align-items-center">
                                     <img :src="order.createdBy.avatar"
-                                         class="rounded-circle me-2"
+                                         x-on:error="if (order.createdBy.avatar !== '/assets/images/default_avatar.jpeg') order.createdBy.avatar = '/assets/images/default_avatar.jpeg'"
+                                         class="rounded-circle object-fit-cover flex-shrink-0 me-2"
                                          width="32"
                                          height="32"
                                          :alt="order.createdBy.name">
                                     <div>
                                         <div class="fw-medium small" x-text="order.createdBy.name"></div>
-                                        <small class="text-muted cursor-pointer d-inline-flex align-items-center gap-1" title="Click to copy" x-data="{ copied: false }" @click="copyText(order.createdBy.email).then((success) => { if (success) { copied = true; setTimeout(() => copied = false, 2000); } })"><span class="orders-creator-email" :title="order.createdBy.email" x-text="order.createdBy.email"></span><i class="bi opacity-50" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'" style="font-size: 0.8em;"></i></small>
                                     </div>
                                 </div>
                             </td>
+                            <td class="small" x-text="order.original?.shipping_village_name || order.original?.shipping_address?.village?.village_name || order.original?.shipping_address?.village_name || '—'"></td>
+                            <td class="small" x-text="order.original?.shipping_taluka || order.original?.shipping_address?.village?.taluka_name || order.original?.shipping_address?.taluka || '—'"></td>
                             <td>
-                                <div class="fw-medium small" x-text="order.customer.name"></div>
-                                <small class="text-muted d-block mt-1" x-text="order.customer.phone || order.customer.secondaryPhone || 'No mobile number'"></small>
-                            </td>
-                            <td>
-                                <div class="order-items small cursor-pointer custom-hover-bg p-2 rounded border border-transparent hover-border-secondary-subtle transition-all" @click="viewItems(order)" title="Click to view items">
+                                <div class="order-items orders-row-details small cursor-pointer custom-hover-bg p-2 rounded border border-transparent hover-border-secondary-subtle transition-all" @click="viewItems(order)" title="Click to view items">
                                     <div class="fw-medium d-flex align-items-center flex-wrap gap-1">
                                         <i class="bi bi-box-seam text-secondary me-1"></i>
                                         <span x-text="order.itemCount + ' item' + (order.itemCount > 1 ? 's' : '')"></span>
@@ -1176,7 +1167,7 @@
                                     <small class="orders-item-description text-muted d-block mt-1" :title="order.items.length ? order.items[0].name : ''" style="max-width: 200px;" x-text="order.items.length > 0 ? order.items[0].name + (order.itemCount > 1 ? ' +' + (order.itemCount - 1) + ' more' : '') : '—'"></small>
                                 </div>
                             </td>
-                            <td class="fw-medium small text-nowrap" x-text="`₹ ${order.total}`"></td>
+                            <td class="fw-medium small text-nowrap text-end" x-text="`₹ ${order.total}`"></td>
                             <td>
                                 <span class="badge small" 
                                       :class="`bg-${getStatusTheme(order.status)}-subtle text-${getStatusTheme(order.status)}-emphasis border border-${getStatusTheme(order.status)}-subtle`"
@@ -1228,7 +1219,7 @@
                                     </div>
                                 </template>
                             </td>
-                            <td>
+                            <td class="orders-date-cell">
                                 <template x-if="!order.isDraft">
                                     <div>
                                         <div class="small fw-medium" x-text="order.orderDate ? new Date(order.orderDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'"></div>
@@ -1343,13 +1334,13 @@
                     </template>
                     <template x-if="orders.length === 0 && !isLoading">
                         <tr>
-                            <td colspan="9" class="text-center py-5 text-muted">
+                            <td colspan="10" class="text-center py-5 text-muted">
                                 <i class="bi bi-inbox fs-1 d-block mb-2"></i>
                                 No orders found matching current criteria.
                             </td>
                         </tr>
                     </template>
-                    <template x-if="orders.length === 0 && isLoading"><tr><td colspan="9" class="text-center text-body-secondary py-5" role="status"><span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>Loading orders…</td></tr></template>
+                    <template x-if="orders.length === 0 && isLoading"><tr><td colspan="10" class="text-center text-body-secondary py-5" role="status"><span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>Loading orders…</td></tr></template>
                 </tbody>
             </table>
         </div>

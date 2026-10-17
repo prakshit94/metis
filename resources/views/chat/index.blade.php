@@ -1052,13 +1052,25 @@
 
                     if ((conversation.unread_count || 0) > 0) {
                         const lastMsg = this.messages[this.messages.length - 1];
-                        await axios.post(`/api/chat/conversations/${conversation.id}/read`,
-                            lastMsg ? { message_id: lastMsg.id } : {});
-                        conversation.unread_count = 0;
+                        try {
+                            await axios.post(`/api/chat/conversations/${conversation.id}/read`,
+                                lastMsg ? { message_id: lastMsg.id } : {});
+                            conversation.unread_count = 0;
+                        } catch (e) {
+                            // Messages are already loaded; retain unread state for a later retry.
+                            console.error('Failed to mark messages as read:', e);
+                        }
                     }
                 } catch (e) {
                     if (this.selectionVersion !== selectionVersion || this.activeConversation?.id != conversation.id) return;
-                    this.errorMessage = 'Failed to load messages. Please try again.';
+                    const status = e.response?.status;
+                    this.errorMessage = status === 401 || status === 419
+                        ? 'Your session has expired. Refresh the page and sign in again.'
+                        : status === 403
+                            ? 'You no longer have access to this conversation.'
+                            : status === 429
+                                ? 'Too many chat requests. Please wait a moment and try again.'
+                                : 'Failed to load messages. Please try again.';
                     console.error(e);
                 }
             },

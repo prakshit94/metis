@@ -433,3 +433,37 @@ body[data-page='orders'] .orders-table-scroll td:has(.dropdown-menu.show) {
     .card-body { padding: 1rem !important; }
   }
 }
+
+// Keep order list details on one horizontal line; the table container scrolls.
+body[data-page='orders'] .orders-table-scroll > .table {
+  table-layout: auto;
+  min-width: 1350px;
+  th, td { padding-left: 1rem; padding-right: 1rem; }
+  td { white-space: nowrap; }
+  th:first-child, td:first-child { width: 40px; padding-right: 0.5rem; }
+  th:nth-child(7) { text-align: right; }
+  th:last-child, td:last-child { text-align: center; }
+  td:nth-child(3) img { border: 1px solid var(--bs-border-color); }
+  .orders-row-details,
+  .orders-date-cell div {
+    display: inline-flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .orders-item-description {
+    display: inline-block !important;
+    max-width: 240px !important;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    margin-top: 0 !important;
+    -webkit-line-clamp: unset;
+    overflow: hidden;
+  }
+  .orders-date-cell .border-top {
+    border-top: 0 !important;
+    padding-top: 0 !important;
+    margin-top: 0 !important;
+  }
+}
