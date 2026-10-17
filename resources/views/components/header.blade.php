@@ -2,6 +2,9 @@
 @php
     $appLogo = \App\Models\SystemSetting::where('key', 'default_image_logo_png')->value('value');
     $logoImage = $appLogo ? $appLogo : asset('assets/images/logo.png');
+    $headerAvatarFallback = ($defaultAvatarUrl ?? '') ?: asset(Auth::user()?->gender === 'Male' ? 'assets/images/default_male.png' : (Auth::user()?->gender === 'Female' ? 'assets/images/default_female.png' : 'assets/images/default_avatar.jpeg'));
+    $headerPhoto = Auth::user()?->photo;
+    $headerPhotoUrl = $headerPhoto ? (str_starts_with($headerPhoto, 'http') || str_starts_with($headerPhoto, '/') ? $headerPhoto : asset('storage/'.$headerPhoto)) : $headerAvatarFallback;
 @endphp
 <header class="admin-header border-bottom shadow-sm sticky-top" role="banner" style="z-index: 1040; min-height: 70px;">
     <nav class="navbar admin-navbar navbar-expand h-100 py-0" aria-label="Main navigation">
@@ -26,7 +29,7 @@
                 {{-- BRAND --}}
                 <a class="navbar-brand d-flex align-items-center gap-3 m-0 py-2" href="{{ route('dashboard') }}" aria-label="Ecommerce Admin — go to dashboard">
                     <div class="brand-logo-container rounded-4 d-flex align-items-center justify-content-center flex-shrink-0 transition-all hover-rotate" style="width: 42px; height: 42px;">
-                        <img src="{{ $logoImage }}?v={{ file_exists(public_path('assets/images/logo.png')) ? filemtime(public_path('assets/images/logo.png')) : time() }}" alt="Logo" width="36" height="36" aria-hidden="true" class="shadow-sm rounded-circle">
+                        <img src="{{ $logoImage }}{{ str_contains($logoImage, '?') ? '&' : '?' }}v={{ file_exists(public_path('assets/images/logo.png')) ? filemtime(public_path('assets/images/logo.png')) : time() }}" alt="Logo" width="36" height="36" aria-hidden="true" class="shadow-sm rounded-circle">
                     </div>
                     <div class="d-none d-xl-flex flex-column lh-1 text-truncate">
                         <span class="fw-black text-body-emphasis fs-5 tracking-tight mb-1" style="letter-spacing: -0.5px;">Ecommerce</span>
@@ -994,7 +997,7 @@
                             aria-expanded="false"
                             aria-label="User menu">
                         <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center shadow-sm overflow-hidden" style="width: 38px; height: 38px;">
-                            <img src="{{ Auth::user()?->photo ? (str_starts_with(Auth::user()->photo, 'http') || str_starts_with(Auth::user()->photo, '/') ? Auth::user()->photo : asset('storage/' . Auth::user()->photo)) : (Auth::user()?->gender === 'Male' ? asset('assets/images/default_male.png') : (Auth::user()?->gender === 'Female' ? asset('assets/images/default_female.png') : asset('assets/images/default_avatar.jpeg'))) }}" class="w-100 h-100 object-fit-cover" alt="User" onerror="this.onerror=null; this.src='{{ Auth::user()?->gender === 'Male' ? asset('assets/images/default_male.png') : (Auth::user()?->gender === 'Female' ? asset('assets/images/default_female.png') : asset('assets/images/default_avatar.jpeg')) }}';">
+                            <img data-profile-avatar data-profile-user-id="{{ Auth::id() }}" data-profile-photo="{{ Auth::user()?->photo ?? '' }}" data-profile-gender="{{ Auth::user()?->gender ?? '' }}" src="{{ $headerPhotoUrl }}" class="w-100 h-100 object-fit-cover" alt="User" onerror="if (window.ProfileImages) window.ProfileImages.handlePhotoError(event, {gender: this.dataset.profileGender});">
                         </div>
                         <span class="d-none d-md-flex flex-column text-start ms-1 lh-1">
                             <span class="fw-bold text-body" style="font-size: 13px;">{{ Auth::user()?->name ?? 'User' }}</span>
@@ -1012,7 +1015,7 @@
                         
                         <li class="px-4 py-3 d-flex align-items-center gap-3 border-bottom mb-2">
                             <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center shadow-sm overflow-hidden" style="width: 48px; height: 48px;">
-                                <img src="{{ Auth::user()?->photo ? (str_starts_with(Auth::user()->photo, 'http') || str_starts_with(Auth::user()->photo, '/') ? Auth::user()->photo : asset('storage/' . Auth::user()->photo)) : (Auth::user()?->gender === 'Male' ? asset('assets/images/default_male.png') : (Auth::user()?->gender === 'Female' ? asset('assets/images/default_female.png') : asset('assets/images/default_avatar.jpeg'))) }}" class="w-100 h-100 object-fit-cover" alt="User" onerror="this.onerror=null; this.src='{{ Auth::user()?->gender === 'Male' ? asset('assets/images/default_male.png') : (Auth::user()?->gender === 'Female' ? asset('assets/images/default_female.png') : asset('assets/images/default_avatar.jpeg')) }}';">
+                                <img data-profile-avatar data-profile-user-id="{{ Auth::id() }}" data-profile-photo="{{ Auth::user()?->photo ?? '' }}" data-profile-gender="{{ Auth::user()?->gender ?? '' }}" src="{{ $headerPhotoUrl }}" class="w-100 h-100 object-fit-cover" alt="User" onerror="if (window.ProfileImages) window.ProfileImages.handlePhotoError(event, {gender: this.dataset.profileGender});">
                             </div>
                             <div style="min-width: 0;">
                                 <h6 class="mb-1 fw-bold text-body text-truncate">{{ Auth::user()?->name ?? 'User' }}</h6>
@@ -1050,11 +1053,11 @@
                                             method: 'POST',
                                             headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-TOKEN': csrfToken },
                                             body: formData
-                                        }).then(r => r.json()).then(d => {
+                                        }).then(async r => { const data = await r.json(); if (!r.ok) throw new Error(data.message || 'Upload failed'); return data; }).then(d => {
                                             uploadingHeaderPhoto = false;
                                             $event.target.value = '';
                                             if(d.photo) {
-                                                document.querySelectorAll('img[alt=\'User\']').forEach(img => img.src = d.photo);
+                                                window.ProfileImages.updateUserPhoto({id: {{ Auth::id() }}, photo:d.photo});
                                                 if(window.Swal) Swal.fire({icon:'success', title:'Success', text:'Photo updated', toast:true, position:'top-end', showConfirmButton:false, timer:3000});
                                             } else if(d.message) {
                                                 if(window.Swal) Swal.fire('Error', d.message, 'error');

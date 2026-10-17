@@ -21,8 +21,8 @@
         $logoImage = $appLogo ? $appLogo : asset('assets/images/logo.png');
     @endphp
     <!-- Favicon -->
-    <link rel="icon" type="image/svg+xml" href="{{ $logoImage }}?v={{ file_exists(public_path('assets/images/logo.png')) ? filemtime(public_path('assets/images/logo.png')) : time() }}">
-    <link rel="icon" type="image/png" href="{{ $logoImage }}?v={{ file_exists(public_path('assets/images/logo.png')) ? filemtime(public_path('assets/images/logo.png')) : time() }}">
+    <link rel="icon" type="image/svg+xml" href="{{ $logoImage }}{{ str_contains($logoImage, '?') ? '&' : '?' }}v={{ file_exists(public_path('assets/images/logo.png')) ? filemtime(public_path('assets/images/logo.png')) : time() }}">
+    <link rel="icon" type="image/png" href="{{ $logoImage }}{{ str_contains($logoImage, '?') ? '&' : '?' }}v={{ file_exists(public_path('assets/images/logo.png')) ? filemtime(public_path('assets/images/logo.png')) : time() }}">
 
     <!-- Preconnect -->
     <link rel="preconnect" href="https://fonts.googleapis.com">

@@ -479,7 +479,7 @@
                                                     <td>
                                                         <div class="d-flex align-items-center">
                                                             <div class="position-relative me-3">
-                                                                <img :src="user.photo || user.avatar || (user.gender === 'Male' ? '/assets/images/default_male.png' : (user.gender === 'Female' ? '/assets/images/default_female.png' : '/assets/images/default_avatar.jpeg'))" 
+                                                                <img :src="photoUrl(user)" data-profile-avatar :data-profile-user-id="user.id" :data-profile-photo="user.photo || user.avatar || ''" :data-profile-gender="user.gender || ''" x-on:error="handlePhotoError($event, user)"
                                                                      class="rounded-circle shadow-sm" 
                                                                      width="42" 
                                                                      height="42"
@@ -700,7 +700,7 @@
                     <div class="d-flex align-items-start justify-content-between mb-4 pb-4 border-bottom">
                         <div class="d-flex align-items-center gap-4">
                             <div class="position-relative">
-                                <img :src="form.photo || (form.gender === 'Male' ? '/assets/images/default_male.png' : (form.gender === 'Female' ? '/assets/images/default_female.png' : '/assets/images/default_avatar.jpeg'))" class="rounded-circle border border-3 shadow-sm bg-body-tertiary" style="width: 110px; height: 110px; object-fit: cover; border-color: var(--bs-border-color) !important;" alt="Profile Picture">
+                                <img :src="photoUrl(form)" data-profile-avatar :data-profile-photo="form.photo || ''" :data-profile-gender="form.gender || ''" x-on:error="handlePhotoError($event, form)" class="rounded-circle border border-3 shadow-sm bg-body-tertiary" style="width: 110px; height: 110px; object-fit: cover; border-color: var(--bs-border-color) !important;" alt="Profile Picture">
                                 <span class="position-absolute bottom-0 end-0 p-2 border border-2 rounded-circle shadow-sm" :class="form.is_active ? 'bg-success' : 'bg-secondary'" style="width: 22px; height: 22px; right: 6px !important; bottom: 6px !important; border-color: var(--bs-body-bg) !important;"></span>
                             </div>
                             <div>
@@ -1180,10 +1180,10 @@
                                             <div class="border border-dashed rounded p-3 text-center bg-body-secondary d-flex flex-column align-items-center justify-content-center" style="min-height: 150px; border-style: dashed !important;">
                                                 <div class="mb-2">
                                                     <template x-if="form.photo">
-                                                        <img :src="form.photo" alt="Preview" class="rounded-circle border shadow-sm" style="width: 80px; height: 80px; object-fit: cover;">
+                                                        <img :src="photoUrl(form)" data-profile-avatar :data-profile-photo="form.photo" :data-profile-gender="form.gender || ''" x-on:error="handlePhotoError($event, form)" alt="Preview" class="rounded-circle border shadow-sm" style="width: 80px; height: 80px; object-fit: cover;">
                                                     </template>
                                                     <template x-if="!form.photo">
-                                                        <img :src="form.gender === 'Male' ? '/assets/images/default_male.png' : (form.gender === 'Female' ? '/assets/images/default_female.png' : '/assets/images/default_avatar.jpeg')" alt="Default Avatar" class="rounded-circle border shadow-sm" style="width: 80px; height: 80px; object-fit: cover; opacity: 0.5;">
+                                                        <img :src="photoUrl(form)" data-profile-avatar :data-profile-photo="''" :data-profile-gender="form.gender || ''" x-on:error="handlePhotoError($event, form)" alt="Default Avatar" class="rounded-circle border shadow-sm" style="width: 80px; height: 80px; object-fit: cover; opacity: 0.5;">
                                                     </template>
                                                 </div>
                                                 <input type="file" class="form-control form-control-sm" accept="image/*" @change="handlePhotoUpload($event)">

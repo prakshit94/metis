@@ -4,9 +4,9 @@
 @section('page', 'files')
 
 @section('content')
-<div class="files-management" x-data="filesComponent" x-init="init()">
+<div class="files-management" x-data="filesComponent">
     {{-- Page Header --}}
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex flex-wrap gap-3 justify-content-between align-items-center mb-4">
         <div>
             <h1 class="h3 mb-1 fw-bold"><i class="bi bi-folder-fill text-primary me-2"></i>File Manager</h1>
             <p class="text-muted mb-0 small">Organize, share, and manage your files.</p>
@@ -52,11 +52,9 @@
                     <div class="d-flex align-items-center gap-3">
                         <div class="stats-icon bg-warning bg-opacity-10 text-warning fs-3 rounded-3 p-2 flex-shrink-0"><i class="bi bi-hdd-fill"></i></div>
                         <div class="w-100">
-                            <p class="mb-1 small text-muted d-flex justify-content-between"><span>Storage Used</span><span x-text="`${storagePercentage.toFixed(0)}%`"></span></p>
-                            <div class="progress" style="height: 6px;">
-                                <div class="progress-bar bg-warning" :style="`width: ${storagePercentage}%`"></div>
-                            </div>
-                            <small class="text-muted mt-1 d-block" x-text="`${storageUsed}GB of ${storageTotal}GB`"></small>
+                            <p class="mb-1 small text-muted">Total File Size</p>
+                            <div class="h4 mb-0 fw-bold" x-text="storageUsed"></div>
+                            <small class="text-muted">Uploaded files and listed assets</small>
                         </div>
                     </div>
                 </div>
@@ -68,8 +66,8 @@
                     <div class="d-flex align-items-center gap-3">
                         <div class="stats-icon bg-success bg-opacity-10 text-success fs-3 rounded-3 p-2 flex-shrink-0"><i class="bi bi-hdd-network-fill"></i></div>
                         <div>
-                            <p class="mb-1 small text-muted">Storage Free</p>
-                            <div class="h4 mb-0 fw-bold text-success" x-text="`${storageRemaining} GB`"></div>
+                            <p class="mb-1 small text-muted">Documents</p>
+                            <div class="h4 mb-0 fw-bold text-success" x-text="allFiles.filter(file => file.type === 'document').length"></div>
                         </div>
                     </div>
                 </div>
@@ -85,20 +83,20 @@
                 <div class="col-auto">
                     <div class="d-flex flex-wrap gap-2 justify-content-end align-items-center">
                         <div class="position-relative">
-                            <input type="search" class="form-control form-control-sm pe-4" placeholder="Search files..." x-model="searchQuery" @input.debounce.400ms="filterFiles()" style="width:220px;">
+                            <input type="search" aria-label="Search files" class="form-control form-control-sm pe-4" placeholder="Search files..." x-model="searchQuery" @input.debounce.400ms="filterFiles()" style="width:220px;">
                             <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-2 text-muted small"></i>
                         </div>
-                        <select class="form-select form-select-sm" x-model="sortBy" @change="sortFiles()" style="width:140px;">
+                        <select aria-label="Sort files" class="form-select form-select-sm" x-model="sortBy" @change="sortFiles()" style="width:140px;">
                             <option value="name">Sort by Name</option>
                             <option value="date">Sort by Date</option>
                             <option value="size">Sort by Size</option>
                             <option value="type">Sort by Type</option>
                         </select>
                         <div class="btn-group btn-group-sm">
-                            <button class="btn" :class="viewMode === 'grid' ? 'btn-primary' : 'btn-outline-secondary'" @click="viewMode = 'grid'"><i class="bi bi-grid"></i></button>
-                            <button class="btn" :class="viewMode === 'list' ? 'btn-primary' : 'btn-outline-secondary'" @click="viewMode = 'list'"><i class="bi bi-list-ul"></i></button>
+                            <button aria-label="Grid view" :aria-pressed="viewMode === 'grid'" class="btn" :class="viewMode === 'grid' ? 'btn-primary' : 'btn-outline-secondary'" @click="viewMode = 'grid'"><i class="bi bi-grid"></i></button>
+                            <button aria-label="List view" :aria-pressed="viewMode === 'list'" class="btn" :class="viewMode === 'list' ? 'btn-primary' : 'btn-outline-secondary'" @click="viewMode = 'list'"><i class="bi bi-list-ul"></i></button>
                         </div>
-                        <button class="btn btn-sm btn-outline-secondary" @click="refreshFiles()" title="Refresh"><i class="bi bi-arrow-clockwise"></i></button>
+                        <button class="btn btn-sm btn-outline-secondary" @click="refreshFiles()" :disabled="loading" aria-label="Refresh files" title="Refresh"><i class="bi bi-arrow-clockwise"></i></button>
                     </div>
                 </div>
             </div>
@@ -125,7 +123,8 @@
             </div>
 
             {{-- Empty/Upload State --}}
-            <div x-show="currentFiles.length === 0" class="text-center py-5">
+            <div x-show="loading" x-cloak class="text-center py-4 text-muted" role="status">Loading files…</div>
+            <div x-show="!loading && currentFiles.length === 0" x-cloak class="text-center py-5">
                 <i class="bi bi-folder2-open fs-1 text-muted mb-3 d-block opacity-50"></i>
                 <h5 class="text-muted">No files found</h5>
                 <p class="small text-muted mt-1 mb-4">Upload your first file or adjust your search filters.</p>
@@ -136,12 +135,12 @@
             </div>
 
             {{-- List View --}}
-            <div class="table-responsive" style="overflow: visible;" x-show="viewMode === 'list' && currentFiles.length > 0" x-cloak>
+            <div class="table-responsive files-table-scroll" x-show="viewMode === 'list' && currentFiles.length > 0" x-cloak>
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-light">
                         <tr>
                             <th style="width:40px;">
-                                <input type="checkbox" class="form-check-input border-secondary" @change="toggleSelectAll()" style="cursor:pointer;">
+                                <input type="checkbox" class="form-check-input border-secondary" aria-label="Select all visible files" :checked="allVisibleSelected" x-effect="$el.indeterminate = selectedFiles.length > 0 && !allVisibleSelected" @change="toggleSelectAll()" style="cursor:pointer;">
                             </th>
                             <th>Name</th>
                             <th>Size</th>
@@ -154,12 +153,12 @@
                         <template x-for="file in currentFiles" :key="file.id">
                             <tr :class="{ 'table-active': selectedFiles.includes(file.id) }">
                                 <td>
-                                    <input type="checkbox" class="form-check-input border-secondary" :checked="selectedFiles.includes(file.id)" @change="toggleFileSelection(file.id)" style="cursor:pointer;">
+                                    <input type="checkbox" class="form-check-input border-secondary" :aria-label="'Select ' + file.name" :checked="selectedFiles.includes(file.id)" @change="toggleFileSelection(file.id)" style="cursor:pointer;">
                                 </td>
                                 <td>
                                     <div class="d-flex align-items-center">
                                         <div :class="file.type !== 'image' ? `file-icon ${file.type} text-center me-3 rounded text-white` : 'me-3'" :style="file.type !== 'image' ? 'width:36px; height:36px; display:flex; align-items:center; justify-content:center; overflow:hidden;' : ''">
-                                            <img x-show="file.type === 'image'" :src="file.url" alt="Preview" class="border" style="width: 40px; height: 40px; object-fit: cover; border-radius: 8px; cursor: pointer;" x-on:error="$el.style.display='none'" @click.stop="openFile(file)">
+                                            <img x-show="file.type === 'image'" :src="file.type === 'image' ? file.url : null" alt="Preview" class="border" style="width: 40px; height: 40px; object-fit: cover; border-radius: 8px; cursor: pointer;" x-on:error="if ($el.getAttribute('src') !== '/assets/images/default_avatar.jpeg') $el.src = '/assets/images/default_avatar.jpeg'; else $el.style.display = 'none'" @click.stop="openFile(file)">
                                             <i x-show="file.type !== 'image'" :class="file.icon" class="fs-5"></i>
                                         </div>
                                         <div class="d-flex flex-column">
@@ -179,7 +178,7 @@
                                 </td>
                                 <td>
                                     <div class="dropdown">
-                                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" :aria-label="'Actions for ' + file.name">
                                             <i class="bi bi-three-dots"></i>
                                         </button>
                                         <ul class="dropdown-menu dropdown-menu-end shadow-sm">
@@ -220,10 +219,10 @@
                                  @click="selectFile(file)" @dblclick="openFile(file)">
                                 <div class="card-body text-center p-3 position-relative">
                                     <div class="position-absolute top-0 end-0 p-2">
-                                        <input type="checkbox" class="form-check-input border-secondary" :checked="selectedFiles.includes(file.id)" @change="toggleFileSelection(file.id)" @click.stop style="cursor:pointer;">
+                                        <input type="checkbox" class="form-check-input border-secondary" :aria-label="'Select ' + file.name" :checked="selectedFiles.includes(file.id)" @change="toggleFileSelection(file.id)" @click.stop style="cursor:pointer;">
                                     </div>
                                     <div :class="file.type !== 'image' ? `file-icon ${file.type} text-white rounded d-inline-flex align-items-center justify-content-center mb-2` : 'mb-2'" :style="file.type !== 'image' ? 'width:48px; height:48px; overflow:hidden;' : ''">
-                                        <img x-show="file.type === 'image'" :src="file.url" alt="Preview" class="border" style="width: 48px; height: 48px; object-fit: cover; border-radius: 8px; cursor: pointer;" x-on:error="$el.style.display='none'" @click.stop="openFile(file)">
+                                        <img x-show="file.type === 'image'" :src="file.type === 'image' ? file.url : null" alt="Preview" class="border" style="width: 48px; height: 48px; object-fit: cover; border-radius: 8px; cursor: pointer;" x-on:error="if ($el.getAttribute('src') !== '/assets/images/default_avatar.jpeg') $el.src = '/assets/images/default_avatar.jpeg'; else $el.style.display = 'none'" @click.stop="openFile(file)">
                                         <i x-show="file.type !== 'image'" :class="file.icon" class="fs-3"></i>
                                     </div>
                                     <h6 class="fw-semibold text-truncate small mb-1"><a href="#" class="text-decoration-none text-body-emphasis" @click.prevent.stop="openFile(file)" x-text="file.name" :title="file.name"></a></h6>
@@ -245,6 +244,11 @@
 </div>
 
 <style>
+.files-management .files-table-scroll { overflow-x: auto; }
+.files-management .files-table-scroll table { min-width: 720px; }
+.files-management .files-table-scroll:has(.dropdown-menu.show) { padding-bottom: 14rem; }
+.files-management .files-table-scroll td:nth-child(2) a { overflow-wrap: anywhere; }
+
 .hover-shadow:hover {
     box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important;
     transform: translateY(-2px);

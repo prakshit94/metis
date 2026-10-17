@@ -21,6 +21,13 @@ import { NotificationManager } from './utils/notifications.js';
 import { SidebarManager } from './components/sidebar.js';
 import { iconManager } from './utils/icon-manager.js';
 import { createSearchComponent } from './utils/search-component.js';
+import * as ProfileImages from './utils/profile-images.js';
+window.ProfileImages = ProfileImages;
+window.addEventListener('storage', event => {
+  if (event.key !== 'metis:default-avatar' || !event.newValue) return;
+  try { ProfileImages.setDefaultAvatar(JSON.parse(event.newValue).url, false); } catch (_) {}
+});
+window.addEventListener('DOMContentLoaded', () => ProfileImages.refreshProfileImages(), {once:true});
 
 // Import Alpine.js for reactive components
 import Alpine from 'alpinejs';

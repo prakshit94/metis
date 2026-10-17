@@ -13,6 +13,11 @@
     <meta name="user-id" content="{{ auth()->id() ?? '' }}">
     <meta name="user-name" content="{{ auth()->user()->name ?? '' }}">
 
+    @php
+        $defaultAvatarUrl = \App\Models\SystemSetting::where('key', 'default_image_default_avatar_jpeg')->value('value') ?: '';
+    @endphp
+    <meta name="default-avatar" content="{{ $defaultAvatarUrl }}">
+
     <!-- Open Graph Meta Tags -->
     <meta property="og:title" content="@yield('title', 'Ecommerce Admin')">
     <meta property="og:description" content="Clean and modern admin dashboard template built with Bootstrap 5">
@@ -23,8 +28,8 @@
         $logoImage = $appLogo ? $appLogo : asset('assets/images/logo.png');
     @endphp
     <!-- Favicon -->
-    <link rel="icon" type="image/svg+xml" href="{{ $logoImage }}?v={{ file_exists(public_path('assets/images/logo.png')) ? filemtime(public_path('assets/images/logo.png')) : time() }}">
-    <link rel="icon" type="image/png" href="{{ $logoImage }}?v={{ file_exists(public_path('assets/images/logo.png')) ? filemtime(public_path('assets/images/logo.png')) : time() }}">
+    <link rel="icon" type="image/svg+xml" href="{{ $logoImage }}{{ str_contains($logoImage, '?') ? '&' : '?' }}v={{ file_exists(public_path('assets/images/logo.png')) ? filemtime(public_path('assets/images/logo.png')) : time() }}">
+    <link rel="icon" type="image/png" href="{{ $logoImage }}{{ str_contains($logoImage, '?') ? '&' : '?' }}v={{ file_exists(public_path('assets/images/logo.png')) ? filemtime(public_path('assets/images/logo.png')) : time() }}">
 
     <!-- Preconnect to external domains -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -82,7 +87,7 @@
     <div id="loading-screen" class="loading-screen">
         <div class="loading-spinner">
             <div class="brand-logo-container rounded-4 d-flex align-items-center justify-content-center mb-3 shadow-sm" style="width: 64px; height: 64px; background-color: var(--bs-body-bg);">
-                <img src="{{ $logoImage }}?v={{ file_exists(public_path('assets/images/logo.png')) ? filemtime(public_path('assets/images/logo.png')) : time() }}" alt="Loading Logo" class="w-100 h-100 object-fit-contain rounded-circle p-1">
+                <img src="{{ $logoImage }}{{ str_contains($logoImage, '?') ? '&' : '?' }}v={{ file_exists(public_path('assets/images/logo.png')) ? filemtime(public_path('assets/images/logo.png')) : time() }}" alt="Loading Logo" class="w-100 h-100 object-fit-contain rounded-circle p-1">
             </div>
             <div class="spinner-border text-primary" role="status">
                 <span class="visually-hidden">Loading...</span>

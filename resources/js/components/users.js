@@ -356,6 +356,8 @@ function groupPermissions(permissions) {
 document.addEventListener('alpine:init', () => {
   // ─── userTable ──────────────────────────────────────────────────────────────
   Alpine.data('userTable', () => ({
+    photoUrl(user) { return window.ProfileImages.userPhotoUrl(user); },
+    handlePhotoError(event, user) { window.ProfileImages.handlePhotoError(event, user); },
     users: [],
     selectedUsers: [],
     searchQuery: '',
@@ -562,12 +564,7 @@ document.addEventListener('alpine:init', () => {
         designation: u.designation,
         emergency_contact_name: u.emergency_contact_name,
         emergency_contact_phone: u.emergency_contact_phone,
-        avatar:
-          u.gender === 'Male'
-            ? '/assets/images/default_male.png'
-            : u.gender === 'Female'
-              ? '/assets/images/default_female.png'
-              : '/assets/images/default_avatar.jpeg',
+        avatar: u.avatar || null,
       };
     },
 
@@ -706,6 +703,8 @@ document.addEventListener('alpine:init', () => {
       form.form.manager_id = user.manager_id ?? '';
       form.form.employment_type = user.employment_type ?? 'Full-time';
       form.form.employee_id = user.employee_id ?? '';
+      form.clearPhotoPreview();
+      form.form.photoFile = null;
       form.form.photo = user.photo ?? '';
       form.form.joining_date = user.joining_date ? String(user.joining_date).split('T')[0] : '';
       // Find the first role that is explicitly scoped to a team (LOB/State).
@@ -1251,6 +1250,8 @@ document.addEventListener('alpine:init', () => {
 
   // ─── userForm ───────────────────────────────────────────────────────────────
   Alpine.data('userForm', () => ({
+    photoUrl(user) { return window.ProfileImages.userPhotoUrl(user); },
+    handlePhotoError(event, user) { window.ProfileImages.handlePhotoError(event, user); },
     form: {
       first_name: '',
       middle_name: '',
@@ -1418,7 +1419,17 @@ document.addEventListener('alpine:init', () => {
       }
     },
 
+    photoPreviewUrl: null,
+
+    clearPhotoPreview() {
+      if (this.photoPreviewUrl) URL.revokeObjectURL(this.photoPreviewUrl);
+      this.photoPreviewUrl = null;
+    },
+
+    destroy() { this.clearPhotoPreview(); },
+
     resetForm() {
+      this.clearPhotoPreview();
       this._villageRequestId = (this._villageRequestId || 0) + 1;
       this.form = {
         first_name: '',
@@ -1476,7 +1487,14 @@ document.addEventListener('alpine:init', () => {
         return;
       }
 
-      this.form.photo = URL.createObjectURL(file);
+      if (file.type && !file.type.startsWith('image/')) {
+        showToast('Please select an image file.', 'warning');
+        event.target.value = '';
+        return;
+      }
+      this.clearPhotoPreview();
+      this.photoPreviewUrl = URL.createObjectURL(file);
+      this.form.photo = this.photoPreviewUrl;
       this.form.photoFile = file;
     },
 
@@ -1578,6 +1596,7 @@ document.addEventListener('alpine:init', () => {
             method: 'POST', // Laravel uses POST + _method=PUT for FormData
             body: formData,
           });
+          window.ProfileImages.updateUserPhoto(res.data);
           showToast(res.message || 'User updated successfully.', 'success');
         } else {
           const res = await apiFetch('/api/users', {

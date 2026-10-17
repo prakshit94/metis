@@ -7,11 +7,14 @@ let get, post, timers = 0, revoked = [], created = 0;
 const context = vm.createContext({
     axios: { get: (...args) => get(...args), post: (...args) => post(...args) },
     localStorage: { getItem: () => null, setItem() {}, removeItem() {} },
-    window: { dispatchEvent() {} }, CustomEvent: class {}, console,
+    window: { dispatchEvent() {}, location:{origin:'http://127.0.0.1:8000',hostname:'127.0.0.1'} },
+    document: {querySelector:()=>({content:''})}, CustomEvent: class {}, console,
     setInterval: () => ++timers, clearInterval() {},
     FormData: class { append() {} },
     URL: { createObjectURL: () => `blob:${++created}`, revokeObjectURL: url => revoked.push(url) },
 });
+vm.runInContext(fs.readFileSync(new URL('../../resources/js/utils/profile-images.js', import.meta.url), 'utf8').replace(/^export /gm, ''), context);
+vm.runInContext('window.ProfileImages = {userPhotoUrl, defaultUserPhoto, handlePhotoError};', context);
 vm.runInContext(source, context);
 function workspace() {
     const state = context.chatWorkspace({ conversations: [{id: 1}, {id: 2}] });
@@ -88,7 +91,7 @@ console.log('Chat UI regression checks passed (initialization, races, drafts, se
     assert.equal(s.getUserPhotoUrl({photo:'storage/photos/a.jpg'}), '/storage/photos/a.jpg');
     assert.equal(s.getUserPhotoUrl({photo:'uploads\\a.jpg'}), '/storage/uploads/a.jpg');
     assert.equal(s.getUserPhotoUrl({photo:'assets/images/default_male.png'}), '/assets/images/default_male.png');
-    const image = {getAttribute: () => '/storage/missing.jpg'};
+    const image = {getAttribute: () => '/storage/missing.jpg',setAttribute(name,value){this[name]=value;},style:{}};
     s.handlePhotoError({target:image});
     assert.equal(image.src, '/assets/images/default_avatar.jpeg');
     assert.equal(s.getUserPhotoUrl({photo:'missing.jpg',gender:'Female'}), '/assets/images/default_female.png');
@@ -112,3 +115,22 @@ console.log('Chat avatar and presence count regression checks passed.');
     } finally { console.error = originalError; }
 }
 console.log('Message loading and read receipt failure checks passed.');
+{
+    const s = workspace();
+    s.conversations = [
+        {id:1,type:'direct',unread_count:2,is_pinned:false,updated_at:'2026-10-17'},
+        {id:2,type:'group',name:'Support',unread_count:1,is_pinned:true,updated_at:'2026-10-16'},
+        {id:3,type:'group',name:'Operations',unread_count:0,is_pinned:false,updated_at:'2026-10-15'},
+    ];
+    s.users=[{id:2,name:'Support user'}];
+    assert.equal(s.filteredConversations.length,3);
+    s.conversationType='direct';assert.equal(s.filteredConversations.length,1);
+    s.conversationType='group';assert.equal(s.filteredConversations.length,2);
+    s.filter='unread';assert.equal(s.filteredConversations.length,1);
+    s.filter='pinned';assert.equal(s.filteredConversations[0].id,2);
+    s.filter='all';s.search='Support';assert.equal(s.filteredConversations.length,1);
+    assert.equal(s.searchResults.users.length,0,'group searches exclude individual people');
+    s.conversationType='all';assert.equal(s.searchResults.users.length,1);
+    assert.equal(s.conversations[0].id,1,'filtering does not reorder the source collection');
+}
+console.log('Chat type filters compose with search, unread and pinned filters.');

@@ -148,7 +148,7 @@ class ChatService
 
             $this->audit($sender, 'message.sent', $conversation, null, $message->only(['id', 'type', 'content']));
 
-            return $message->load('sender:id,name,photo');
+            return $message->load('sender:id,name,photo,gender');
         }, 3);
     }
 
@@ -157,7 +157,7 @@ class ChatService
         $this->ensureMember($conversation, $user);
 
         return $conversation->messages()
-            ->with(['sender:id,name,photo', 'parent:id,content,sender_id,attachments', 'parent.sender:id,name,photo', 'reads:user_id,message_id,read_at'])
+            ->with(['sender:id,name,photo,gender', 'parent:id,content,sender_id,attachments', 'parent.sender:id,name,photo,gender', 'reads:user_id,message_id,read_at'])
             ->paginate(min(max($perPage, 10), 100));
     }
 
@@ -173,7 +173,7 @@ class ChatService
         $message->forceFill(['content' => $content, 'edited_at' => now()])->save();
         $this->audit($user, 'message.edited', $message->conversation, $message, $before, $message->only(['content', 'edited_at']));
 
-        return $message->fresh('sender:id,name,photo');
+        return $message->fresh('sender:id,name,photo,gender');
     }
 
     public function deleteMessage(User $user, Message $message): void

@@ -56,5 +56,12 @@ const reply = (request,data,ok=true) => request.resolve({ok,status:ok?200:403,te
   // A denied options request must throw, rather than return undefined as success.
   const denied=users.loadRoles(); reply(pending[0],{message:'Forbidden'},false); await denied;
   assert.equal(context.window.location.href,''); assert.equal(users.availableRoles.length,0);
+  const revoked=[];let previews=0;
+  context.URL={createObjectURL:()=>`blob:preview-${++previews}`,revokeObjectURL:url=>revoked.push(url)};
+  const photoForm=factories.userForm();
+  const photoEvent=()=>({target:{files:[{name:'photo.png',type:'image/png',size:100}],value:'photo.png'}});
+  photoForm.handlePhotoUpload(photoEvent());photoForm.handlePhotoUpload(photoEvent());
+  assert.equal(revoked[0],'blob:preview-1');
+  photoForm.resetForm();assert.equal(revoked[1],'blob:preview-2');assert.equal(photoForm.form.photoFile,null);
   console.log('PASS: user/access request races, authorized directory loading, edit-state preservation, duplicate save guards, denied options.');
 })().catch(err=>{console.error(err);process.exitCode=1;});

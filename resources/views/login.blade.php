@@ -8,7 +8,9 @@
 @php
     $loginBg = \App\Models\SystemSetting::where('key', 'login_background_image')->value('value');
     if ($loginBg) {
-        $loginBg = parse_url($loginBg, PHP_URL_PATH) ?: $loginBg;
+        $loginBgPath = parse_url($loginBg, PHP_URL_PATH) ?: $loginBg;
+        $loginBgQuery = parse_url($loginBg, PHP_URL_QUERY);
+        $loginBg = $loginBgPath . ($loginBgQuery ? '?' . $loginBgQuery : '');
     }
     $bgImage = $loginBg ? $loginBg : asset('assets/images/background.png');
 
@@ -32,7 +34,7 @@
             {{-- ── Brand Logo Header ─────────────────────────────────────── --}}
             <div class="text-center mb-4 pb-2">
                 <div class="brand-logo-container rounded-4 d-inline-flex align-items-center justify-content-center transition-all hover-rotate mb-3" style="width: 72px; height: 72px;">
-                    <img src="{{ $logoImage }}?v={{ file_exists(public_path('assets/images/logo.png')) ? filemtime(public_path('assets/images/logo.png')) : time() }}" alt="Ecommerce Logo" class="w-100 h-100 object-fit-contain shadow-sm rounded-circle bg-body">
+                    <img src="{{ $logoImage }}{{ str_contains($logoImage, '?') ? '&' : '?' }}v={{ file_exists(public_path('assets/images/logo.png')) ? filemtime(public_path('assets/images/logo.png')) : time() }}" alt="Ecommerce Logo" class="w-100 h-100 object-fit-contain shadow-sm rounded-circle bg-body">
                 </div>
                 <h1 class="auth-title fw-black text-body-emphasis mb-1 tracking-tight">Welcome Back</h1>
                 <p class="text-secondary small fw-medium mb-0">Sign in to your Ecommerce Admin account</p>

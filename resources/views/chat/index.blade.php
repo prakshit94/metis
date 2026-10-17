@@ -57,7 +57,12 @@
                 </div>
 
                 <div class="px-3 py-2 border-bottom">
-                    <div class="btn-group w-100" role="group">
+                    <div class="btn-group w-100 mb-2" role="group" aria-label="Conversation type">
+                        <button type="button" @click="conversationType = 'all'" :aria-pressed="conversationType === 'all'" :class="conversationType === 'all' ? 'btn-primary' : 'btn-outline-secondary'" class="btn btn-sm fw-semibold">All chats</button>
+                        <button type="button" @click="conversationType = 'direct'" :aria-pressed="conversationType === 'direct'" :class="conversationType === 'direct' ? 'btn-primary' : 'btn-outline-secondary'" class="btn btn-sm fw-semibold"><i class="bi bi-person me-1" aria-hidden="true"></i>Individuals</button>
+                        <button type="button" @click="conversationType = 'group'" :aria-pressed="conversationType === 'group'" :class="conversationType === 'group' ? 'btn-primary' : 'btn-outline-secondary'" class="btn btn-sm fw-semibold"><i class="bi bi-people me-1" aria-hidden="true"></i>Groups</button>
+                    </div>
+                    <div class="btn-group w-100" role="group" aria-label="Conversation status">
                         <button type="button" @click="filter = 'all'" :class="filter === 'all' ? 'btn-primary' : 'btn-outline-secondary'" class="btn btn-sm fw-semibold">All</button>
                         <button type="button" @click="filter = 'unread'" :class="filter === 'unread' ? 'btn-primary' : 'btn-outline-secondary'" class="btn btn-sm fw-semibold">Unread</button>
                         <button type="button" @click="filter = 'pinned'" :class="filter === 'pinned' ? 'btn-primary' : 'btn-outline-secondary'" class="btn btn-sm fw-semibold">Pinned</button>
@@ -72,7 +77,7 @@
                             <template x-for="user in searchResults.users" :key="user.id">
                                 <button type="button" @click="startDirect(user.id)" class="btn btn-outline-secondary text-start w-100 d-flex align-items-center gap-2 mb-1 p-2 border-0">
                                     <div class="position-relative flex-shrink-0">
-                                        <img x-on:error="handlePhotoError($event)" :src="getUserPhotoUrl(user)" class="rounded-circle object-fit-cover shadow-sm" style="width: 36px; height: 36px;">
+                                        <img x-on:error="handlePhotoError($event, user)" data-profile-avatar :data-profile-photo="user?.photo || ''" :data-profile-gender="user?.gender || ''" :src="getUserPhotoUrl(user)" class="rounded-circle object-fit-cover shadow-sm" style="width: 36px; height: 36px;">
                                         <span class="position-absolute bottom-0 end-0 rounded-circle border border-body" style="width: 10px; height: 10px;" :class="user.is_online ? 'bg-success' : 'bg-secondary'"></span>
                                     </div>
                                     <div class="min-w-0 flex-grow-1">
@@ -95,8 +100,8 @@
                     <!-- Empty state -->
                     <div x-show="filteredConversations.length === 0 && !search" class="text-center p-5 text-muted">
                         <i class="bi bi-chat-dots fs-1 d-block mb-2 opacity-50"></i>
-                        <p class="small mb-0">No conversations yet</p>
-                        <p class="small">Search for a person above to start a chat</p>
+                        <p class="small mb-0" x-text="conversationType === 'group' ? 'No groups match your filters' : (conversationType === 'direct' ? 'No individual chats match your filters' : 'No conversations match your filters')"></p>
+                        <p class="small" x-show="conversationType !== 'group'">Search for a person above to start a chat</p>
                     </div>
 
                     <!-- Conversation List -->
@@ -107,7 +112,7 @@
                             onmouseover="if(this.className.indexOf('bg-primary') === -1) this.style.backgroundColor = 'var(--bs-secondary-bg)'"
                             onmouseout="if(this.className.indexOf('bg-primary') === -1) this.style.backgroundColor = ''">
                             <div class="position-relative flex-shrink-0">
-                                <img x-on:error="handlePhotoError($event)" :src="getConversationPhotoUrl(conversation)" class="rounded-circle object-fit-cover shadow-sm border border-2 border-body flex-shrink-0" style="width: 42px; height: 42px; " alt="">
+                                <img x-on:error="handleConversationPhotoError($event, conversation)" :data-profile-avatar="conversation.type !== 'group' ? '' : null" :data-profile-photo="getConversationUser(conversation)?.photo || ''" :data-profile-gender="getConversationUser(conversation)?.gender || ''" :src="getConversationPhotoUrl(conversation)" class="rounded-circle object-fit-cover shadow-sm border border-2 border-body flex-shrink-0" style="width: 42px; height: 42px; " alt="">
                                 <span x-show="isOnline(conversation)"
                                       class="position-absolute bottom-0 end-0 rounded-circle border-2 border-body bg-success"
                                       style="width:11px;height:11px;"></span>
@@ -116,6 +121,7 @@
                                 <div class="d-flex justify-content-between align-items-center mb-1 gap-2 min-w-0">
                                     <div class="d-flex align-items-center flex-grow-1 min-w-0 gap-1">
                                         <span class="text-truncate fw-semibold" style="font-size:.875rem;" x-text="conversationTitle(conversation)"></span>
+                                        <span class="badge rounded-pill text-bg-secondary-subtle text-secondary-emphasis flex-shrink-0" style="font-size:9px;" x-text="conversation.type === 'group' ? 'Group' : 'Individual'"></span>
                                         <i x-show="conversation.is_pinned" class="bi bi-star-fill text-warning" style="font-size: 10px;" title="Pinned"></i>
                                     </div>
                                     <small class="text-muted flex-shrink-0 ms-2" style="font-size:10px;" x-text="lastTime(conversation)"></small>
@@ -150,7 +156,7 @@
                                 <button type="button" class="btn btn-outline-secondary d-lg-none p-2 rounded-circle" @click="if (!sendingMessage) { conversationDrafts[activeConversation.id] = { draft, attachments: pendingAttachments }; activeConversation = null; replyTo = null; errorMessage = ''; }" aria-label="Back to conversations">
                                     <i class="bi bi-arrow-left"></i>
                                 </button>
-                                <img x-on:error="handlePhotoError($event)" :src="getConversationPhotoUrl(activeConversation)" class="rounded-circle object-fit-cover shadow-sm border border-2 border-body flex-shrink-0" style="width: 42px; height: 42px; " alt="">
+                                <img x-on:error="handleConversationPhotoError($event, activeConversation)" :data-profile-avatar="activeConversation.type !== 'group' ? '' : null" :data-profile-photo="getConversationUser(activeConversation)?.photo || ''" :data-profile-gender="getConversationUser(activeConversation)?.gender || ''" :src="getConversationPhotoUrl(activeConversation)" class="rounded-circle object-fit-cover shadow-sm border border-2 border-body flex-shrink-0" style="width: 42px; height: 42px; " alt="">
                                 <div class="min-w-0 flex-grow-1">
                                     <div class="d-flex align-items-center gap-2">
                                         <h6 class="mb-0 fw-bold text-truncate flex-grow-1" x-text="conversationTitle(activeConversation)"></h6>
@@ -180,8 +186,8 @@
                                 <div class="d-flex" :class="message.sender_id == currentUserId ? 'justify-content-end' : 'justify-content-start'">
                                     <div style="max-width: 75%;">
                                         <div class="d-flex align-items-center gap-2 mb-1 text-muted" style="font-size: 10px;" :class="message.sender_id == currentUserId ? 'justify-content-end' : 'justify-content-start'">
-                                            <template x-if="message.sender?.photo">
-                                                <img x-on:error="handlePhotoError($event)" :src="getUserPhotoUrl(message.sender)" class="rounded-circle object-fit-cover shadow-sm" style="width:16px; height:16px;">
+                                            <template x-if="message.sender">
+                                                <img x-on:error="handlePhotoError($event, message.sender)" data-profile-avatar :data-profile-photo="message.sender?.photo || ''" :data-profile-gender="message.sender?.gender || ''" :src="getUserPhotoUrl(message.sender)" class="rounded-circle object-fit-cover shadow-sm" style="width:16px; height:16px;">
                                             </template>
                                             <strong class="text-uppercase" x-text="message.sender?.name || 'User'"></strong>
                                             <span x-show="senderLocation(message)" class="opacity-75">
@@ -401,7 +407,7 @@
                                 :style="user.isMe ? 'cursor: default;' : ''"
                                 :disabled="startingUserId == user.id">
                             <div class="position-relative flex-shrink-0 mt-1">
-                                <img x-on:error="handlePhotoError($event)" :src="getUserPhotoUrl(user)" class="rounded-circle object-fit-cover shadow-sm" style="width: 36px; height: 36px;"
+                                <img x-on:error="handlePhotoError($event, user)" data-profile-avatar :data-profile-photo="user?.photo || ''" :data-profile-gender="user?.gender || ''" :src="getUserPhotoUrl(user)" class="rounded-circle object-fit-cover shadow-sm" style="width: 36px; height: 36px;"
                                      :class="user.isMe ? 'border border-2 border-primary' : ''">
                                 <span class="position-absolute bottom-0 end-0 rounded-circle border border-2 border-body"
                                       style="width: 12px; height: 12px;"
@@ -545,7 +551,7 @@
                                            :for="'newUserCheck_' + user.id" 
                                            style="cursor: pointer;">
                                         
-                                        <img x-on:error="handlePhotoError($event)" :src="getUserPhotoUrl(user)" class="rounded-circle object-fit-cover shadow-sm flex-shrink-0" style="width: 28px; height: 28px;">
+                                        <img x-on:error="handlePhotoError($event, user)" data-profile-avatar :data-profile-photo="user?.photo || ''" :data-profile-gender="user?.gender || ''" :src="getUserPhotoUrl(user)" class="rounded-circle object-fit-cover shadow-sm flex-shrink-0" style="width: 28px; height: 28px;">
                                         
                                         <div class="min-w-0 flex-grow-1 text-truncate">
                                             <div class="d-flex align-items-center gap-2 mb-1">
@@ -663,7 +669,7 @@
                                              onmouseover="this.style.backgroundColor='var(--bs-secondary-bg)'" 
                                              onmouseout="this.style.backgroundColor='transparent'">
                                             <div class="d-flex align-items-center gap-2">
-                                                <img x-on:error="handlePhotoError($event)" :src="getUserPhotoUrl(user)" class="rounded-circle object-fit-cover shadow-sm" style="width: 28px; height: 28px;">
+                                                <img x-on:error="handlePhotoError($event, user)" data-profile-avatar :data-profile-photo="user?.photo || ''" :data-profile-gender="user?.gender || ''" :src="getUserPhotoUrl(user)" class="rounded-circle object-fit-cover shadow-sm" style="width: 28px; height: 28px;">
                                                 <div class="min-w-0 flex-grow-1 text-truncate" style="max-width: 140px;">
                                                     <div class="d-flex align-items-center gap-1 text-truncate mb-1">
                                                         <span class="small fw-semibold text-truncate flex-grow-1" x-text="user.name"></span>
@@ -688,7 +694,7 @@
                                          onmouseout="this.style.backgroundColor='transparent'">
                                         <div class="d-flex align-items-center gap-3">
                                             <div class="position-relative">
-                                                <img x-on:error="handlePhotoError($event)" :src="getUserPhotoUrl(member.user)" class="rounded-circle object-fit-cover shadow-sm" style="width: 36px; height: 36px;">
+                                                <img x-on:error="handlePhotoError($event, member.user)" data-profile-avatar :data-profile-photo="member.user?.photo || ''" :data-profile-gender="member.user?.gender || ''" :src="getUserPhotoUrl(member.user)" class="rounded-circle object-fit-cover shadow-sm" style="width: 36px; height: 36px;">
                                                 <span class="position-absolute bottom-0 end-0 rounded-circle border-2 border-body" style="width: 12px; height: 12px;" :class="member.user?.is_online ? 'bg-success' : 'bg-secondary'"></span>
                                             </div>
                                             <div class="min-w-0 flex-grow-1 text-truncate">
@@ -752,6 +758,7 @@
             activeConversation: null,
             messages: [],
 
+            conversationType: 'all',
             search: '',
             userSearch: '',
             filter: localStorage.getItem('metis_chat_filter_' + @js(auth()->id())) || 'all',
@@ -858,7 +865,11 @@
             },
 
             get filteredConversations() {
-                let filtered = Array.isArray(this.conversations) ? this.conversations : [];
+                let filtered = Array.isArray(this.conversations) ? [...this.conversations] : [];
+
+                if (this.conversationType !== 'all') {
+                    filtered = filtered.filter(c => c.type === this.conversationType);
+                }
 
                 if (this.filter === 'unread') {
                     filtered = filtered.filter(c => (c.unread_count || 0) > 0);
@@ -881,7 +892,7 @@
             },
 
             get searchResults() {
-                if (!this.search) return { users: [] };
+                if (!this.search || this.conversationType === 'group') return { users: [] };
                 const q = this.search.toLowerCase();
                 return {
                     users: this.users.filter(u => (u.name || '').toLowerCase().includes(q)).slice(0, 5)
@@ -1421,32 +1432,29 @@
                 return `/storage/${path}`;
             },
             
-            failedPhotoUrls: {},
-
             defaultUserPhoto(user) {
-                return user?.gender === 'Male' ? '/assets/images/default_male.png' : (user?.gender === 'Female' ? '/assets/images/default_female.png' : '/assets/images/default_avatar.jpeg');
+                return window.ProfileImages.defaultUserPhoto(user);
             },
 
-            handlePhotoError(event) {
-                const image = event.target;
-                const source = image.getAttribute('src');
-                if (source) this.failedPhotoUrls[source] = true;
-                if (source !== '/assets/images/default_avatar.jpeg') {
-                    image.src = '/assets/images/default_avatar.jpeg';
-                }
+            handlePhotoError(event, user) {
+                window.ProfileImages.handlePhotoError(event, user);
             },
 
             getUserPhotoUrl(user) {
-                const photo = (user?.photo || user?.avatar || '').trim();
-                if (!photo) return this.defaultUserPhoto(user);
-                // Older profiles store public/storage prefixes and Windows separators.
-                let path = photo.replaceAll('\\', '/');
-                if (!/^https?:\/\//i.test(path)) {
-                    path = path.replace(/^\/?public\//, '').replace(/^\/+/, '');
-                    if (path.startsWith('storage/') || path.startsWith('assets/')) path = '/' + path;
-                }
-                const url = this.formatAttachmentUrl(path);
-                return this.failedPhotoUrls[url] ? this.defaultUserPhoto(user) : url;
+                return window.ProfileImages.userPhotoUrl(user);
+            },
+
+            getConversationUser(conv) {
+                const other = conv?.active_members?.find(m => Number(m.user_id) !== Number(this.currentUserId));
+                return this.users.find(user => Number(user.id) === Number(other?.user_id)) || other?.user;
+            },
+
+            handleConversationPhotoError(event, conv) {
+                if (conv?.type !== 'group') return this.handlePhotoError(event, this.getConversationUser(conv));
+                const image = event.target;
+                const fallback = '/assets/images/default_avatar.jpeg';
+                if (image.getAttribute('src') !== fallback) image.setAttribute('src', fallback);
+                else image.style.visibility = 'hidden';
             },
 
             getConversationPhotoUrl(conv) {
@@ -1454,8 +1462,7 @@
                 if (conv.type === 'group') {
                     return conv.image_path ? this.formatAttachmentUrl(conv.image_path) : '/assets/images/default_avatar.jpeg';
                 }
-                const other = conv.active_members?.find(m => Number(m.user_id) !== Number(this.currentUserId));
-                return this.getUserPhotoUrl(other?.user);
+                return this.getUserPhotoUrl(this.getConversationUser(conv));
             },
             
             isImageAttachment(file) {

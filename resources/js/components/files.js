@@ -12,8 +12,9 @@ document.addEventListener('alpine:init', () => {
     showUploadZone: false,
 
     // Storage Information
-    storageUsed: 45.2,
-    storageTotal: 100,
+    loading: false,
+    initialized: false,
+    loadVersion: 0,
 
     // Current Navigation
     currentFolder: null,
@@ -27,26 +28,47 @@ document.addEventListener('alpine:init', () => {
     allFiles: [],
 
     async init() {
+      if (this.initialized) return;
+      this.initialized = true;
       await this.loadFiles();
-      this.sortFiles();
 
       // Show upload zone if folder is empty
       this.showUploadZone = this.currentFiles.length === 0;
     },
 
     // Computed Properties
-    get storagePercentage() {
-      return (this.storageUsed / this.storageTotal) * 100;
+    get storageUsed() {
+      const bytes = this.allFiles.reduce((sum, file) => sum + (file.sizeBytes ?? this.parseSize(file.size)), 0);
+      return this.formatBytes(bytes);
     },
 
-    get storageRemaining() {
-      return (this.storageTotal - this.storageUsed).toFixed(1);
+    formatBytes(bytes) {
+      const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+      const index = bytes > 0 ? Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), 4) : 0;
+      return `${Number((bytes / 1024 ** index).toFixed(2))} ${units[index]}`;
+    },
+
+    get allVisibleSelected() {
+      return this.currentFiles.length > 0 && this.currentFiles.every(file => this.selectedFiles.includes(file.id));
+    },
+
+    escapeHtml(value) {
+      return String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'}[char]));
     },
 
     async loadFiles() {
+      const version = ++this.loadVersion;
+      this.loading = true;
       try {
-        const response = await fetch('/api/files');
+        const response = await fetch('/api/files', { headers: { Accept: 'application/json' } });
+        if (!response.ok) throw new Error('Failed to load files');
         const files = await response.json();
+        if (!Array.isArray(files)) throw new Error('Invalid file response');
+        if (version !== this.loadVersion) return false;
+        const defaultAvatar = response.headers?.get('X-Default-Avatar');
+        if (defaultAvatar !== null && defaultAvatar !== undefined) {
+          window.ProfileImages?.setDefaultAvatar(decodeURIComponent(defaultAvatar));
+        }
 
         this.allFiles = files.map((file) => ({
           ...file,
@@ -94,27 +116,35 @@ document.addEventListener('alpine:init', () => {
           },
         ];
 
-        this.sortFiles();
+        this.filterFiles();
+        return true;
       } catch (error) {
+        if (version !== this.loadVersion) return false;
         console.error('Error loading files:', error);
         this.showNotification('Failed to load files', 'error');
+        return false;
+      } finally {
+        if (version === this.loadVersion) this.loading = false;
       }
     },
 
     filterFiles() {
-      if (!this.searchQuery) {
-        this.currentFiles = [...this.allFiles];
-      } else {
-        const query = this.searchQuery.toLowerCase();
-        this.currentFiles = this.allFiles.filter(
-          (file) =>
-            file.name.toLowerCase().includes(query) || file.type.toLowerCase().includes(query)
-        );
-      }
+      let files = this.allFiles;
+      if (this.currentFolder) files = files.filter(file => file.folder === this.currentFolder.name);
+      const quick = this.breadcrumbs[1]?.path;
+      if (quick === '/recent') files = files.filter(file => this.recentFiles.some(recent => recent.id === file.id));
+      if (quick === '/images') files = files.filter(file => file.type === 'image');
+      if (quick === '/documents') files = files.filter(file => file.type === 'document');
+      const query = this.searchQuery.trim().toLowerCase();
+      this.currentFiles = files.filter(file => !query || file.name.toLowerCase().includes(query) || file.type.toLowerCase().includes(query));
+      this.selectedFiles = this.selectedFiles.filter(id => this.currentFiles.some(file => file.id === id));
+      this.showUploadZone = this.currentFiles.length === 0;
       this.sortFiles();
     },
 
     getModifiedTimestamp(modifiedStr) {
+      const parsed = Date.parse(modifiedStr);
+      if (Number.isFinite(parsed)) return parsed;
       const now = new Date();
       if (modifiedStr.includes('hour')) {
         const hours = parseInt(modifiedStr);
@@ -140,7 +170,7 @@ document.addEventListener('alpine:init', () => {
             return a.name.localeCompare(b.name);
           case 'date':
             return (
-              this.getModifiedTimestamp(a.modifiedDate) - this.getModifiedTimestamp(b.modifiedDate)
+              this.getModifiedTimestamp(b.modifiedAt || b.modifiedDate) - this.getModifiedTimestamp(a.modifiedAt || a.modifiedDate)
             );
           case 'size':
             return this.parseSize(a.size) - this.parseSize(b.size);
@@ -188,7 +218,7 @@ document.addEventListener('alpine:init', () => {
     },
 
     selectAll() {
-      if (this.selectedFiles.length === this.currentFiles.length) {
+      if (this.allVisibleSelected) {
         this.selectedFiles = [];
       } else {
         this.selectedFiles = this.currentFiles.map((f) => f.id);
@@ -302,7 +332,7 @@ document.addEventListener('alpine:init', () => {
       if (typeof Swal !== 'undefined') {
         if (file.type === 'image') {
           Swal.fire({
-            title: file.name,
+            titleText: file.name,
             imageUrl: file.url,
             imageAlt: file.name,
             width: 'auto',
@@ -318,14 +348,14 @@ document.addEventListener('alpine:init', () => {
           });
         } else {
           Swal.fire({
-            title: `Opening ${file.name}`,
+            titleText: `Opening ${file.name}`,
             html: `
               <div class="text-start">
-                <p><strong>📁 File:</strong> ${file.name}</p>
-                <p><strong>📏 Size:</strong> ${file.size}</p>
-                <p><strong>📅 Modified:</strong> ${file.modifiedDate}</p>
-                <p><strong>📂 Folder:</strong> ${file.folder}</p>
-                <p><strong>🏷️ Type:</strong> ${file.typeLabel}</p>
+                <p><strong>📁 File:</strong> ${this.escapeHtml(file.name)}</p>
+                <p><strong>📏 Size:</strong> ${this.escapeHtml(file.size)}</p>
+                <p><strong>📅 Modified:</strong> ${this.escapeHtml(file.modifiedDate)}</p>
+                <p><strong>📂 Folder:</strong> ${this.escapeHtml(file.folder)}</p>
+                <p><strong>🏷️ Type:</strong> ${this.escapeHtml(file.typeLabel)}</p>
               </div>
             `,
             icon: 'info',
@@ -343,12 +373,12 @@ document.addEventListener('alpine:init', () => {
             background: 'transparent',
           }).then((result) => {
             if (result.isConfirmed) {
-              this.showNotification(`Opening ${file.name} in default application...`, 'success');
+              window.open(file.url, '_blank', 'noopener,noreferrer');
             }
           });
         }
       } else {
-        this.showNotification(`Opening ${file.name}`, 'info');
+        window.open(file.url, '_blank', 'noopener,noreferrer');
       }
     },
 
@@ -394,7 +424,7 @@ document.addEventListener('alpine:init', () => {
           }
         });
       } else {
-        this.showNotification(`Downloading ${this.selectedFiles.length} files...`, 'success');
+        this.performZipDownload();
       }
     },
 
@@ -534,20 +564,18 @@ document.addEventListener('alpine:init', () => {
         }).then((result) => {
           if (result.isConfirmed) {
             this.performFileDelete(file);
-            this.showNotification(`🗑️ "${file.name}" moved to trash`, 'success');
           }
         });
       } else {
         if (confirm(`Are you sure you want to delete "${file.name}"?`)) {
           this.performFileDelete(file);
-          this.showNotification('File deleted successfully', 'success');
         }
       }
     },
 
-    async performFileDelete(file) {
+    async performFileDelete(file, refresh = true) {
       try {
-        await fetch('/api/files', {
+        const response = await fetch('/api/files', {
           method: 'DELETE',
           headers: {
             'Content-Type': 'application/json',
@@ -557,17 +585,23 @@ document.addEventListener('alpine:init', () => {
           },
           body: JSON.stringify({ id: file.id }),
         });
+        if (!response.ok) throw new Error('Delete failed');
         this.selectedFiles = this.selectedFiles.filter((id) => id !== file.id);
-        this.loadFiles();
+        if (refresh) {
+          await this.loadFiles();
+          this.showNotification('File deleted successfully', 'success');
+        }
+        return true;
       } catch (error) {
         console.error('Delete failed', error);
         this.showNotification('Delete failed', 'error');
+        return false;
       }
     },
 
     async setLoginBackground(file) {
       try {
-        await fetch('/api/files/login-background', {
+        const response = await fetch('/api/files/login-background', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -577,6 +611,7 @@ document.addEventListener('alpine:init', () => {
           },
           body: JSON.stringify({ url: file.url }),
         });
+        if (!response.ok) throw new Error('Failed to update background');
         this.showNotification('Login background updated', 'success');
         this.loadFiles();
       } catch (error) {
@@ -599,6 +634,8 @@ document.addEventListener('alpine:init', () => {
         });
 
         if (response.ok) {
+          const result = await response.json();
+          if (targetName === 'default_avatar.jpeg') window.ProfileImages?.setDefaultAvatar(result.url);
           this.showNotification(`Default image ${targetName} updated`, 'success');
           this.loadFiles();
         } else {
@@ -636,23 +673,28 @@ document.addEventListener('alpine:init', () => {
           background: 'transparent',
         }).then(async (result) => {
           if (result.isConfirmed) {
-            const deletedCount = this.selectedFiles.length;
-            const filesToDelete = this.currentFiles.filter((f) =>
-              this.selectedFiles.includes(f.id)
-            );
-            await Promise.all(filesToDelete.map((f) => this.performFileDelete(f)));
-            this.selectedFiles = [];
-            this.showNotification(`🗑️ ${deletedCount} files moved to trash`, 'success');
+            await this.performSelectedDelete();
           }
         });
       } else {
         if (confirm(`Are you sure you want to delete ${this.selectedFiles.length} files?`)) {
-          this.currentFiles = this.currentFiles.filter((f) => !this.selectedFiles.includes(f.id));
-          this.allFiles = this.allFiles.filter((f) => !this.selectedFiles.includes(f.id));
-          this.selectedFiles = [];
-          this.showNotification('Files deleted successfully', 'success');
+          this.performSelectedDelete();
         }
       }
+    },
+
+    async performSelectedDelete() {
+      const files = this.currentFiles.filter(file => this.selectedFiles.includes(file.id) && !file.isAsset);
+      if (!files.length) {
+        this.showNotification('Cannot delete core asset files', 'warning');
+        return;
+      }
+      const protectedCount = this.currentFiles.filter(file => this.selectedFiles.includes(file.id) && file.isAsset).length;
+      const results = await Promise.all(files.map(file => this.performFileDelete(file, false)));
+      await this.loadFiles();
+      const count = results.filter(Boolean).length;
+      if (count) this.showNotification(`${count} file(s) deleted successfully`, 'success');
+      if (protectedCount) this.showNotification('Core asset files were not deleted', 'warning');
     },
 
     // File Management
@@ -665,14 +707,6 @@ document.addEventListener('alpine:init', () => {
               <div class="mb-3">
                 <label class="form-label">Select files to upload:</label>
                 <input type="file" class="form-control bg-body text-body border-secondary border-opacity-25" multiple accept="*/*" id="fileUpload">
-              </div>
-              <div class="mb-3">
-                <div class="form-check">
-                  <input class="form-check-input" type="checkbox" id="overwriteFiles">
-                  <label class="form-check-label" for="overwriteFiles">
-                    Overwrite existing files
-                  </label>
-                </div>
               </div>
               <div class="upload-preview d-none">
                 <h6>Files to upload:</h6>
@@ -705,7 +739,7 @@ document.addEventListener('alpine:init', () => {
             const files = result.value;
             this.showNotification(`☁️ Uploading ${files.length} files...`, 'info');
 
-            Promise.all(
+            Promise.allSettled(
               files.map((file) => {
                 const formData = new FormData();
                 formData.append('file', file);
@@ -728,9 +762,12 @@ document.addEventListener('alpine:init', () => {
                 });
               })
             )
-              .then(() => {
-                this.showNotification(`✅ ${files.length} files uploaded successfully!`, 'success');
-                this.loadFiles();
+              .then(async results => {
+                await this.loadFiles();
+                const succeeded = results.filter(result => result.status === 'fulfilled').length;
+                if (succeeded) this.showNotification(`${succeeded} file(s) uploaded successfully`, 'success');
+                const failed = results.find(result => result.status === 'rejected');
+                if (failed) this.showNotification(failed.reason.message || 'Some uploads failed', 'error');
               })
               .catch((error) => {
                 console.error('Upload failed', error);
@@ -797,20 +834,14 @@ document.addEventListener('alpine:init', () => {
       }
     },
 
-    refreshFiles() {
-      this.showNotification('🔄 Refreshing files...', 'info');
-      // Simulate refresh
-      setTimeout(() => {
-        this.loadSampleData();
-        this.sortFiles();
-        this.showNotification('✅ Files refreshed successfully!', 'success');
-      }, 1000);
+    async refreshFiles() {
+      if (await this.loadFiles()) this.showNotification('Files refreshed successfully', 'success');
     },
 
     showNotification(message, type = 'info') {
       if (typeof Swal !== 'undefined') {
         Swal.fire({
-          title: message,
+          titleText: message,
           icon:
             type === 'success'
               ? 'success'

@@ -14,7 +14,7 @@ class FileManagerController extends Controller
     {
         $disk = Storage::disk('public');
         if (config('filesystems.disks.public.driver') === 'local') {
-            return '/api/files/preview?f=' . $fileRecord->filename;
+            return '/api/files/preview?f=' . rawurlencode($fileRecord->filename);
         }
         return $disk->url($fileRecord->path);
     }
@@ -22,12 +22,12 @@ class FileManagerController extends Controller
     public function preview(Request $request)
     {
         $filename = $request->query('f');
-        if (!$filename || str_contains($filename, '/') || str_contains($filename, '\\')) {
+        if (!is_string($filename) || !$filename || $filename === '.' || $filename === '..' || str_contains($filename, '/') || str_contains($filename, '\\')) {
             abort(404);
         }
 
         $absolutePath = storage_path('app/public/uploads/' . $filename);
-        if (!file_exists($absolutePath)) {
+        if (!is_file($absolutePath)) {
             abort(404);
         }
 
@@ -68,7 +68,9 @@ class FileManagerController extends Controller
                 'type' => $typeCategory,
                 'icon' => $icon,
                 'size' => $this->formatBytes($fileRecord->size),
-                'modifiedDate' => $fileRecord->created_at->format('M d, Y h:i A'),
+                'modifiedDate' => $fileRecord->created_at?->format('M d, Y h:i A') ?? 'Unknown',
+                'modifiedAt' => $fileRecord->created_at?->toIso8601String(),
+                'sizeBytes' => (int) $fileRecord->size,
                 'url' => $url,
                 'typeLabel' => ucfirst($typeCategory),
             ];
@@ -92,6 +94,8 @@ class FileManagerController extends Controller
                         'icon' => 'bi-file-earmark-image',
                         'size' => $this->formatBytes($fileinfo->getSize()),
                         'modifiedDate' => date('M d, Y h:i A', $fileinfo->getMTime()),
+                        'modifiedAt' => date(DATE_ATOM, $fileinfo->getMTime()),
+                        'sizeBytes' => $fileinfo->getSize(),
                         'url' => $url,
                         'typeLabel' => 'Image',
                         'isAsset' => true,
@@ -102,19 +106,20 @@ class FileManagerController extends Controller
         
         $allFiles = $files->concat($assetFiles);
 
+        $configuredDefaultAvatar = SystemSetting::where('key', 'default_image_default_avatar_jpeg')->value('value') ?: '';
         $resolvedRoles = [
             'Login Background' => SystemSetting::where('key', 'login_background_image')->value('value') ?: asset('assets/images/background.png'),
             'App Logo (PNG)' => SystemSetting::where('key', 'default_image_logo_png')->value('value') ?: asset('assets/images/logo.png'),
             'App Logo (SVG)' => SystemSetting::where('key', 'default_image_logo_svg')->value('value') ?: asset('assets/images/logo.svg'),
-            'Default Avatar' => SystemSetting::where('key', 'default_image_default_avatar_jpeg')->value('value') ?: asset('assets/images/default_avatar.jpeg'),
+            'Default Avatar' => $configuredDefaultAvatar ?: asset('assets/images/default_avatar.jpeg'),
             'Product Placeholder' => SystemSetting::where('key', 'default_image_product-placeholder_svg')->value('value') ?: asset('assets/images/product-placeholder.svg')
         ];
 
         $allFiles->transform(function ($item) use ($resolvedRoles) {
             $item['defaultRoles'] = [];
-            $itemPath = parse_url($item['url'], PHP_URL_PATH);
+            $itemPath = $this->relativeFileUrl($item['url']);
             foreach ($resolvedRoles as $roleName => $resolvedUrl) {
-                $rolePath = parse_url($resolvedUrl, PHP_URL_PATH);
+                $rolePath = $this->relativeFileUrl($resolvedUrl);
                 if ($item['url'] === $resolvedUrl || ($itemPath && $rolePath && $itemPath === $rolePath)) {
                     $item['defaultRoles'][] = $roleName;
                 }
@@ -122,7 +127,7 @@ class FileManagerController extends Controller
             return $item;
         });
 
-        return response()->json($allFiles->values());
+        return response()->json($allFiles->values())->header('X-Default-Avatar', rawurlencode($configuredDefaultAvatar));
     }
 
     public function upload(Request $request)
@@ -163,17 +168,17 @@ class FileManagerController extends Controller
 
         if ($fileRecord) {
             if (Storage::disk('public')->exists($fileRecord->path)) {
-                Storage::disk('public')->delete($fileRecord->path);
-
-                // If it was the login background, clear it
-                $url = $this->getFileUrl($fileRecord);
-                $pathOnly = parse_url($url, PHP_URL_PATH) ?: $url;
-                SystemSetting::where('key', 'login_background_image')
-                    ->where(function ($query) use ($url, $pathOnly) {
-                        $query->where('value', $url)
-                            ->orWhere('value', $pathOnly);
-                    })->delete();
+                abort_unless(Storage::disk('public')->delete($fileRecord->path), 500, 'Could not delete file');
             }
+
+            // Remove only settings that reference this exact file, including its query string.
+            $url = $this->getFileUrl($fileRecord);
+            $storageUrl = Storage::disk('public')->url($fileRecord->path);
+            $references = array_unique([$url, $this->relativeFileUrl($url), $storageUrl, $this->relativeFileUrl($storageUrl)]);
+            SystemSetting::whereIn('key', [
+                'login_background_image', 'default_image_logo_png', 'default_image_logo_svg',
+                'default_image_default_avatar_jpeg', 'default_image_product-placeholder_svg',
+            ])->whereIn('value', $references)->delete();
             $fileRecord->delete();
 
             return response()->json(['message' => 'File deleted successfully']);
@@ -186,7 +191,7 @@ class FileManagerController extends Controller
     {
         $request->validate([
             'id' => 'required',
-            'newName' => 'required|string',
+            'newName' => 'required|string|max:255|not_in:.,..',
         ]);
 
         $id = $request->input('id');
@@ -212,35 +217,55 @@ class FileManagerController extends Controller
     public function downloadZip(Request $request)
     {
         $request->validate([
-            'ids' => 'required|array',
+            'ids' => 'required|array|min:1',
             'ids.*' => 'required',
         ]);
 
-        $ids = $request->input('ids');
-        $fileRecords = SystemFile::whereIn('id', $ids)->get();
+        $ids = collect($request->input('ids'))->unique();
+        $fileRecords = SystemFile::whereIn('id', $ids->filter(fn ($id) => ctype_digit((string) $id)))->get();
         $disk = Storage::disk('public');
-
-        $zipName = 'download_'.time().'.zip';
-        // Make sure uploads directory exists in case it doesn't
-        if (! $disk->exists('uploads')) {
-            $disk->makeDirectory('uploads');
-        }
-        $zipPath = storage_path('app/public/uploads/'.$zipName);
-
+        $zipPath = tempnam(sys_get_temp_dir(), 'files_zip_');
+        abort_if($zipPath === false, 500, 'Could not create zip file');
         $zip = new \ZipArchive;
-        if ($zip->open($zipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) === true) {
-            foreach ($fileRecords as $fileRecord) {
-                if ($disk->exists($fileRecord->path)) {
-                    // Use original_name for the file inside the zip
-                    $zip->addFile(storage_path('app/public/'.$fileRecord->path), $fileRecord->original_name);
-                }
+        $opened = false;
+        $entries = 0;
+        $names = [];
+
+        try {
+            if ($zip->open($zipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
+                abort(500, 'Could not create zip file');
             }
-            $zip->close();
-        } else {
-            return response()->json(['error' => 'Could not create zip file'], 500);
+            $opened = true;
+            $addEntry = function (string $name, string $contents) use ($zip, &$entries, &$names) {
+                $name = basename(str_replace('\\', '/', $name));
+                if ($name === '' || $name === '.' || $name === '..') $name = 'file';
+                $candidate = $name;
+                $suffix = 1;
+                while (isset($names[$candidate])) $candidate = ($suffix++).'_'.$name;
+                if (!$zip->addFromString($candidate, $contents)) abort(500, 'Could not add file to zip');
+                $names[$candidate] = true;
+                $entries++;
+            };
+            foreach ($fileRecords as $record) {
+                if ($disk->exists($record->path)) $addEntry($record->original_name, $disk->get($record->path));
+            }
+            foreach ($ids as $id) {
+                if (!str_starts_with((string) $id, 'asset:')) continue;
+                $name = substr($id, 6);
+                if (basename($name) !== $name || str_contains($name, '\\')) continue;
+                $path = public_path('assets/images/'.$name);
+                if (is_file($path)) $addEntry($name, file_get_contents($path));
+            }
+            abort_if($entries === 0, 404, 'No downloadable files found');
+            if (!$zip->close()) abort(500, 'Could not finish zip file');
+            $opened = false;
+        } catch (\Throwable $error) {
+            if ($opened) $zip->close();
+            @unlink($zipPath);
+            throw $error;
         }
 
-        return response()->download($zipPath)->deleteFileAfterSend(true);
+        return response()->download($zipPath, 'download_'.time().'.zip')->deleteFileAfterSend(true);
     }
 
     public function setLoginBackground(Request $request)
@@ -250,7 +275,7 @@ class FileManagerController extends Controller
         ]);
 
         $url = $request->input('url');
-        $path = parse_url($url, PHP_URL_PATH) ?: $url;
+        $path = $this->relativeFileUrl($url);
 
         SystemSetting::updateOrCreate(
             ['key' => 'login_background_image'],
@@ -263,8 +288,8 @@ class FileManagerController extends Controller
     public function setDefaultImage(Request $request)
     {
         $request->validate([
-            'file_id' => 'required',
-            'target_name' => 'required|string',
+            'file_id' => 'required|string',
+            'target_name' => 'required|string|in:logo.png,logo.svg,default_avatar.jpeg,product-placeholder.svg',
         ]);
 
         $fileId = $request->input('file_id');
@@ -272,12 +297,16 @@ class FileManagerController extends Controller
 
         $url = '';
         if (str_starts_with($fileId, 'asset:')) {
-            $filename = str_replace('asset:', '', $fileId);
+            $filename = substr($fileId, 6);
+            abort_unless(basename($filename) === $filename && !str_contains($filename, '\\') && is_file(public_path('assets/images/'.$filename)), 404);
+            abort_unless(in_array(strtolower(pathinfo($filename, PATHINFO_EXTENSION)), ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg']), 422, 'Choose an image file');
             $url = '/assets/images/' . $filename;
         } else {
-            $fileRecord = SystemFile::find($fileId);
+            $fileRecord = SystemFile::findOrFail($fileId);
+            abort_unless(str_starts_with($fileRecord->mime_type, 'image/'), 422, 'Choose an image file');
+            abort_unless(Storage::disk('public')->exists($fileRecord->path), 404);
             $url = $this->getFileUrl($fileRecord);
-            $url = parse_url($url, PHP_URL_PATH) ?: $url;
+            $url = $this->relativeFileUrl($url);
         }
 
         $settingKey = 'default_image_' . str_replace('.', '_', $targetName);
@@ -287,7 +316,15 @@ class FileManagerController extends Controller
             ['value' => $url]
         );
 
-        return response()->json(['message' => 'Default image updated successfully']);
+        return response()->json(['message' => 'Default image updated successfully', 'url' => $url]);
+    }
+
+    private function relativeFileUrl(string $url): string
+    {
+        $path = parse_url($url, PHP_URL_PATH) ?: $url;
+        $query = parse_url($url, PHP_URL_QUERY);
+
+        return $path . ($query ? '?' . $query : '');
     }
 
     private function formatBytes($bytes, $precision = 2)
