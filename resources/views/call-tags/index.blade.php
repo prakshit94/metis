@@ -2,6 +2,16 @@
 
 @section('title', 'Manage Call Tags')
 
+@push('head')
+<style>
+#tagFormModal .form-label { font-size: .8125rem !important; text-transform: none !important; letter-spacing: normal !important; color: var(--bs-body-color) !important; }
+#tagFormModal .form-control, #tagFormModal .form-select { color: var(--bs-body-color); background-color: var(--bs-body-bg) !important; min-height: 2.5rem; }
+#tagFormModal .form-control::placeholder { color: var(--bs-secondary-color); opacity: 1; }
+#tagFormModal .card { background-color: var(--bs-body-bg) !important; }
+#tagFormModal [data-searchable-select] > .dropdown-menu { position: static !important; float: none; margin-top: .5rem; }
+</style>
+@endpush
+
 @section('content')
 <div class="container-fluid py-4" x-data="callTagsAdmin()">
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -145,8 +155,8 @@
                     <tbody>
                         @forelse($tags as $l1)
                             {{-- LEVEL 1 --}}
-                            <tr x-show="isVisible('{{ addslashes($l1->name) }}', {{ $l1->is_active ? 1 : 0 }})" :class="{ 'bg-primary bg-opacity-10': selected.includes({{ $l1->id }}) }">
-                                <td><input type="checkbox" class="user-select-checkbox tag-checkbox" value="{{ $l1->id }}" x-model.number="selected"></td>
+                            <tr x-show="isVisible({{ \Illuminate\Support\Js::from($l1->name) }}, {{ $l1->is_active ? 1 : 0 }}, {{ $l1->id }})" :class="{ 'bg-primary bg-opacity-10': selected.includes({{ $l1->id }}) }">
+                                <td><input type="checkbox" class="user-select-checkbox tag-checkbox" value="{{ $l1->id }}" x-model.number="selected" :disabled="!isMatching({{ $l1->id }})"></td>
                                 <td>
                                     <div class="d-flex align-items-center">
                                         @if($l1->children->count() > 0)
@@ -198,8 +208,8 @@
                             
                             @foreach($l1->children as $l2)
                                 {{-- LEVEL 2 --}}
-                                <tr x-show="isL1Expanded({{ $l1->id }}) && isVisible('{{ addslashes($l2->name) }}', {{ $l2->is_active ? 1 : 0 }})" :class="{ 'bg-primary bg-opacity-10': selected.includes({{ $l2->id }}) }">
-                                    <td><input type="checkbox" class="user-select-checkbox tag-checkbox" value="{{ $l2->id }}" x-model.number="selected"></td>
+                                <tr x-show="isL1Expanded({{ $l1->id }}) && isVisible({{ \Illuminate\Support\Js::from($l2->name) }}, {{ $l2->is_active ? 1 : 0 }}, {{ $l2->id }})" :class="{ 'bg-primary bg-opacity-10': selected.includes({{ $l2->id }}) }">
+                                    <td><input type="checkbox" class="user-select-checkbox tag-checkbox" value="{{ $l2->id }}" x-model.number="selected" :disabled="!isMatching({{ $l2->id }})"></td>
                                     <td>
                                         <div class="d-flex align-items-center" style="padding-left: 2rem;">
                                             <i class="bi bi-arrow-return-right text-muted me-2"></i>
@@ -258,8 +268,8 @@
                                 
                                 @foreach($l2->children as $l3)
                                     {{-- LEVEL 3 --}}
-                                    <tr x-show="isL1Expanded({{ $l1->id }}) && isL2Expanded({{ $l2->id }}) && isVisible('{{ addslashes($l3->name) }}', {{ $l3->is_active ? 1 : 0 }})" :class="{ 'bg-primary bg-opacity-10': selected.includes({{ $l3->id }}) }">
-                                        <td><input type="checkbox" class="user-select-checkbox tag-checkbox" value="{{ $l3->id }}" x-model.number="selected"></td>
+                                    <tr x-show="isL1Expanded({{ $l1->id }}) && isL2Expanded({{ $l2->id }}) && isVisible({{ \Illuminate\Support\Js::from($l3->name) }}, {{ $l3->is_active ? 1 : 0 }}, {{ $l3->id }})" :class="{ 'bg-primary bg-opacity-10': selected.includes({{ $l3->id }}) }">
+                                        <td><input type="checkbox" class="user-select-checkbox tag-checkbox" value="{{ $l3->id }}" x-model.number="selected" :disabled="!isMatching({{ $l3->id }})"></td>
                                         <td>
                                             <div class="d-flex align-items-center" style="padding-left: 4rem;">
                                                 <i class="bi bi-arrow-return-right text-muted me-2"></i>
@@ -312,8 +322,8 @@
     </div>
 
     {{-- Form Modal --}}
-    <div class="modal fade" id="tagFormModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
+    <div class="modal fade" id="tagFormModal" tabindex="-1" aria-labelledby="tagFormTitle" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
             <div class="modal-content border-0 shadow">
                 <div class="modal-header bg-body-tertiary border-bottom d-flex align-items-center justify-content-between p-4">
                     <div class="d-flex align-items-center gap-3">
@@ -321,33 +331,34 @@
                             <i class="bi fs-4" :class="tagId ? 'bi-pencil-square' : 'bi-plus-circle'"></i>
                         </div>
                         <div>
-                            <h4 class="mb-0 fw-bold text-body"><span x-text="tagId ? 'Edit Tag' : 'Add Tag'"></span></h4>
-                            <p class="mb-0 small text-muted">Configure tag details and dynamic fields</p>
+                            <h4 id="tagFormTitle" class="h5 mb-1 fw-bold text-body"><span x-text="tagId ? 'Edit call tag' : 'Create call tag'"></span></h4>
+                            <p class="mb-0 small text-muted">Set up the tag, its availability, and any details agents need to record.</p>
                         </div>
                     </div>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body p-4 bg-body-tertiary">
+                <div class="modal-body p-3 p-md-4 bg-body-tertiary">
                     <div class="card border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body mb-4">
-                        <div class="card-body p-4">
+                        <div class="card-body p-3 p-md-4">
                             <div class="d-flex align-items-center gap-2 pb-2 mb-3 border-bottom border-light-subtle">
                                 <div class="bg-primary bg-opacity-10 text-primary rounded-2 d-flex align-items-center justify-content-center" style="width: 24px; height: 24px;">
                                     <i class="bi bi-tag fs-6"></i>
                                 </div>
                                 <h6 class="mb-0 fw-bold text-uppercase text-body" style="font-size: 11px; letter-spacing: 1px;">Tag Configuration</h6>
                             </div>
-                            <div class="row g-4">
+                            <p class="small text-body-secondary mb-3">Fields marked <span class="text-danger">*</span> are required.</p>
+                            <div class="row g-3">
                                 <div class="col-md-12">
-                                    <label class="form-label fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.5px;">Tag Name <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" x-model="form.name" placeholder="e.g. Sales Enquiry">
+                                    <label for="tagName" class="form-label fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.5px;">Tag Name <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="tagName" x-model="form.name" placeholder="e.g. Sales Enquiry">
                                 </div>
                                 <div class="col-md-12">
-                                    <label class="form-label fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.5px;">Description (Optional)</label>
-                                    <input type="text" class="form-control" x-model="form.description" placeholder="Brief guide for agents on when to use this tag">
+                                    <label for="tagDescription" class="form-label fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.5px;">Description (Optional)</label>
+                                    <input type="text" class="form-control" id="tagDescription" x-model="form.description" placeholder="Brief guide for agents on when to use this tag">
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.5px;">Tag Color</label>
-                                    <select class="form-select bg-body" x-model="form.color">
+                                    <x-searchable-select model="form.color" label="Tag color"><select x-ref="native" tabindex="-1" aria-hidden="true" class="visually-hidden" x-model="form.color">
                                         <option value="">Default</option>
                                         <option value="primary">Blue</option>
                                         <option value="success">Green</option>
@@ -355,19 +366,20 @@
                                         <option value="warning">Yellow</option>
                                         <option value="info">Light Blue</option>
                                         <option value="dark">Dark</option>
-                                    </select>
+                                    </select></x-searchable-select>
                                 </div>
                                 <div class="col-md-4">
-                                    <label class="form-label fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.5px;">Level</label>
-                                    <input type="text" class="form-control bg-body-secondary" x-model="form.level" readonly>
+                                    <label for="tagLevel" class="form-label fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.5px;">Level</label>
+                                    <input type="text" class="form-control bg-body-secondary" id="tagLevel" :value="'Level ' + form.level + (Number(form.level) === 1 ? ' · Category' : Number(form.level) === 2 ? ' · Subject' : ' · Outcome')" readonly>
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.5px;">Status</label>
-                                    <select class="form-select" x-model="form.is_active">
+                                    <x-searchable-select model="form.is_active" label="Tag status"><select x-ref="native" tabindex="-1" aria-hidden="true" class="visually-hidden" x-model="form.is_active">
                                         <option value="1">Active</option>
                                         <option value="0">Inactive</option>
-                                    </select>
+                                    </select></x-searchable-select>
                                 </div>
+                                <div class="col-12" x-show="form.parent_id"><label class="form-label" for="tagParent">Parent tag</label><input id="tagParent" class="form-control bg-body-secondary" :value="tagRows.find(row => String(row.id) === String(form.parent_id))?.name || ('Tag #' + form.parent_id)" readonly><p class="form-text mb-0">The parent and level are determined by where you add the tag.</p></div>
                             </div>
                         </div>
                     </div>
@@ -375,8 +387,8 @@
                     {{-- Dynamic Form Builder for Level 2 only --}}
                     <template x-if="form.level == 2">
                         <div class="card border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body mb-4">
-                            <div class="card-body p-4">
-                                <div class="d-flex justify-content-between align-items-center pb-2 mb-3 border-bottom border-light-subtle">
+                            <div class="card-body p-3 p-md-4">
+                                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 pb-2 mb-3 border-bottom border-light-subtle">
                                     <div class="d-flex align-items-center gap-2">
                                         <div class="bg-primary bg-opacity-10 text-primary rounded-2 d-flex align-items-center justify-content-center" style="width: 24px; height: 24px;">
                                             <i class="bi bi-ui-radios fs-6"></i>
@@ -392,50 +404,53 @@
                                     <div class="text-muted small fst-italic py-2 text-center my-3 bg-body-secondary rounded-3 p-3 border border-light-subtle">No dynamic fields defined. Add fields to capture extra data when this tag is selected.</div>
                                 </template>
                                 
+                                <p class="small text-body-secondary" id="tagKeyHelp">Labels are shown to agents. Key names identify saved details; use a letter followed by lowercase letters, numbers or underscores.</p>
                                 <div class="d-flex flex-column gap-3">
                                     <template x-for="(field, index) in form.form_fields" :key="index">
-                                        <div class="row g-3 p-3 border rounded-3 bg-body-secondary position-relative">
-                                            <div class="col-md-3">
-                                                <label class="form-label fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.5px;">Label</label>
-                                                <input type="text" class="form-control form-control-sm bg-body" x-model="field.label" placeholder="e.g. Select Product">
+                                        <div class="row g-3 p-3 border rounded-3 bg-body-secondary position-relative mx-0">
+                                            <div class="col-12 d-flex justify-content-between align-items-center gap-3 border-bottom pb-2"><strong class="small">Field <span x-text="index + 1"></span><span class="text-body-secondary fw-normal" x-text="field.label ? ' · ' + field.label : ''"></span></strong><button type="button" class="btn btn-sm btn-outline-danger" @click="removeField(index)" :aria-label="'Remove field ' + (index + 1)"><i class="bi bi-trash me-1" aria-hidden="true"></i>Remove</button></div>
+                                            <div class="col-md-6">
+                                                <label class="form-label fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.5px;" :for="'tagField_label_' + index">Label</label>
+                                                <input type="text" class="form-control form-control-sm bg-body" :id="'tagField_label_' + index" x-model="field.label" placeholder="e.g. Select Product">
                                             </div>
-                                            <div class="col-md-3">
-                                                <label class="form-label fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.5px;">Key Name</label>
-                                                <input type="text" class="form-control form-control-sm bg-body font-monospace text-primary" x-model="field.name" placeholder="e.g. search_product" @input="field.name = field.name.toLowerCase().replace(/[^a-z0-9_]/g, '_')">
+                                            <div class="col-md-6">
+                                                <label class="form-label fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.5px;" :for="'tagField_name_' + index">Key Name</label>
+                                                <input type="text" class="form-control form-control-sm bg-body font-monospace text-primary" :id="'tagField_name_' + index" x-model="field.name" placeholder="e.g. search_product" aria-describedby="tagKeyHelp" @input="field.name = field.name.toLowerCase().replace(/[^a-z0-9_]/g, '_')">
                                             </div>
-                                            <div class="col-md-2">
+                                            <div class="col-md-6">
                                                 <label class="form-label fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.5px;">Type</label>
-                                                <select class="form-select form-select-sm bg-body" x-model="field.type">
+                                                <x-searchable-select model="field.type" label="Dynamic field type"><select x-ref="native" tabindex="-1" aria-hidden="true" class="visually-hidden" x-model="field.type">
                                                     <option value="text">Text</option>
                                                     <option value="textarea">Textarea</option>
                                                     <option value="date">Date</option>
+                                                    <option value="datetime-local">Date and time</option>
+                                                    <option value="number">Number</option>
+                                                    <option value="product_search">Product search</option>
+                                                    <option value="agent_search">Agent search</option>
                                                     <option value="select">Dropdown</option>
                                                     <option value="multi_select">Multi-Select</option>
-                                                </select>
+                                                </select></x-searchable-select>
                                             </div>
-                                            <div class="col-md-2">
+                                            <div class="col-md-6">
                                                 <label class="form-label fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.5px;">Required</label>
-                                                <select class="form-select form-select-sm bg-body" x-model="field.is_required">
+                                                <x-searchable-select model="field.is_required" label="Dynamic field required"><select x-ref="native" tabindex="-1" aria-hidden="true" class="visually-hidden" x-model="field.is_required">
                                                     <option value="1">Yes</option>
                                                     <option value="0">No</option>
-                                                </select>
-                                            </div>
-                                            <div class="col-md-1 d-flex align-items-end">
-                                                <button type="button" class="btn btn-sm btn-outline-danger w-100 rounded-3" @click="removeField(index)" title="Remove Field">
-                                                    <i class="bi bi-trash"></i>
-                                                </button>
+                                                </select></x-searchable-select>
                                             </div>
                                             <div class="col-md-6 mt-2">
-                                                <label class="form-label fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.5px;">Placeholder</label>
-                                                <input type="text" class="form-control form-control-sm bg-body" x-model="field.placeholder" placeholder="Hint text">
+                                                <label class="form-label fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.5px;" :for="'tagField_placeholder_' + index">Placeholder</label>
+                                                <input type="text" class="form-control form-control-sm bg-body" :id="'tagField_placeholder_' + index" x-model="field.placeholder" placeholder="Hint text">
                                             </div>
                                             <div class="col-md-6 mt-2">
-                                                <label class="form-label fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.5px;">Validation Rules</label>
-                                                <input type="text" class="form-control form-control-sm bg-body font-monospace" x-model="field.validation_rules" placeholder="e.g. min:10|max:255|email">
+                                                <label class="form-label fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.5px;" :for="'tagField_validation_rules_' + index">Validation Rules</label>
+                                                <input type="text" class="form-control form-control-sm bg-body font-monospace" :id="'tagField_validation_rules_' + index" x-model="field.validation_rules" placeholder="e.g. min:10|max:255|email">
                                             </div>
                                             <div class="col-md-12 mt-2" x-show="field.type === 'select' || field.type === 'multi_select'">
-                                                <label class="form-label fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.5px;">Options (JSON Array)</label>
-                                                <input type="text" class="form-control form-control-sm bg-body font-monospace" x-model="field.options" placeholder='["Option 1", "Option 2"]'>
+                                                <label class="form-label fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.5px;" :for="'tagField_options_' + index">Options (JSON Array)</label>
+                                                <input type="text" class="form-control form-control-sm bg-body font-monospace" :id="'tagField_options_' + index" x-model="field.options" placeholder='["Option 1", "Option 2"]'>
+                                                <p class="form-text mb-0" x-show="String(field.name).toLowerCase() !== 'crop'">Enter unique choices as a JSON array, for example ["Option 1", "Option 2"].</p>
+                                                <p class="form-text mb-0" x-show="String(field.name).toLowerCase() === 'crop'">Crop choices are loaded from the active crops directory.</p>
                                             </div>
                                         </div>
                                     </template>
@@ -445,8 +460,8 @@
                     </template>
                 </div>
                 <div class="modal-footer bg-body-tertiary border-top p-4 d-flex justify-content-end gap-3">
-                    <button type="button" class="btn text-muted fw-bold text-uppercase" style="font-size: 11px; letter-spacing: 1px;" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm" @click="saveTag()" :disabled="saving">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary px-4" @click="saveTag()" :disabled="saving">
                         <span x-show="!saving">Save Tag</span>
                         <span x-show="saving"><span class="spinner-border spinner-border-sm me-2"></span>Saving...</span>
                     </button>
@@ -460,6 +475,7 @@
 document.addEventListener('alpine:init', () => {
     Alpine.data('callTagsAdmin', () => ({
         modalInstance: null,
+        tagRows: @js($tagRows),
         tagId: null,
         saving: false,
         
@@ -510,17 +526,17 @@ document.addEventListener('alpine:init', () => {
             this.expandedL2 = [];
         },
         
-        isL1Expanded(id) { return this.search !== '' || this.expandedL1.includes(Number(id)); },
-        isL2Expanded(id) { return this.search !== '' || this.expandedL2.includes(Number(id)); },
+        isL1Expanded(id) { return this.search !== '' || this.filterStatus !== '' || this.expandedL1.includes(Number(id)); },
+        isL2Expanded(id) { return this.search !== '' || this.filterStatus !== '' || this.expandedL2.includes(Number(id)); },
         
         get allSelected() {
-            const visibleCheckboxes = Array.from(document.querySelectorAll('.table tbody tr:not([style*="display: none"]) input[type="checkbox"]'));
+            const visibleCheckboxes = Array.from(document.querySelectorAll('.table tbody tr:not([style*="display: none"]) .tag-checkbox:not(:disabled)'));
             if (visibleCheckboxes.length === 0) return false;
             return visibleCheckboxes.every(cb => this.selected.includes(parseInt(cb.value)));
         },
 
         toggleAll(e) {
-            const visibleCheckboxes = Array.from(document.querySelectorAll('.table tbody tr:not([style*="display: none"]) input[type="checkbox"]'));
+            const visibleCheckboxes = Array.from(document.querySelectorAll('.table tbody tr:not([style*="display: none"]) .tag-checkbox:not(:disabled)'));
             if (e.target.checked) {
                 const visibleIds = visibleCheckboxes.map(cb => parseInt(cb.value));
                 this.selected = [...new Set([...this.selected, ...visibleIds])];
@@ -530,16 +546,20 @@ document.addEventListener('alpine:init', () => {
             }
         },
 
-        isVisible(name, isActive) {
-            const matchesSearch = name.toLowerCase().includes(this.search.toLowerCase());
-            let matchesStatus = true;
-            if (this.filterStatus === 'active') matchesStatus = isActive == 1;
-            if (this.filterStatus === 'inactive') matchesStatus = isActive == 0;
-            return matchesSearch && matchesStatus;
+        matchesRow(row) {
+            if (!row) return false;
+            const statusMatches = !this.filterStatus || (this.filterStatus === 'active' ? row.active : !row.active);
+            return statusMatches && row.path.toLowerCase().includes(this.search.trim().toLowerCase());
+        },
+        isMatching(id) { return this.matchesRow(this.tagRows.find(row => row.id === Number(id))); },
+        isVisible(name, isActive, id) {
+            return this.tagRows.some(row => this.matchesRow(row) && (row.id === Number(id) || row.ancestors.includes(Number(id))));
         },
 
         init() {
             this.modalInstance = new bootstrap.Modal(document.getElementById('tagFormModal'));
+            this.$watch('search', () => { this.selected = []; });
+            this.$watch('filterStatus', () => { this.selected = []; });
         },
         
         openModal(id = null, name = '', level = 1, parentId = null, isActive = 1, formFields = [], description = '', color = '') {
@@ -583,6 +603,7 @@ document.addEventListener('alpine:init', () => {
         },
         
         async saveTag() {
+            if (this.saving) return;
             if (!this.form.name) {
                 Swal.fire('Error', 'Tag Name is required', 'error');
                 return;
@@ -634,7 +655,7 @@ document.addEventListener('alpine:init', () => {
                     setTimeout(() => window.location.reload(), 1000);
                 } else {
                     const err = await res.json();
-                    Swal.fire('Error', err.message || 'Failed to save tag', 'error');
+                    Swal.fire('Error', err.errors ? Object.values(err.errors).flat().join(' ') : err.message || 'Failed to save tag', 'error');
                 }
             } catch (e) {
                 console.error(e);
@@ -647,7 +668,7 @@ document.addEventListener('alpine:init', () => {
         async deleteTag(id) {
             const result = await Swal.fire({
                 title: 'Are you sure?',
-                text: "Deleting this tag will also delete all its child tags and form fields. This cannot be undone!",
+                text: "This removes the tag and its child tags from future selections. Historical call logs are retained.",
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonText: 'Yes, delete it!'
@@ -686,7 +707,7 @@ document.addEventListener('alpine:init', () => {
             if (action === 'delete') {
                 const result = await Swal.fire({
                     title: 'Are you sure?',
-                    text: `You are about to delete ${this.selected.length} tags. This cannot be undone!`,
+                    text: `Remove ${this.selected.length} selected tags and their child tags from future selections? Historical call logs are retained.`,
                     icon: 'warning',
                     showCancelButton: true,
                     confirmButtonText: 'Yes, delete them!'

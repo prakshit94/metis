@@ -1,8 +1,17 @@
 <style>
-    .custom-hover-bg { transition: background-color 0.2s; }
-    .custom-hover-bg:hover { background-color: var(--bs-secondary-bg); }
+    #callTaggingModal .form-label { font-size: .8125rem !important; letter-spacing: normal !important; text-transform: none !important; color: var(--bs-body-color) !important; }
+    #callTaggingModal .form-control, #callTaggingModal .form-select { font-size: .875rem !important; min-height: 2.5rem; color: var(--bs-body-color); background-color: var(--bs-body-bg); }
+    #callTaggingModal .form-control::placeholder { color: var(--bs-secondary-color); opacity: 1; }
+    #callTaggingModal .card { z-index: auto !important; background-color: var(--bs-body-bg) !important; }
+    #callTaggingModal [data-searchable-select] > .dropdown-menu { position: static !important; float: none; margin-top: .5rem; }
+    #callTaggingModal .call-choice-panel { background: var(--bs-body-bg); color: var(--bs-body-color); }
+    #callTaggingModal .call-choice-list { max-height: 12rem; overflow-y: auto; overscroll-behavior: contain; }
+    #callTaggingModal .call-choice-panel .dropdown-item { color: var(--bs-body-color); white-space: normal; }
+    #callTaggingModal .call-choice-panel .dropdown-item:hover, #callTaggingModal .call-choice-panel .dropdown-item:focus-visible { background: var(--bs-secondary-bg); color: var(--bs-emphasis-color); }
+    #callTaggingModal .call-choice-panel .dropdown-item[aria-pressed="true"] { background: var(--bs-primary-bg-subtle); color: var(--bs-primary-text-emphasis); }
+    #callTaggingModal .call-selected-item { background: var(--bs-secondary-bg); color: var(--bs-body-color); max-width: 100%; white-space: normal; text-align: left; }
 </style>
-<div class="modal fade" id="callTaggingModal" tabindex="-1" aria-labelledby="callTaggingModalLabel" aria-hidden="true" x-data="callTaggingApp()" @open-call-tagging-modal.window="openModal($event.detail.customerId)" aria-hidden="true">
+<div class="modal fade" id="callTaggingModal" tabindex="-1" aria-labelledby="callTaggingModalLabel" x-data="callTaggingApp()" @open-call-tagging-modal.window="openModal($event.detail.customerId)" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content border-0 shadow">
             {{-- GLOSSY STYLE HEADER --}}
@@ -12,14 +21,15 @@
                         <i class="bi bi-headset fs-4"></i>
                     </div>
                     <div>
-                        <h4 class="mb-0 fw-bold text-body">Log Call Details</h4>
+                        <h4 id="callTaggingModalLabel" class="mb-0 fw-bold text-body">Log Call Details</h4>
                         <p class="mb-0 small text-muted">Record outcomes and interactions</p>
                     </div>
                 </div>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" @click="resetForm()"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" @click="resetForm()" :disabled="submitting"></button>
             </div>
             
             <div class="modal-body p-4 bg-body-tertiary">
+                <div class="alert alert-danger" role="alert" x-show="error" x-cloak><span x-text="error"></span><button type="button" class="btn btn-sm btn-outline-danger ms-2" x-show="!fieldsReady && !submitting" @click="selectedL2 ? selectL2(selectedL2) : selectedL1 ? selectL1(selectedL1) : fetchL1Tags()">Reload choices</button></div>
                 
                 {{-- LEVEL 1 CARD --}}
                 <div class="card mb-3 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary" style="z-index: 30;">
@@ -35,12 +45,14 @@
                             <div class="col-md-12">
                                 <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Primary Reason for Call *</label>
                                 <div class="d-flex align-items-center gap-2">
-                                    <select class="form-select form-select-sm fw-semibold" style="font-size: 12px;" x-model="selectedL1">
+                                    <x-searchable-select model="selectedL1" label="Primary reason for call">
+<select x-ref="native" tabindex="-1" aria-hidden="true" class="visually-hidden" style="font-size: 12px;"  x-model="selectedL1" :disabled="loadingL1 || submitting">
                                         <option value="">Select Call Category...</option>
                                         <template x-for="tag in l1Tags" :key="tag.id">
                                             <option :value="tag.id" x-text="tag.name"></option>
                                         </template>
                                     </select>
+</x-searchable-select>
                                     <template x-if="loadingL1">
                                         <span class="spinner-border spinner-border-sm text-primary"></span>
                                     </template>
@@ -70,12 +82,14 @@
                                 <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Specific Subject *</label>
                                 <div class="d-flex align-items-center gap-2">
                                     <template x-if="l2Tags.length > 0">
-                                        <select class="form-select form-select-sm fw-semibold" style="font-size: 12px;" x-model="selectedL2">
+                                        <x-searchable-select model="selectedL2" label="Specific call subject">
+<select x-ref="native" tabindex="-1" aria-hidden="true" class="visually-hidden" style="font-size: 12px;"  x-model="selectedL2" :disabled="loadingL2 || submitting">
                                             <option value="">Select Sub Category...</option>
                                             <template x-for="tag in l2Tags" :key="tag.id">
                                                 <option :value="tag.id" x-text="tag.name"></option>
                                             </template>
                                         </select>
+</x-searchable-select>
                                     </template>
                                     <template x-if="loadingL2">
                                         <span class="spinner-border spinner-border-sm text-info"></span>
@@ -96,7 +110,7 @@
                                 <div class="col-md-12 mt-4">
                                     <h6 class="fw-bold text-muted text-uppercase mb-3" style="font-size: 10px; letter-spacing: 1px;">Additional Details</h6>
                                     <div class="row g-3">
-                                        <template x-for="field in formFields" :key="field.id">
+                                        <template x-for="field in formFields" :key="selectedL2 + ':' + field.id">
                                             <div class="col-md-6">
                                                 <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">
                                                     <span x-text="field.label"></span>
@@ -104,86 +118,61 @@
                                                 </label>
                                                 
                                                 <template x-if="['text', 'date', 'datetime-local', 'number'].includes(field.type)">
-                                                    <input :type="field.type" class="form-control form-control-sm fw-semibold" style="font-size: 12px;" x-model="formData[field.name]" :required="field.is_required" :placeholder="field.placeholder || ''">
+                                                    <input :type="field.type" class="form-control form-control-sm fw-semibold" style="font-size: 12px;" :aria-label="field.label" x-model="formData[field.name]" :disabled="submitting" :required="field.is_required" :placeholder="field.placeholder || ''">
                                                 </template>
 
                                                 <template x-if="field.type === 'select'">
-                                                    <select class="form-select form-select-sm fw-semibold" style="font-size: 12px;" x-model="formData[field.name]" :required="field.is_required">
+                                                    <x-searchable-select model="formData[field.name]" label="Call detail option">
+<select x-ref="native" tabindex="-1" aria-hidden="true" class="visually-hidden" style="font-size: 12px;" :aria-label="field.label" x-model="formData[field.name]" :disabled="submitting" :required="field.is_required">
                                                         <option value="">Select option...</option>
-                                                        <template x-for="opt in (field.options ? JSON.parse(field.options) : [])" :key="opt">
+                                                        <template x-for="opt in fieldOptions(field)" :key="opt">
                                                             <option :value="opt" x-text="opt"></option>
                                                         </template>
                                                     </select>
+</x-searchable-select>
                                                 </template>
 
                                                 <template x-if="field.type === 'multi_select'">
-                                                    <div x-data="{ showDropdown: false, get selectedItems() { return Array.isArray(formData[field.name]) ? formData[field.name] : []; }, toggleItem(opt) { let arr = Array.isArray(formData[field.name]) ? [...formData[field.name]] : []; if(arr.includes(opt)) { arr = arr.filter(i => i !== opt); } else { arr.push(opt); } formData[field.name] = arr; } }" class="position-relative" @click.away="showDropdown = false">
-                                                        <div @click="showDropdown = !showDropdown" class="form-control form-control-sm d-flex flex-wrap align-items-center gap-1 bg-body" style="min-height: 31px; cursor: pointer;">
-                                                            <template x-if="selectedItems.length === 0">
-                                                                <span class="text-muted" style="font-size: 12px;">Select...</span>
-                                                            </template>
-                                                            <template x-for="item in selectedItems" :key="item">
-                                                                <div class="badge bg-success bg-opacity-10 text-success d-flex align-items-center gap-1">
-                                                                    <span x-text="item" style="font-size: 10px;"></span>
-                                                                    <i class="bi bi-x cursor-pointer" @click.stop="toggleItem(item)" style="font-size: 12px;"></i>
-                                                                </div>
-                                                            </template>
+                                                    <div x-data="{ open: false, query: '', get selectedItems() { return Array.isArray(formData[field.name]) ? formData[field.name] : []; }, get choices() { return fieldOptions(field).filter(option => String(option).toLowerCase().includes(this.query.trim().toLowerCase())); }, toggle(option) { if(submitting) return; let values = [...this.selectedItems]; formData[field.name] = values.includes(option) ? values.filter(value => value !== option) : [...values, option]; } }"
+                                                         @click.outside="open = false" @focusout="if (!$el.contains($event.relatedTarget)) open = false"
+                                                         @keydown.escape="if(open) { $event.stopPropagation(); $event.preventDefault(); open = false; $refs.trigger.focus(); }">
+                                                        <button type="button" class="form-select text-start" x-ref="trigger" :aria-label="field.label" :aria-expanded="open" :disabled="submitting" @click="open = !open; if(open) { query = ''; $nextTick(() => $refs.query.focus()); }" @keydown.arrow-down.stop.prevent="open = true; $nextTick(() => $refs.query.focus())">
+                                                            <span x-text="selectedItems.length ? selectedItems.length + ' selected' : 'Select options…'"></span>
+                                                        </button>
+                                                        <div class="d-flex flex-wrap gap-1 mt-2" x-show="selectedItems.length">
+                                                            <template x-for="item in selectedItems" :key="item"><button type="button" class="btn btn-sm call-selected-item" :disabled="submitting" :aria-label="'Remove ' + item" @click="toggle(item)"><span x-text="item"></span><i class="bi bi-x ms-1" aria-hidden="true"></i></button></template>
                                                         </div>
-                                                        <div x-show="showDropdown" class="position-absolute w-100 bg-body-tertiary border rounded shadow-lg mt-1" style="max-height: 150px; overflow-y: auto; z-index: 1050;">
-                                                            <template x-for="opt in (field.options ? JSON.parse(field.options) : [])" :key="opt">
-                                                                <div class="px-3 py-1 cursor-pointer custom-hover-bg d-flex align-items-center" @click.stop="toggleItem(opt)">
-                                                                    <input type="checkbox" :checked="selectedItems.includes(opt)" class="me-2" style="cursor: pointer;">
-                                                                    <span style="font-size: 12px;" x-text="opt"></span>
-                                                                </div>
-                                                            </template>
+                                                        <div class="call-choice-panel border rounded-3 p-2 mt-2" x-show="open" x-cloak
+                                                             @keydown.arrow-down.stop.prevent="const buttons = [...$el.querySelectorAll('button:not(:disabled)')]; buttons[Math.min(buttons.indexOf($event.target) + 1, buttons.length - 1)]?.focus()"
+                                                             @keydown.arrow-up.stop.prevent="const buttons = [...$el.querySelectorAll('button:not(:disabled)')]; const index = buttons.indexOf($event.target); if(index <= 0) $refs.query.focus(); else buttons[index - 1]?.focus()">
+                                                            <input type="search" class="form-control mb-2" x-ref="query" x-model="query" :aria-label="'Search ' + field.label" placeholder="Search options…" autocomplete="off" @keydown.enter.prevent>
+                                                            <div class="call-choice-list"><template x-for="option in choices" :key="option"><button type="button" class="dropdown-item rounded py-2" :aria-pressed="selectedItems.includes(option)" :disabled="submitting" @click="toggle(option)"><i class="bi me-2" :class="selectedItems.includes(option) ? 'bi-check-square-fill' : 'bi-square'" aria-hidden="true"></i><span x-text="option"></span></button></template></div>
+                                                            <p class="small text-body-secondary mb-0 p-2" role="status" x-show="!choices.length">No matching options.</p>
                                                         </div>
                                                     </div>
                                                 </template>
 
                                                 <template x-if="field.type === 'product_search' || field.type === 'agent_search'">
-                                                    <div class="position-relative" @click.away="searchResults[field.name] = []">
-                                                        <div class="form-control form-control-sm d-flex flex-wrap align-items-center gap-1 bg-body" style="min-height: 31px; cursor: text;" @click="$refs['search_' + field.name].focus()">
-                                                            
-                                                            <template x-for="item in (selectedSearchItems[field.name] || [])" :key="item.id">
-                                                                <div class="badge bg-success bg-opacity-10 text-success d-flex align-items-center gap-1">
-                                                                    <span x-text="item.name" style="font-size: 10px;"></span>
-                                                                    <i class="bi bi-x cursor-pointer" @click.stop="removeSearchItem(field.name, item.id)" style="font-size: 12px;"></i>
-                                                                </div>
-                                                            </template>
-                                                            
-                                                            <div class="flex-grow-1 position-relative" style="min-width: 100px;">
-                                                                <input :x-ref="'search_' + field.name" type="text" class="border-0 w-100 outline-none" 
-                                                                       :placeholder="((selectedSearchItems[field.name] || []).length === 0) ? ('Search ' + field.label.replace('Search ', '') + '...') : 'Search more...'"
-                                                                       x-model="searchQuery[field.name]"
-                                                                       @input="doSearch(field.name, field.type, $event.target.value)"
-                                                                       @focus="doSearch(field.name, field.type, searchQuery[field.name])"
-                                                                       style="font-size: 12px; outline: none !important; box-shadow: none; background: transparent;">
-                                                            </div>
+                                                    <div x-data="{ searchOpen: false }" @click.outside="searchOpen = false" @focusout="if (!$el.contains($event.relatedTarget)) searchOpen = false" @keydown.escape="if(searchOpen) { $event.stopPropagation(); $event.preventDefault(); searchOpen = false; $refs.lookup.focus(); }">
+                                                        <div class="d-flex flex-wrap gap-1 mb-2" x-show="(selectedSearchItems[field.name] || []).length">
+                                                            <template x-for="item in (selectedSearchItems[field.name] || [])" :key="item.id"><button type="button" class="btn btn-sm call-selected-item" :disabled="submitting" :aria-label="'Remove ' + item.name" @click="removeSearchItem(field.name, item.id)"><span x-text="item.name"></span><i class="bi bi-x ms-1" aria-hidden="true"></i></button></template>
                                                         </div>
-                                                               
-                                                        <input type="hidden" x-model="formData[field.name]" :required="field.is_required">
-                                                        
-                                                        <div class="position-absolute w-100 bg-body-tertiary border rounded shadow-lg mt-1" 
-                                                             style="max-height: 200px; overflow-y: auto; z-index: 1050;" 
-                                                             x-show="searchResults[field.name] && searchResults[field.name].length > 0"
-                                                             x-transition>
-                                                            
-                                                            <template x-for="item in searchResults[field.name]" :key="item.id">
-                                                                <div class="px-3 py-1 cursor-pointer custom-hover-bg d-flex align-items-center" 
-                                                                        @click.stop="selectSearchResult(field.name, item, 'name')">
-                                                                    <input type="checkbox" :checked="(selectedSearchItems[field.name] || []).find(i => i.id === item.id) !== undefined" class="me-2" style="cursor: pointer;">
-                                                                    <span class="fw-bold" style="font-size: 12px;" x-text="item.name"></span>
-                                                                    <template x-if="field.type === 'product_search'">
-                                                                        <span class="text-muted ms-1" style="font-size: 11px;" x-text="'- ' + item.sku"></span>
-                                                                    </template>
-                                                                </div>
-                                                            </template>
+                                                        <input type="text" class="form-control" x-ref="lookup" :aria-label="field.label" :aria-expanded="searchOpen" :disabled="submitting" :placeholder="field.placeholder || ('Search ' + field.label.replace('Search ', '') + '…')" x-model="searchQuery[field.name]" autocomplete="off"
+                                                               @input="searchOpen = true; doSearch(field.name, field.type, $event.target.value)" @focus="searchOpen = true; doSearch(field.name, field.type, searchQuery[field.name])" @keydown.arrow-down.stop.prevent="$el.nextElementSibling?.querySelector('button')?.focus()" @keydown.enter.prevent>
+                                                        <div class="call-choice-panel border rounded-3 p-2 mt-2" x-show="searchOpen" x-cloak
+                                                             @keydown.arrow-down.stop.prevent="const buttons = [...$el.querySelectorAll('button:not(:disabled)')]; buttons[Math.min(buttons.indexOf($event.target) + 1, buttons.length - 1)]?.focus()"
+                                                             @keydown.arrow-up.stop.prevent="const buttons = [...$el.querySelectorAll('button:not(:disabled)')]; const index = buttons.indexOf($event.target); if(index <= 0) $refs.lookup.focus(); else buttons[index - 1]?.focus()">
+                                                            <p class="small text-body-secondary p-2 mb-0" role="status" x-show="searchState[field.name]?.loading">Searching…</p>
+                                                            <p class="small text-danger p-2 mb-0" role="alert" x-show="searchState[field.name]?.error" x-text="searchState[field.name]?.error"></p>
+                                                            <p class="small text-body-secondary p-2 mb-0" x-show="(searchQuery[field.name] || '').length === 1">Type at least 2 characters.</p>
+                                                            <div class="call-choice-list"><template x-for="item in (searchResults[field.name] || [])" :key="item.id"><button type="button" class="dropdown-item rounded py-2" :disabled="submitting" :aria-pressed="(selectedSearchItems[field.name] || []).some(selected => String(selected.id) === String(item.id))" @click="selectSearchResult(field.name, item, 'name')"><span class="fw-semibold" x-text="item.name"></span><small class="d-block text-body-secondary" x-show="field.type === 'product_search'" x-text="item.sku || ''"></small></button></template></div>
+                                                            <p class="small text-body-secondary p-2 mb-0" role="status" x-show="searchState[field.name]?.done && !searchState[field.name]?.error && !(searchResults[field.name] || []).length">No matching results.</p>
                                                         </div>
                                                     </div>
                                                 </template>
 
                                                 <template x-if="field.type === 'textarea'">
-                                                    <textarea class="form-control form-control-sm fw-semibold" style="font-size: 12px;" rows="2" x-model="formData[field.name]" :required="field.is_required" :placeholder="field.placeholder || ''"></textarea>
+                                                    <textarea class="form-control form-control-sm fw-semibold" style="font-size: 12px;" rows="2" :aria-label="field.label" x-model="formData[field.name]" :disabled="submitting" :required="field.is_required" :placeholder="field.placeholder || ''"></textarea>
                                                 </template>
                                             </div>
                                         </template>
@@ -209,12 +198,14 @@
                                 <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Final Outcome / Resolution</label>
                                 <div class="d-flex align-items-center gap-2">
                                     <template x-if="l3Tags.length > 0">
-                                        <select class="form-select form-select-sm fw-semibold" style="font-size: 12px;" x-model="selectedL3">
+                                        <x-searchable-select model="selectedL3" label="Call outcome (optional)">
+<select x-ref="native" tabindex="-1" aria-hidden="true" class="visually-hidden" style="font-size: 12px;"  x-model="selectedL3" :disabled="loadingL3 || submitting">
                                             <option value="">Select Call Outcome...</option>
                                             <template x-for="tag in l3Tags" :key="tag.id">
                                                 <option :value="tag.id" x-text="tag.name"></option>
                                             </template>
                                         </select>
+</x-searchable-select>
                                     </template>
                                     <template x-if="loadingL3">
                                         <span class="spinner-border spinner-border-sm text-success"></span>
@@ -232,7 +223,7 @@
                             
                             <div class="col-md-6">
                                 <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Agent Notes</label>
-                                <textarea class="form-control form-control-sm fw-semibold" style="font-size: 12px;" rows="1" placeholder="Any general comments about the call..." x-model="notes"></textarea>
+                                <textarea class="form-control form-control-sm fw-semibold" style="font-size: 12px;" rows="1" placeholder="Any general comments about the call..." aria-label="Agent notes" x-model="notes"></textarea>
                             </div>
                         </div>
                     </div>
@@ -241,7 +232,7 @@
             </div>
             
             <div class="modal-footer bg-body-tertiary border-top">
-                <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal" @click="resetForm()">Cancel</button>
+                <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal" @click="resetForm()" :disabled="submitting">Cancel</button>
                 <button type="button" class="btn btn-primary px-4 fw-bold shadow-sm" @click="submitCallLog()" :disabled="!isFormValid() || submitting">
                     <template x-if="!submitting">
                         <span><i class="bi bi-save me-2"></i> Save Call Log</span>
@@ -283,12 +274,26 @@ document.addEventListener('alpine:init', () => {
         
         searchQuery: {},
         searchResults: {},
+        searchState: {},
         searchTimeout: {},
         selectedSearchItems: {},
         
         submitting: false,
         
         modalInstance: null,
+        error: '', fieldsReady: false, saved: false, _version: 0, _l1Request: 0, _l2Request: 0, _searchVersion: {},
+        async jsonRequest(url, options = {}) {
+            const response = await fetch(url, { ...options, headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest', ...(options.headers || {}) } });
+            if (response.redirected || response.status === 401 || response.status === 419) throw new Error('Your session expired. Reload the page and sign in again.');
+            let result;
+            try { result = await response.json(); } catch { throw new Error('Unexpected server response. Please retry.'); }
+            if (!response.ok) throw new Error(result.errors ? Object.values(result.errors).flat().join(' ') : result.message || result.error || 'Request failed.');
+            return result;
+        },
+        fieldOptions(field) {
+            try { const options = Array.isArray(field.options) ? field.options : JSON.parse(field.options || '[]'); return Array.isArray(options) ? options : []; }
+            catch { return []; }
+        },
         
         get selectedL1Data() {
             return this.selectedL1 ? this.l1Tags.find(t => t.id == this.selectedL1) : null;
@@ -304,11 +309,13 @@ document.addEventListener('alpine:init', () => {
 
         init() {
             this.modalInstance = new bootstrap.Modal(document.getElementById('callTaggingModal'));
+            document.getElementById('callTaggingModal').addEventListener('hide.bs.modal', event => { if (this.submitting) event.preventDefault(); });
             this.$watch('selectedL1', value => this.selectL1(value));
             this.$watch('selectedL2', value => this.selectL2(value));
         },
         
         async openModal(custId) {
+            if (this.submitting) return;
             this.customerId = custId;
             this.resetForm();
             this.modalInstance.show();
@@ -316,6 +323,12 @@ document.addEventListener('alpine:init', () => {
         },
         
         resetForm() {
+            if (this.submitting) return;
+            this._version++; this._l1Request++; this._l2Request++;
+            Object.values(this.searchTimeout).forEach(timer => clearTimeout(timer));
+            this.searchTimeout = {}; this._searchVersion = {};
+            this.loadingL1 = this.loadingL2 = this.loadingL3 = false;
+            this.error = ''; this.fieldsReady = false; this.saved = false; this.l1Tags = [];
             this.selectedL1 = null;
             this.selectedL2 = null;
             this.selectedL3 = null;
@@ -325,102 +338,65 @@ document.addEventListener('alpine:init', () => {
             this.formData = {};
             this.notes = '';
             this.searchQuery = {};
-            this.searchResults = {};
+            this.searchResults = {}; this.searchState = {};
             this.selectedSearchItems = {};
             this.submitting = false;
         },
         
         async fetchL1Tags() {
-            this.loadingL1 = true;
+            const version = this._version;
+            this.loadingL1 = true; this.error = '';
             try {
-                const res = await fetch('/call-tags?level=1', {
-                    headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
-                });
-                if (res.ok) {
-                    this.l1Tags = await res.json();
-                }
-            } catch (e) {
-                console.error('Failed to fetch L1 tags:', e);
-            }
-            this.loadingL1 = false;
+                const result = await this.jsonRequest('/call-tags?level=1');
+                if (version !== this._version) return;
+                this.l1Tags = result;
+                if (!result.length) this.error = 'No active call categories are available. Contact your administrator.';
+            } catch (error) { if (version === this._version) this.error = error.message; }
+            finally { if (version === this._version) this.loadingL1 = false; }
         },
-        
         async selectL1(id) {
-            this.selectedL2 = null;
-            this.selectedL3 = null;
-            this.l3Tags = [];
-            this.formFields = [];
-            this.formData = {};
-            this.searchQuery = {};
-            this.searchResults = {};
-            this.selectedSearchItems = {};
-            
-            if (!id) {
-                this.l2Tags = [];
-                return;
-            }
-            
-            this.loadingL2 = true;
+            const version = this._version, request = ++this._l1Request;
+            this._l2Request++;
+            this.selectedL2 = this.selectedL3 = null;
+            this.l2Tags = []; this.l3Tags = []; this.formFields = []; this.formData = {};
+            this.searchQuery = {}; this.searchResults = {}; this.searchState = {}; this.selectedSearchItems = {};
+            this.fieldsReady = false; this.loadingL3 = false; this.loadingL2 = Boolean(id); this.error = '';
+            if (!id) return;
             try {
-                const res = await fetch(`/call-tags?parent_id=${id}`, {
-                    headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
-                });
-                if (res.ok) {
-                    this.l2Tags = await res.json();
-                }
-            } catch (e) {
-                console.error('Failed to fetch L2 tags:', e);
-            }
-            this.loadingL2 = false;
+                const result = await this.jsonRequest('/call-tags?parent_id=' + encodeURIComponent(id));
+                if (version !== this._version || request !== this._l1Request || String(id) !== String(this.selectedL1)) return;
+                this.l2Tags = result;
+            } catch (error) { if (version === this._version && request === this._l1Request) this.error = error.message; }
+            finally { if (version === this._version && request === this._l1Request) this.loadingL2 = false; }
         },
-        
         async selectL2(id) {
-            this.selectedL3 = null;
-            this.formData = {};
-            this.searchQuery = {};
-            this.searchResults = {};
-            this.selectedSearchItems = {};
-            
-            if (!id) {
-                this.l3Tags = [];
-                this.formFields = [];
-                return;
-            }
-            
-            this.loadingL3 = true;
+            const version = this._version, request = ++this._l2Request;
+            this.selectedL3 = null; this.l3Tags = []; this.formFields = []; this.formData = {};
+            this.searchQuery = {}; this.searchResults = {}; this.searchState = {}; this.selectedSearchItems = {};
+            this.fieldsReady = false; this.loadingL3 = Boolean(id); this.error = '';
+            if (!id) return;
             try {
-                // Fetch L3 Tags
-                const resTags = await fetch(`/call-tags?parent_id=${id}`, {
-                    headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+                const [tags, fields] = await Promise.all([
+                    this.jsonRequest('/call-tags?parent_id=' + encodeURIComponent(id)),
+                    this.jsonRequest('/call-tags/' + encodeURIComponent(id) + '/form')
+                ]);
+                if (version !== this._version || request !== this._l2Request || String(id) !== String(this.selectedL2)) return;
+                this.l3Tags = tags; this.formFields = fields; this.fieldsReady = true;
+                fields.forEach(field => {
+                    this.formData[field.name] = ['multi_select', 'product_search', 'agent_search'].includes(field.type) ? [] : '';
+                    this.searchQuery[field.name] = ''; this.searchResults[field.name] = []; this.selectedSearchItems[field.name] = [];
                 });
-                if (resTags.ok) {
-                    this.l3Tags = await resTags.json();
-                }
-                
-                // Fetch Form Fields
-                const resFields = await fetch(`/call-tags/${id}/form`, {
-                    headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
-                });
-                if (resFields.ok) {
-                    this.formFields = await resFields.json();
-                    
-                    // Initialize form data
-                    this.formFields.forEach(f => {
-                        this.formData[f.name] = (f.type === 'multi_select' || f.type === 'product_search' || f.type === 'agent_search') ? [] : '';
-                        this.searchQuery[f.name] = '';
-                        this.searchResults[f.name] = [];
-                        this.selectedSearchItems[f.name] = [];
-                    });
-                }
-                
-            } catch (e) {
-                console.error('Failed to fetch L3 tags and fields:', e);
-            }
-            this.loadingL3 = false;
+            } catch (error) { if (version === this._version && request === this._l2Request) this.error = error.message; }
+            finally { if (version === this._version && request === this._l2Request) this.loadingL3 = false; }
         },
-        
         async doSearch(fieldName, fieldType, query) {
-            this.searchQuery[fieldName] = query;
+            const version = this._version, subject = this.selectedL2, fieldVersion = this._l2Request;
+            const searchRequest = (this._searchVersion[fieldName] || 0) + 1;
+            this._searchVersion[fieldName] = searchRequest;
+            this.searchQuery[fieldName] = String(query || '');
+            query = this.searchQuery[fieldName].trim();
+            this.searchResults[fieldName] = [];
+            this.searchState[fieldName] = { loading: query.length !== 1, done: false, error: '' };
             
             clearTimeout(this.searchTimeout[fieldName]);
             
@@ -439,12 +415,13 @@ document.addEventListener('alpine:init', () => {
                 }
                 
                 try {
-                    const res = await fetch(url);
-                    const json = await res.json();
-                    this.searchResults[fieldName] = json.data || [];
+                    const json = await this.jsonRequest(url);
+                    if (version !== this._version || fieldVersion !== this._l2Request || subject !== this.selectedL2 || searchRequest !== this._searchVersion[fieldName]) return;
+                    this.searchResults[fieldName] = Array.isArray(json) ? json : json.data || [];
+                    this.searchState[fieldName] = { loading: false, done: true, error: '' };
                 } catch (e) {
-                    console.error(e);
-                    this.searchResults[fieldName] = [];
+                    if (version !== this._version || fieldVersion !== this._l2Request || subject !== this.selectedL2 || searchRequest !== this._searchVersion[fieldName]) return;
+                    this.searchState[fieldName] = { loading: false, done: true, error: e.message }; this.searchResults[fieldName] = [];
                 }
             }, 300);
         },
@@ -455,8 +432,8 @@ document.addEventListener('alpine:init', () => {
             }
             
             // If already selected, toggle it off (like a checkbox)
-            if (this.selectedSearchItems[fieldName].find(i => i.id === item.id)) {
-                this.selectedSearchItems[fieldName] = this.selectedSearchItems[fieldName].filter(i => i.id !== item.id);
+            if (this.selectedSearchItems[fieldName].find(i => String(i.id) === String(item.id))) {
+                this.selectedSearchItems[fieldName] = this.selectedSearchItems[fieldName].filter(i => String(i.id) !== String(item.id));
             } else {
                 this.selectedSearchItems[fieldName].push({ id: item.id, name: item[displayKey] });
             }
@@ -466,19 +443,19 @@ document.addEventListener('alpine:init', () => {
         
         removeSearchItem(fieldName, id) {
             if (!Array.isArray(this.selectedSearchItems[fieldName])) return;
-            this.selectedSearchItems[fieldName] = this.selectedSearchItems[fieldName].filter(i => i.id !== id);
+            this.selectedSearchItems[fieldName] = this.selectedSearchItems[fieldName].filter(i => String(i.id) !== String(id));
             this.formData[fieldName] = this.selectedSearchItems[fieldName].map(i => i.name);
         },
         
         isFormValid() {
-            if (!this.selectedL1 || !this.selectedL2) return false;
+            if (!this.customerId || !this.selectedL1 || !this.selectedL2 || this.loadingL1 || this.loadingL2 || this.loadingL3 || !this.fieldsReady || this.saved) return false;
             
             // Check required dynamic fields
             for (let field of this.formFields) {
                 if (field.is_required) {
                     if (field.type === 'multi_select' || field.type === 'product_search' || field.type === 'agent_search') {
                         if (!this.formData[field.name] || this.formData[field.name].length === 0) return false;
-                    } else if (!this.formData[field.name]) {
+                    } else if (this.formData[field.name] == null || String(this.formData[field.name]).trim() === '') {
                         return false;
                     }
                 }
@@ -487,9 +464,11 @@ document.addEventListener('alpine:init', () => {
         },
         
         async submitCallLog() {
-            if (!this.isFormValid()) return;
+            if (this.submitting || this.saved || !this.isFormValid()) return;
+            const invalid = [...document.getElementById('callTaggingModal').querySelectorAll('input, select, textarea')].find(input => !input.disabled && !input.checkValidity());
+            if (invalid) { invalid.reportValidity(); return; }
             
-            this.submitting = true;
+            this.submitting = true; this.error = '';
             
             const payload = {
                 customer_id: this.customerId,
@@ -501,32 +480,17 @@ document.addEventListener('alpine:init', () => {
             };
             
             try {
-                const res = await fetch('/call-logs', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
-                    },
+                const data = await this.jsonRequest('/call-logs', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') },
                     body: JSON.stringify(payload)
                 });
-                
-                if (res.ok) {
-                    const data = await res.json();
-                    
-                    // Set a session storage toast flag so the dashboard picks it up and shows it
-                    sessionStorage.setItem('pending_toast', 'Profile closed successfully');
-                    // Emit event to parent to handle state and redirect
-                    window.dispatchEvent(new CustomEvent('call-log-added', { detail: data }));
-                } else {
-                    const err = await res.json();
-                    alert(err.message || 'Failed to save call log');
-                }
-            } catch (e) {
-                console.error(e);
-                alert('A network error occurred.');
+                this.saved = true;
+                try { sessionStorage.setItem('pending_toast', 'Call logged and profile closed successfully'); } catch (_) {}
+                window.dispatchEvent(new CustomEvent('call-log-added', { detail: data }));
+            } catch (error) {
+                this.error = error.message;
             }
-            
+
             this.submitting = false;
         }
     }));

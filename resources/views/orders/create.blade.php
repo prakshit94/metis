@@ -10,7 +10,7 @@
     </script>
 
     <div class="order-create-page" x-data="createOrderApp(window.__INITIAL_ORDER_CUSTOMER__, window.__INITIAL_ORDER_TO_EDIT__)"
-         @call-log-added.window="if(customerDetails) { clearCartCache(); isCallLoggedOrClosed = true; window.location.href = '{{ route('dashboard') }}'; }"
+         @call-log-added.window="if(customerDetails && String($event.detail?.call_log?.customer_id) === String(customerDetails.id)) { isCallLoggedOrClosed = true; try { clearCartCache(); } catch (_) {} window.location.href = '{{ route('dashboard') }}'; }"
          @complaint-saved.window="loadAddresses()">
     
     {{-- Page Header --}}

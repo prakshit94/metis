@@ -422,7 +422,7 @@
                                 @foreach($availableWebApps as $app)
                                 <div class="col-4">
                                     <a class="dropdown-item p-2 rounded-3 d-flex flex-column align-items-center gap-2 hover-bg-secondary" href="{{ route($app['route']) }}">
-                                        <div class="bg-{{ $app['color'] }} bg-opacity-10 text-{{ $app['color'] }} rounded-circle d-flex justify-content-center align-items-center" style="width: 36px; height: 36px;">
+                                        <div class="{{ $app['color'] === 'dark' ? 'bg-body-secondary text-body' : 'bg-'.$app['color'].' bg-opacity-10 text-'.$app['color'] }} rounded-circle d-flex justify-content-center align-items-center" style="width: 36px; height: 36px;">
                                             <i class="bi {{ $app['icon'] }} fs-5"></i>
                                         </div>
                                         <span class="fw-semibold text-muted" style="font-size: 11px;">{{ $app['name'] }}</span>

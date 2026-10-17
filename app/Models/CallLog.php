@@ -44,16 +44,16 @@ class CallLog extends Model implements Auditable
 
     public function tagL1()
     {
-        return $this->belongsTo(CallTag::class, 'tag_l1_id');
+        return $this->belongsTo(CallTag::class, 'tag_l1_id')->withTrashed();
     }
 
     public function tagL2()
     {
-        return $this->belongsTo(CallTag::class, 'tag_l2_id');
+        return $this->belongsTo(CallTag::class, 'tag_l2_id')->withTrashed();
     }
 
     public function tagL3()
     {
-        return $this->belongsTo(CallTag::class, 'tag_l3_id');
+        return $this->belongsTo(CallTag::class, 'tag_l3_id')->withTrashed();
     }
 }
