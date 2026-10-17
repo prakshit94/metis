@@ -6,13 +6,13 @@ const factories = {}, events = {}, requests = [], opened = [];
 const modal = {show() {}, hide() {}};
 const documentStub = {
   addEventListener: (_, fn) => fn(),
-  querySelector: selector => selector.includes('csrf') ? {content:'test', getAttribute:()=> 'test'} : selector.includes('Label') ? {innerHTML:''} : null,
+  querySelector: selector => selector.includes('csrf') ? {content:'test', getAttribute:()=> 'test'} : selector.includes('Label') ? {innerHTML:''} : selector === '#correctionModal' ? {} : null,
   getElementById: () => null,
 };
 const context = {
   Alpine:{data:(name,factory)=> factories[name]=factory}, document:documentStub,
   Modal:{getOrCreateInstance:()=>modal}, bootstrap:{Modal:{getOrCreateInstance:()=>modal}},
-  window:{addEventListener:(name,fn)=>{events[name]=fn;},removeEventListener(){},dispatchEvent(){},open:url=>opened.push(url), Swal:{fire:async()=>({isConfirmed:false})}},
+  window:{location:{search:''},addEventListener:(name,fn)=>{events[name]=fn;},removeEventListener(){},dispatchEvent(){},open:url=>opened.push(url), Swal:{fire:async()=>({isConfirmed:false})}},
   Swal:{fire:async()=>({isConfirmed:false})},
   URLSearchParams, Date, console, setTimeout, CustomEvent:class {constructor(name,options){this.type=name;this.detail=options?.detail;}},
   fetch:url=>new Promise(resolve=>requests.push({url,resolve})),
@@ -22,6 +22,7 @@ vm.runInContext(fs.readFileSync('resources/js/components/attendances.js','utf8')
 const reply = (req,data) => req.resolve({ok:true,status:200,text:async()=>JSON.stringify(data),json:async()=>data});
 (async()=>{
   assert.equal(vm.runInContext('localDate(new Date(2026, 9, 17, 0, 5))',context),'2026-10-17');
+  assert.equal(vm.runInContext("employeeDate('2026-10-01T18:30:00.000000Z', 'Asia/Kolkata')",context),'2026-10-02');
   const table = factories.attendancesTable(1);
   table.currentMonthDate = new Date(2026,9,1);
   table.generateCalendarDays();
@@ -30,9 +31,10 @@ const reply = (req,data) => req.resolve({ok:true,status:200,text:async()=>JSON.s
   table.userFilter='2'; table.exportSummary(); table.exportDetailed();
   assert.ok(opened.every(url=>url.includes('user_id=2')));
   const old = table.loadItems(), latest = table.loadItems();
-  reply(requests[1],{data:[{id:2,date:'2026-10-17',user_id:2,status:'Present'}],total:1}); await latest;
+  reply(requests[1],{data:[{id:2,date:'2026-10-17',user_id:2,status:'Present'}],rosters:[{id:1,user_id:2,date:'2026-10-17',day_type:'Week Off'}],total:1}); await latest;
   reply(requests[0],{data:[{id:1,date:'2026-10-16',user_id:1,status:'Absent'}],total:99}); await old;
   assert.equal(table.items[0].id,2); assert.equal(table.totalItems,1);
+  assert.equal(table.calendarDays.find(day=>day.date==='2026-10-17').rosters[0].day_type,'Week Off','Calendar retains roster markers alongside attendance');
   table.items=[{id:1,user_id:1,date:'2026-10-17',status:'Present',check_in:'08:00',check_out:'09:00',total_time:'1h 00m'}, {id:2,user_id:2,date:'2026-10-17',status:'Late',check_in:'10:00',check_out:'12:00',total_time:'2h 00m'}];
   table.mapEventsToCalendar(); table.calculateStats();
   const day=table.calendarDays.find(day=>day.date==='2026-10-17');
@@ -51,12 +53,29 @@ const reply = (req,data) => req.resolve({ok:true,status:200,text:async()=>JSON.s
   reply(requests[0],{data:[{id:1,leave_type:'Sick'}]});await first;
   assert.equal(leave.userBalances[0].id,2);
   let inline=fs.readFileSync('resources/views/users/leaves.blade.php','utf8').split('<script>')[1].split('</script>')[0]
-    .replace("{{ $isGlobalHr ? 'true' : 'false' }}", 'true')
+    .replaceAll("{{ $isGlobalHr ? 'true' : 'false' }}", 'true')
     .replace(/@json\(\['id' => auth\(\)->id\(\), 'name' => auth\(\)->user\(\)->name\]\)/g,'{"id":1,"name":"Self"}');
   vm.runInContext(inline,context);
   const history=factories.leavesTable('history');history.totalPages=10;history.currentPage=5;
   assert.ok(Array.from(history.visiblePages).includes(10));assert.ok(Array.from(history.visiblePages).includes(5));
   assert.equal(vm.runInContext("Math.max(1, Math.round((new Date('2026-10-17') - new Date('2026-10-17')) / 86400000) + 1)",context),1);
   requests.length=0; const load=history.loadItems();assert.ok(requests[0].url.includes('history=1'));reply(requests[0],{data:[],total:0});await load;
+  requests.length=0;
+  const corrections=factories.attendanceCorrections(1,true);
+  corrections.openForm({id:9,user_id:1,date:'2026-10-12',check_in:'22:00',check_out:'06:00',status:'Present'});
+  assert.equal(corrections.form.check_out_time,'2026-10-13T06:00');
+  corrections.form.reason='Clock issue';
+  const submit=corrections.submit(); assert.equal(corrections.saving,true);
+  await corrections.submit(); assert.equal(requests.length,1,'Duplicate correction submission guarded');
+  reply(requests[0],{message:'Submitted'});await submit;
+  // Success refreshes the inbox, not attendance: approval applies attendance changes separately.
+  assert.ok(requests[1].url.includes('attendance-corrections'));
+  reply(requests[1],{data:[],total:0,last_page:1});
+  context.window.location.search='?user_id=2';
+  assert.equal(factories.attendancesTable(1).userFilter,'2','Users shortcut preselects employee');
+  assert.equal(factories.leavesTable('pending').employeeFilter,'2');
+  history.employeeFilter='2';history.typeFilter='Sick';history.fromDate='2026-10-01';history.directTeam=true;
+  assert.equal(history.reportParams().get('team'),'direct');assert.equal(history.reportParams().get('user_id'),'2');
+  context.window.location.search='';
   console.log('PASS: local dates, calendar uniqueness, employee exports, stale responses, per-employee summaries, date-only create, overnight edit, duplicate-save guard, balance races and history pagination.');
 })().catch(error=>{console.error(error);process.exitCode=1;});

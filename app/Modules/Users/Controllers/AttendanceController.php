@@ -30,7 +30,7 @@ class AttendanceController extends Controller implements HasMiddleware
         $request->validate([
             'date' => 'nullable|date_format:Y-m-d',
             'start_date' => 'nullable|date_format:Y-m-d',
-            'end_date' => 'nullable|date_format:Y-m-d|after_or_equal:start_date',
+            'end_date' => ['nullable', 'date_format:Y-m-d', ...($request->filled('start_date') ? ['after_or_equal:start_date'] : [])],
             'per_page' => 'nullable|integer',
             'page' => 'nullable|integer|min:1',
             'user_id' => 'nullable|integer',
@@ -95,14 +95,29 @@ class AttendanceController extends Controller implements HasMiddleware
                 fn ($q) => $q->where('attendances.date', Carbon::parse($request->input('date'))->toDateString())
             )
             ->when(
-                $request->filled('start_date') && $request->filled('end_date'),
-                fn ($q) => $q->whereBetween('attendances.date', [$request->input('start_date'), $request->input('end_date')])
+                $request->filled('start_date'),
+                fn ($q) => $q->where('attendances.date', '>=', $request->input('start_date'))
+            )
+            ->when(
+                $request->filled('end_date'),
+                fn ($q) => $q->where('attendances.date', '<=', $request->input('end_date'))
             )
             ->orderBy($sortBy, $sortDir)->orderBy('attendances.id', $sortDir);
+
+        // Read-only diagnostics for every matching record, independent of pagination.
+        $summary = (clone $query)->reorder()->toBase()->select([])->selectRaw(
+            "COUNT(*) as records, COUNT(DISTINCT CONCAT(attendances.user_id, ':', attendances.date)) as recorded_days,
+             COALESCE(SUM(check_in IS NOT NULL AND check_out IS NULL), 0) as open_sessions,
+             COALESCE(SUM(check_in IS NULL AND check_out IS NOT NULL), 0) as incomplete_sessions,
+             COALESCE(SUM(CASE WHEN check_in IS NOT NULL AND check_out IS NOT NULL THEN
+                FLOOR((TIME_TO_SEC(check_out) - TIME_TO_SEC(check_in) + IF(check_out < check_in, 86400, 0)) / 60)
+                ELSE 0 END), 0) as completed_minutes"
+        )->first();
 
         if ($perPage === -1) {
             $attendances = $query->get();
             $responsePayload = [
+                'summary' => $summary,
                 'data' => $attendances,
                 'total' => $attendances->count(),
                 'per_page' => $attendances->count(),
@@ -137,6 +152,11 @@ class AttendanceController extends Controller implements HasMiddleware
                     ->get();
 
                 $responsePayload['leaves'] = $leaves;
+                $responsePayload['rosters'] = \Illuminate\Support\Facades\DB::table('employee_rosters')
+                    ->when(!$isGlobalView && $lobTeamUserIds !== null, fn ($q) => $q->whereIn('user_id', $lobTeamUserIds ?: [0]))
+                    ->when($filterUserId, fn ($q) => $q->where('user_id', $filterUserId))
+                    ->when($isGlobalView && !$filterUserId, fn ($q) => $q->where('user_id', $request->user()->id))
+                    ->whereBetween('date', [$startDate, $endDate])->get();
             }
 
             return response()->json($responsePayload);
@@ -145,6 +165,7 @@ class AttendanceController extends Controller implements HasMiddleware
         $attendances = $query->paginate($perPage);
 
         $responsePayload = [
+            'summary' => $summary,
             'data' => $attendances->items(),
             'current_page' => $attendances->currentPage(),
             'last_page' => $attendances->lastPage(),
@@ -335,6 +356,22 @@ class AttendanceController extends Controller implements HasMiddleware
         return response()->json([
             'message' => 'Attendance record permanently deleted.',
         ]);
+    }
+
+    public function exportFiltered(Request $request)
+    {
+        $reportRequest = $request->duplicate();
+        $reportRequest->merge(['per_page' => -1, 'page' => 1]);
+        $rows = $this->index($reportRequest)->getData(true)['data'];
+        return response()->streamDownload(function () use ($rows) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, ['Employee', 'Employee ID', 'Date', 'Check In', 'Check Out', 'Total Time', 'Status', 'Notes']);
+            foreach ($rows as $row) {
+                $values = [$row['user']['name'] ?? '', $row['user']['employee_id'] ?? '', $row['date'], $row['check_in'], $row['check_out'], $row['total_time'], $row['status'], $row['notes']];
+                fputcsv($file, array_map(fn ($value) => is_string($value) && preg_match('/^[\s]*[=+@-]/u', $value) ? "'".$value : $value, $values));
+            }
+            fclose($file);
+        }, 'attendance-filtered-'.now()->format('Y-m-d').'.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
     }
 
     public function exportSummary(Request $request)

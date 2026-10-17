@@ -45,6 +45,7 @@ class AttendanceRolloverCommand extends Command
 
         foreach ($openAttendances as $attendance) {
             // Close the previous day's attendance
+            $attendance->suppressAutomaticCoRequest = true;
             $attendance->check_out = '23:59:59';
             $attendance->save();
 

@@ -39,6 +39,7 @@ use App\Modules\Orders\Controllers\PaymentController;
 use App\Modules\Orders\Controllers\PromotionsController;
 use App\Modules\Orders\Controllers\RefundController;
 use App\Modules\Users\Controllers\AttendanceController;
+use App\Modules\Users\Controllers\AttendanceCorrectionController;
 use App\Modules\Users\Controllers\AuthController;
 use App\Modules\Users\Controllers\BulkUserController;
 use App\Modules\Users\Controllers\DepartmentController;
@@ -217,7 +218,13 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::middleware('permission:department-edit')->patch('/hr-settings/{type}/{id}/toggle', [HrSettingController::class, 'toggleActive']);
         Route::middleware('permission:department-delete')->delete('/hr-settings/{type}/{id}', [HrSettingController::class, 'destroy']);
 
+        // Attendance corrections use the existing view/edit permissions and reporting hierarchy.
+        Route::get('/attendance-corrections', [AttendanceCorrectionController::class, 'index']);
+        Route::post('/attendance-corrections', [AttendanceCorrectionController::class, 'store']);
+        Route::patch('/attendance-corrections/{correction}/review', [AttendanceCorrectionController::class, 'review']);
+
         // Attendance
+        Route::get('/attendances/export/filtered', [AttendanceController::class, 'exportFiltered']);
         Route::get('/attendances/export/summary', [AttendanceController::class, 'exportSummary']);
         Route::get('/attendances/export/detailed', [AttendanceController::class, 'exportDetailed']);
         Route::post('/attendances/bulk-action', [AttendanceController::class, 'bulkAction']);
@@ -225,7 +232,14 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::delete('/attendances/{attendance}/force', [AttendanceController::class, 'forceDelete']);
         Route::apiResource('attendances', AttendanceController::class);
 
+        Route::get('/rosters', [\App\Modules\Users\Controllers\RosterController::class, 'index']);
+        Route::post('/rosters/import', [\App\Modules\Users\Controllers\RosterController::class, 'import']);
+        Route::get('/rosters/co', [\App\Modules\Users\Controllers\RosterController::class, 'claims']);
+        Route::post('/rosters/co', [\App\Modules\Users\Controllers\RosterController::class, 'claim']);
+        Route::patch('/rosters/co/{id}/review', [\App\Modules\Users\Controllers\RosterController::class, 'review']);
+
         // Leaves
+        Route::middleware('permission:leave-view')->get('/leaves/export', [LeaveController::class, 'export']);
         Route::post('/leaves/bulk-action', [LeaveController::class, 'bulkAction']);
         Route::middleware('permission:leave-view')->get('/leaves', [LeaveController::class, 'index']);
         Route::middleware('permission:leave-view')->get('/leaves/{leave}', [LeaveController::class, 'show']);

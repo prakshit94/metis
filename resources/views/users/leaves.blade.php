@@ -3,17 +3,29 @@
 @section('title', 'Leave Management')
 @section('page', 'leaves')
 
+@push('head')
+<style>
+.leave-workspace-nav { overflow-x: auto; }
+.leave-workspace-nav .btn { flex-shrink: 0; white-space: nowrap; }
+.leave-workspace .table-responsive > table { min-width: 760px; }
+.leave-workspace .bulk-actions-bar > .d-flex { flex-wrap: wrap; gap: 1rem; }
+.leave-workspace .bulk-actions-bar .d-flex { flex-wrap: wrap; }
+.leave-workspace .report-summary { background: var(--bs-tertiary-bg); }
+</style>
+@endpush
+
 @section('content')
 @php
     $isGlobalHr = auth()->user()->hasRole(['Super Admin', 'Admin']) || auth()->user()->can('view-all-data');
 @endphp
-<div class="user-management" x-data="{ currentTab: ['requests', 'history', 'balances', 'holidays'].includes(sessionStorage.getItem('leavesTab')) ? sessionStorage.getItem('leavesTab') : 'requests' }" x-init="$watch('currentTab', val => { sessionStorage.setItem('leavesTab', val); window.dispatchEvent(new CustomEvent('refresh-tab-' + val)); })">
-    <div class="d-flex justify-content-between align-items-center mb-4 mb-lg-5 mb-xl-6">
+<div class="user-management leave-workspace" x-data="{ currentTab: new URLSearchParams(window.location.search).has('user_id') ? 'requests' : (['requests', 'history', 'balances', 'holidays'].includes(sessionStorage.getItem('leavesTab')) ? sessionStorage.getItem('leavesTab') : 'requests') }" x-init="$watch('currentTab', val => { sessionStorage.setItem('leavesTab', val); window.dispatchEvent(new CustomEvent('refresh-tab-' + val)); })">
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
         <div>
-            <h1 class="h3 mb-0"><i class="bi bi-calendar-minus-fill text-primary me-2"></i>Leave Management</h1>
+            <span class="text-primary small fw-semibold">TIME &amp; LEAVE</span><h1 class="h3 mt-1 mb-2">Leave workspace</h1>
             <p class="text-muted mb-0">Manage employee leave requests, approvals, balances, and holidays</p>
         </div>
-        <div class="d-flex gap-2">
+        <div class="d-flex flex-wrap gap-2">
+            <a href="{{ url('/attendances') }}" class="btn btn-outline-secondary">Attendance workspace</a>
             @can('leave-create')
             <button type="button" class="btn btn-primary" x-show="currentTab === 'requests'" @click="$dispatch('open-leave-modal')">
                 <i class="bi bi-plus-circle me-2"></i>Request Leave
@@ -28,29 +40,12 @@
         </div>
     </div>
 
-    <!-- Navigation Tabs -->
-    <ul class="nav nav-tabs mb-4">
-        <li class="nav-item">
-            <a class="nav-link" :class="{ 'active': currentTab === 'requests' }" href="#" @click.prevent="currentTab = 'requests'">
-                <i class="bi bi-envelope-open me-2"></i>Pending Requests
-            </a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link" :class="{ 'active': currentTab === 'history' }" href="#" @click.prevent="currentTab = 'history'">
-                <i class="bi bi-clock-history me-2"></i>History
-            </a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link" :class="{ 'active': currentTab === 'balances' }" href="#" @click.prevent="currentTab = 'balances'">
-                <i class="bi bi-wallet2 me-2"></i>Leave Balances
-            </a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link" :class="{ 'active': currentTab === 'holidays' }" href="#" @click.prevent="currentTab = 'holidays'">
-                <i class="bi bi-calendar-event me-2"></i>Holidays
-            </a>
-        </li>
-    </ul>
+    <nav class="leave-workspace-nav d-flex gap-2 mb-4 p-2 border rounded-3 bg-body" aria-label="Leave workspace sections">
+        <button type="button" class="btn" :class="currentTab === 'requests' ? 'btn-primary' : 'btn-light'" :aria-current="currentTab === 'requests' ? 'page' : null" @click="currentTab = 'requests'">Pending Requests</button>
+        <button type="button" class="btn" :class="currentTab === 'history' ? 'btn-primary' : 'btn-light'" :aria-current="currentTab === 'history' ? 'page' : null" @click="currentTab = 'history'">History</button>
+        <button type="button" class="btn" :class="currentTab === 'balances' ? 'btn-primary' : 'btn-light'" :aria-current="currentTab === 'balances' ? 'page' : null" @click="currentTab = 'balances'">Leave Balances</button>
+        <button type="button" class="btn" :class="currentTab === 'holidays' ? 'btn-primary' : 'btn-light'" :aria-current="currentTab === 'holidays' ? 'page' : null" @click="currentTab = 'holidays'">Holidays</button>
+    </nav>
 
     <!-- PENDING REQUESTS TAB -->
     <div x-show="currentTab === 'requests'" x-data="leavesTable('pending')">
@@ -68,9 +63,9 @@
             <div class="card-header">
                 <div class="row align-items-center g-3">
                     <div class="col">
-                        <h2 class="h5 card-title mb-0">Leave Balances</h2>
+                        <h2 class="h5 card-title mb-1">Leave Balances</h2><p class="small text-muted mb-0">Review available, allocated, and used leave for employees you can access.</p>
                     </div>
-                    <div class="col-auto">
+                    <div class="col-auto d-flex flex-wrap gap-2">
                         <button class="btn btn-sm btn-outline-secondary" type="button" @click="loadItems()" :disabled="isLoading" title="Refresh">
                             <i class="bi bi-arrow-clockwise"></i> Refresh
                         </button>
@@ -170,9 +165,9 @@
             <div class="card-header">
                 <div class="row align-items-center g-3">
                     <div class="col">
-                        <h2 class="h5 card-title mb-0">Holidays List</h2>
+                        <h2 class="h5 card-title mb-1">Holidays</h2><p class="small text-muted mb-0">Maintain the holiday calendar shown in attendance and leave views.</p>
                     </div>
-                    <div class="col-auto">
+                    <div class="col-auto d-flex flex-wrap gap-2">
                         <button class="btn btn-sm btn-outline-secondary" type="button" @click="loadItems()" :disabled="isLoading" title="Refresh">
                             <i class="bi bi-arrow-clockwise"></i> Refresh
                         </button>
@@ -234,7 +229,7 @@
 
 <!-- Leave Modal -->
 <div class="modal fade" id="leaveModal" tabindex="-1" aria-labelledby="leaveModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" x-data="leaveForm">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" x-data="leaveForm">
         <form class="modal-content" @submit.prevent="saveItem()">
             <div class="modal-header">
                 <h5 class="modal-title d-flex align-items-center" id="leaveModalLabel">
@@ -319,7 +314,7 @@
 
 <!-- Balance Modal -->
 <div class="modal fade" id="balanceModal" tabindex="-1" aria-labelledby="balanceModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" x-data="balanceForm">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" x-data="balanceForm">
         <form class="modal-content" @submit.prevent="saveItem()">
             <div class="modal-header">
                 <h5 class="modal-title d-flex align-items-center" id="balanceModalLabel">
@@ -347,7 +342,7 @@
 <label class="form-label" for="balanceType">Leave Type <span class="text-danger">*</span></label>
 <x-searchable-select model="form.leave_type" label="Balance leave type">
 <select x-ref="native" aria-hidden="true" tabindex="-1" @focus="$refs.trigger.focus()" @invalid.prevent="validationMessage = $event.target.validationMessage; $refs.trigger.focus()" class="visually-hidden" id="balanceType" x-model="form.leave_type" required :disabled="editingId">
-                        <template x-if="editingId && !['Sick', 'Casual', 'Annual', 'Maternity', 'Paternity', 'Unpaid'].includes(form.leave_type)">
+                        <template x-if="editingId && !['Sick', 'Casual', 'Annual', 'Maternity', 'Paternity', 'Unpaid', 'CO'].includes(form.leave_type)">
                             <option :value="form.leave_type" selected x-text="form.leave_type + ' Leave'"></option>
                         </template>
                         <option value="Sick">Sick Leave</option>
@@ -356,6 +351,7 @@
                         <option value="Maternity">Maternity Leave</option>
                         <option value="Paternity">Paternity Leave</option>
                         <option value="Unpaid">Unpaid Leave</option>
+                        <option value="CO">Compensatory Off (CO)</option>
                     </select>
 </x-searchable-select>
 </div>
@@ -387,7 +383,7 @@
 
 <!-- Holiday Modal -->
 <div class="modal fade" id="holidayModal" tabindex="-1" aria-labelledby="holidayModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" x-data="holidayForm">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" x-data="holidayForm">
         <form class="modal-content" @submit.prevent="saveItem()">
             <div class="modal-header">
                 <h5 class="modal-title d-flex align-items-center" id="holidayModalLabel">
@@ -481,6 +477,10 @@
             totalItems: 0,
             perPage: 15,
             mode: mode,
+            search: '', employeeFilter: /^\d+$/.test(new URLSearchParams(window.location.search).get('user_id') || '') ? new URLSearchParams(window.location.search).get('user_id') : '', typeFilter: '', statusFilter: '',
+            fromDate: '', toDate: '', directTeam: false,
+            employeeOptions: [], leaveTypes: [], viewingItem: null,
+            summary: { requests: 0, requested_days: 0, pending: 0, approved: 0, rejected: 0 },
 
             init() {
                 this.loadItems();
@@ -503,12 +503,7 @@
                 const requestId = this._requestId = (this._requestId || 0) + 1;
                 this.isLoading = true;
                 try {
-                    let url = `/api/leaves?page=${this.currentPage}&per_page=${this.perPage}`;
-                    if (this.mode === 'pending') {
-                        url += '&status=Pending';
-                    } else if (this.mode === 'history') {
-                        url += '&history=1';
-                    }
+                    const url = '/api/leaves?' + this.reportParams();
 
                     const res = await hrFetch(url);
                     if (res.ok) {
@@ -517,6 +512,9 @@
 
                         if (requestId !== this._requestId) return;
                         if (json.total > 0 && this.currentPage > json.last_page) { this.currentPage = json.last_page; return this.loadItems(); }
+                        this.summary = json.summary || this.summary;
+                        this.employeeOptions = json.filter_options?.employees || [];
+                        this.leaveTypes = json.filter_options?.leave_types || [];
                         this.items = data;
                         this.selectedItems = [];
                         this.currentPage = json.current_page || 1;
@@ -527,6 +525,51 @@
                     if (requestId === this._requestId) hrFailure(e);
                 }
                 if (requestId === this._requestId) this.isLoading = false;
+            },
+
+            reportParams() {
+                const params = new URLSearchParams({ page: this.currentPage, per_page: this.perPage });
+                if (this.mode === 'pending') params.set('status', 'Pending');
+                else { params.set('history', '1'); if (this.statusFilter) params.set('status', this.statusFilter); }
+                if (this.search.trim()) params.set('search', this.search.trim());
+                if (this.employeeFilter) params.set('user_id', this.employeeFilter);
+                if (this.typeFilter) params.set('leave_type', this.typeFilter);
+                if (this.fromDate) params.set('from_date', this.fromDate);
+                if (this.toDate) params.set('to_date', this.toDate);
+                if (this.directTeam) params.set('team', 'direct');
+                return params;
+            },
+            filterItems() { this.currentPage = 1; this.selectedItems = []; this.loadItems(); },
+            resetFilters() {
+                this.search = ''; this.employeeFilter = ''; this.typeFilter = ''; this.statusFilter = '';
+                this.fromDate = ''; this.toDate = ''; this.directTeam = false; this.filterItems();
+            },
+            exportReport() { window.open('/api/leaves/export?' + this.reportParams(), '_blank'); },
+            viewItem(item) {
+                this.viewingItem = item;
+                bootstrap.Modal.getOrCreateInstance(document.getElementById('leaveDetails-' + this.mode)).show();
+            },
+            canReview(item) { return item.status === 'Pending' && Boolean(item.can_review); },
+            get canReviewSelection() {
+                const selected = this.items.filter(item => this.selectedItems.includes(String(item.id)));
+                return selected.length > 0 && selected.every(item => this.canReview(item));
+            },
+            get canDeleteSelection() {
+                const selected = this.items.filter(item => this.selectedItems.includes(String(item.id)));
+                return selected.length > 0 && selected.every(item => {{ $isGlobalHr ? 'true' : 'false' }} || String(item.user_id) === '{{ auth()->id() }}');
+            },
+            async reviewItem(item, status) {
+                if (!this.canReview(item)) return;
+                const result = await window.Swal.fire({ title: status === 'Approved' ? 'Approve leave?' : 'Reject leave?', text: item.user?.name || 'Employee leave request', icon: 'question', showCancelButton: true });
+                if (!result.isConfirmed) return;
+                try {
+                    await hrFetch(`/api/leaves/${item.id}/status`, {
+                        method: 'PATCH', headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
+                        body: JSON.stringify({ status })
+                    });
+                    bootstrap.Modal.getOrCreateInstance(document.getElementById('leaveDetails-' + this.mode)).hide();
+                    window.dispatchEvent(new CustomEvent('leave-saved'));
+                } catch (error) { hrFailure(error); }
             },
 
             goToPage(page) {
@@ -553,7 +596,7 @@
             },
 
             canManage(item) {
-                return item.status === 'Pending' && ({{ $isGlobalHr ? 'true' : 'false' }} || String(item.user_id) === '{{ auth()->id() }}');
+                return item.status === 'Pending' && (this.canReview(item) || {{ $isGlobalHr ? 'true' : 'false' }} || String(item.user_id) === '{{ auth()->id() }}');
             },
 
             editItem(item) {

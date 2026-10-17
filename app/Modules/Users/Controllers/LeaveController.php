@@ -17,36 +17,113 @@ class LeaveController extends Controller
         return $request->user() && ($request->user()->hasRole(['Super Admin', 'Admin']) || $request->user()->can('view-all-data'));
     }
 
-    public function index(Request $request): JsonResponse
+    private function reviewableQuery(Request $request)
+    {
+        $query = $this->visibleQuery($request);
+        if (! $this->isGlobalView($request)) {
+            $query->whereHas('user', fn ($user) => $user
+                ->where('manager_id', $request->user()->id)
+                ->where('id', '!=', $request->user()->id));
+        }
+        return $query;
+    }
+
+    private function canReview(Request $request, Leave $leave): bool
+    {
+        return $request->user()?->can('leave-edit')
+            && $this->reviewableQuery($request)->whereKey($leave->id)->exists();
+    }
+
+    /** Build reports from the same visibility rules as the leave directory. */
+    private function visibleQuery(Request $request)
+    {
+        $teamIds = $this->isGlobalView($request) ? null : $request->user()?->getLobTeamUserIds();
+
+        return Leave::query()->when($teamIds !== null,
+            fn ($query) => $query->whereIn('user_id', $teamIds ?: [0]));
+    }
+
+    private function reportQuery(Request $request)
     {
         abort_unless($request->user()?->can('leave-view'), 403);
-
-        $isGlobalView = $this->isGlobalView($request);
         $request->validate([
             'status' => 'nullable|in:Pending,Approved,Rejected',
             'history' => 'nullable|boolean',
             'per_page' => 'nullable|integer',
             'page' => 'nullable|integer|min:1',
+            'user_id' => 'nullable|integer',
+            'search' => 'nullable|string|max:200',
+            'leave_type' => 'nullable|string|max:255',
+            'from_date' => 'nullable|date_format:Y-m-d',
+            'to_date' => ['nullable', 'date_format:Y-m-d', ...($request->filled('from_date') ? ['after_or_equal:from_date'] : [])],
+            'team' => 'nullable|in:direct',
         ]);
-        $filterUserId = $request->input('user_id');
 
-        // LOB scoping: non-global users see all leaves for their team members.
-        // null = global (no extra restriction), [ids] = LOB team member IDs.
-        $lobTeamUserIds = $isGlobalView ? null : $request->user()?->getLobTeamUserIds();
+        return $this->visibleQuery($request)
+            ->with(['user', 'approver', 'applier'])
+            ->when($request->input('team') === 'direct', fn ($query) => $query->whereHas('user', fn ($user) => $user->where('manager_id', $request->user()->id)->where('id', '!=', $request->user()->id)))
+            ->when($request->filled('user_id'), fn ($query) => $query->where('user_id', $request->input('user_id')))
+            ->when($request->filled('status'), fn ($query) => $query->where('status', $request->input('status')))
+            ->when($request->boolean('history'), fn ($query) => $query->where('status', '!=', 'Pending'))
+            ->when($request->filled('leave_type'), fn ($query) => $query->where('leave_type', $request->input('leave_type')))
+            // Include requests overlapping the selected period, not just requests starting inside it.
+            ->when($request->filled('from_date'), fn ($query) => $query->where('end_date', '>=', $request->input('from_date')))
+            ->when($request->filled('to_date'), fn ($query) => $query->where('start_date', '<=', $request->input('to_date')))
+            ->when($request->filled('search'), function ($query) use ($request) {
+                $term = '%'.trim($request->input('search')).'%';
+                $query->where(function ($search) use ($term) {
+                    $search->where('reason', 'like', $term)
+                        ->orWhere('leave_type', 'like', $term)
+                        ->orWhereHas('user', fn ($user) => $user->where('name', 'like', $term)->orWhere('employee_id', 'like', $term));
+                });
+            })
+            ->orderByDesc('start_date')->orderByDesc('id');
+    }
 
-        $query = Leave::with(['user', 'approver', 'applier'])
-            ->when(
-                ! $isGlobalView && $lobTeamUserIds !== null,
-                fn ($q) => $q->whereIn('user_id', ! empty($lobTeamUserIds) ? $lobTeamUserIds : [0])
-            )
-            ->when($filterUserId, fn ($q) => $q->where('user_id', $filterUserId))
-            ->when($request->filled('status'), fn ($q) => $q->where('status', $request->input('status')))
-            ->when($request->boolean('history'), fn ($q) => $q->where('status', '!=', 'Pending'))
-            ->orderBy('start_date', 'desc')->orderByDesc('id');
-
+    public function index(Request $request): JsonResponse
+    {
+        $query = $this->reportQuery($request);
+        $summary = (clone $query)->reorder()->toBase()->select([])->selectRaw(
+            "COUNT(*) as requests, COALESCE(SUM(DATEDIFF(end_date, start_date) + 1), 0) as requested_days,
+             COALESCE(SUM(status = 'Pending'), 0) as pending,
+             COALESCE(SUM(status = 'Approved'), 0) as approved,
+             COALESCE(SUM(status = 'Rejected'), 0) as rejected"
+        )->first();
+        $types = $this->visibleQuery($request)->distinct()->orderBy('leave_type')->pluck('leave_type');
+        $employees = $this->visibleQuery($request)->select('user_id')->distinct()
+            ->with('user:id,name,employee_id')->orderBy('user_id')->get()
+            ->pluck('user')->filter()->values();
         $leaves = $query->paginate(min(max($request->integer('per_page', 15), 1), 100));
 
-        return response()->json($leaves);
+        $reviewableIds = $request->user()?->can('leave-edit')
+            ? $this->reviewableQuery($request)->whereIn('id', $leaves->getCollection()->pluck('id'))->pluck('id')->all() : [];
+        $leaves->getCollection()->each(fn ($leave) => $leave->setAttribute('can_review', in_array($leave->id, $reviewableIds)));
+
+        return response()->json(array_merge($leaves->toArray(), [
+            'summary' => $summary,
+            'filter_options' => ['employees' => $employees, 'leave_types' => $types],
+        ]));
+    }
+
+    public function export(Request $request)
+    {
+        $query = $this->reportQuery($request);
+        return response()->streamDownload(function () use ($query) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, ['Employee', 'Employee ID', 'Leave Type', 'Start Date', 'End Date', 'Days', 'Status', 'Reason', 'Applied By', 'Processed By', 'Processed At']);
+            foreach ($query->lazy(250) as $leave) {
+                $row = [
+                    $leave->user?->name, $leave->user?->employee_id, $leave->leave_type,
+                    $leave->start_date->format('Y-m-d'), $leave->end_date->format('Y-m-d'),
+                    $leave->start_date->diffInDays($leave->end_date) + 1, $leave->status,
+                    $leave->reason, $leave->applier?->name, $leave->approver?->name,
+                    $leave->approved_at?->format('Y-m-d H:i:s'),
+                ];
+                // Employee-entered text must remain text when opened in a spreadsheet.
+                fputcsv($file, array_map(fn ($value) => is_string($value) && preg_match('/^[\s]*[=+@-]/u', $value) ? "'".$value : $value, $row));
+            }
+            fclose($file);
+        }, 'leave-report-'.now()->format('Y-m-d').'.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
     }
 
     public function store(Request $request): JsonResponse
@@ -186,9 +263,7 @@ class LeaveController extends Controller
             abort_unless($request->user()?->can('leave-edit'), 403);
             $leave = Leave::query()->lockForUpdate()->findOrFail($leave->id);
 
-            if (! $this->isGlobalView($request)) {
-                abort(403, 'Unauthorized to approve or reject leave requests.');
-            }
+            abort_unless($this->canReview($request, $leave), 403, 'Unauthorized to approve or reject this leave request.');
 
             if ($leave->status !== 'Pending') {
                 return response()->json(['message' => 'Cannot modify an already processed leave request.'], 422);
@@ -251,13 +326,9 @@ class LeaveController extends Controller
 
             abort_unless($request->user()?->can('leave-edit'), 403);
 
-            if (! $this->isGlobalView($request)) {
-                abort(403, 'Unauthorized to approve or reject leave requests.');
-            }
-
             $status = $action === 'approve' ? 'Approved' : 'Rejected';
 
-            $leaves = Leave::whereIn('id', $ids)->where('status', 'Pending')->orderBy('id')->lockForUpdate()->get();
+            $leaves = $this->reviewableQuery($request)->whereIn('id', $ids)->where('status', 'Pending')->orderBy('id')->lockForUpdate()->get();
             foreach ($leaves as $leave) {
                 $originalStatus = $leave->status;
 
@@ -274,7 +345,7 @@ class LeaveController extends Controller
                 }
             }
 
-            return response()->json(['message' => 'Selected leaves '.strtolower($status).' successfully.']);
+            return response()->json(['message' => $leaves->count().' leave request(s) '.strtolower($status).'.', 'processed' => $leaves->count(), 'skipped' => count($ids) - $leaves->count()]);
         }, 3);
     }
 

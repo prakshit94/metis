@@ -3,17 +3,46 @@
 @section('title', 'Attendances')
 @section('page', 'attendances')
 
+@push('head')
+<style>
+.attendance-workspace .card { border-left-width: 1px !important; }
+.attendance-workspace-nav { flex-wrap: nowrap; overflow-x: auto; }
+.attendance-workspace-nav .btn { white-space: nowrap; flex-shrink: 0; }
+.attendance-workspace .calendar-page { min-height: 0 !important; }
+.attendance-workspace .calendar-container { overflow-x: auto; }
+.attendance-workspace .calendar-content { min-width: 650px; }
+.attendance-workspace .card-header > .d-flex { flex-wrap: wrap; }
+@media (max-width: 767px) {
+    .attendance-workspace-nav { flex-wrap: nowrap !important; overflow-x: auto; }
+    .attendance-workspace .card-header { align-items: stretch !important; }
+    .attendance-workspace .card-header > .d-flex { width: 100%; }
+}
+</style>
+@endpush
+
 @section('content')
 @php
     $isGlobalHr = auth()->user()->hasRole(['Super Admin', 'Admin']) || auth()->user()->can('view-all-data');
 @endphp
-<div class="user-management" x-data="attendancesTable({{ auth()->id() }}, { global: @js($isGlobalHr), edit: @js(auth()->user()->can('attendance-edit')), create: @js(auth()->user()->can('attendance-create')), leaveEdit: @js(auth()->user()->can('leave-edit')) })">
-    <div class="d-flex justify-content-between align-items-center mb-4 mb-lg-5 mb-xl-6">
+<div class="attendance-workspace" x-data="{ workspaceSection: 'attendance' }">
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+        <div><span class="text-primary small fw-semibold">TIME &amp; LEAVE</span><h1 class="h3 mt-1 mb-2">Attendance workspace</h1><p class="text-muted mb-0">Review daily activity, manage rosters, and track requests in one place.</p></div>
+        <a href="{{ url('/leaves') }}" class="btn btn-outline-secondary">Leave management</a>
+    </div>
+    <nav class="attendance-workspace-nav d-flex gap-2 mb-4 p-2 border rounded-3 bg-body" aria-label="Attendance workspace sections">
+        <button type="button" class="btn" :class="workspaceSection === 'attendance' ? 'btn-primary' : 'btn-light'" :aria-current="workspaceSection === 'attendance' ? 'page' : null" @click="workspaceSection = 'attendance'">Attendance</button>
+        <button type="button" class="btn" :class="workspaceSection === 'corrections' ? 'btn-primary' : 'btn-light'" :aria-current="workspaceSection === 'corrections' ? 'page' : null" @click="workspaceSection = 'corrections'">Corrections</button>
+        <button type="button" class="btn" :class="workspaceSection === 'co' ? 'btn-primary' : 'btn-light'" :aria-current="workspaceSection === 'co' ? 'page' : null" @click="workspaceSection = 'co'">Compensatory off</button>
+        @can('attendance-edit')<button type="button" class="btn" :class="workspaceSection === 'roster' ? 'btn-primary' : 'btn-light'" :aria-current="workspaceSection === 'roster' ? 'page' : null" @click="workspaceSection = 'roster'">Roster import</button>@endcan
+        <button type="button" class="btn" :class="workspaceSection === 'balances' ? 'btn-primary' : 'btn-light'" :aria-current="workspaceSection === 'balances' ? 'page' : null" @click="workspaceSection = 'balances'">My leave balances</button>
+    </nav>
+<div class="user-management" x-show="workspaceSection === 'attendance'" x-data="attendancesTable({{ auth()->id() }}, { global: @js($isGlobalHr), edit: @js(auth()->user()->can('attendance-edit')), create: @js(auth()->user()->can('attendance-create')), leaveEdit: @js(auth()->user()->can('leave-edit')), holidays: @js(auth()->user()->can('leave-view')), timeZone: @js(config('app.timezone')) })">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
         <div>
-            <h1 class="h3 mb-0"><i class="bi bi-calendar-check-fill text-primary me-2"></i>Attendances</h1>
+            <h2 class="h5 mb-1">Daily attendance</h2>
             <p class="text-muted mb-0">Track employee check-ins, check-outs, and daily presence</p>
         </div>
-        <div class="d-flex gap-2">
+        <div class="d-flex flex-wrap gap-2">
             <div class="btn-group me-2 shadow-sm">
                 <button type="button" class="btn btn-outline-secondary" aria-label="Attendance list view" :class="{ 'active': currentView === 'list' }" @click="switchView('list')">
                     <i class="bi bi-list-ul"></i>
@@ -27,8 +56,9 @@
                     <i class="bi bi-download me-2"></i>Export
                 </button>
                 <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="exportDropdown">
-                    <li><button class="dropdown-item" @click="exportSummary()"><i class="bi bi-grid-3x3 me-2"></i>Summary Grid (CSV)</button></li>
-                    <li><button class="dropdown-item" @click="exportDetailed()"><i class="bi bi-list-task me-2"></i>Detailed Log (CSV)</button></li>
+                    <li><button class="dropdown-item" @click="exportFiltered()">Current filtered results (CSV)</button></li>
+                    <li><button class="dropdown-item" @click="exportSummary()"><i class="bi bi-grid-3x3 me-2"></i>Summary Grid — displayed month (CSV)</button></li>
+                    <li><button class="dropdown-item" @click="exportDetailed()"><i class="bi bi-list-task me-2"></i>Detailed Log — displayed month (CSV)</button></li>
                 </ul>
             </div>
             <div class="dropdown">
@@ -56,110 +86,28 @@
     </div>
 
     <div class="alert alert-danger" x-show="error" x-text="error" x-cloak role="alert"></div>
-    <!-- Stats Widgets -->
-    <div class="row g-4 g-lg-5 g-xl-6 mb-5 mb-lg-5 mb-xl-6">
-        <div class="col-xl-3 col-lg-6">
-            <div class="card stats-card border-start border-4 border-primary">
-                <div class="card-body p-3 p-lg-4">
-                    <div class="d-flex align-items-center">
-                        <div class="stats-icon bg-primary bg-opacity-10 text-primary me-3">
-                            <i class="bi bi-calendar3"></i>
-                        </div>
-                        <div>
-                            <p class="h6 mb-0 text-muted">Total Records</p>
-                            <div class="h3 mb-0" aria-live="polite"><span x-text="stats.total"></span></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-xl-3 col-lg-6">
-            <div class="card stats-card border-start border-4 border-success">
-                <div class="card-body p-3 p-lg-4">
-                    <div class="d-flex align-items-center">
-                        <div class="stats-icon bg-success bg-opacity-10 text-success me-3">
-                            <i class="bi bi-check-circle-fill"></i>
-                        </div>
-                        <div>
-                            <p class="h6 mb-0 text-muted" title="Counts loaded records grouped by employee and day">Present</p>
-                            <div class="h3 mb-0" aria-live="polite"><span x-text="stats.present"></span></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-xl-3 col-lg-6">
-            <div class="card stats-card border-start border-4 border-warning">
-                <div class="card-body p-3 p-lg-4">
-                    <div class="d-flex align-items-center">
-                        <div class="stats-icon bg-danger bg-opacity-10 text-danger me-3">
-                            <i class="bi bi-x-circle-fill"></i>
-                        </div>
-                        <div>
-                            <p class="h6 mb-0 text-muted" title="Counts loaded records grouped by employee and day">Absent</p>
-                            <div class="h3 mb-0" aria-live="polite"><span x-text="stats.absent"></span></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-xl-3 col-lg-6">
-            <div class="card stats-card border-start border-4 border-info">
-                <div class="card-body p-3 p-lg-4">
-                    <div class="d-flex align-items-center">
-                        <div class="stats-icon bg-warning bg-opacity-10 text-warning me-3">
-                            <i class="bi bi-clock-fill"></i>
-                        </div>
-                        <div>
-                            <p class="h6 mb-0 text-muted" title="Counts loaded records grouped by employee and day">Late / Half-Day</p>
-                            <div class="h3 mb-0" aria-live="polite"><span x-text="stats.late + stats.halfDay"></span></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+    @include('users.partials.attendance-day')
+    <div class="card mb-4" x-show="selectedEmployee" x-cloak><div class="card-body d-flex justify-content-between gap-3 flex-wrap">
+        <div><h2 class="h6 mb-1" x-text="selectedEmployee?.name"></h2><span class="small text-muted" x-text="[selectedEmployee?.employee_id, selectedEmployee?.designation, selectedEmployee?.department?.name].filter(Boolean).join(' · ')"></span>
+            <div class="small mt-1">Manager: <span x-text="selectedEmployee?.manager?.name || 'Unassigned'"></span> · LOB: <span x-text="selectedEmployee?.lob_team_code || 'Global'"></span> · Joined: <span x-text="employeeJoined"></span></div>
+        </div>@can('user-view')<a href="{{ url('/users') }}" class="btn btn-outline-secondary btn-sm align-self-start">Manage employees and reporting</a>@endcan
+    </div></div>
+    <div class="row g-3 mb-4" aria-live="polite">
+        <div class="col-6 col-lg-3"><div class="border rounded p-3 h-100"><span class="small text-muted">Completed session time</span><strong class="d-block fs-5" x-text="completedTime"></strong></div></div>
+        <div class="col-6 col-lg-3"><div class="border rounded p-3 h-100"><span class="small text-muted">Recorded employee-days</span><strong class="d-block fs-5" x-text="insights.recorded_days"></strong></div></div>
+        <div class="col-6 col-lg-3"><div class="border rounded p-3 h-100"><span class="small text-muted">Open sessions</span><strong class="d-block fs-5" x-text="insights.open_sessions"></strong></div></div>
+        <div class="col-6 col-lg-3"><div class="border rounded p-3 h-100"><span class="small text-muted">Check-out without check-in</span><strong class="d-block fs-5" x-text="insights.incomplete_sessions"></strong></div></div>
+        <div class="col-12 small text-muted">These totals cover all matching records, including records beyond the current list page. Open sessions are excluded from completed time.</div>
+    </div>
+    <div class="d-flex flex-wrap gap-3 small mb-4 px-1" aria-label="Loaded attendance status counts">
+        <span>Loaded records <strong x-text="stats.total"></strong></span><span class="text-success">Present <strong x-text="stats.present"></strong></span><span class="text-danger">Absent <strong x-text="stats.absent"></strong></span><span class="text-warning-emphasis">Late / Half-Day <strong x-text="stats.late + stats.halfDay"></strong></span>
+        <span class="text-muted">Status counts cover loaded employee-days.</span>
     </div>
 
-    <p class="small text-muted mb-4">Status counts reflect loaded records, grouped by employee and day.</p>
-    <!-- My Leave Balances Widget -->
-    @php
-        $userLeaveBalances = \App\Modules\Users\Models\LeaveBalance::where('user_id', auth()->id())->where('is_active', true)->get();
-    @endphp
-    <div class="card border-start border-4 border-danger shadow-sm mb-5 mb-lg-5 mb-xl-6">
-        <div class="card-header bg-body p-3 p-lg-4 border-bottom-0">
-            <h2 class="h5 card-title mb-0 d-flex align-items-center">
-                <i class="bi bi-wallet2 text-primary me-2"></i>My Leave Balances
-            </h2>
-        </div>
-        <div class="card-body p-3 p-lg-4 pt-0">
-            @if($userLeaveBalances->count() > 0)
-            <div class="row g-3">
-                @foreach($userLeaveBalances as $balance)
-                <div class="col-sm-6 col-md-4 col-xl-auto" style="min-width: 200px;">
-                    <div class="d-flex align-items-center p-3 border rounded-3 bg-body-tertiary shadow-sm">
-                        <div class="fs-2 text-primary me-3 fw-bold lh-1">
-                            {{ rtrim(rtrim(number_format($balance->balance, 1), '0'), '.') }}
-                        </div>
-                        <div>
-                            <div class="fw-bold">{{ $balance->leave_type }}</div>
-                            <small class="text-muted">Available</small>
-                        </div>
-                    </div>
-                </div>
-                @endforeach
-            </div>
-            @else
-            <div class="text-center py-4 bg-body-tertiary rounded border border-dashed">
-                <p class="text-muted mb-0">No active leave balances found.</p>
-            </div>
-            @endif
-        </div>
-    </div>
-
-    <div class="card border-start border-4 border-secondary shadow-sm">
+    <div class="card shadow-sm">
         <div class="card-header bg-body d-flex flex-column flex-md-row justify-content-between align-items-center p-3 p-lg-4 border-bottom-0">
             <h2 class="h5 card-title mb-3 mb-md-0 d-flex align-items-center">
-                <i class="bi bi-list-ul text-primary me-2"></i>Attendance List
+                <i class="bi bi-list-ul text-primary me-2"></i><span x-text="currentView === 'calendar' ? 'Attendance calendar' : 'Attendance records'"></span>
             </h2>
             <div class="d-flex flex-column flex-md-row gap-2 w-100 w-md-auto align-items-md-center">
 
@@ -172,11 +120,11 @@
 
                 <div class="input-group input-group-sm" style="max-width: 250px;" x-show="currentView === 'list'">
                     <span class="input-group-text bg-body-tertiary border-end-0"><i class="bi bi-search"></i></span>
-                    <input type="text" class="form-control border-start-0 ps-0" placeholder="Search by name/ID..."
+                    <input type="text" class="form-control border-start-0 ps-0" placeholder="Search by name/ID..." aria-label="Search attendance by employee name or ID"
                            x-model="searchQuery" @keyup.debounce.300ms="filterItems()">
                 </div>
 
-                <input type="date" class="form-control form-control-sm" x-model="dateFilter" @change="filterItems()" style="max-width: 150px;" x-show="currentView === 'list'">
+                <input type="date" class="form-control form-control-sm" aria-label="Attendance date filter" x-model="dateFilter" @change="filterItems()" style="max-width: 150px;" x-show="currentView === 'list'">
 
                 <x-searchable-select model="statusFilter" label="Attendance status filter" small width="150px">
 <select x-ref="native" aria-hidden="true" tabindex="-1" @focus="$refs.trigger.focus()" @invalid.prevent="validationMessage = $event.target.validationMessage; $refs.trigger.focus()" class="visually-hidden" x-model="statusFilter" @change="filterItems()">
@@ -219,6 +167,16 @@
             </div>
         </div>
 
+        <div class="card-body border-bottom" x-show="currentView === 'list'">
+            <div class="d-flex flex-wrap gap-3 align-items-end">
+                <div><label class="form-label small" for="attendanceFrom">From date</label><input id="attendanceFrom" type="date" class="form-control form-control-sm" x-model="rangeStart" @change="dateFilter = ''; filterItems()"></div>
+                <div><label class="form-label small" for="attendanceThrough">Through date</label><input id="attendanceThrough" type="date" class="form-control form-control-sm" x-model="rangeEnd" :min="rangeStart" @change="dateFilter = ''; filterItems()"></div>
+                <button type="button" class="btn btn-outline-primary btn-sm" @click="useMonthRange()">Use displayed month</button>
+                <button type="button" class="btn btn-outline-secondary btn-sm" @click="resetFilters()">Reset attendance filters</button>
+            </div>
+        </div>
+        <p class="small text-muted px-3 pt-3 mb-0" x-show="currentView === 'calendar'">Select a day number to inspect all sessions. Holiday markers are informational.</p>
+        <p class="small text-warning px-3" x-show="holidayError" x-text="holidayError"></p>
         <div class="card-body p-0">
             <!-- List View -->
             <div class="table-responsive" x-show="currentView === 'list'">
@@ -328,6 +286,7 @@
                                           x-text="item.status"></span>
                                 </td>
                                 <td class="text-end pe-4">
+                                    <button type="button" class="btn btn-link btn-sm p-0 mb-1" x-show="String(item.user_id) === '{{ auth()->id() }}'" @click="requestCorrection(item)">Request correction</button>
                                     <div class="dropdown">
                                         <button x-show="@js($isGlobalHr) || String(item.user_id) === '{{ auth()->id() }}'" class="btn btn-sm btn-outline-secondary btn-icon rounded-circle shadow-sm" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Actions">
                                             <i class="bi bi-three-dots-vertical"></i>
@@ -383,7 +342,7 @@
             </div>
 
             <!-- Calendar View -->
-            <div class="calendar-page pb-0" x-show="currentView === 'calendar'" style="display: none; min-height: 800px; height: auto;">
+            <div class="calendar-page pb-0" x-show="currentView === 'calendar'" style="display: none; height: auto;">
                 <div class="calendar-container m-0 border-0 shadow-none rounded-0">
                     <div class="calendar-layout bg-transparent">
                         <div class="calendar-main bg-transparent">
@@ -408,7 +367,7 @@
                                      'has-events': day.events && day.events.length > 0
                                  }"
                                  @dblclick="addEventForDay(day)">
-                                <div class="day-number" x-text="day.day"></div>
+                                <button type="button" class="day-number border-0 bg-transparent" @click.stop="inspectDay(day)" :aria-label="'View attendance details for ' + day.date" x-text="day.day"></button><template x-for="roster in day.rosters || []" :key="roster.id"><span class="badge d-block my-1 text-wrap" :class="roster.day_type === 'Week Off' ? 'bg-info-subtle text-info-emphasis' : 'bg-secondary-subtle text-secondary-emphasis'" x-text="roster.day_type + (!userFilter ? ' · Employee #' + roster.user_id : '')"></span></template><template x-for="holiday in day.holidays || []" :key="holiday.id"><span class="badge bg-primary-subtle text-primary small text-wrap d-block my-1" :title="holiday.name" x-text="holiday.name"></span></template>
                                 <div class="day-events" style="height: 100%; overflow: visible;">
                                     <template x-for="event in day.events" :key="event.id">
                                         <div class="day-event mb-1 p-2 rounded shadow-sm"
@@ -443,19 +402,68 @@
     </div>
 </div>
 
+<div x-show="workspaceSection === 'corrections'" x-cloak>
+    <div class="mb-3"><h2 class="h5">Attendance corrections</h2><p class="text-muted small">Submit corrections to your own records or review requests assigned to you.</p></div>
+    @include('users.partials.attendance-corrections')
+</div>
+<div x-show="workspaceSection === 'co' || workspaceSection === 'roster'" x-cloak>
+    @include('users.partials.attendance-roster')
+</div>
+<div x-show="workspaceSection === 'balances'" x-cloak>
+    <!-- My Leave Balances Widget -->
+    @php
+        $userLeaveBalances = \App\Modules\Users\Models\LeaveBalance::where('user_id', auth()->id())->where('is_active', true)->get();
+    @endphp
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-body p-3 p-lg-4 border-bottom-0">
+            <h2 class="h5 card-title mb-0 d-flex align-items-center">
+                <i class="bi bi-wallet2 text-primary me-2"></i>My Leave Balances
+            </h2>
+        </div>
+        <div class="card-body p-3 p-lg-4 pt-0">
+            @if($userLeaveBalances->count() > 0)
+            <div class="row g-3">
+                @foreach($userLeaveBalances as $balance)
+                <div class="col-sm-6 col-md-4 col-xl-auto" style="min-width: 200px;">
+                    <div class="d-flex align-items-center p-3 border rounded-3 bg-body-tertiary shadow-sm">
+                        <div class="fs-2 text-primary me-3 fw-bold lh-1">
+                            {{ rtrim(rtrim(number_format($balance->balance, 1), '0'), '.') }}
+                        </div>
+                        <div>
+                            <div class="fw-bold">{{ $balance->leave_type }}</div>
+                            <small class="text-muted">Available</small>
+                        </div>
+                    </div>
+                </div>
+                @endforeach
+            </div>
+            @else
+            <div class="text-center py-4 bg-body-tertiary rounded border border-dashed">
+                <p class="text-muted mb-0">No active leave balances found.</p>
+            </div>
+            @endif
+        </div>
+    </div>
+
+</div>
+</div>
+
+
 <div class="modal fade" id="attendanceModal" tabindex="-1" aria-labelledby="attendanceModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" x-data="attendanceForm({{ auth()->id() }})">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg" x-data="attendanceForm({{ auth()->id() }})">
         <form class="modal-content shadow" @submit.prevent="saveItem()">
             <div class="modal-header bg-body-tertiary">
                 <h5 class="modal-title d-flex align-items-center" id="attendanceModalLabel">
-                    <i class="bi bi-calendar-check-fill text-primary me-2"></i>Log Attendance
+                    <i class="bi bi-calendar-check-fill text-primary me-2"></i><span x-text="editingId ? 'Edit attendance' : 'Log attendance'"></span>
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body p-4">
-                <div class="alert alert-danger" x-show="error" x-text="error" style="display: none;"></div>
+                <p class="small text-muted mb-4">Record the attendance date, session times, and status. Fields marked * are required.</p>
+                <div class="alert alert-danger" role="alert" x-show="error" x-text="error" style="display: none;"></div>
 
-                <div class="mb-3">
+                <div class="row g-3 mb-3">
+                <div class="col-md-6">
                     <label for="attUser" class="form-label fw-semibold">Employee <span class="text-danger">*</span></label>
                     <x-searchable-select model="form.user_id" label="Attendance employee">
 <select x-ref="native" aria-hidden="true" tabindex="-1" @focus="$refs.trigger.focus()" @invalid.prevent="validationMessage = $event.target.validationMessage; $refs.trigger.focus()" class="visually-hidden" id="attUser" x-model="form.user_id" required @disabled(!$isGlobalHr)>
@@ -467,11 +475,12 @@
 </x-searchable-select>
                 </div>
 
-                <div class="mb-3">
+                <div class="col-md-6">
                     <label for="attDate" class="form-label fw-semibold">Date <span class="text-danger">*</span></label>
                     <input type="date" class="form-control" id="attDate" x-model="form.date" required>
                 </div>
 
+                </div>
                 <div class="row g-3 mb-3">
                     <div class="col-md-6">
                         <label for="attCheckIn" class="form-label fw-semibold">Check In Time</label>
@@ -511,7 +520,7 @@
     </div>
 </div>
 <div class="modal fade" id="leaveModal" tabindex="-1" aria-labelledby="leaveModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" x-data="leaveForm({{ auth()->id() }})">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg" x-data="leaveForm({{ auth()->id() }})">
         <form class="modal-content" @submit.prevent="saveItem()">
             <div class="modal-header">
                 <h5 class="modal-title d-flex align-items-center" id="leaveModalLabel">
@@ -520,10 +529,12 @@
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body">
-                <div class="alert alert-danger" x-show="error" x-text="error" style="display: none;"></div>
+            <div class="modal-body p-4">
+                <p class="small text-muted mb-4">Choose the employee and leave type, then enter the requested dates and reason.</p>
+                <div class="alert alert-danger" role="alert" x-show="error" x-text="error" style="display: none;"></div>
 
-                <div class="mb-3">
+                <div class="row g-3 mb-4">
+                <div class="col-md-6">
 <label class="form-label" for="leaveUser">Employee <span class="text-danger">*</span></label>
 <x-searchable-select model="form.user_id" label="Leave employee">
 <select x-ref="native" aria-hidden="true" tabindex="-1" @focus="$refs.trigger.focus()" @invalid.prevent="validationMessage = $event.target.validationMessage; $refs.trigger.focus()" class="visually-hidden" id="leaveUser" x-model="form.user_id" required @disabled(!$isGlobalHr)>
@@ -535,18 +546,8 @@
 </x-searchable-select>
 </div>
 
-                <div class="mb-3">
+                <div class="col-md-6">
 <label class="form-label" for="leaveType">Leave Type <span class="text-danger">*</span></label>
-                    <div class="form-text text-warning" x-show="form.user_id && userBalances.length === 0 && !isLoadingBalances">
-                        No active leave balances found for this employee.
-                    </div>
-                </div>
-
-                <div class="row">
-                    <div class="col-6">
-                        <div class="form-floating mb-3">
-                            <input type="date" class="form-control" id="leaveStart" x-model="form.start_date" required>
-                            <label for="leaveStart">Start Date <span class="text-danger">*</span></label>
 <x-searchable-select model="form.leave_type" label="Leave type">
 <select x-ref="native" aria-hidden="true" tabindex="-1" @focus="$refs.trigger.focus()" @invalid.prevent="validationMessage = $event.target.validationMessage; $refs.trigger.focus()" class="visually-hidden" id="leaveType" x-model="form.leave_type" required :disabled="isLoadingBalances || userBalances.length === 0">
                         <option value="">Select Leave Type</option>
@@ -557,19 +558,31 @@
                         </template>
                     </select>
 </x-searchable-select>
+                    <div class="form-text text-warning" x-show="form.user_id && userBalances.length === 0 && !isLoadingBalances">
+                        No active leave balances found for this employee.
+                    </div>
+                </div>
+
+                </div>
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <div>
+                            <label class="form-label fw-semibold" for="leaveStart">Start date <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" id="leaveStart" x-model="form.start_date" required>
+
 </div>
                     </div>
-                    <div class="col-6">
-                        <div class="form-floating mb-3">
+                    <div class="col-md-6">
+                        <div>
+                            <label class="form-label fw-semibold" for="leaveEnd">End date <span class="text-danger">*</span></label>
                             <input type="date" class="form-control" id="leaveEnd" x-model="form.end_date" :min="form.start_date" required>
-                            <label for="leaveEnd">End Date <span class="text-danger">*</span></label>
                         </div>
                     </div>
                 </div>
 
-                <div class="form-floating mb-3">
-                    <textarea class="form-control" id="leaveReason" x-model="form.reason" style="height: 100px;" required></textarea>
-                    <label for="leaveReason">Reason <span class="text-danger">*</span></label>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold" for="leaveReason">Reason <span class="text-danger">*</span></label>
+                    <textarea class="form-control" id="leaveReason" x-model="form.reason" rows="3" placeholder="Explain the reason for your leave request" required></textarea>
                 </div>
 
                 <div class="mb-3" x-show="editingId" @if(!$isGlobalHr) style="display: none !important;" @endif>
@@ -583,7 +596,7 @@
 </x-searchable-select>
 </div>
             </div>
-            <div class="modal-footer">
+            <div class="modal-footer bg-body-tertiary">
                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
                 <button type="submit" class="btn btn-primary px-4" :disabled="saving">
                     <span x-show="saving" class="spinner-border spinner-border-sm me-2" style="display: none;"></span>

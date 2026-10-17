@@ -77,6 +77,21 @@ function localDate(date = new Date()) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 }
 
+function employeeDate(value, timeZone = 'UTC') {
+  if (!value) return '';
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  const parts = new Intl.DateTimeFormat('en', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(date);
+  const fields = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return `${fields.year}-${fields.month}-${fields.day}`;
+}
+
 async function loadUserOptions(currentUserId) {
   const users = [];
   let page = 1;
@@ -96,14 +111,75 @@ async function loadUserOptions(currentUserId) {
 }
 
 document.addEventListener('alpine:init', () => {
+  Alpine.data('rosterManager', () => ({
+    file: null, preview: [], hash: '', busy: false, error: '', message: '', claims: [], page: 1, pages: 1,
+    date: '', reason: '',
+    _onSaved: null,
+    init() { this.loadClaims(); this._onSaved = () => this.loadClaims(); window.addEventListener('attendance-saved', this._onSaved); },
+    destroy() { window.removeEventListener('attendance-saved', this._onSaved); },
+    choose(event) { this.file = event.target.files[0] || null; this.preview = []; this.hash = ''; this.message = ''; },
+    template(systemIds = false) {
+      const url = URL.createObjectURL(new Blob([systemIds ? 'user_id,date,day_type\nUSER_ID_1,2026-10-18,Week Off\nUSER_ID_2,2026-10-18,Working\n' : 'employee_id,date,day_type\nEMP001,2026-10-18,Week Off\nEMP002,2026-10-18,Working\n'], {type:'text/csv'}));
+      const link = document.createElement('a'); link.href = url; link.download = 'roster-template.csv'; link.click(); URL.revokeObjectURL(url);
+    },
+    async upload(commit = false) {
+      if(this.busy || !this.file || (commit && !this.hash)) return;
+      this.busy = true; this.error = ''; this.message = '';
+      try {
+        const body = new FormData(); body.append('file', this.file); body.append('commit', commit ? '1':'0'); if(commit) body.append('preview_hash',this.hash);
+        const response = await fetch('/api/rosters/import', {method:'POST', headers:{Accept:'application/json','X-CSRF-TOKEN':getCsrfToken()}, body});
+        const result = await response.json();
+        if(!response.ok) throw new Error(result.errors ? Object.values(result.errors).flat().join(' ') : result.message);
+        this.preview = result.data; this.hash = commit ? '' : result.preview_hash; this.message = result.message;
+        if(commit) window.dispatchEvent(new CustomEvent('attendance-saved'));
+      } catch(error) { this.error = error.message; this.hash = ''; }
+      finally { this.busy = false; }
+    },
+    async loadClaims() {
+      try { const result = await apiFetch('/api/rosters/co?page='+this.page); this.claims = result.data; this.pages = result.last_page; }
+      catch(error) { this.error = error.message; }
+    },
+    async claim() {
+      if(this.busy) return; this.busy = true; this.error = ''; this.message = '';
+      try { const result = await apiFetch('/api/rosters/co',{method:'POST', body:JSON.stringify({date:this.date,reason:this.reason})}); this.message = result.message; this.reason = ''; this.page = 1; await this.loadClaims(); }
+      catch(error) { this.error = error.message; } finally { this.busy = false; }
+    },
+    async review(item, status) {
+      if(this.busy) return;
+      const answer = await Swal.fire({title:status === 'Approved' ? 'Approve and credit 1 CO?' : 'Reject CO request?', input:'textarea', inputLabel:'Review comment (optional)', showCancelButton:true, confirmButtonText:status === 'Approved'?'Approve':'Reject'});
+      if(!answer.isConfirmed || this.busy) return;
+      this.busy = true; this.error = ''; this.message = '';
+      try { const result = await apiFetch('/api/rosters/co/'+item.id+'/review',{method:'PATCH',body:JSON.stringify({status,comment:answer.value || ''})}); this.message = result.message; await this.loadClaims(); window.dispatchEvent(new CustomEvent('attendance-saved')); }
+      catch(error) { this.error = error.message; } finally { this.busy = false; }
+    }
+  }));
   Alpine.data('attendancesTable', (currentUserId = '', access = {}) => ({
     items: [],
     leaves: [],
+    holidays: [],
+    rosters: [],
+    holidayError: '',
+    selectedDay: null,
+    rangeStart: '',
+    rangeEnd: '',
+    insights: {
+      records: 0,
+      recorded_days: 0,
+      completed_minutes: 0,
+      open_sessions: 0,
+      incomplete_sessions: 0,
+    },
     selectedItems: [],
     searchQuery: '',
     statusFilter: '',
     dateFilter: '',
-    userFilter: currentUserId ? String(currentUserId) : '',
+    userFilter: /^\d+$/.test(
+      new URLSearchParams(window.location?.search || '').get('user_id') || ''
+    )
+      ? new URLSearchParams(window.location.search).get('user_id')
+      : currentUserId
+        ? String(currentUserId)
+        : '',
     usersList: [],
     sortField: 'date',
     sortDirection: 'desc',
@@ -130,6 +206,7 @@ document.addEventListener('alpine:init', () => {
       this.generateCalendarDays();
       this.loadUsersList();
       this.loadItems();
+      if (access.holidays) this.loadHolidayMarkers();
       this._onSaved = () => this.loadItems();
       window.addEventListener('attendance-saved', this._onSaved);
     },
@@ -149,32 +226,18 @@ document.addEventListener('alpine:init', () => {
       this.isLoading = true;
       this.error = null;
       try {
-        const params = new URLSearchParams({
-          page: this.currentPage,
-          per_page: this.currentView === 'calendar' ? -1 : this.itemsPerPage,
-          sort_by: this.sortField,
-          sort_dir: this.sortDirection,
-        });
-        if (this.searchQuery) params.set('search', this.searchQuery);
-        if (this.statusFilter) params.set('status', this.statusFilter);
-        if (this.userFilter) params.set('user_id', this.userFilter);
-
-        if (this.currentView === 'calendar') {
-          if (this.calendarDays.length > 0) {
-            params.set('start_date', this.calendarDays[0].date);
-            params.set('end_date', this.calendarDays[this.calendarDays.length - 1].date);
-          }
-        } else {
-          if (this.dateFilter) params.set('date', this.dateFilter);
-        }
+        const params = this.reportParams();
 
         const data = await apiFetch(`/api/attendances?${params}`);
         if (requestId !== this._loadRequestId) return;
+        this.insights = data.summary || this.insights;
         this.items = data.data ?? [];
         this.selectedItems = this.selectedItems.filter((id) =>
           this.items.some((item) => String(item.id) === String(id))
         );
         this.leaves = data.leaves ?? [];
+        this.rosters = data.rosters ?? [];
+        this.calendarDays.forEach(day => { day.rosters = this.rosters.filter(row => row.date === day.date); });
         this.totalItems = data.total ?? this.items.length;
         if (
           this.currentView === 'list' &&
@@ -223,8 +286,117 @@ document.addEventListener('alpine:init', () => {
     },
 
     filterItems() {
+      if (this.rangeStart && this.rangeEnd && this.rangeEnd < this.rangeStart) {
+        this.error = 'The end date must be on or after the start date.';
+        return;
+      }
       this.currentPage = 1;
       this.loadItems();
+    },
+
+    get employeeJoined() {
+      return employeeDate(this.selectedEmployee?.joining_date, access.timeZone) || '—';
+    },
+    get selectedEmployee() {
+      return this.usersList.find((user) => String(user.id) === String(this.userFilter)) || null;
+    },
+    get completedTime() {
+      const minutes = Number(this.insights.completed_minutes || 0);
+      return `${Math.floor(minutes / 60)}h ${String(minutes % 60).padStart(2, '0')}m`;
+    },
+    get daySessions() {
+      return this.selectedDay
+        ? this.items.filter((item) => item.date === this.selectedDay.date)
+        : [];
+    },
+    get dayLeaves() {
+      return this.selectedDay
+        ? this.leaves.filter(
+            (item) =>
+              item.start_date <= this.selectedDay.date && item.end_date >= this.selectedDay.date
+          )
+        : [];
+    },
+    inspectDay(day) {
+      this.selectedDay = day;
+      getModal('#attendanceDayModal')?.show();
+    },
+    requestCorrection(item = null) {
+      if (item && String(item.user_id) !== String(currentUserId)) return;
+      getModal('#attendanceDayModal')?.hide();
+      // Wait for the current modal to finish closing before opening the request.
+      const open = () =>
+        window.dispatchEvent(new CustomEvent('open-correction-modal', { detail: item }));
+      const dayModal = document.querySelector('#attendanceDayModal');
+      if (
+        dayModal?.classList.contains('show') ||
+        (dayModal?.classList.contains('fade') && document.querySelector('.modal-backdrop'))
+      ) {
+        dayModal.addEventListener('hidden.bs.modal', open, { once: true });
+      } else open();
+    },
+    resetFilters() {
+      this.searchQuery = '';
+      this.statusFilter = '';
+      this.dateFilter = '';
+      this.rangeStart = '';
+      this.rangeEnd = '';
+      this.userFilter = String(currentUserId);
+      this.filterItems();
+    },
+    useMonthRange() {
+      const year = this.currentMonthDate.getFullYear(),
+        month = this.currentMonthDate.getMonth();
+      this.rangeStart = localDate(new Date(year, month, 1));
+      this.rangeEnd = localDate(new Date(year, month + 1, 0));
+      this.dateFilter = '';
+      this.currentView = 'list';
+      this.filterItems();
+    },
+    async loadHolidayMarkers() {
+      try {
+        let page = 1,
+          lastPage = 1;
+        const holidays = [];
+        do {
+          const result = await apiFetch(`/api/holidays?per_page=100&page=${page++}`);
+          holidays.push(...(result.data || []));
+          lastPage = result.last_page || 1;
+        } while (page <= lastPage);
+        this.holidays = holidays;
+        this.calendarDays.forEach((day) => {
+          day.holidays = holidays.filter((holiday) => holiday.date === day.date);
+        });
+      } catch (error) {
+        this.holidayError = 'Holiday markers could not be loaded: ' + error.message;
+      }
+    },
+
+    reportParams(all = false) {
+      const params = new URLSearchParams({
+        page: this.currentPage,
+        per_page: all || this.currentView === 'calendar' ? -1 : this.itemsPerPage,
+        sort_by: this.sortField,
+        sort_dir: this.sortDirection,
+      });
+      if (this.searchQuery) params.set('search', this.searchQuery);
+      if (this.statusFilter) params.set('status', this.statusFilter);
+      if (this.userFilter) params.set('user_id', this.userFilter);
+
+      if (this.currentView === 'calendar') {
+        if (this.calendarDays.length > 0) {
+          params.set('start_date', this.calendarDays[0].date);
+          params.set('end_date', this.calendarDays[this.calendarDays.length - 1].date);
+        }
+      } else {
+        if (this.dateFilter) params.set('date', this.dateFilter);
+        if (this.rangeStart) params.set('start_date', this.rangeStart);
+        if (this.rangeEnd) params.set('end_date', this.rangeEnd);
+      }
+      return params;
+    },
+    exportFiltered() {
+      window.open('/api/attendances/export/filtered?' + this.reportParams(true), '_blank');
     },
 
     exportSummary() {
@@ -330,7 +502,11 @@ document.addEventListener('alpine:init', () => {
         });
       }
 
-      this.calendarDays = days;
+      this.calendarDays = days.map((day) => ({
+        ...day,
+        holidays: this.holidays.filter((holiday) => holiday.date === day.date),
+        rosters: this.rosters.filter((row) => row.date === day.date),
+      }));
     },
 
     mapEventsToCalendar() {
@@ -427,10 +603,10 @@ document.addEventListener('alpine:init', () => {
       if (this.userFilter) {
         const u = this.usersList.find((x) => String(x.id) === String(this.userFilter));
         if (u && u.joining_date) {
-          joiningDateStr = u.joining_date.split('T')[0];
+          joiningDateStr = employeeDate(u.joining_date, access.timeZone);
         }
       } else if (this.items.length > 0 && this.items[0].user && this.items[0].user.joining_date) {
-        joiningDateStr = this.items[0].user.joining_date.split('T')[0];
+        joiningDateStr = employeeDate(this.items[0].user.joining_date, access.timeZone);
       }
 
       this.calendarDays.forEach((day) => {
@@ -617,6 +793,148 @@ document.addEventListener('alpine:init', () => {
         this.loadItems();
       } catch (err) {
         showToast(`Bulk action failed: ${err.message}`, 'danger');
+      }
+    },
+  }));
+
+  Alpine.data('attendanceCorrections', (currentUserId, canReview = false) => ({
+    items: [],
+    scope: 'mine',
+    statusFilter: 'Pending',
+    currentPage: 1,
+    totalPages: 1,
+    total: 0,
+    loading: false,
+    saving: false,
+    error: '',
+    formError: '',
+    _requestId: 0,
+    _onOpen: null,
+    form: {
+      attendance_id: '',
+      date: localDate(),
+      check_in_time: '',
+      check_out_time: '',
+      attendance_status: 'Present',
+      notes: '',
+      reason: '',
+    },
+    init() {
+      this.loadItems();
+      this._onOpen = (event) => this.openForm(event.detail || null);
+      window.addEventListener('open-correction-modal', this._onOpen);
+    },
+    destroy() {
+      this._requestId++;
+      window.removeEventListener('open-correction-modal', this._onOpen);
+    },
+    async loadItems() {
+      const requestId = ++this._requestId;
+      this.loading = true;
+      this.error = '';
+      try {
+        const params = new URLSearchParams({
+          scope: this.scope,
+          page: this.currentPage,
+          per_page: 15,
+        });
+        if (this.statusFilter) params.set('status', this.statusFilter);
+        const result = await apiFetch('/api/attendance-corrections?' + params);
+        if (requestId !== this._requestId) return;
+        this.items = result.data || [];
+        this.total = result.total || 0;
+        this.totalPages = result.last_page || 1;
+        if (this.total && this.currentPage > this.totalPages) {
+          this.currentPage = this.totalPages;
+          return this.loadItems();
+        }
+      } catch (error) {
+        if (requestId === this._requestId) this.error = error.message;
+      } finally {
+        if (requestId === this._requestId) this.loading = false;
+      }
+    },
+    filterItems() {
+      this.currentPage = 1;
+      this.loadItems();
+    },
+    page(delta) {
+      const page = this.currentPage + delta;
+      if (page >= 1 && page <= this.totalPages) {
+        this.currentPage = page;
+        this.loadItems();
+      }
+    },
+    openForm(item = null) {
+      if (item && String(item.user_id) !== String(currentUserId)) return;
+      this.formError = '';
+      const date = item?.date || localDate();
+      let checkoutDate = date;
+      if (item?.check_in && item?.check_out && item.check_out < item.check_in) {
+        const next = new Date(date + 'T12:00:00');
+        next.setDate(next.getDate() + 1);
+        checkoutDate = localDate(next);
+      }
+      this.form = {
+        attendance_id: item?.id || '',
+        date,
+        check_in_time: item?.check_in ? date + 'T' + item.check_in.slice(0, 5) : '',
+        check_out_time: item?.check_out ? checkoutDate + 'T' + item.check_out.slice(0, 5) : '',
+        attendance_status: item?.status || 'Present',
+        notes: item?.notes || '',
+        reason: '',
+      };
+      getModal('#correctionModal')?.show();
+    },
+    closeForm() {
+      getModal('#correctionModal')?.hide();
+    },
+    async submit() {
+      if (this.saving) return;
+      this.saving = true;
+      this.formError = '';
+      try {
+        const payload = { ...this.form, attendance_id: this.form.attendance_id || null };
+        const result = await apiFetch('/api/attendance-corrections', {
+          method: 'POST',
+          body: JSON.stringify(payload),
+        });
+        getModal('#correctionModal')?.hide();
+        showToast(result.message);
+        this.loadItems();
+      } catch (error) {
+        this.formError = error.message;
+      } finally {
+        this.saving = false;
+      }
+    },
+    async review(item, status) {
+      if (this.saving || !canReview || !item.can_review) return;
+      const result = await Swal.fire({
+        title: status === 'Approved' ? 'Approve correction?' : 'Reject correction?',
+        text:
+          status === 'Approved'
+            ? 'This applies the proposed values to attendance.'
+            : 'Attendance will remain unchanged.',
+        input: 'textarea',
+        inputLabel: 'Reviewer comment (optional)',
+        inputAttributes: { maxlength: 5000 },
+        showCancelButton: true,
+      });
+      if (!result.isConfirmed) return;
+      this.saving = true;
+      try {
+        const response = await apiFetch(`/api/attendance-corrections/${item.id}/review`, {
+          method: 'PATCH',
+          body: JSON.stringify({ status, reviewer_comment: result.value || '' }),
+        });
+        showToast(response.message);
+        this.loadItems();
+        window.dispatchEvent(new CustomEvent('attendance-saved'));
+      } catch (error) {
+        this.error = error.message;
+      } finally {
+        this.saving = false;
       }
     },
   }));

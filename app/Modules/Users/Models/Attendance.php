@@ -2,6 +2,7 @@
 
 namespace App\Modules\Users\Models;
 
+use App\Modules\Users\Services\AutomaticCoRequest;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -11,12 +12,25 @@ use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 
-class Attendance extends Model
- implements Auditable{
-    use LogsActivity;
+class Attendance extends Model implements Auditable
+{
     use AuditableTrait;
-
+    use LogsActivity;
     use SoftDeletes;
+
+    // Synthetic end-of-day closure must not count as an employee checkout for CO.
+    public bool $suppressAutomaticCoRequest = false;
+
+    protected static function booted(): void
+    {
+        static::saved(function (self $attendance) {
+            if (! $attendance->suppressAutomaticCoRequest && $attendance->wasChanged(['user_id', 'date', 'check_in', 'check_out', 'status'])) {
+                app(AutomaticCoRequest::class)->forAttendance($attendance);
+            } elseif (! $attendance->suppressAutomaticCoRequest && $attendance->wasRecentlyCreated) {
+                app(AutomaticCoRequest::class)->forAttendance($attendance);
+            }
+        });
+    }
 
     protected $appends = ['total_time'];
 

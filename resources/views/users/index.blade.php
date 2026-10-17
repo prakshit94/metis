@@ -575,6 +575,13 @@
                                                                 <i class="bi bi-three-dots"></i>
                                                             </button>
                                                             <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                                                                @can('attendance-view')
+                                                                <li><a class="dropdown-item" :href="'/attendances?user_id=' + user.id" x-show="!user.isDeleted"><i class="bi bi-calendar-check me-2"></i>View attendance</a></li>
+                                                                @endcan
+                                                                @can('leave-view')
+                                                                <li><a class="dropdown-item" :href="'/leaves?user_id=' + user.id" x-show="!user.isDeleted"><i class="bi bi-calendar-minus me-2"></i>View leave requests</a></li>
+                                                                @endcan
+
                                                                 @can('user-edit')
                                                                 <li>
                                                                     <a class="dropdown-item" href="#" @click.prevent="editUser(user)" x-show="!user.isDeleted">
@@ -1156,6 +1163,7 @@
                                                 'options' => "managers.map(manager => ({ ...manager, name: [manager.name, manager.lob_team_code || 'Global', manager.designation || 'No designation'].join(' · ') }))", 'model' => 'form.manager_id',
                                                 'valueField' => 'id', 'keyField' => 'id',
                                             ])
+                                            <div class="form-text">The assigned manager can review this employee’s leave and attendance corrections when granted the relevant approval access.</div>
                                         </div>
                                     </div>
                                 </div>
