@@ -1091,8 +1091,8 @@
                             <i class="bi bi-arrow-down" x-show="sortField === 'order_no' && sortDirection === 'desc'" aria-hidden="true"></i>
                         </th>
                         <th scope="col">Placed By</th>
-                        <th scope="col">Village</th>
-                        <th scope="col">Taluka</th>
+                        <th scope="col">Customer</th>
+                        <th scope="col">Mobile</th>
                         <th scope="col">Items</th>
                         <th scope="col"
                             role="button"
@@ -1106,6 +1106,8 @@
                             <i class="bi bi-arrow-up" x-show="sortField === 'net_amount' && sortDirection === 'asc'" aria-hidden="true"></i>
                             <i class="bi bi-arrow-down" x-show="sortField === 'net_amount' && sortDirection === 'desc'" aria-hidden="true"></i>
                         </th>
+                        <th scope="col">District</th>
+                        <th scope="col">Taluka</th>
                         <th scope="col">Status</th>
                         <th scope="col"
                             role="button"
@@ -1151,8 +1153,8 @@
                                     </div>
                                 </div>
                             </td>
-                            <td class="small" x-text="order.original?.shipping_village_name || order.original?.shipping_address?.village?.village_name || order.original?.shipping_address?.village_name || '—'"></td>
-                            <td class="small" x-text="order.original?.shipping_taluka || order.original?.shipping_address?.village?.taluka_name || order.original?.shipping_address?.taluka || '—'"></td>
+                            <td class="small fw-medium" x-text="order.customer.name || '—'"></td>
+                            <td class="small text-muted" x-text="order.customer.phone || order.customer.secondaryPhone || '—'"></td>
                             <td>
                                 <div class="order-items orders-row-details small cursor-pointer custom-hover-bg p-2 rounded border border-transparent hover-border-secondary-subtle transition-all" @click="viewItems(order)" title="Click to view items">
                                     <div class="fw-medium d-flex align-items-center flex-wrap gap-1">
@@ -1168,6 +1170,8 @@
                                 </div>
                             </td>
                             <td class="fw-medium small text-nowrap text-end" x-text="`₹ ${order.total}`"></td>
+                            <td class="small" x-text="order.original?.shipping_district || order.original?.shipping_address?.village?.district_name || order.original?.shipping_address?.district || '—'"></td>
+                            <td class="small" x-text="order.original?.shipping_taluka || order.original?.shipping_address?.village?.taluka_name || order.original?.shipping_address?.taluka || '—'"></td>
                             <td>
                                 <span class="badge small" 
                                       :class="`bg-${getStatusTheme(order.status)}-subtle text-${getStatusTheme(order.status)}-emphasis border border-${getStatusTheme(order.status)}-subtle`"
@@ -1334,13 +1338,13 @@
                     </template>
                     <template x-if="orders.length === 0 && !isLoading">
                         <tr>
-                            <td colspan="10" class="text-center py-5 text-muted">
+                            <td colspan="12" class="text-center py-5 text-muted">
                                 <i class="bi bi-inbox fs-1 d-block mb-2"></i>
                                 No orders found matching current criteria.
                             </td>
                         </tr>
                     </template>
-                    <template x-if="orders.length === 0 && isLoading"><tr><td colspan="10" class="text-center text-body-secondary py-5" role="status"><span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>Loading orders…</td></tr></template>
+                    <template x-if="orders.length === 0 && isLoading"><tr><td colspan="12" class="text-center text-body-secondary py-5" role="status"><span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>Loading orders…</td></tr></template>
                 </tbody>
             </table>
         </div>

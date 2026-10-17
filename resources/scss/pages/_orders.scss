@@ -437,7 +437,7 @@ body[data-page='orders'] .orders-table-scroll td:has(.dropdown-menu.show) {
 // Keep order list details on one horizontal line; the table container scrolls.
 body[data-page='orders'] .orders-table-scroll > .table {
   table-layout: auto;
-  min-width: 1350px;
+  min-width: 1600px;
   th, td { padding-left: 1rem; padding-right: 1rem; }
   td { white-space: nowrap; }
   th:first-child, td:first-child { width: 40px; padding-right: 0.5rem; }
