@@ -405,8 +405,8 @@
                                                 <i class="bi bi-trash3 me-1"></i>Permanent Delete
                                             </button>
                                             @endcan
-                                            <button class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center justify-content-center px-2" @click="selectedUsers = []" title="Clear selection">
-                                                <i class="bi bi-x-lg" style="margin-left: 7px"></i>
+                                            <button class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center justify-content-center px-2" @click="selectedUsers = []" title="Clear selection" aria-label="Clear selection">
+                                                <i class="bi bi-x-lg" aria-hidden="true"></i>
                                             </button>
                                         </div>
                                     </div>
@@ -478,7 +478,7 @@
                                                     </td>
                                                     <td>
                                                         <div class="d-flex align-items-center">
-                                                            <div class="position-relative me-3">
+                                                            <div class="position-relative me-3 flex-shrink-0">
                                                                 <img :src="photoUrl(user)" data-profile-avatar :data-profile-user-id="user.id" :data-profile-photo="user.photo || user.avatar || ''" :data-profile-gender="user.gender || ''" x-on:error="handlePhotoError($event, user)"
                                                                      class="rounded-circle shadow-sm" 
                                                                      width="42" 
@@ -488,13 +488,13 @@
                                                                 <span class="position-absolute bottom-0 end-0 border border-2 border-body rounded-circle d-flex align-items-center justify-content-center" 
                                                                       :class="user.is_online ? 'bg-success text-white' : 'bg-secondary text-white'" 
                                                                       style="width: 18px; height: 18px; font-size: 9px; right: -2px !important; bottom: -2px !important;"
-                                                                      :title="user.is_online ? 'Online via ' + user.device_type : 'Offline'">
-                                                                    <i :class="user.device_type === 'Mobile' ? 'bi bi-phone' : 'bi bi-laptop'"></i>
+                                                                      :title="user.is_online ? 'Online; last login via ' + user.loginSource : 'Offline'">
+                                                                    <i :class="'bi ' + user.loginSourceIcon"></i>
                                                                 </span>
                                                             </div>
                                                             <div>
-                                                                <a href="#" class="fw-bold text-decoration-none text-primary d-block mb-1" @click.prevent="viewUser(user)" x-text="user.name || '—'"></a>
-                                                                <small class="text-muted bg-body-tertiary px-2 py-1 rounded" style="font-size: 0.75rem;"><i class="bi bi-person-badge me-1"></i><span x-text="user.employee_id ? user.employee_id : 'Sys ID: ' + user.id"></span></small>
+                                                                <a href="#" class="fw-bold text-decoration-none text-primary d-block mb-1 user-name" @click.prevent="viewUser(user)" x-text="user.name || '—'"></a>
+                                                                <small class="text-muted bg-body-tertiary px-2 py-1 rounded" style="font-size: 0.75rem;"><i class="bi bi-person-badge me-1"></i><span x-text="user.employeeIdLabel"></span></small>
                                                             </div>
                                                         </div>
                                                     </td>
@@ -512,7 +512,7 @@
                                                     </td>
                                                     <td>
                                                         <div class="d-flex align-items-center text-body">
-                                                            <i class="bi bi-diagram-2 text-primary me-2 fs-5"></i>
+                                                            <i class="bi bi-diagram-2-fill text-primary me-2 fs-5"></i>
                                                             <div class="d-flex flex-column">
                                                                 <span class="fw-medium" x-text="user.lob_team_name || 'Global'"></span>
                                                                 <span class="small text-muted" style="font-size: 0.75rem;" x-show="user.lob_state_name" x-text="user.lob_state_name"></span>
@@ -543,15 +543,27 @@
                                                     </td>
                                                     <td>
                                                         <div class="d-flex flex-column gap-1">
+                                                            <div class="user-activity-badges">
+                                                                <span class="user-activity-badge"
+                                                                      :class="user.is_online ? 'bg-success-subtle text-success-emphasis border-success-subtle' : 'bg-secondary-subtle text-secondary-emphasis border-secondary-subtle'"
+                                                                      :title="user.is_online ? 'Currently online' : 'Currently offline'">
+                                                                    <span class="user-presence-dot" aria-hidden="true"></span>
+                                                                    <span x-text="user.is_online ? 'Online' : 'Offline'"></span>
+                                                                </span>
+                                                                <span class="user-activity-badge"
+                                                                      :class="user.loginSource === 'Mobile' ? 'bg-info-subtle text-info-emphasis border-info-subtle' : user.loginSource === 'Web' ? 'bg-primary-subtle text-primary-emphasis border-primary-subtle' : 'bg-secondary-subtle text-secondary-emphasis border-secondary-subtle'"
+                                                                      title="Source of the latest successful login">
+                                                                    <i class="bi" :class="user.loginSourceIcon" aria-hidden="true"></i>
+                                                                    <span class="visually-hidden">Last login source: </span>
+                                                                    <span x-text="user.loginSource"></span>
+                                                                </span>
+                                                            </div>
                                                             <div class="text-body small d-flex align-items-center" title="Last Active">
                                                                 <i class="bi bi-clock-history text-muted me-2"></i> <span x-text="user.lastActive"></span>
                                                             </div>
                                                             <div class="text-muted small d-flex align-items-center" title="Last Login">
                                                                 <i class="bi bi-box-arrow-in-right text-muted me-2"></i> 
-                                                                <span x-text="user.last_login_at === 'Never' ? 'Never logged in' : user.last_login_at"></span>
-                                                                <span x-show="user.last_login_at !== 'Never'" class="ms-1">
-                                                                    (<i class="bi" :class="user.device_type === 'Mobile' ? 'bi-phone' : 'bi-laptop'"></i> <span x-text="user.device_type"></span>)
-                                                                </span>
+                                                                <span><span class="text-muted">Last login: </span><span x-text="user.last_login_at === 'Never' ? 'Never logged in' : user.last_login_at"></span></span>
                                                             </div>
                                                         </div>
                                                     </td>
@@ -571,7 +583,7 @@
                                                                     type="button"
                                                                     data-bs-toggle="dropdown"
                                                                     aria-expanded="false"
-                                                                    title="User actions">
+                                                                    :aria-label="'Actions for ' + user.name" title="User actions">
                                                                 <i class="bi bi-three-dots"></i>
                                                             </button>
                                                             <ul class="dropdown-menu dropdown-menu-end shadow-sm">
@@ -643,7 +655,7 @@
                                             
                                             <!-- Loading State -->
                                             <tr x-show="isLoading" style="display: none;">
-                                                <td colspan="12" class="text-center py-5">
+                                                <td colspan="9" class="text-center py-5">
                                                     <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
                                                     <span class="text-muted">Loading users...</span>
                                                 </td>
@@ -651,7 +663,7 @@
                                             
                                             <!-- Empty State -->
                                             <tr x-show="!isLoading && paginatedUsers.length === 0" style="display: none;">
-                                                <td colspan="12" class="text-center py-5 text-muted">
+                                                <td colspan="9" class="text-center py-5 text-muted">
                                                     <i class="bi bi-people fs-1 d-block mb-2"></i>
                                                     <p class="mb-0">No users found matching your criteria.</p>
                                                 </td>
@@ -1121,12 +1133,8 @@
                                     <div class="row g-3">
                                         <div class="col-md-6">
                                             <label class="form-label fw-medium text-muted small" for="userFormField17">Employee ID</label>
-                                            <div class="input-group input-group-sm">
-                                                <input id="userFormField17" type="text" class="form-control form-control-sm" x-model="form.employee_id" placeholder="e.g. EMP-1234">
-                                                <button class="btn btn-sm btn-outline-secondary bg-body" type="button" @click="generateEmployeeId" title="Auto Generate">
-                                                    <i class="bi bi-magic"></i>
-                                                </button>
-                                            </div>
+                                            <input id="userFormField17" type="text" class="form-control form-control-sm" x-model="form.employee_id" maxlength="100" placeholder="Auto-generated on save" aria-describedby="employeeIdHelp">
+                                            <div id="employeeIdHelp" class="form-text">Optional. Leave blank to assign the next sequential ID on save. An existing ID is kept unless you enter a replacement.</div>
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label fw-medium text-muted small" for="userFormField18">Joining Date</label>

@@ -170,3 +170,36 @@
     .modal-footer > .btn { flex: 1; margin: 0; }
   }
 }
+
+// Keep user details readable without widening the entire page.
+.user-management.user-admin-page {
+  .users-directory-table {
+    th { white-space: nowrap; padding: 1rem 0.75rem; }
+    td { padding: 1rem 0.75rem; vertical-align: middle; }
+    th:nth-child(2) { min-width: 230px; }
+    th:nth-child(3) { min-width: 220px; }
+    th:nth-child(4), th:nth-child(5) { min-width: 150px; }
+    th:nth-child(6) { min-width: 140px; }
+    th:nth-child(7) { min-width: 130px; }
+    th:nth-child(8) { min-width: 240px; }
+    th:last-child { min-width: 110px; }
+    td > .d-flex, td .d-flex > div { min-width: 0; }
+    .bi { flex-shrink: 0; }
+    .badge { white-space: normal; text-align: start; line-height: 1.4; }
+    .user-name { overflow-wrap: anywhere; }
+  }
+  .user-activity-badges { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.25rem; }
+  .user-activity-badge {
+    display: inline-flex; align-items: center; gap: 0.375rem;
+    padding: 0.375rem 0.625rem; border: 1px solid; border-radius: 999px;
+    font-size: 0.75rem; font-weight: 600; line-height: 1.25; white-space: nowrap;
+    .bi { font-size: 0.875rem; line-height: 1; }
+  }
+  .user-presence-dot { width: 0.5rem; height: 0.5rem; flex-shrink: 0; border-radius: 50%; background-color: currentColor; }
+  .users-page-actions .btn { white-space: nowrap; }
+  .user-select-checkbox:focus-visible { outline: 2px solid var(--bs-primary); outline-offset: 3px; }
+  @media (max-width: 575.98px) {
+    .users-page-actions { width: 100%; }
+    .users-page-actions .btn { flex: 1 1 auto; }
+  }
+}

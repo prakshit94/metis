@@ -8,6 +8,7 @@ use App\Http\Requests\Users\StoreUserRequest;
 use App\Http\Requests\Users\UpdateUserRequest;
 use App\Modules\Core\Controllers\Controller;
 use App\Modules\Users\Models\User;
+use App\Services\EmployeeIdService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
@@ -201,7 +202,7 @@ class UserController extends Controller implements HasMiddleware
             abort_unless($request->user()?->can('user-sync-permissions'), 403, 'You do not have permission to sync permissions.');
         }
 
-        $user = User::create([
+        $user = new User([
             'name' => $validated['name'],
             'first_name' => $validated['first_name'] ?? null,
             'middle_name' => $validated['middle_name'] ?? null,
@@ -233,6 +234,8 @@ class UserController extends Controller implements HasMiddleware
             'emergency_contact_name' => $validated['emergency_contact_name'] ?? null,
             'emergency_contact_phone' => $validated['emergency_contact_phone'] ?? null,
         ]);
+
+        app(EmployeeIdService::class)->save($user);
 
         if ($request->hasFile('photo_file')) {
             $file = $request->file('photo_file');
@@ -350,7 +353,16 @@ class UserController extends Controller implements HasMiddleware
         }
 
         if (! empty($fillable)) {
-            $user->update($fillable);
+            // A blank edit keeps an assigned ID; unassigned users receive the next ID.
+            if (array_key_exists('employee_id', $fillable) && trim((string) $fillable['employee_id']) === '') {
+                $fillable['employee_id'] = $user->employee_id;
+            }
+            $user->fill($fillable);
+            if (array_key_exists('employee_id', $fillable)) {
+                app(EmployeeIdService::class)->save($user);
+            } else {
+                $user->save();
+            }
 
             // Revoke all active API tokens and web sessions when deactivating the account
             if (array_key_exists('is_active', $fillable) && ! $fillable['is_active']) {

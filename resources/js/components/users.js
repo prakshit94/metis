@@ -512,7 +512,12 @@ document.addEventListener('alpine:init', () => {
       const middleName = u.middle_name ?? fallbackNameParts.middle_name;
       const lastName = u.last_name ?? fallbackNameParts.last_name;
       const displayName = buildFullName(firstName, middleName, lastName) || u.name;
+      const device = u.last_login_at ? String(u.device_type ?? '').trim().toLowerCase() : '';
+      const loginSource = device === 'mobile' ? 'Mobile' : device === 'web' ? 'Web' : 'Unknown';
       return {
+        employeeIdLabel: String(u.employee_id ?? '').trim() ? 'Emp ID: ' + String(u.employee_id).trim() : 'Sys ID: ' + u.id,
+        loginSource,
+        loginSourceIcon: loginSource === 'Mobile' ? 'bi-phone' : loginSource === 'Web' ? 'bi-laptop' : 'bi-question-circle',
         id: u.id,
         name: displayName,
         first_name: firstName,
@@ -1470,11 +1475,6 @@ document.addEventListener('alpine:init', () => {
       this.editingUserId = null;
       this.saving = false;
       this.isViewMode = false;
-    },
-
-    generateEmployeeId() {
-      const timestamp = Date.now().toString().slice(-6);
-      this.form.employee_id = `EMP-${timestamp}`;
     },
 
     handlePhotoUpload(event) {
