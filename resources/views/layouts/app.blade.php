@@ -219,7 +219,8 @@
             if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
                 try {
                     // Invoke the native API in the click's activation window.
-                    clipboardWrite = navigator.clipboard.writeText(text);
+                    clipboardWrite = Promise.resolve(navigator.clipboard.writeText(text))
+                        .then(function() { return true; }, function() { return false; });
                 } catch (error) {
                     // The synchronous fallback below handles restricted contexts.
                 }
@@ -246,7 +247,12 @@
             textArea.style.border = '0';
             textArea.style.opacity = '0';
             textArea.style.pointerEvents = 'none';
-            document.body.appendChild(textArea);
+            // Bootstrap's focus trap redirects focus away from body children
+            // while a modal is open, preventing selection on HTTP deployments.
+            var copyHost = activeElement && typeof activeElement.closest === 'function'
+                ? activeElement.closest('.modal.show, dialog[open]') : null;
+            copyHost = copyHost || document.querySelector('.modal.show, dialog[open]') || document.body;
+            copyHost.appendChild(textArea);
             var fallbackSucceeded = false;
             try {
                 textArea.focus();
@@ -272,12 +278,12 @@
             if (fallbackSucceeded) return true;
             if (clipboardWrite) {
                 try {
-                    await clipboardWrite;
-                    return true;
+                    if (await clipboardWrite) return true;
                 } catch (error) {
                     // Both clipboard methods failed.
                 }
             }
+            window.alert('Copy failed. Select the text and press Ctrl+C (Windows/Linux) or Command+C (Mac).');
             return false;
         };
     </script>

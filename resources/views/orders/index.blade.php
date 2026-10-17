@@ -1136,7 +1136,7 @@
                             <td>
                                 <div class="d-inline-flex align-items-center gap-1">
                                     <a href="#" class="fw-bold text-decoration-none text-primary text-nowrap" @click.prevent="viewOrder(order)" x-text="order.orderNumber"></a>
-                                    <i class="bi opacity-50 cursor-pointer text-primary-hover" x-data="{ copied: false }" :class="copied ? 'bi-check-lg text-success' : 'bi-copy'" style="font-size: 0.85em;" title="Copy" @click="copyText(order.orderNumber).then((success) => { if (success) { copied = true; setTimeout(() => copied = false, 2000); } })"></i>
+                                    <button type="button" class="btn btn-link p-0 border-0 text-decoration-none" x-data="{ copied: false }" :aria-label="copied ? 'Order number copied' : 'Copy order number ' + order.orderNumber" :title="copied ? 'Copied' : 'Copy order number'" @click.stop="copyText(order.orderNumber).then((success) => { if (success) { copied = true; setTimeout(() => copied = false, 2000); } })"><i class="bi" :class="copied ? 'bi-check-lg text-success' : 'bi-copy opacity-50'" style="font-size: 0.85em;" aria-hidden="true"></i></button>
                                 </div>
                             </td>
                             <td>

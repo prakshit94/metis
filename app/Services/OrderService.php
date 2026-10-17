@@ -12,6 +12,7 @@ use App\Modules\Orders\Models\Offer;
 use App\Modules\Orders\Models\Order;
 use App\Modules\Orders\Models\OrderItem;
 use App\Modules\Orders\Models\Shipment;
+use App\Modules\Users\Models\Team;
 use App\Modules\Users\Models\User;
 use App\Notifications\OrderCreatedNotification;
 use App\Notifications\OrderStatusChangedNotification;
@@ -273,9 +274,13 @@ class OrderService
         $lockName = null;
         $datePart = null;
         $cacheLock = null;
+        $prefix = null;
 
         if ($generateOrderNo) {
             $datePart = now()->format('dmY');
+            $teamId = auth()->user()?->lob_team_id;
+            $lobCode = $teamId === null ? null : Team::find($teamId)?->code;
+            $prefix = (strtoupper(trim((string) $lobCode)) ?: 'ORD').$datePart;
             $databaseKey = substr(hash('sha256', (string) DB::connection()->getDatabaseName()), 0, 12);
             $lockName = 'metis_order_no_'.$databaseKey.'_'.$datePart;
 
@@ -292,7 +297,6 @@ class OrderService
 
         try {
             if ($generateOrderNo) {
-                $prefix = 'ORD-'.$datePart.'-';
                 $existingNumbers = DB::table('orders')
                     ->where('order_no', 'like', $prefix.'%')
                     ->lockForUpdate()
@@ -305,7 +309,7 @@ class OrderService
                 }, 0) + 1;
 
                 do {
-                    $payload['order_no'] = $prefix.str_pad((string) $sequence, 2, '0', STR_PAD_LEFT);
+                    $payload['order_no'] = $prefix.$sequence;
                     $alreadyUsed = DB::table('orders')
                         ->where('order_no', $payload['order_no'])
                         ->lockForUpdate()
