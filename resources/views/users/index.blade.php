@@ -35,79 +35,45 @@
                     <!-- Users Management Container -->
                     <div>
                         
-                        <!-- User Stats Widgets -->
-                        <div class="row g-4 g-lg-5 g-xl-6 mb-5 mb-lg-5 mb-xl-6">
-                            <div class="col-xl-3 col-lg-6">
-                                <div class="card metric-card">
-                                    <div class="card-body p-3 p-lg-4">
-                                        <div class="d-flex align-items-center justify-content-between">
-                                            <div>
-                                                <h6 class="text-muted mb-1">Total Users</h6>
-                                                <div class="h3 mb-0" aria-live="polite"><span x-text="stats.total"></span></div>
-                                                <small class="trend-up text-success-emphasis">
-                                                    <i class="bi bi-arrow-up"></i> Matching current filters
-                                                </small>
-                                            </div>
-                                            <div class="stats-icon bg-primary bg-opacity-10 text-primary">
-                                                <i class="bi bi-people-fill"></i>
-                                            </div>
-                                        </div>
+                        <!-- Counts cover all permitted users, independently of pagination. -->
+                        <section class="users-summary mb-4" aria-labelledby="usersSummaryHeading" :aria-busy="isLoading">
+                            <div class="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-3">
+                                <div>
+                                    <h2 id="usersSummaryHeading" class="h5 mb-1">User overview</h2>
+                                    <p class="small text-body-secondary mb-1">All statuses across your permitted LOB scope, matching the search, role and LOB filters.</p>
+                                    <div class="d-flex flex-wrap align-items-center gap-2 small">
+                                        <span class="badge bg-primary-subtle text-primary-emphasis border border-primary-subtle">
+                                            <i class="bi bi-diagram-2-fill me-1" aria-hidden="true"></i>
+                                            <span x-text="teamFilter ? ($refs.lobFilter.selectedOptions[0]?.textContent || 'Selected LOB') : @js(auth()->user()->lob_team_id ? 'Your LOB' : 'All permitted LOBs')"></span>
+                                        </span>
+                                        <span class="text-body-secondary" x-show="summaryUpdatedAt" x-text="'Updated ' + summaryUpdatedAt"></span>
                                     </div>
                                 </div>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" @click="loadUsers()" :disabled="isLoading">
+                                    <i class="bi bi-arrow-clockwise me-1" aria-hidden="true"></i><span x-text="isLoading ? 'Refreshing…' : 'Refresh'"></span>
+                                </button>
                             </div>
-                            <div class="col-xl-3 col-lg-6">
-                                <div class="card metric-card">
-                                    <div class="card-body p-3 p-lg-4">
-                                        <div class="d-flex align-items-center justify-content-between">
-                                            <div>
-                                                <h6 class="text-muted mb-1">Active Users</h6>
-                                                <div class="h3 mb-0" aria-live="polite"><span x-text="stats.active"></span></div>
-                                                <small class="trend-up text-success-emphasis">
-                                                    <i class="bi bi-arrow-up"></i> On this page
-                                                </small>
+                            <div class="users-summary-grid" aria-live="polite">
+                                <template x-for="metric in summaryCards" :key="metric.key">
+                                    <article class="card users-summary-card h-100">
+                                        <div class="card-body">
+                                            <div class="d-flex align-items-start justify-content-between gap-2">
+                                                <div class="min-w-0">
+                                                    <h3 class="small fw-semibold text-body-secondary mb-2" x-text="metric.label"></h3>
+                                                    <div class="h3 mb-0" :class="'text-' + metric.color + '-emphasis'" x-text="isLoading || (!summary && !summaryUnavailable) ? '…' : formatSummaryCount(metric.key)"></div>
+                                                </div>
+                                                <span class="users-summary-icon" :class="'bg-' + metric.color + '-subtle text-' + metric.color + '-emphasis'">
+                                                    <i class="bi" :class="metric.icon" aria-hidden="true"></i>
+                                                </span>
                                             </div>
-                                            <div class="stats-icon bg-success bg-opacity-10 text-success">
-                                                <i class="bi bi-person-check-fill"></i>
-                                            </div>
+                                            <p class="small text-body-secondary mb-0 mt-2" x-text="metric.detail"></p>
                                         </div>
-                                    </div>
-                                </div>
+                                    </article>
+                                </template>
                             </div>
-                            <div class="col-xl-3 col-lg-6">
-                                <div class="card metric-card">
-                                    <div class="card-body p-3 p-lg-4">
-                                        <div class="d-flex align-items-center justify-content-between">
-                                            <div>
-                                                <h6 class="text-muted mb-1">New This Month</h6>
-                                                <div class="h3 mb-0" aria-live="polite"><span x-text="stats.newThisMonth"></span></div>
-                                                <small class="trend-up text-success-emphasis">
-                                                    <i class="bi bi-arrow-up"></i> On this page
-                                                </small>
-                                            </div>
-                                            <div class="stats-icon bg-info bg-opacity-10 text-info">
-                                                <i class="bi bi-person-plus-fill"></i>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-xl-3 col-lg-6">
-                                <div class="card metric-card">
-                                    <div class="card-body p-3 p-lg-4">
-                                        <div class="d-flex align-items-center justify-content-between">
-                                            <div>
-                                                <h6 class="text-muted mb-1">Active Rate</h6>
-                                                <div class="h3 mb-0" aria-live="polite"><span x-text="`${Math.round(stats.activePercentage)}%`"></span></div>
-                                                <small class="text-muted">
-                                                    <i class="bi bi-clock"></i> On this page
-                                                </small>
-                                            </div>
-                                            <div id="activeUserChart" style="min-height: 40px; width: 50px;"></div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                            <p class="small text-body-secondary mt-2 mb-0">Active + inactive + deleted = total. Online and offline exclude deleted users. Suspended users may also be active or inactive.</p>
+                            <p class="small text-danger mt-2 mb-0" x-show="!isLoading && summaryUnavailable" x-cloak role="status">Overview unavailable. Refresh to try again.</p>
+                        </section>
 
                         <!-- Analytics section removed -->
                         <div style="display:none;">
@@ -321,10 +287,10 @@
                                             
                                             <!-- Status Filter -->
                                                 <select class="form-select form-select-sm shadow-sm border-0 bg-body-tertiary rounded-pill px-3" 
-                                                    aria-label="User status" x-model="statusFilter"
+                                                    aria-label="User status" aria-describedby="usersTableScope" x-model="statusFilter"
                                                     @change="filterUsers()"
                                                     style="width: 150px;">
-                                                <option value="">All Status</option>
+                                                <option value="">Active &amp; inactive</option>
                                                 <option value="active">Active</option>
                                                 <option value="inactive">Inactive</option>
                                                 <option value="deleted">Deleted</option>
@@ -343,7 +309,7 @@
                                             
                                             <!-- LOB Filter -->
                                             <select class="form-select form-select-sm shadow-sm border-0 bg-body-tertiary rounded-pill px-3" 
-                                                    aria-label="User LOB" x-model="teamFilter"
+                                                    aria-label="User LOB" x-ref="lobFilter" x-model="teamFilter"
                                                     @change="filterUsers()"
                                                     style="width: 150px;">
                                                 <option value="">All LOBs</option>
@@ -371,6 +337,10 @@
                                 </div>
                             </div>
                             <div class="card-body p-0">
+                                <div id="usersTableScope" class="px-3 py-2 border-bottom small text-body-secondary d-flex flex-wrap gap-2 justify-content-between" aria-live="polite">
+                                    <span><strong class="text-body" x-text="Number(totalUsers).toLocaleString()"></strong> users match the table filters.</span>
+                                    <span>The status filter applies to this table; the overview compares all statuses.</span>
+                                </div>
                                 <!-- Bulk Actions Bar -->
                                 <div class="bulk-actions-bar p-3 bg-primary bg-opacity-10 border-bottom border-primary border-opacity-25"
                                      x-show="selectedUsers.length > 0">

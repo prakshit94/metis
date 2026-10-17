@@ -9,6 +9,7 @@ use App\Http\Requests\Users\UpdateUserRequest;
 use App\Modules\Core\Controllers\Controller;
 use App\Modules\Users\Models\User;
 use App\Services\EmployeeIdService;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
@@ -83,8 +84,6 @@ class UserController extends Controller implements HasMiddleware
                 '(EXISTS ('.$activeSessions->toSql().') OR EXISTS ('.$activeTokens->toSql().')) as is_online',
                 [...$activeSessions->getBindings(), ...$activeTokens->getBindings()]
             )
-            ->when($deletedFilter === 'with', fn ($q) => $q->withTrashed())
-            ->when($deletedFilter === 'only', fn ($q) => $q->onlyTrashed())
             ->with(['allRoles', 'roles', 'permissions', 'department', 'manager'])
             // LOB restriction: if the requesting user belongs to a team, only
             // show users who are also assigned to that same team.
@@ -129,7 +128,17 @@ class UserController extends Controller implements HasMiddleware
                         $q->whereIn('users.id', $teamUserIds);
                     }
                 }
-            )
+            );
+
+        // Summary shares the directory's search, role and LOB restrictions, but
+        // includes every status. Pagination and the table status do not alter it.
+        $summary = $request->boolean('include_summary')
+            ? $this->directorySummary(clone $users)
+            : null;
+
+        $users = $users
+            ->when($deletedFilter === 'with', fn ($q) => $q->withTrashed())
+            ->when($deletedFilter === 'only', fn ($q) => $q->onlyTrashed())
             ->when(
                 $request->has('is_active'),
                 fn ($q) => $q->where('users.is_active', $request->boolean('is_active')),
@@ -179,7 +188,33 @@ class UserController extends Controller implements HasMiddleware
             return $user;
         });
 
-        return response()->json($users);
+        $response = $users->toArray();
+        if ($summary !== null) {
+            $response['summary'] = $summary;
+        }
+
+        return response()->json($response);
+    }
+
+    /**
+     * Aggregate only the permitted directory scope, using its existing online
+     * detection. No user records, sessions, tokens or permissions are changed.
+     */
+    private function directorySummary(Builder $query): array
+    {
+        $monthStart = now()->startOfMonth();
+        $counts = DB::query()->fromSub($query->withTrashed()->withoutEagerLoads()->toBase(), 'directory_users')
+            ->selectRaw('COUNT(*) as total')
+            ->selectRaw('COALESCE(SUM(CASE WHEN deleted_at IS NULL AND is_active = 1 THEN 1 ELSE 0 END), 0) as active')
+            ->selectRaw('COALESCE(SUM(CASE WHEN deleted_at IS NULL AND is_active = 0 THEN 1 ELSE 0 END), 0) as inactive')
+            ->selectRaw('COALESCE(SUM(CASE WHEN deleted_at IS NOT NULL THEN 1 ELSE 0 END), 0) as deleted')
+            ->selectRaw('COALESCE(SUM(CASE WHEN deleted_at IS NULL AND is_online = 1 THEN 1 ELSE 0 END), 0) as online')
+            ->selectRaw('COALESCE(SUM(CASE WHEN deleted_at IS NULL AND is_online = 0 THEN 1 ELSE 0 END), 0) as offline')
+            ->selectRaw('COALESCE(SUM(CASE WHEN deleted_at IS NULL AND suspended_until > ? THEN 1 ELSE 0 END), 0) as suspended', [now()])
+            ->selectRaw('COALESCE(SUM(CASE WHEN deleted_at IS NULL AND created_at >= ? AND created_at < ? THEN 1 ELSE 0 END), 0) as newThisMonth', [$monthStart, $monthStart->copy()->addMonth()])
+            ->first();
+
+        return array_map('intval', (array) $counts);
     }
 
     /**

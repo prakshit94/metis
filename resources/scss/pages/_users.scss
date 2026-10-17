@@ -203,3 +203,15 @@
     .users-page-actions .btn { flex: 1 1 auto; }
   }
 }
+
+.user-management.user-admin-page {
+  .users-summary-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; }
+  .users-summary-card {
+    min-width: 0;
+    .card-body { padding: 1rem; }
+    .h3 { font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+  }
+  .users-summary-icon { display: inline-flex; align-items: center; justify-content: center; width: 2.5rem; height: 2.5rem; border-radius: 0.75rem; flex-shrink: 0; font-size: 1.125rem; }
+  @media (max-width: 1199.98px) { .users-summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 575.98px) { .users-summary-grid { grid-template-columns: minmax(0, 1fr); } }
+}

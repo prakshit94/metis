@@ -376,6 +376,9 @@ document.addEventListener('alpine:init', () => {
     currentPage: 1,
     totalPages: 1,
     totalUsers: 0,
+    summary: null,
+    summaryUnavailable: false,
+    summaryUpdatedAt: '',
     itemsPerPage: 10,
 
     // Chart instances
@@ -462,6 +465,7 @@ document.addEventListener('alpine:init', () => {
           per_page: this.itemsPerPage,
           sort_by: this.sortField,
           sort_dir: this.sortDirection,
+          include_summary: '1',
         });
         if (this.searchQuery) params.set('search', this.searchQuery);
         if (this.statusFilter === 'active') params.set('is_active', '1');
@@ -476,6 +480,9 @@ document.addEventListener('alpine:init', () => {
 
         // Map API response to the shape the template expects
         this.users = (data.data ?? []).map((u) => this._mapUser(u));
+        this.summary = data.summary ?? null;
+        this.summaryUnavailable = !this.summary;
+        this.summaryUpdatedAt = this.summary ? new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
         this.totalUsers = data.total ?? this.users.length;
         this.totalPages = data.last_page ?? 1;
         this.currentPage = data.current_page ?? 1;
@@ -487,6 +494,9 @@ document.addEventListener('alpine:init', () => {
         });
       } catch (err) {
         if (requestId !== this._usersRequestId) return;
+        this.summary = null;
+        this.summaryUnavailable = true;
+        this.summaryUpdatedAt = '';
         const msg = err.message.toLowerCase();
         if (
           msg.includes('right permissions') ||
@@ -1067,24 +1077,32 @@ document.addEventListener('alpine:init', () => {
       }
     },
 
-    // ── Computed stats (derived from current page + totals) ───────────────────
+    // Summary values come from the complete server-side directory scope.
     get stats() {
-      const active = this.users.filter((u) => u.status === 'active').length;
-      const inactive = this.users.filter((u) => u.status === 'inactive').length;
-      const now = new Date();
-      const newThisMonth = this.users.filter((u) => {
-        const d = new Date(u.joinDate);
-        return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-      }).length;
-
+      if (!this.summary) return {};
+      const liveUsers = this.summary.active + this.summary.inactive;
       return {
-        total: this.totalUsers,
-        active,
-        inactive,
-        newThisMonth,
-        activePercentage:
-          this.users.length > 0 ? Math.round((active / this.users.length) * 100) : 0,
+        ...this.summary,
+        activePercentage: liveUsers > 0 ? Math.round((this.summary.active / liveUsers) * 100) : 0,
       };
+    },
+
+    get summaryCards() {
+      return [
+        { key: 'total', label: 'Total users', icon: 'bi-people-fill', color: 'primary', detail: 'Includes deleted users' },
+        { key: 'active', label: 'Active users', icon: 'bi-person-check-fill', color: 'success', detail: 'Enabled accounts · excludes deleted' },
+        { key: 'inactive', label: 'Inactive users', icon: 'bi-person-dash-fill', color: 'secondary', detail: 'Disabled accounts · excludes deleted' },
+        { key: 'deleted', label: 'Deleted users', icon: 'bi-trash3', color: 'danger', detail: 'Soft-deleted accounts' },
+        { key: 'online', label: 'Online users', icon: 'bi-wifi', color: 'success', detail: 'Session or token activity within 15 min' },
+        { key: 'offline', label: 'Offline users', icon: 'bi-wifi-off', color: 'secondary', detail: 'No recent session or token activity' },
+        { key: 'suspended', label: 'Suspended users', icon: 'bi-lock-fill', color: 'warning', detail: 'Temporary suspension · excludes deleted' },
+        { key: 'newThisMonth', label: 'New this month', icon: 'bi-person-plus-fill', color: 'info', detail: 'Created this month · excludes deleted' },
+      ];
+    },
+
+    formatSummaryCount(key) {
+      const value = this.stats[key];
+      return value == null ? '—' : Number(value).toLocaleString();
     },
 
     get departmentStats() {
@@ -1142,7 +1160,6 @@ document.addEventListener('alpine:init', () => {
 
     // ── Charts ────────────────────────────────────────────────────────────────
     initCharts() {
-      this._initSparkline();
       this._initGrowthChart();
       this._initRoleChart();
     },
@@ -1157,19 +1174,6 @@ document.addEventListener('alpine:init', () => {
         document.querySelector('#userGrowthChart')?.removeAttribute('data-chart-initialized');
         this._initGrowthChart();
       });
-    },
-
-    _initSparkline() {
-      const el = document.querySelector('#activeUserChart');
-      if (!el || el.hasAttribute('data-chart-initialized')) return;
-      el.setAttribute('data-chart-initialized', 'true');
-      this.charts.activeUsers = new ApexCharts(el, {
-        series: [{ name: 'Active', data: [65, 70, 80, 85, 90, 95, 88] }],
-        chart: { type: 'line', height: 50, sparkline: { enabled: true } },
-        stroke: { curve: 'smooth', width: 2 },
-        colors: ['#10b981'],
-      });
-      this.charts.activeUsers.render();
     },
 
     _initGrowthChart() {
