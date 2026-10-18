@@ -81,3 +81,23 @@ assert.equal(ui.creatorPhotoUrl('storage/users/photos/user.jpg'), '/storage/user
 assert.equal(ui.creatorPhotoUrl('http://127.0.0.1:8000/storage/users/photos/user.jpg'), '/storage/users/photos/user.jpg');
 assert.equal(ui.creatorPhotoUrl('https://images.example.com/user.jpg'), 'https://images.example.com/user.jpg');
 console.log('PASS: creator avatars normalize upload paths and local URLs while preserving external images.');
+
+context.window.location.search = '?payment_status=paid,partially_paid,no_invoice,invalid&warehouse=2';
+const paymentUi = factory();
+paymentUi.$nextTick = callback => callback();
+paymentUi.$watch = () => {};
+paymentUi.loadOrders = () => {};
+paymentUi.init();
+assert.equal(paymentUi.paymentStatusFilter.join(','), 'paid,partially_paid,no_invoice');
+assert.equal(paymentUi.paymentStatusInfo('partially_paid').label, 'Partially Paid');
+assert.equal(paymentUi.paymentStatusInfo('no_invoice').label, 'No Invoice');
+assert.equal(paymentUi.paymentStatusInfo('cancelled').label, 'Invoice Cancelled');
+assert.equal(paymentUi.paymentStatusInfo('unknown').label, 'Unknown');
+assert.equal(paymentUi.hasActiveAdvancedFilters(), true, 'Payment selection highlights the Filters button');
+paymentUi.currentPage = 4;
+paymentUi.filterOrders();
+assert.equal(paymentUi.currentPage, 1);
+paymentUi.clearFilters();
+assert.equal(paymentUi.paymentStatusFilter.length, 0);
+paymentUi.destroy();
+console.log('PASS: payment filter URL restoration, allowed values, labels, pagination reset and clearing.');

@@ -100,6 +100,28 @@ class OrderController extends Controller implements HasMiddleware
         $user = auth()->user();
         $this->applyOrderActionPermissionScope($query, $user);
 
+        // Read-only payment filtering uses the same stored invoice status as Invoices.
+        if ($request->filled('payment_status')) {
+            $request->validate(['payment_status' => 'string']);
+            $paymentStatuses = array_values(array_intersect(
+                array_map('trim', explode(',', $request->input('payment_status'))),
+                ['paid', 'unpaid', 'partially_paid', 'cancelled', 'no_invoice']
+            ));
+            $query->where(function ($paymentQuery) use ($paymentStatuses) {
+                $invoiceStatuses = array_values(array_diff($paymentStatuses, ['no_invoice']));
+                if ($invoiceStatuses) {
+                    $paymentQuery->whereHas('invoice', fn ($invoice) => $invoice->whereIn('status', $invoiceStatuses));
+                }
+                if (in_array('no_invoice', $paymentStatuses, true)) {
+                    $method = $invoiceStatuses ? 'orWhereDoesntHave' : 'whereDoesntHave';
+                    $paymentQuery->$method('invoice');
+                }
+                if (! $paymentStatuses) {
+                    $paymentQuery->whereRaw('1 = 0');
+                }
+            });
+        }
+
         if ($request->filled('search')) {
             $s = trim($request->search);
             $query->where(function ($subQuery) use ($s) {

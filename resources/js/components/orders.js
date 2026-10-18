@@ -126,6 +126,14 @@ document.addEventListener('alpine:init', () => {
     // Filters state
     searchQuery: '',
     statusFilter: [],
+    paymentStatusFilter: [],
+    paymentStatusOptions: [
+      { value: 'paid', label: 'Paid', theme: 'success' },
+      { value: 'unpaid', label: 'Unpaid', theme: 'warning' },
+      { value: 'partially_paid', label: 'Partially Paid', theme: 'info' },
+      { value: 'cancelled', label: 'Invoice Cancelled', theme: 'danger' },
+      { value: 'no_invoice', label: 'No Invoice', theme: 'secondary' },
+    ],
     dateFilter: '',
     productFilter: [],
     fulfillmentFilter: '',
@@ -418,6 +426,9 @@ document.addEventListener('alpine:init', () => {
     initializeOrders() {
       const params = new URLSearchParams(window.location.search);
 
+      this.paymentStatusFilter = (params.get('payment_status') || '').split(',')
+        .filter((status) => this.paymentStatusOptions.some((option) => option.value === status));
+
       if (params.has('search')) this.searchQuery = params.get('search');
       if (params.has('status')) {
         const requestedStatuses = params.get('status').split(',').filter(Boolean);
@@ -596,6 +607,7 @@ document.addEventListener('alpine:init', () => {
       this.isLoading = true;
       const params = new URLSearchParams();
 
+      if (this.paymentStatusFilter.length) params.append('payment_status', this.paymentStatusFilter.join(','));
       if (this.searchQuery) params.append('search', this.searchQuery);
       params.append(
         'status',
@@ -1046,6 +1058,7 @@ document.addEventListener('alpine:init', () => {
         orderNumber: o.order_no,
         type: o.type || 'sale',
         orderDate: o.order_date,
+        paymentStatus: invoice ? invoice.status : 'no_invoice',
         rawStatus: o.status,
         status: o.lifecycle_status || o.status,
         scheduledConfirmDate: o.scheduled_confirmation_date,
@@ -1258,6 +1271,11 @@ document.addEventListener('alpine:init', () => {
       return Number.isNaN(date.getTime()) ? 'N/A' : date.toLocaleDateString();
     },
 
+    paymentStatusInfo(status) {
+      return this.paymentStatusOptions.find((option) => option.value === status)
+        || { label: 'Unknown', theme: 'secondary' };
+    },
+
     getStatusTheme(status) {
       const themes = {
         future_order: 'secondary',
@@ -1312,6 +1330,7 @@ document.addEventListener('alpine:init', () => {
 
     clearFilters() {
       this.searchQuery = '';
+      this.paymentStatusFilter = [];
       this.statusFilter = this.defaultStatusFilters();
       this.dateFilter = '30d';
       this.productFilter = [];
@@ -1364,6 +1383,7 @@ document.addEventListener('alpine:init', () => {
 
     hasActiveAdvancedFilters() {
       return Boolean(
+        this.paymentStatusFilter.length > 0 ||
         (this.productFilter && this.productFilter.length > 0) ||
         this.fulfillmentFilter ||
         (this.carrierFilter && this.carrierFilter.length > 0) ||

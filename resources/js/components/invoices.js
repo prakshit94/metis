@@ -82,6 +82,12 @@ document.addEventListener('alpine:init', () => {
 
     searchQuery: '',
     statusFilter: '',
+    orderStatusFilter: [],
+    orderStatuses: [
+      'future_order', 'pending', 'unfulfillable', 'pending_confirmation', 'confirmed',
+      'processing', 'ready_to_ship', 'dispatched', 'delivery_attempted', 'delivered',
+      'return_requested', 'returned', 'cancelled',
+    ],
     sortField: 'id',
     sortDirection: 'desc',
 
@@ -108,7 +114,16 @@ document.addEventListener('alpine:init', () => {
     importErrors: [],
     isImporting: false,
 
+    initialized: false,
+
     init() {
+      if (this.initialized) return;
+      this.initialized = true;
+      const params = new URLSearchParams(window.location.search);
+      this.searchQuery = params.get('search') || '';
+      this.statusFilter = params.get('status') || '';
+      this.orderStatusFilter = (params.get('order_status') || '').split(',')
+        .filter((status) => this.orderStatuses.includes(status));
       this.loadInvoices();
     },
 
@@ -118,6 +133,9 @@ document.addEventListener('alpine:init', () => {
 
       if (this.searchQuery) params.append('search', this.searchQuery);
       if (this.statusFilter) params.append('status', this.statusFilter);
+      if (this.orderStatusFilter.length) {
+        params.append('order_status', this.orderStatusFilter.join(','));
+      }
 
       params.append('limit', this.itemsPerPage);
       params.append('page', this.currentPage);
@@ -139,6 +157,30 @@ document.addEventListener('alpine:init', () => {
         .finally(() => {
           this.isLoading = false;
         });
+    },
+
+    orderStatusLabel(status) {
+      if (!status) return 'N/A';
+      return status.replace(/_/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
+    },
+
+    getStatusTheme(status) {
+      const themes = {
+        future_order: 'secondary',
+        pending: 'secondary',
+        unfulfillable: 'danger',
+        pending_confirmation: 'warning',
+        confirmed: 'info',
+        processing: 'primary',
+        ready_to_ship: 'dark',
+        dispatched: 'info',
+        delivery_attempted: 'danger',
+        delivered: 'success',
+        cancelled: 'danger',
+        return_requested: 'warning',
+        returned: 'danger',
+      };
+      return themes[status] || 'secondary';
     },
 
     filterInvoices() {

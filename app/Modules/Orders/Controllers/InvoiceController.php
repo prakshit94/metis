@@ -26,7 +26,17 @@ class InvoiceController extends Controller implements HasMiddleware
 
     public function index(Request $request)
     {
-        $query = Invoice::with(['order.party', 'order.orderReturns', 'order.shipments', 'payments.recorder'])
+        $query = Invoice::with(['order' => fn ($query) => $query->withExists([
+            'items as is_unfulfillable' => function ($items) {
+                $items->leftJoin('stocks', function ($join) {
+                    $join->on('order_items.product_id', '=', 'stocks.product_id')
+                        ->whereColumn('stocks.warehouse_id', 'orders.warehouse_id');
+                })->where(function ($stock) {
+                    $stock->whereNull('stocks.id')
+                        ->orWhereRaw('order_items.quantity > (stocks.quantity - stocks.reserved_qty)');
+                });
+            },
+        ]), 'order.party', 'order.orderReturns', 'order.shipments', 'payments.recorder'])
             ->withSum(['refunds as refunded_amount_total' => fn ($query) => $query->where('status', 'completed')], 'amount');
 
         if ($request->filled('search')) {
@@ -43,6 +53,136 @@ class InvoiceController extends Controller implements HasMiddleware
                                 ->orWhere('lastname', 'LIKE', "%{$s}%");
                         });
                     });
+            });
+        }
+
+        // Match the Orders index status filters without changing order or invoice state.
+        if ($request->filled('order_status')) {
+            $requestedStatuses = array_filter(array_map('trim', explode(',', $request->string('order_status')->toString())));
+            $hasFutureOrder = in_array('future_order', $requestedStatuses, true);
+            $hasPending = in_array('pending', $requestedStatuses, true);
+            $hasUnfulfillable = in_array('unfulfillable', $requestedStatuses, true);
+            $hasDeliveryAttempted = in_array('delivery_attempted', $requestedStatuses, true);
+            $hasDispatched = in_array('dispatched', $requestedStatuses, true);
+            $hasReturnRequested = in_array('return_requested', $requestedStatuses, true);
+            $hasReturned = in_array('returned', $requestedStatuses, true);
+
+            $realStatuses = array_values(array_filter($requestedStatuses, fn ($s) => ! in_array($s, ['future_order', 'pending', 'unfulfillable', 'delivery_attempted', 'dispatched', 'return_requested', 'returned'])));
+
+            $query->whereHas('order', function ($q) use ($hasFutureOrder, $hasPending, $hasUnfulfillable, $realStatuses, $hasDispatched, $hasDeliveryAttempted, $hasReturnRequested, $hasReturned) {
+                $first = true;
+
+                if ($hasFutureOrder) {
+                    $q->where('status', 'future_order');
+                    $first = false;
+                }
+
+                if ($hasPending) {
+                    $method = $first ? 'where' : 'orWhere';
+                    $q->$method(function ($sq) {
+                        $sq->where('status', 'pending')
+                           ->whereDoesntHave('items', function ($itemQuery) {
+                               $itemQuery->leftJoin('stocks', function ($join) {
+                                   $join->on('order_items.product_id', '=', 'stocks.product_id')
+                                        ->whereColumn('stocks.warehouse_id', 'orders.warehouse_id');
+                               })->where(function ($sub) {
+                                   $sub->whereNull('stocks.id')
+                                       ->orWhereRaw('order_items.quantity > (stocks.quantity - stocks.reserved_qty)');
+                               });
+                           });
+                    });
+                    $first = false;
+                }
+
+                if ($hasUnfulfillable) {
+                    $method = $first ? 'where' : 'orWhere';
+                    $q->$method(function ($sq) {
+                        $sq->where('status', 'pending')
+                           ->whereHas('items', function ($itemQuery) {
+                               $itemQuery->leftJoin('stocks', function ($join) {
+                                   $join->on('order_items.product_id', '=', 'stocks.product_id')
+                                        ->whereColumn('stocks.warehouse_id', 'orders.warehouse_id');
+                               })->where(function ($sub) {
+                                   $sub->whereNull('stocks.id')
+                                       ->orWhereRaw('order_items.quantity > (stocks.quantity - stocks.reserved_qty)');
+                               });
+                           });
+                    });
+                    $first = false;
+                }
+
+                if ($hasDispatched) {
+                    $method = $first ? 'where' : 'orWhere';
+                    $q->$method(function ($sq) {
+                        $sq->whereIn('status', ['dispatched'])
+                           ->whereDoesntHave('shipments', function ($ssq) {
+                               $ssq->where('delivery_attempts', '>', 0);
+                           });
+                    });
+                    $first = false;
+                }
+
+                if ($hasDeliveryAttempted) {
+                    $method = $first ? 'where' : 'orWhere';
+                    $q->$method(function ($sq) {
+                        $sq->whereIn('status', ['dispatched'])
+                           ->whereHas('shipments', function ($ssq) {
+                               $ssq->where('delivery_attempts', '>', 0);
+                           });
+                    });
+                    $first = false;
+                }
+
+                if ($hasReturnRequested) {
+                    $method = $first ? 'where' : 'orWhere';
+                    $q->$method(function ($sq) {
+                        $sq->whereHas('orderReturns', function ($returnQuery) {
+                            $returnQuery->whereNotIn('status', ['completed', 'rejected'])
+                                ->whereNotExists(function ($newerReturn) {
+                                    $newerReturn->select(DB::raw(1))
+                                        ->from('order_returns as newer_order_returns')
+                                        ->whereColumn('newer_order_returns.order_id', 'order_returns.order_id')
+                                        ->whereColumn('newer_order_returns.id', '>', 'order_returns.id');
+                                });
+                        });
+                    });
+                    $first = false;
+                }
+
+                if ($hasReturned) {
+                    $method = $first ? 'where' : 'orWhere';
+                    $q->$method(function ($sq) {
+                        $sq->whereHas('orderReturns', function ($returnQuery) {
+                            $returnQuery->where('status', 'completed')
+                                ->whereNotExists(function ($newerReturn) {
+                                    $newerReturn->select(DB::raw(1))
+                                        ->from('order_returns as newer_order_returns')
+                                        ->whereColumn('newer_order_returns.order_id', 'order_returns.order_id')
+                                        ->whereColumn('newer_order_returns.id', '>', 'order_returns.id');
+                                });
+                        })->orWhere(function ($legacyReturned) {
+                            $legacyReturned->where('orders.status', 'returned')
+                                ->where(function ($noActiveReturn) {
+                                    $noActiveReturn->whereDoesntHave('orderReturns')
+                                        ->orWhereHas('orderReturns', function ($returnQuery) {
+                                            $returnQuery->where('status', 'rejected')
+                                                ->whereNotExists(function ($newerReturn) {
+                                                    $newerReturn->select(DB::raw(1))
+                                                        ->from('order_returns as newer_order_returns')
+                                                        ->whereColumn('newer_order_returns.order_id', 'order_returns.order_id')
+                                                        ->whereColumn('newer_order_returns.id', '>', 'order_returns.id');
+                                                });
+                                        });
+                                });
+                        });
+                    });
+                    $first = false;
+                }
+
+                if (! empty($realStatuses)) {
+                    $method = $first ? 'whereIn' : 'orWhereIn';
+                    $q->$method('status', $realStatuses);
+                }
             });
         }
 
@@ -69,7 +209,7 @@ class InvoiceController extends Controller implements HasMiddleware
         // Preload lifecycle data without adding relationships to the API payload.
         $invoices->getCollection()->each(function ($invoice) {
             $invoice->makeHidden('refunded_amount_total');
-            $invoice->order?->makeHidden(['orderReturns', 'shipments']);
+            $invoice->order?->makeHidden(['orderReturns', 'shipments', 'is_unfulfillable']);
         });
 
         if ($request->wantsJson() || $request->ajax()) {

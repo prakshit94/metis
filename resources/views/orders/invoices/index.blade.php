@@ -101,13 +101,27 @@
                             <input type="search" class="form-control form-control-sm" placeholder="Search Invoice #..." x-model="searchQuery" @input.debounce.300ms="filterInvoices()" style="width: 200px;">
                             <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-2 text-muted"></i>
                         </div>
-                        <select class="form-select form-select-sm" x-model="statusFilter" @change="filterInvoices()" style="width: 150px;">
-                            <option value="">All Statuses</option>
+                        <select class="form-select form-select-sm" x-model="statusFilter" @change="filterInvoices()" aria-label="Invoice status" style="width: 150px;">
+                            <option value="">All Invoice Statuses</option>
                             <option value="paid">Paid</option>
                             <option value="partially_paid">Partially Paid</option>
                             <option value="unpaid">Unpaid</option>
                             <option value="cancelled">Cancelled</option>
                         </select>
+                        <div class="dropdown">
+                            <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+                                Order Status <span class="badge text-bg-primary ms-1" x-show="orderStatusFilter.length" x-text="orderStatusFilter.length"></span>
+                            </button>
+                            <div class="dropdown-menu dropdown-menu-end p-2" style="min-width: 220px; max-height: 340px; overflow-y: auto;">
+                                <button type="button" class="dropdown-item rounded mb-1" @click="orderStatusFilter = []; filterInvoices()">All Order Statuses</button>
+                                <template x-for="status in orderStatuses" :key="status">
+                                    <label class="dropdown-item d-flex align-items-center gap-2 rounded">
+                                        <input type="checkbox" class="form-check-input mt-0" :value="status" x-model="orderStatusFilter" @change="filterInvoices()">
+                                        <span x-text="orderStatusLabel(status)"></span>
+                                    </label>
+                                </template>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -151,13 +165,14 @@
                                 <i class="bi bi-arrow-down" x-show="sortField === 'invoice_no' && sortDirection === 'desc'"></i>
                             </th>
                             <th scope="col"><i class="bi bi-hash me-1 text-secondary"></i>Order #</th>
+                            <th scope="col"><i class="bi bi-truck me-1 text-secondary"></i>Order Status</th>
                             <th scope="col"><i class="bi bi-person me-1 text-secondary"></i>Recipient</th>
                             <th scope="col" role="button" @click="sortBy('net_amount')" class="sortable">
                                 <i class="bi bi-currency-rupee me-1 text-secondary"></i>Amount
                                 <i class="bi bi-arrow-up" x-show="sortField === 'net_amount' && sortDirection === 'asc'"></i>
                                 <i class="bi bi-arrow-down" x-show="sortField === 'net_amount' && sortDirection === 'desc'"></i>
                             </th>
-                            <th scope="col"><i class="bi bi-info-circle me-1 text-secondary"></i>Status</th>
+                            <th scope="col"><i class="bi bi-info-circle me-1 text-secondary"></i>Invoice Status</th>
                             <th scope="col" role="button" @click="sortBy('due_date')" class="sortable">
                                 <i class="bi bi-calendar-event me-1 text-secondary"></i>Due Date
                                 <i class="bi bi-arrow-up" x-show="sortField === 'due_date' && sortDirection === 'asc'"></i>
@@ -182,6 +197,11 @@
                                     <template x-if="!invoice.order">
                                         <span class="text-body-secondary font-monospace">N/A</span>
                                     </template>
+                                </td>
+                                <td>
+                                    <span class="badge text-nowrap"
+                                          :class="`bg-${getStatusTheme(invoice.order?.lifecycle_status)}-subtle text-${getStatusTheme(invoice.order?.lifecycle_status)}-emphasis border border-${getStatusTheme(invoice.order?.lifecycle_status)}-subtle`"
+                                          x-text="invoice.order?.status_label || orderStatusLabel(invoice.order?.status)"></span>
                                 </td>
                                 <td>
                                     <div class="small fw-medium text-body-emphasis" x-text="invoice.order && invoice.order.party ? (invoice.order.party.firstname + ' ' + invoice.order.party.lastname) : 'N/A'"></div>
@@ -233,7 +253,7 @@
                         </template>
                         <template x-if="invoices.length === 0">
                             <tr>
-                                <td colspan="8" class="text-center py-5 text-muted">
+                                <td colspan="9" class="text-center py-5 text-muted">
                                     <i class="bi bi-inbox fs-1 d-block mb-2"></i>
                                     No invoices found matching current criteria.
                                 </td>

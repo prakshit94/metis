@@ -702,6 +702,23 @@
                 </div>
                 @endcan
                 
+                <!-- Payment Status Filter -->
+                <div class="col-md-3 dropdown">
+                    <label for="ordersPaymentStatus" class="form-label small fw-semibold text-body-secondary">Payment Status</label>
+                    <button id="ordersPaymentStatus" type="button" class="form-select form-select-sm text-start" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+                        <span x-text="paymentStatusFilter.length ? 'Payment Status (' + paymentStatusFilter.length + ')' : 'All Payment Statuses'"></span>
+                    </button>
+                    <div class="dropdown-menu p-2" style="min-width: 220px;">
+                        <button type="button" class="dropdown-item rounded" @click="paymentStatusFilter = []; filterOrders()">All Payment Statuses</button>
+                        <template x-for="option in paymentStatusOptions" :key="option.value">
+                            <label class="dropdown-item d-flex align-items-center gap-2 rounded">
+                                <input type="checkbox" class="form-check-input mt-0" :value="option.value" x-model="paymentStatusFilter" @change="filterOrders()">
+                                <span x-text="option.label"></span>
+                            </label>
+                        </template>
+                    </div>
+                </div>
+
                 <!-- Fulfillment Filter -->
                 @can('orders.filter_fulfillment')
                 <div class="col-md-3">
@@ -1107,6 +1124,7 @@
                         </th>
                         <th scope="col">District</th>
                         <th scope="col">Taluka</th>
+                        <th scope="col">Payment Status</th>
                         <th scope="col">Status</th>
                         <th scope="col"
                             role="button"
@@ -1171,6 +1189,11 @@
                             <td class="fw-medium small text-nowrap text-end" x-text="`₹ ${order.total}`"></td>
                             <td class="small" x-text="order.original?.shipping_district || order.original?.shipping_address?.village?.district_name || order.original?.shipping_address?.district || '—'"></td>
                             <td class="small" x-text="order.original?.shipping_taluka || order.original?.shipping_address?.village?.taluka_name || order.original?.shipping_address?.taluka || '—'"></td>
+                            <td>
+                                <span class="badge small text-nowrap"
+                                      :class="`bg-${paymentStatusInfo(order.paymentStatus).theme}-subtle text-${paymentStatusInfo(order.paymentStatus).theme}-emphasis border border-${paymentStatusInfo(order.paymentStatus).theme}-subtle`"
+                                      x-text="paymentStatusInfo(order.paymentStatus).label"></span>
+                            </td>
                             <td>
                                 <span class="badge small" 
                                       :class="`bg-${getStatusTheme(order.status)}-subtle text-${getStatusTheme(order.status)}-emphasis border border-${getStatusTheme(order.status)}-subtle`"
@@ -1337,13 +1360,13 @@
                     </template>
                     <template x-if="orders.length === 0 && !isLoading">
                         <tr>
-                            <td colspan="12" class="text-center py-5 text-muted">
+                            <td colspan="13" class="text-center py-5 text-muted">
                                 <i class="bi bi-inbox fs-1 d-block mb-2"></i>
                                 No orders found matching current criteria.
                             </td>
                         </tr>
                     </template>
-                    <template x-if="orders.length === 0 && isLoading"><tr><td colspan="12" class="text-center text-body-secondary py-5" role="status"><span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>Loading orders…</td></tr></template>
+                    <template x-if="orders.length === 0 && isLoading"><tr><td colspan="13" class="text-center text-body-secondary py-5" role="status"><span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>Loading orders…</td></tr></template>
                 </tbody>
             </table>
         </div>
