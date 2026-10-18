@@ -448,11 +448,11 @@
                                                     </td>
                                                     <td>
                                                         <div class="d-flex align-items-center">
-                                                            <div class="position-relative me-3 flex-shrink-0">
+                                                            <div class="position-relative me-2 flex-shrink-0">
                                                                 <img :src="photoUrl(user)" data-profile-avatar :data-profile-user-id="user.id" :data-profile-photo="user.photo || user.avatar || ''" :data-profile-gender="user.gender || ''" x-on:error="handlePhotoError($event, user)"
                                                                      class="rounded-circle shadow-sm" 
-                                                                     width="42" 
-                                                                     height="42"
+                                                                     width="36"
+                                                                     height="36"
                                                                      :alt="user.name"
                                                                      style="object-fit: cover;">
                                                                 <span class="position-absolute bottom-0 end-0 border border-2 border-body rounded-circle d-flex align-items-center justify-content-center" 
@@ -475,9 +475,10 @@
                                                         </div>
                                                     </td>
                                                     <td>
-                                                        <div class="d-flex flex-column gap-2 align-items-start">
+                                                        <div class="d-flex flex-column gap-1 align-items-start">
                                                             <span class="badge shadow-sm" :class="roleBadgeClass(user.role)" x-text="user.roleLabel"></span>
                                                             <small class="text-muted d-flex align-items-center"><i class="bi bi-diagram-3 me-1"></i> <span x-text="user.department || '—'"></span></small>
+                                                            <small class="text-body-secondary user-manager"><i class="bi bi-person-badge me-1" aria-hidden="true"></i><span class="fw-medium">Manager: </span><span x-text="user.manager || 'Not assigned'"></span></small>
                                                         </div>
                                                     </td>
                                                     <td>
@@ -497,7 +498,7 @@
                                                     </td>
                                                     <td>
                                                         <div class="d-flex flex-column align-items-start gap-1">
-                                                            <span class="badge px-3 py-2"
+                                                            <span class="badge users-status-badge"
                                                                   :class="{
                                                                       'bg-danger-subtle text-danger-emphasis': user.status === 'deleted',
                                                                       'bg-success-subtle text-success-emphasis': user.status === 'active' && !user.is_suspended,

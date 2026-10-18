@@ -1,5 +1,5 @@
 <!-- Change Password Modal -->
-<div class="modal fade" id="changePasswordModal" tabindex="-1" aria-labelledby="changePasswordModalLabel" aria-hidden="true" x-data="changePasswordModal()" aria-hidden="true">
+<div class="modal fade" id="changePasswordModal" tabindex="-1" aria-labelledby="changePasswordModalLabel" aria-hidden="true" x-data="changePasswordModal()">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
             <div class="modal-header bg-body-secondary border-bottom-0 py-3 px-4">
@@ -9,7 +9,7 @@
                 <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             
-            <form @submit.prevent="submitForm" id="changePasswordForm">
+            <form @submit.prevent="submitForm" id="changePasswordForm" :aria-busy="isLoading">
                 <div class="modal-body p-4">
                     <!-- Error Message -->
                     <template x-if="errorMessage">
@@ -21,7 +21,7 @@
                     
                     <!-- Success Message -->
                     <template x-if="successMessage">
-                        <div class="alert alert-success d-flex align-items-center mb-4 border-0 shadow-sm" role="alert">
+                        <div class="alert alert-success d-flex align-items-center mb-4 border-0 shadow-sm" role="status">
                             <i class="bi bi-check-circle fs-5 me-3"></i>
                             <div x-text="successMessage" class="fw-semibold small"></div>
                         </div>
@@ -36,8 +36,8 @@
                                    id="new_password" 
                                    x-model="formData.password" 
                                    :class="{'is-invalid': errors.password}"
-                                   required>
-                            <button type="button" class="btn btn-outline-secondary border-start-0 shadow-none px-3" @click="showPassword = !showPassword">
+                                   :disabled="isLoading || !!successMessage" autocomplete="new-password" required>
+                            <button type="button" class="btn btn-outline-secondary border-start-0 shadow-none px-3" @click="showPassword = !showPassword" :disabled="isLoading" :aria-label="showPassword ? 'Hide password' : 'Show password'">
                                 <i :class="showPassword ? 'bi bi-eye-slash' : 'bi bi-eye'"></i>
                             </button>
                         </div>
@@ -56,18 +56,21 @@
                                    id="password_confirmation" 
                                    x-model="formData.password_confirmation" 
                                    :class="{'is-invalid': errors.password_confirmation}"
-                                   required>
-                            <button type="button" class="btn btn-outline-secondary border-start-0 shadow-none px-3" @click="showPasswordConfirmation = !showPasswordConfirmation">
+                                   :disabled="isLoading || !!successMessage" autocomplete="new-password" required>
+                            <button type="button" class="btn btn-outline-secondary border-start-0 shadow-none px-3" @click="showPasswordConfirmation = !showPasswordConfirmation" :disabled="isLoading" :aria-label="showPasswordConfirmation ? 'Hide confirmation password' : 'Show confirmation password'">
                                 <i :class="showPasswordConfirmation ? 'bi bi-eye-slash' : 'bi bi-eye'"></i>
                             </button>
                         </div>
+                        <template x-if="errors.password_confirmation">
+                            <div class="text-danger small mt-1 fw-medium" x-text="errors.password_confirmation[0]"></div>
+                        </template>
                     </div>
                 </div>
                 
                 <div class="modal-footer bg-body-secondary border-top-0 py-3 px-4 d-flex justify-content-end gap-2">
-                    <button type="button" class="btn btn-outline-secondary border-0 fw-semibold shadow-sm" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary fw-bold shadow-sm d-flex align-items-center gap-2" :disabled="isLoading">
-                        <span x-show="!isLoading">Update Password</span>
+                    <button type="button" class="btn btn-outline-secondary border-0 fw-semibold shadow-sm" data-bs-dismiss="modal" x-text="successMessage ? 'Done' : 'Cancel'">Cancel</button>
+                    <button type="submit" class="btn btn-primary fw-bold shadow-sm d-flex align-items-center gap-2" :disabled="isLoading || !!successMessage">
+                        <span x-show="!isLoading" x-text="successMessage ? 'Password Updated' : 'Update Password'">Update Password</span>
                         <span x-show="isLoading" x-cloak>
                             <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
                             Updating...
@@ -94,6 +97,7 @@ document.addEventListener('alpine:init', () => {
             password_confirmation: ''
         },
         errors: {},
+        _requestId: 0,
         
         init() {
             const modalEl = document.getElementById('changePasswordModal');
@@ -112,6 +116,7 @@ document.addEventListener('alpine:init', () => {
         },
         
         resetForm() {
+            this._requestId++;
             this.formData.password = '';
             this.formData.password_confirmation = '';
             this.errors = {};
@@ -123,13 +128,16 @@ document.addEventListener('alpine:init', () => {
         },
         
         async submitForm() {
+            if (this.isLoading || this.successMessage) return;
+            const requestId = ++this._requestId;
+            const userId = this.userId;
             this.isLoading = true;
             this.errorMessage = '';
             this.successMessage = '';
             this.errors = {};
             
             try {
-                const response = await fetch(`/api/users/${this.userId}`, {
+                const response = await fetch(`/api/users/${userId}`, {
                     method: 'PATCH',
                     headers: {
                         'Content-Type': 'application/json',
@@ -141,6 +149,7 @@ document.addEventListener('alpine:init', () => {
                 });
                 
                 const data = await response.json();
+                if (requestId !== this._requestId) return;
                 
                 if (!response.ok) {
                     if (response.status === 422) {
@@ -154,19 +163,17 @@ document.addEventListener('alpine:init', () => {
                 } else {
                     this.successMessage = 'Password updated successfully!';
                     
-                    setTimeout(() => {
-                        const modalEl = document.getElementById('changePasswordModal');
-                        if (modalEl) {
-                            const modal = bootstrap.Modal.getInstance(modalEl);
-                            if (modal) modal.hide();
-                        }
-                    }, 1500);
+                    this.formData.password = '';
+                    this.formData.password_confirmation = '';
+                    this.showPassword = false;
+                    this.showPasswordConfirmation = false;
                 }
             } catch (error) {
+                if (requestId !== this._requestId) return;
                 this.errorMessage = 'A network error occurred. Please try again.';
                 console.error(error);
             } finally {
-                this.isLoading = false;
+                if (requestId === this._requestId) this.isLoading = false;
             }
         }
     }));
