@@ -64,6 +64,60 @@ class OrderController extends Controller implements HasMiddleware
 
     public function index(Request $request)
     {
+        // Validate filters before constructing queries.
+        $filterRules = [];
+        foreach (['search', 'state', 'district', 'taluka', 'village', 'carrier', 'sort_field', 'sort_direction'] as $field) {
+            $filterRules[$field] = ['nullable', 'string'];
+        }
+        foreach (['product', 'warehouse'] as $field) {
+            $filterRules[$field] = ['nullable', 'string', 'regex:/^\s*[1-9][0-9]*\s*(,\s*[1-9][0-9]*\s*)*$/'];
+        }
+        foreach ([
+            'status' => [
+                'future_order', 'pending', 'unfulfillable', 'pending_confirmation', 'confirmed',
+                'processing', 'ready_to_ship', 'dispatched', 'delivery_attempted', 'delivered',
+                'return_requested', 'returned', 'cancelled', '__no_status_selected__',
+            ],
+            'payment_status' => ['paid', 'unpaid', 'partially_paid', 'cancelled', 'no_invoice'],
+        ] as $field => $allowedValues) {
+            $filterRules[$field] = ['bail', 'nullable', 'string', function ($attribute, $value, $fail) use ($allowedValues) {
+                $values = array_map('trim', explode(',', $value));
+                if (array_diff($values, $allowedValues)) {
+                    $fail('The selected '.$attribute.' is invalid.');
+                }
+            }];
+        }
+        $filterRules['fulfillment'] = ['nullable', 'in:fulfillable,unfulfillable'];
+        $filterRules['date'] = ['nullable', 'in:today,yesterday,week,7d,month,30d,this_month,prev_month,last_month,this_year'];
+        $filterRules['page'] = ['nullable', 'integer', 'min:1'];
+        $filterRules['limit'] = ['nullable', 'integer', 'min:1'];
+        foreach (['from_date', 'to_date', 'dispatch_from_date', 'dispatch_to_date'] as $field) {
+            $filterRules[$field] = ['nullable', 'date_format:Y-m-d'];
+        }
+        if ($request->filled('from_date') && $request->filled('to_date')) {
+            $filterRules['to_date'][] = 'after_or_equal:from_date';
+        }
+        if ($request->filled('dispatch_from_date') && $request->filled('dispatch_to_date')) {
+            $filterRules['dispatch_to_date'][] = 'after_or_equal:dispatch_from_date';
+        }
+        $request->validate($filterRules);
+
+        // The UI sends explicit boundaries. Also support the same preset when
+        // this endpoint is called directly without explicit dates.
+        if ($request->filled('date') && ! $request->filled('from_date') && ! $request->filled('to_date')) {
+            $today = Carbon::today();
+            [$from, $to] = match ($request->input('date')) {
+                'today' => [$today->copy(), $today->copy()],
+                'yesterday' => [$today->copy()->subDay(), $today->copy()->subDay()],
+                'week', '7d' => [$today->copy()->subDays(7), $today->copy()],
+                'month', '30d' => [$today->copy()->subDays(30), $today->copy()],
+                'this_month' => [$today->copy()->startOfMonth(), $today->copy()],
+                'prev_month', 'last_month' => [$today->copy()->subMonthNoOverflow()->startOfMonth(), $today->copy()->subMonthNoOverflow()->endOfMonth()],
+                'this_year' => [$today->copy()->startOfYear(), $today->copy()],
+            };
+            $request->merge(['from_date' => $from->toDateString(), 'to_date' => $to->toDateString()]);
+        }
+
         $query = Order::with([
             'party:id,firstname,middlename,lastname,email,avatar,phone,alternatemobile,relative_name,relative_phone,company_name,pan_no,gst_no',
             'warehouse:id,name,company_name,phone,gstin,address_line_1,address_line_2,city,state,pincode',
@@ -102,7 +156,6 @@ class OrderController extends Controller implements HasMiddleware
 
         // Read-only payment filtering uses the same stored invoice status as Invoices.
         if ($request->filled('payment_status')) {
-            $request->validate(['payment_status' => 'string']);
             $paymentStatuses = array_values(array_intersect(
                 array_map('trim', explode(',', $request->input('payment_status'))),
                 ['paid', 'unpaid', 'partially_paid', 'cancelled', 'no_invoice']

@@ -125,6 +125,7 @@ document.addEventListener('alpine:init', () => {
 
     // Filters state
     searchQuery: '',
+    filterError: '',
     statusFilter: [],
     paymentStatusFilter: [],
     paymentStatusOptions: [
@@ -425,31 +426,45 @@ document.addEventListener('alpine:init', () => {
 
     initializeOrders() {
       const params = new URLSearchParams(window.location.search);
+      const csv = (key) => [
+        ...new Set(
+          (params.get(key) || '')
+            .split(',')
+            .map((value) => value.trim())
+            .filter(Boolean)
+        ),
+      ];
+      const ids = (key) =>
+        csv(key)
+          .filter((value) => /^[1-9]\d*$/.test(value))
+          .map(Number)
+          .filter(Number.isSafeInteger);
 
-      this.paymentStatusFilter = (params.get('payment_status') || '').split(',')
-        .filter((status) => this.paymentStatusOptions.some((option) => option.value === status));
+      this.paymentStatusFilter = csv('payment_status').filter((status) =>
+        this.paymentStatusOptions.some((option) => option.value === status)
+      );
 
       if (params.has('search')) this.searchQuery = params.get('search');
       if (params.has('status')) {
-        const requestedStatuses = params.get('status').split(',').filter(Boolean);
-        this._normalizeInitialFullStatusSelection =
-          !(requestedStatuses.length === 1 && requestedStatuses[0] === NO_STATUS_FILTER_SENTINEL);
-        this.statusFilter = requestedStatuses.length === 1 && requestedStatuses[0] === NO_STATUS_FILTER_SENTINEL
-          ? []
-          : this.isFullStatusSelection(requestedStatuses)
-            ? this.defaultStatusFilters()
-            : requestedStatuses;
+        const requestedStatuses = csv('status');
+        this._normalizeInitialFullStatusSelection = !(
+          requestedStatuses.length === 1 && requestedStatuses[0] === NO_STATUS_FILTER_SENTINEL
+        );
+        this.statusFilter =
+          requestedStatuses.length === 1 && requestedStatuses[0] === NO_STATUS_FILTER_SENTINEL
+            ? []
+            : this.isFullStatusSelection(requestedStatuses)
+              ? this.defaultStatusFilters()
+              : requestedStatuses;
       } else this.statusFilter = this.defaultStatusFilters();
 
       if (params.has('date')) this.dateFilter = params.get('date');
       else if (!params.has('from_date') && !params.has('to_date')) this.dateFilter = '30d';
       if (params.has('fulfillment')) this.fulfillmentFilter = params.get('fulfillment');
-      if (params.has('state')) this.stateFilter = params.get('state').split(',').filter(Boolean);
-      if (params.has('district'))
-        this.districtFilter = params.get('district').split(',').filter(Boolean);
-      if (params.has('taluka')) this.talukaFilter = params.get('taluka').split(',').filter(Boolean);
-      if (params.has('village'))
-        this.villageFilter = params.get('village').split(',').filter(Boolean);
+      if (params.has('state')) this.stateFilter = csv('state');
+      if (params.has('district')) this.districtFilter = csv('district');
+      if (params.has('taluka')) this.talukaFilter = csv('taluka');
+      if (params.has('village')) this.villageFilter = csv('village');
       if (params.has('from_date')) this.fromDate = params.get('from_date');
       if (params.has('to_date')) this.toDate = params.get('to_date');
       if (params.has('dispatch_from_date')) this.dispatchFromDate = params.get('dispatch_from_date');
@@ -458,32 +473,14 @@ document.addEventListener('alpine:init', () => {
         const requestedLimit = parseInt(params.get('limit'), 10);
         this.itemsPerPage = [25, 50, 100, 200].includes(requestedLimit) ? requestedLimit : 25;
       }
-      if (params.has('page')) this.currentPage = parseInt(params.get('page')) || 1;
+      if (params.has('page')) this.currentPage = Math.max(1, parseInt(params.get('page'), 10) || 1);
       if (params.has('sort_field')) this.sortField = params.get('sort_field');
-      if (params.has('sort_direction')) this.sortDirection = params.get('sort_direction');
+      if (params.has('sort_direction'))
+        this.sortDirection = params.get('sort_direction') === 'asc' ? 'asc' : 'desc';
 
-      // Extract x-model values for <select> elements populated via <template x-for>
-      const urlProduct =
-        params.has('product') && params.get('product')
-          ? params.get('product').split(',').map(Number)
-          : [];
-      const urlCarrier =
-        params.has('carrier') && params.get('carrier') ? params.get('carrier').split(',') : [];
-      const urlWarehouse =
-        params.has('warehouse') && params.get('warehouse')
-          ? params.get('warehouse').split(',').map(Number)
-          : [];
-
-      this.productFilter = urlProduct;
-      this.carrierFilter = urlCarrier;
-      this.warehouseFilter = urlWarehouse;
-
-      // Re-apply values after DOM rendering because Alpine resets empty <select> values on init
-      setTimeout(() => {
-        if (urlProduct.length) this.productFilter = urlProduct;
-        if (urlCarrier.length) this.carrierFilter = urlCarrier;
-        if (urlWarehouse.length) this.warehouseFilter = urlWarehouse;
-      }, 500);
+      this.productFilter = ids('product');
+      this.carrierFilter = csv('carrier');
+      this.warehouseFilter = ids('warehouse');
 
       if (window.location.pathname.startsWith('/orders')) {
         this.loadOrders();
@@ -521,7 +518,10 @@ document.addEventListener('alpine:init', () => {
       };
       // The header and system preference manager both update this attribute.
       const themeObserver = new MutationObserver(this._themeHandler);
-      themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-bs-theme'] });
+      themeObserver.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['data-bs-theme'],
+      });
       orderThemeObservers.set(this, themeObserver);
 
       if (params.has('success')) {
@@ -557,6 +557,7 @@ document.addEventListener('alpine:init', () => {
     },
 
     destroy() {
+      ++this._loadRequestId;
       orderThemeObservers.get(this)?.disconnect();
       orderThemeObservers.delete(this);
       orderLoadControllers.get(this)?.abort();
@@ -602,6 +603,21 @@ document.addEventListener('alpine:init', () => {
       }
       const requestId = ++this._loadRequestId;
       orderLoadControllers.get(this)?.abort();
+      this.filterError = '';
+      if (this.fromDate && this.toDate && this.fromDate > this.toDate) {
+        this.filterError = 'Order To Date must be on or after From Date.';
+      } else if (
+        this.dispatchFromDate &&
+        this.dispatchToDate &&
+        this.dispatchFromDate > this.dispatchToDate
+      ) {
+        this.filterError = 'Dispatch To must be on or after Dispatch From.';
+      }
+      if (this.filterError) {
+        orderLoadControllers.delete(this);
+        this.isLoading = false;
+        return;
+      }
       const controller = new AbortController();
       orderLoadControllers.set(this, controller);
       this.isLoading = true;
@@ -853,30 +869,14 @@ document.addEventListener('alpine:init', () => {
             this.carrierProvidersMap = data.carrierProvidersMap;
           }
 
-          if (
-            data.carriers &&
-            data.carriers.length &&
-            JSON.stringify(this.carriersList) !== JSON.stringify(data.carriers)
-          ) {
-            const oldCarrier = this.carrierFilter;
-            this.carriersList = data.carriers;
-            setTimeout(() => {
-              if (oldCarrier) this.carrierFilter = oldCarrier;
-            }, 50);
-          }
-          if (
-            data.warehousesList &&
-            JSON.stringify(this.warehousesList) !== JSON.stringify(data.warehousesList)
-          ) {
-            const oldWarehouse = this.warehouseFilter;
-            this.warehousesList = data.warehousesList;
-            setTimeout(() => {
-              if (oldWarehouse) this.warehouseFilter = oldWarehouse;
-            }, 50);
-          }
+          if (Array.isArray(data.carriers)) this.carriersList = data.carriers;
+          if (Array.isArray(data.warehousesList)) this.warehousesList = data.warehousesList;
         })
         .catch((err) => {
-          if (requestId === this._loadRequestId) showToast(err.message, 'danger');
+          if (requestId === this._loadRequestId && err.name !== 'AbortError') {
+            this.filterError = err.message || 'Could not load orders. Please try again.';
+            showToast(this.filterError, 'danger');
+          }
         })
         .finally(() => {
           if (requestId === this._loadRequestId) {
@@ -1272,8 +1272,12 @@ document.addEventListener('alpine:init', () => {
     },
 
     paymentStatusInfo(status) {
-      return this.paymentStatusOptions.find((option) => option.value === status)
-        || { label: 'Unknown', theme: 'secondary' };
+      return (
+        this.paymentStatusOptions.find((option) => option.value === status) || {
+          label: 'Unknown',
+          theme: 'secondary',
+        }
+      );
     },
 
     getStatusTheme(status) {
@@ -2107,7 +2111,6 @@ document.addEventListener('alpine:init', () => {
 
       if (status === 'confirmed') {
         const unfulfillableSelected = this.orders.filter(
-
           (o) => this.selectedOrders.includes(String(o.id)) && o.isUnfulfillable
         );
         if (unfulfillableSelected.length > 0) {
@@ -2348,7 +2351,6 @@ document.addEventListener('alpine:init', () => {
       }
     },
 
-
     async handleImportDeliverSelect(event) {
       const file = event.target.files[0];
       if (!file) return;
@@ -2474,14 +2476,15 @@ document.addEventListener('alpine:init', () => {
       getModal('#importPreviewModal')?.hide();
     },
 
-
-
     chartThemeOptions() {
       const styles = getComputedStyle(document.documentElement);
       const mode = document.documentElement.getAttribute('data-bs-theme') === 'dark' ? 'dark' : 'light';
       return {
         theme: { mode },
-        chart: { background: 'transparent', foreColor: styles.getPropertyValue('--bs-body-color').trim() },
+        chart: {
+          background: 'transparent',
+          foreColor: styles.getPropertyValue('--bs-body-color').trim(),
+        },
         grid: { borderColor: styles.getPropertyValue('--bs-border-color').trim() },
         tooltip: { theme: mode },
       };

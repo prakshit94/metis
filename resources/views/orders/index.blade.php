@@ -666,6 +666,11 @@
         </div>
     </div>
 
+    <div x-cloak x-show="filterError" class="alert alert-warning m-3" role="alert" aria-live="polite">
+        <span x-text="filterError"></span>
+        <span class="d-block small">The table shows the last successfully loaded results.</span>
+    </div>
+
     <!-- Collapsible Advanced Filters Drawer -->
     <div class="collapse" id="advancedFilters">
         <div class="p-3 bg-body-tertiary border-top border-bottom border-secondary-subtle">
@@ -805,7 +810,7 @@
                 <!-- Date Range To -->
                 <div class="col-md-3">
                     <label class="form-label small fw-semibold text-body-secondary">To Date</label>
-                    <input type="date" class="form-control form-control-sm" aria-label="To date" x-model="toDate" @change="onCustomDateChange()">
+                    <input type="date" class="form-control form-control-sm" :min="fromDate || null" aria-label="To date" x-model="toDate" @change="onCustomDateChange()">
                 </div>
 
                 <div class="col-md-3">
@@ -815,7 +820,7 @@
 
                 <div class="col-md-3">
                     <label class="form-label small fw-semibold text-body-secondary">Dispatch To</label>
-                    <input type="date" class="form-control form-control-sm" aria-label="Dispatch to" x-model="dispatchToDate" @change="onDispatchDateChange()">
+                    <input type="date" class="form-control form-control-sm" :min="dispatchFromDate || null" aria-label="Dispatch to" x-model="dispatchToDate" @change="onDispatchDateChange()">
                 </div>
                 @endcan
 
