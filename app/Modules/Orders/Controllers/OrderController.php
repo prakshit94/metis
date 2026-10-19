@@ -78,7 +78,7 @@ class OrderController extends Controller implements HasMiddleware
                 'processing', 'ready_to_ship', 'dispatched', 'delivery_attempted', 'delivered',
                 'return_requested', 'returned', 'cancelled', '__no_status_selected__',
             ],
-            'payment_status' => ['paid', 'unpaid', 'partially_paid', 'cancelled', 'no_invoice'],
+            'payment_status' => ['paid', 'unpaid', 'partially_paid', 'refunded', 'partially_refunded', 'cancelled', 'no_invoice'],
         ] as $field => $allowedValues) {
             $filterRules[$field] = ['bail', 'nullable', 'string', function ($attribute, $value, $fail) use ($allowedValues) {
                 $values = array_map('trim', explode(',', $value));
@@ -136,7 +136,7 @@ class OrderController extends Controller implements HasMiddleware
                 'invoices.total_amount',
                 'invoices.tax_amount',
                 'invoices.net_amount',
-            ),
+            )->withPaymentStatus(),
             'invoice.payments:id,invoice_id,status,amount,payment_method,payment_date',
             'items:id,order_id,product_id,quantity,unit_price,discount_amount,tax_amount,tax_rate,total_amount',
             'items.product:id,name,sku,image_path,default_discount_type,default_discount',
@@ -154,16 +154,16 @@ class OrderController extends Controller implements HasMiddleware
         $user = auth()->user();
         $this->applyOrderActionPermissionScope($query, $user);
 
-        // Read-only payment filtering uses the same stored invoice status as Invoices.
+        // Read-only payment filtering follows completed payments, including legacy invoices with stale status.
         if ($request->filled('payment_status')) {
             $paymentStatuses = array_values(array_intersect(
                 array_map('trim', explode(',', $request->input('payment_status'))),
-                ['paid', 'unpaid', 'partially_paid', 'cancelled', 'no_invoice']
+                ['paid', 'unpaid', 'partially_paid', 'refunded', 'partially_refunded', 'cancelled', 'no_invoice']
             ));
             $query->where(function ($paymentQuery) use ($paymentStatuses) {
                 $invoiceStatuses = array_values(array_diff($paymentStatuses, ['no_invoice']));
                 if ($invoiceStatuses) {
-                    $paymentQuery->whereHas('invoice', fn ($invoice) => $invoice->whereIn('status', $invoiceStatuses));
+                    $paymentQuery->whereHas('invoice', fn ($invoice) => $invoice->wherePaymentStatusIn($invoiceStatuses));
                 }
                 if (in_array('no_invoice', $paymentStatuses, true)) {
                     $method = $invoiceStatuses ? 'orWhereDoesntHave' : 'whereDoesntHave';
