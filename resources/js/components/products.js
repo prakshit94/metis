@@ -347,7 +347,7 @@ document.addEventListener('alpine:init', () => {
         this.products = [];
         showToast(error.message || 'Failed to load products. Please refresh the page.', 'danger');
       } finally {
-        this.isLoading = false;
+        if (!signal.aborted) this.isLoading = false;
       }
     },
 
@@ -365,22 +365,29 @@ document.addEventListener('alpine:init', () => {
           return ws.allow_overselling;
         }
       }
+      if (product.warehouse_stocks?.length) {
+        return product.warehouse_stocks.some((stock) => stock.allow_overselling ?? product.allow_overselling);
+      }
       return Boolean(product.allow_overselling);
     },
 
     getOversellingLimit(product) {
       if (!product) return 0;
+      const globalLimit = parseInt(product.overselling_qty) || 999;
       if (this.warehouseFilter) {
-        const ws = product.warehouse_stocks?.find(
+        const stock = product.warehouse_stocks?.find(
           (s) => String(s.warehouse_id) === String(this.warehouseFilter)
         );
-        if (ws && ws.allow_overselling !== null) {
-          return ws.overselling_qty !== null
-            ? parseInt(ws.overselling_qty) || 999
-            : parseInt(product.overselling_qty) || 999;
-        }
+        return stock?.overselling_qty !== null && stock?.overselling_qty !== undefined
+          ? Number(stock.overselling_qty) : globalLimit;
       }
-      return parseInt(product.overselling_qty) || 999;
+      if (product.warehouse_stocks?.length) {
+        return product.warehouse_stocks.reduce((sum, stock) => {
+          if (!(stock.allow_overselling ?? product.allow_overselling)) return sum;
+          return sum + (stock.overselling_qty ?? globalLimit);
+        }, 0);
+      }
+      return globalLimit;
     },
 
     getRemainingOversell(product) {
@@ -395,7 +402,7 @@ document.addEventListener('alpine:init', () => {
             ws.allow_overselling !== null ? ws.allow_overselling : product.allow_overselling;
           let limit =
             ws.overselling_qty !== null
-              ? parseInt(ws.overselling_qty) || 999
+              ? Number(ws.overselling_qty)
               : parseInt(product.overselling_qty) || 999;
           if (!allow) return 0;
           const rawStock = (ws.quantity || 0) - (ws.reserved_qty || 0) - (ws.pending_qty || 0);
@@ -411,7 +418,7 @@ document.addEventListener('alpine:init', () => {
             ws.allow_overselling !== null ? ws.allow_overselling : product.allow_overselling;
           let limit =
             ws.overselling_qty !== null
-              ? parseInt(ws.overselling_qty) || 999
+              ? Number(ws.overselling_qty)
               : parseInt(product.overselling_qty) || 999;
           if (allow) {
             const rawStock = (ws.quantity || 0) - (ws.reserved_qty || 0) - (ws.pending_qty || 0);
@@ -441,7 +448,7 @@ document.addEventListener('alpine:init', () => {
             ws.allow_overselling !== null ? ws.allow_overselling : product.allow_overselling;
           let limit =
             ws.overselling_qty !== null
-              ? parseInt(ws.overselling_qty) || 999
+              ? Number(ws.overselling_qty)
               : parseInt(product.overselling_qty) || 999;
           const rawStock = (ws.quantity || 0) - (ws.reserved_qty || 0) - (ws.pending_qty || 0);
           return allow ? Math.max(0, rawStock + limit) : Math.max(0, rawStock);
@@ -456,7 +463,7 @@ document.addEventListener('alpine:init', () => {
             ws.allow_overselling !== null ? ws.allow_overselling : product.allow_overselling;
           let limit =
             ws.overselling_qty !== null
-              ? parseInt(ws.overselling_qty) || 999
+              ? Number(ws.overselling_qty)
               : parseInt(product.overselling_qty) || 999;
           const rawStock = (ws.quantity || 0) - (ws.reserved_qty || 0) - (ws.pending_qty || 0);
           total += allow ? Math.max(0, rawStock + limit) : Math.max(0, rawStock);
@@ -711,6 +718,7 @@ document.addEventListener('alpine:init', () => {
       const form = this._getProductForm();
       if (form && this.warehouseFilter) {
         form.form.default_warehouse_id = String(this.warehouseFilter);
+        form.form.warehouse_config_id = String(this.warehouseFilter);
       }
       getModal('#productModal')?.show();
     },
@@ -726,15 +734,16 @@ document.addEventListener('alpine:init', () => {
         tax_rate_id: String(product.tax_rate_id ?? ''),
         hsn_code_id: String(product.hsn_code_id ?? ''),
         default_warehouse_id: String(product.warehouse_id ?? ''),
+        warehouse_config_id: String(product.warehouse_id ?? ''),
         barcode: product.barcode ?? '',
         weight_g: product.weight_g ?? '',
         length_cm: product.length_cm ?? '',
         width_cm: product.width_cm ?? '',
         height_cm: product.height_cm ?? '',
         purchase_price: product.purchase_price !== null && product.purchase_price !== undefined
-          ? String(Math.round(parseFloat(product.purchase_price)))
+          ? String(product.purchase_price)
           : '',
-        mrp: product.mrp !== null && product.mrp !== undefined ? String(Math.round(parseFloat(product.mrp))) : '',
+        mrp: product.mrp !== null && product.mrp !== undefined ? String(product.mrp) : '',
         selling_price_inc_gst: (() => {
           let basePrice = parseFloat(product.selling_price ?? product.price ?? 0);
           let rateId = String(product.tax_rate_id ?? '');
@@ -745,7 +754,7 @@ document.addEventListener('alpine:init', () => {
             );
             if (taxObj) rate = parseFloat(taxObj.rate) || 0;
           }
-          return String(Math.round(basePrice + (basePrice * rate) / 100));
+          return (basePrice + (basePrice * rate) / 100).toFixed(2);
         })(),
         selling_price: String(product.selling_price ?? product.price ?? ''),
         stock: String(product.stock_quantity ?? product.stock ?? ''),
@@ -777,7 +786,7 @@ document.addEventListener('alpine:init', () => {
           mapped.warehouse_overselling_qty = ws.overselling_qty;
         } else {
           mapped.warehouse_allow_overselling = null;
-          mapped.warehouse_overselling_qty = null;
+          mapped.warehouse_overselling_qty = ws?.overselling_qty ?? null;
         }
         if (ws && ws.is_sku_enabled !== null && ws.is_sku_enabled !== undefined) {
           mapped.warehouse_is_sku_enabled = ws.is_sku_enabled;
@@ -812,12 +821,11 @@ document.addEventListener('alpine:init', () => {
       form.form.imageFile = file;
     },
 
-    async fetchProductDetails(product) {
+    async fetchProductDetails(product, scoped = true) {
       const params = new URLSearchParams();
       params.set('without_options', '1');
-      if (this.warehouseFilter) {
+      if (scoped && this.warehouseFilter) {
         params.set('warehouse_id', this.warehouseFilter);
-        params.set('warehouse_scope', '1');
       }
       const query = params.toString();
       const queryString = query ? `?${query}` : '';
@@ -830,14 +838,14 @@ document.addEventListener('alpine:init', () => {
       if (!form) return;
 
       try {
-        product = await this.fetchProductDetails(product);
+        product = await this.fetchProductDetails(product, false);
 
         form.editingProductId = product.id;
 
         const mapped = this._mapProductForForm(product);
 
         if (this.warehouseFilter) {
-          mapped.default_warehouse_id = String(this.warehouseFilter);
+          mapped.warehouse_config_id = String(this.warehouseFilter);
           const ws = product.warehouse_stocks?.find(
             (s) => String(s.warehouse_id) === String(this.warehouseFilter)
           );
@@ -847,7 +855,7 @@ document.addEventListener('alpine:init', () => {
             mapped.warehouse_overselling_qty = ws.overselling_qty;
           } else {
             mapped.warehouse_allow_overselling = null;
-            mapped.warehouse_overselling_qty = null;
+            mapped.warehouse_overselling_qty = ws?.overselling_qty ?? null;
           }
           if (ws && ws.is_sku_enabled !== null && ws.is_sku_enabled !== undefined) {
             mapped.warehouse_is_sku_enabled = ws.is_sku_enabled;
@@ -1341,6 +1349,7 @@ document.addEventListener('alpine:init', () => {
       tax_rate_id: '',
       hsn_code_id: '',
       default_warehouse_id: '',
+      warehouse_config_id: '',
       barcode: '',
       weight_g: '',
       length_cm: '',
@@ -1369,8 +1378,10 @@ document.addEventListener('alpine:init', () => {
       attributes: [],
       warehouse_allow_overselling: null,
       warehouse_overselling_qty: null,
+      warehouse_is_sku_enabled: null,
     },
     activeTab: 'general',
+    saving: false,
 
     resetForm() {
       this.activeTab = 'general';
@@ -1386,6 +1397,7 @@ document.addEventListener('alpine:init', () => {
         tax_rate_id: '',
         hsn_code_id: '',
         default_warehouse_id: '',
+        warehouse_config_id: '',
         barcode: '',
         weight_g: '',
         length_cm: '',
@@ -1420,11 +1432,15 @@ document.addEventListener('alpine:init', () => {
       const table = Alpine.store('productTable');
       if (table && table.options.warehouses && table.options.warehouses.length > 0) {
         this.form.default_warehouse_id = String(table.options.warehouses[0].id);
+        this.form.warehouse_config_id = this.form.default_warehouse_id;
       }
     },
 
     init() {
       this.$watch('form.default_warehouse_id', (newVal) => {
+        if (!this.editingProductId) this.form.warehouse_config_id = newVal;
+      });
+      this.$watch('form.warehouse_config_id', (newVal) => {
         this.form.warehouse_allow_overselling = null;
         this.form.warehouse_overselling_qty = null;
         this.form.warehouse_is_sku_enabled = null;
@@ -1433,6 +1449,7 @@ document.addEventListener('alpine:init', () => {
             (s) => String(s.warehouse_id) === String(newVal)
           );
           this.form.stock = String(ws ? ws.quantity || 0 : 0);
+          this.form.warehouse_overselling_qty = ws?.overselling_qty ?? null;
           if (ws && ws.allow_overselling !== null && ws.allow_overselling !== undefined) {
             this.form.warehouse_allow_overselling = ws.allow_overselling;
             this.form.warehouse_overselling_qty = ws.overselling_qty;
@@ -1468,13 +1485,14 @@ document.addEventListener('alpine:init', () => {
     },
 
     async saveProduct(event) {
+      if (this.saving) return;
       const table = Alpine.store('productTable');
       if (!table) return;
 
       if (event && event.target && typeof event.target.reportValidity === 'function') {
         const firstInvalid = event.target.querySelector(':invalid');
         if (firstInvalid) {
-          const tabPane = firstInvalid.closest('[x-show]');
+          const tabPane = firstInvalid.closest('[x-show^="activeTab ==="]');
           if (tabPane) {
             const showAttr = tabPane.getAttribute('x-show');
             const tabMatch = showAttr ? showAttr.match(/activeTab === '([^']+)'/) : null;
@@ -1582,6 +1600,9 @@ document.addEventListener('alpine:init', () => {
         'selling_price',
         String(Number(this.baseSellingPriceExcludingTax.toFixed(2)))
       );
+      if (this.form.warehouse_config_id) {
+        formData.append('warehouse_config_id', String(this.form.warehouse_config_id));
+      }
       formData.append('stock', String(Number(this.form.stock || 0)));
       formData.append('min_stock_level', String(Number(this.form.min_stock_level || 0)));
       formData.append('overselling_qty', String(Number(this.form.overselling_qty || 0)));
@@ -1594,34 +1615,22 @@ document.addEventListener('alpine:init', () => {
       formData.append('batch_tracking', this.form.batch_tracking ? '1' : '0');
       formData.append('expiry_tracking', this.form.expiry_tracking ? '1' : '0');
       formData.append('is_sku_enabled', this.form.is_sku_enabled ? '1' : '0');
-      if (
-        this.form.warehouse_allow_overselling !== null &&
-        this.form.warehouse_allow_overselling !== undefined
-      ) {
-        formData.append(
-          'warehouse_allow_overselling',
-          this.form.warehouse_allow_overselling ? '1' : '0'
-        );
-        formData.append(
-          'warehouse_overselling_qty',
-          String(Number(this.form.warehouse_overselling_qty || 0))
-        );
+      for (const field of ['warehouse_allow_overselling', 'warehouse_is_sku_enabled']) {
+        const value = this.form[field];
+        formData.append(field, value === null || value === undefined ? '' : (value ? '1' : '0'));
       }
-      if (
-        this.form.warehouse_is_sku_enabled !== null &&
-        this.form.warehouse_is_sku_enabled !== undefined
-      ) {
-        formData.append('warehouse_is_sku_enabled', this.form.warehouse_is_sku_enabled ? '1' : '0');
-      }
+      formData.append(
+        'warehouse_overselling_qty',
+        this.form.warehouse_overselling_qty === null || this.form.warehouse_overselling_qty === undefined
+          ? '' : String(Number(this.form.warehouse_overselling_qty || 0))
+      );
       if (this.form.application_instructions) {
         formData.append(
           'application_instructions',
           String(this.form.application_instructions).trim()
         );
       }
-      if (this.form.grade) {
-        formData.append('grade', String(this.form.grade));
-      }
+      formData.append('grade', String(this.form.grade ?? ''));
 
       this.form.attributes.forEach((attributeId) => {
         formData.append('attributes[]', String(attributeId));
@@ -1635,6 +1644,7 @@ document.addEventListener('alpine:init', () => {
         formData.append('image', this.form.imageFile);
       }
 
+      this.saving = true;
       try {
         if (this.editingProductId !== null) {
           formData.append('_method', 'PATCH');
@@ -1660,6 +1670,8 @@ document.addEventListener('alpine:init', () => {
         getModal('#productModal')?.hide();
       } catch (error) {
         showToast(error.message || 'Failed to save product.', 'danger');
+      } finally {
+        this.saving = false;
       }
     },
   }));

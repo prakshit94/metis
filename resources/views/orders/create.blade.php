@@ -757,7 +757,7 @@
                                                               'bg-danger': (getWarehouseStock(p) + getOversellStock(p)) <= 0
                                                           }" 
                                                           x-text="getWarehouseStock(p) + getOversellStock(p)"></span>
-                                                    <span x-show="p.allow_overselling" class="badge text-bg-warning-subtle text-warning-emphasis border border-warning border-opacity-25 shadow-sm"><i class="bi bi-infinity"></i> <span x-text="getOversellStock(p)"></span></span>
+                                                    <span x-show="getOversellStock(p) > 0" class="badge text-bg-warning-subtle text-warning-emphasis border border-warning border-opacity-25 shadow-sm"><i class="bi bi-infinity"></i> <span x-text="getOversellStock(p)"></span></span>
                                                 </div>
                                             </div>
                                             <div class="d-flex flex-wrap gap-1 mb-3" x-show="getProductPromotions(p).length > 0">
@@ -907,13 +907,13 @@
                                                                     <span class="text-danger"><i class="bi bi-x-circle me-1"></i>Not in warehouse</span>
                                                                 </template>
                                                             </div>
-                                                            <span x-show="p.allow_overselling" class="text-warning fw-bold ms-auto" title="Overselling Allowed" x-text="'+' + getOversellStock(p) + ' (OS)'"></span>
+                                                            <span x-show="getOversellStock(p) > 0" class="text-warning fw-bold ms-auto" title="Overselling Allowed" x-text="'+' + getOversellStock(p) + ' (OS)'"></span>
                                                         </div>
                                                     </div>
                                                     <div class="d-flex flex-wrap gap-1" style="max-width: 180px;">
                                                         <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25" style="font-size:9px;" x-show="p.batch_tracking" title="Batch Tracking"><i class="bi bi-layers me-1"></i>Batch</span>
                                                         <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25" style="font-size:9px;" x-show="p.expiry_tracking" title="Expiry Tracking"><i class="bi bi-calendar-x me-1"></i>Expiry</span>
-                                                        <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25" style="font-size:9px;" x-show="p.allow_overselling" title="Allow Overselling"><i class="bi bi-arrow-down-up me-1"></i>Oversell</span>
+                                                        <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25" style="font-size:9px;" x-show="getOversellStock(p) > 0" title="Allow Overselling"><i class="bi bi-arrow-down-up me-1"></i>Oversell</span>
                                                     </div>
                                                 </div>
                                             </td>
@@ -4367,9 +4367,9 @@ mapOrder(o) {
             
             if (this.warehouseId && p.warehouse_stocks) {
                 const match = p.warehouse_stocks.find(w => String(w.warehouse_id) === String(this.warehouseId));
-                if (match && match.allow_overselling !== null) {
-                    allow = match.allow_overselling;
-                    limit = parseInt(match.overselling_qty) || 999;
+                if (match) {
+                    allow = match.allow_overselling ?? allow;
+                    limit = match.overselling_qty ?? limit;
                 }
             }
             
@@ -4390,9 +4390,9 @@ mapOrder(o) {
             
             if (this.warehouseId && p.warehouse_stocks) {
                 const match = p.warehouse_stocks.find(w => String(w.warehouse_id) === String(this.warehouseId));
-                if (match && match.allow_overselling !== null) {
-                    allow = match.allow_overselling;
-                    limit = parseInt(match.overselling_qty) || 999;
+                if (match) {
+                    allow = match.allow_overselling ?? allow;
+                    limit = match.overselling_qty ?? limit;
                 }
             }
             

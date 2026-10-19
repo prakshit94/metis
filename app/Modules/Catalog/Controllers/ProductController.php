@@ -184,11 +184,13 @@ class ProductController extends Controller
         $product->save();
         $this->syncAttributes($product, $data['attributes'] ?? []);
         
-        $this->syncStockConfig($product, [
-            'allow_overselling' => $request->input('warehouse_allow_overselling'),
-            'overselling_qty' => $request->input('warehouse_overselling_qty'),
-            'is_sku_enabled' => $request->input('warehouse_is_sku_enabled'),
-        ]);
+        $stockConfig = [];
+        foreach (['allow_overselling', 'overselling_qty', 'is_sku_enabled'] as $field) {
+            if (array_key_exists('warehouse_'.$field, $data)) {
+                $stockConfig[$field] = $data['warehouse_'.$field];
+            }
+        }
+        $this->syncStockConfig($product, $stockConfig, isset($data['warehouse_config_id']) ? (int) $data['warehouse_config_id'] : null);
 
 
 
@@ -230,11 +232,13 @@ class ProductController extends Controller
             $this->syncAttributes($product, $data['attributes']);
         }
 
-        $this->syncStockConfig($product, [
-            'allow_overselling' => $request->input('warehouse_allow_overselling'),
-            'overselling_qty' => $request->input('warehouse_overselling_qty'),
-            'is_sku_enabled' => $request->input('warehouse_is_sku_enabled'),
-        ]);
+        $stockConfig = [];
+        foreach (['allow_overselling', 'overselling_qty', 'is_sku_enabled'] as $field) {
+            if (array_key_exists('warehouse_'.$field, $data)) {
+                $stockConfig[$field] = $data['warehouse_'.$field];
+            }
+        }
+        $this->syncStockConfig($product, $stockConfig, isset($data['warehouse_config_id']) ? (int) $data['warehouse_config_id'] : null);
 
 
 
@@ -413,30 +417,11 @@ class ProductController extends Controller
         ]);
 
         if (!empty($data['warehouse_id'])) {
-            Stock::whereIn('product_id', $data['ids'])
-                ->where('warehouse_id', $data['warehouse_id'])
-                ->update(['is_sku_enabled' => false]);
-            
-            $existingProductIds = Stock::whereIn('product_id', $data['ids'])
-                ->where('warehouse_id', $data['warehouse_id'])
-                ->pluck('product_id')
-                ->toArray();
-            
-            $missingIds = array_diff($data['ids'], $existingProductIds);
-            $newStocks = [];
-            foreach ($missingIds as $pid) {
-                $newStocks[] = [
-                    'product_id' => $pid,
-                    'warehouse_id' => $data['warehouse_id'],
-                    'is_sku_enabled' => false,
-                    'quantity' => 0,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ];
-            }
-            if (!empty($newStocks)) {
-                Stock::insert($newStocks);
-            }
+            DB::transaction(function () use ($data): void {
+                foreach (Product::whereIn('id', $data['ids'])->get() as $product) {
+                    $this->syncStockConfig($product, ['is_sku_enabled' => false], (int) $data['warehouse_id']);
+                }
+            });
         } else {
             Product::whereIn('id', $data['ids'])->update([
                 'is_sku_enabled' => false,
@@ -471,30 +456,11 @@ class ProductController extends Controller
         ]);
 
         if (!empty($data['warehouse_id'])) {
-            Stock::whereIn('product_id', $data['ids'])
-                ->where('warehouse_id', $data['warehouse_id'])
-                ->update(['is_sku_enabled' => true]);
-            
-            $existingProductIds = Stock::whereIn('product_id', $data['ids'])
-                ->where('warehouse_id', $data['warehouse_id'])
-                ->pluck('product_id')
-                ->toArray();
-            
-            $missingIds = array_diff($data['ids'], $existingProductIds);
-            $newStocks = [];
-            foreach ($missingIds as $pid) {
-                $newStocks[] = [
-                    'product_id' => $pid,
-                    'warehouse_id' => $data['warehouse_id'],
-                    'is_sku_enabled' => true,
-                    'quantity' => 0,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ];
-            }
-            if (!empty($newStocks)) {
-                Stock::insert($newStocks);
-            }
+            DB::transaction(function () use ($data): void {
+                foreach (Product::whereIn('id', $data['ids'])->get() as $product) {
+                    $this->syncStockConfig($product, ['is_sku_enabled' => true], (int) $data['warehouse_id']);
+                }
+            });
         } else {
             Product::whereIn('id', $data['ids'])->update([
                 'is_sku_enabled' => true,
@@ -675,11 +641,7 @@ class ProductController extends Controller
             $rawAvailable = $totalQty - $reservedQty - $pendingQty;
             $netAvailable = max(0.0, $rawAvailable);
 
-            if ($p->allow_overselling) {
-                $maxAllowedQty = max(0.0, $rawAvailable + (float) ($p->overselling_qty ?: 999));
-            } else {
-                $maxAllowedQty = $netAvailable;
-            }
+            $maxAllowedQty = $this->availableStockFor($p, $rawAvailable);
 
             return [
                 'id' => $p->id,
@@ -992,7 +954,11 @@ class ProductController extends Controller
                 'required',
                 'integer',
                 'exists:warehouses,id',
-                function ($attribute, $value, $fail) use ($request) {
+                function ($attribute, $value, $fail) use ($request, $product) {
+                    // Keeping the existing default does not assign a new warehouse.
+                    if ($product && (int) $value === (int) $product->default_warehouse_id) {
+                        return;
+                    }
                     if ($lobState = $request->user()?->lob_state_name) {
                         $wh = Warehouse::find($value);
                         if ($wh && $wh->state !== $lobState) {
@@ -1014,6 +980,7 @@ class ProductController extends Controller
             'status' => ['required', 'in:published,draft'],
             'allow_overselling' => ['nullable', 'boolean'],
             'manage_stock' => ['nullable', 'boolean'],
+            'is_sku_enabled' => ['nullable', 'boolean'],
             'batch_tracking' => ['nullable', 'boolean'],
             'expiry_tracking' => ['nullable', 'boolean'],
             'application_instructions' => ['nullable', 'string'],
@@ -1029,6 +996,16 @@ class ProductController extends Controller
             'length_cm' => ['nullable', 'numeric', 'min:0'],
             'width_cm' => ['nullable', 'numeric', 'min:0'],
             'height_cm' => ['nullable', 'numeric', 'min:0'],
+            'warehouse_config_id' => [
+                'nullable', 'integer', 'exists:warehouses,id',
+                function ($attribute, $value, $fail) use ($request) {
+                    if ($state = $request->user()?->lob_state_name) {
+                        if (Warehouse::find($value)?->state !== $state) {
+                            $fail('Unauthorized warehouse selection.');
+                        }
+                    }
+                },
+            ],
             'warehouse_allow_overselling' => ['nullable', 'boolean'],
             'warehouse_overselling_qty' => ['nullable', 'integer', 'min:0'],
             'warehouse_is_sku_enabled' => ['nullable', 'boolean'],
@@ -1146,7 +1123,7 @@ class ProductController extends Controller
                         }
                     },
                 ], 'quantity');
-                if ($request && $request->boolean('warehouse_scope') && $request->filled('warehouse_id')) {
+                if ($request && $request->filled('warehouse_id')) {
                     $q->where('warehouse_id', $request->integer('warehouse_id'));
                 } elseif ($request && $lobState = $request->user()?->lob_state_name) {
                     $q->whereHas('warehouse', function ($wq) use ($lobState) {
@@ -1170,13 +1147,8 @@ class ProductController extends Controller
             ->exists(), 403);
     }
 
-    private function transformForIndex(Product $product): array
+    private function availableStockFor(Product $product, float $rawAvailable): float
     {
-        $totalQty = (float) ($product->stocks_sum_quantity ?? 0);
-        $reservedQty = (float) ($product->stocks_sum_reserved_qty ?? 0);
-        $dispatchedQty = (float) ($product->stocks_sum_dispatched_qty ?? 0);
-        $pendingQty = (float) ($product->pending_orders_qty ?? 0);
-        $rawAvailable = $totalQty - $reservedQty - $pendingQty;
         $availableQty = max(0.0, $rawAvailable);
         $maxAllowedQty = 0.0;
         if ($product->stocks->isNotEmpty()) {
@@ -1198,6 +1170,19 @@ class ProductController extends Controller
                 ? max(0.0, $rawAvailable + $limit)
                 : $availableQty;
         }
+
+        return $maxAllowedQty;
+    }
+
+    private function transformForIndex(Product $product): array
+    {
+        $totalQty = (float) ($product->stocks_sum_quantity ?? 0);
+        $reservedQty = (float) ($product->stocks_sum_reserved_qty ?? 0);
+        $dispatchedQty = (float) ($product->stocks_sum_dispatched_qty ?? 0);
+        $pendingQty = (float) ($product->pending_orders_qty ?? 0);
+        $rawAvailable = $totalQty - $reservedQty - $pendingQty;
+        $availableQty = max(0.0, $rawAvailable);
+        $maxAllowedQty = $this->availableStockFor($product, $rawAvailable);
 
         return [
             'id' => $product->id,
@@ -1272,26 +1257,7 @@ class ProductController extends Controller
         $rawAvailable = $totalQty - $reservedQty - $pendingQty;
         $netAvailable = max(0.0, $rawAvailable);
 
-        $maxAllowedQty = 0;
-        if ($product->stocks && $product->stocks->isNotEmpty()) {
-            foreach ($product->stocks as $s) {
-                $whRaw = (float) $s->quantity - (float) $s->reserved_qty - (float) ($s->pending_qty ?? 0);
-                $whAllowOversell = $s->allow_overselling !== null ? (bool) $s->allow_overselling : (bool) $product->allow_overselling;
-
-                if ($whAllowOversell) {
-                    $whLimit = $s->overselling_qty !== null ? (float) $s->overselling_qty : (float) ($product->overselling_qty ?: 999);
-                    $maxAllowedQty += max(0.0, $whRaw + $whLimit);
-                } else {
-                    $maxAllowedQty += max(0.0, $whRaw);
-                }
-            }
-        } else {
-            if ($product->allow_overselling) {
-                $maxAllowedQty = max(0.0, $rawAvailable + (float) ($product->overselling_qty ?: 999));
-            } else {
-                $maxAllowedQty = $netAvailable;
-            }
-        }
+        $maxAllowedQty = $this->availableStockFor($product, $rawAvailable);
 
         return [
             'id' => $product->id,
@@ -1438,9 +1404,9 @@ class ProductController extends Controller
         ];
     }
 
-    private function syncStockConfig(Product $product, array $extraData = []): void
+    private function syncStockConfig(Product $product, array $extraData = [], ?int $warehouseId = null): void
     {
-        $warehouseId = $product->default_warehouse_id;
+        $warehouseId ??= $product->default_warehouse_id;
 
         if (! $warehouseId) {
             $warehouseId = Warehouse::query()->where('status', 'active')
