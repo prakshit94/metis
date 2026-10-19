@@ -4,23 +4,25 @@ namespace App\Http\Controllers;
 
 use App\Modules\Core\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Modules\Customers\Models\Customer;
+use Illuminate\Http\RedirectResponse;
 
 class GlobalSearchController extends Controller
 {
     public function search(Request $request)
     {
-        if ($request->has('phone')) {
-            $phone = $request->phone;
-            $customer = Customer::where('phone', $phone)->first();
-            
-            if ($customer) {
-                return redirect()->route('orders.create', ['customer_id' => $customer->id]);
-            } else {
-                return redirect()->route('orders.create', ['phone' => $phone]);
+        // Let the dashboard run its existing permission-protected lookup and modal flow.
+        // This keeps primary/alternate matching and customer creation in one place.
+        if ($request->has('phone') && is_string($request->input('phone'))) {
+            $phone = preg_replace('/\D/', '', $request->input('phone'));
+            if (strlen($phone) > 10) {
+                $phone = substr($phone, -10);
+            }
+
+            if (strlen($phone) === 10) {
+                return new RedirectResponse(route('dashboard', ['phone' => $phone], false));
             }
         }
-        
-        return redirect()->route('dashboard');
+
+        return new RedirectResponse(route('dashboard', [], false));
     }
 }

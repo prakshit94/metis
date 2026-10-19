@@ -5,7 +5,7 @@
 
 @section('content')
 <div x-data="{ 
-    activeTab: new URLSearchParams(window.location.search).has('filter') ? 'dashboard' : (localStorage.getItem('dashboard_active_tab') || 'search'),
+    activeTab: new URLSearchParams(window.location.search).has('phone') ? 'search' : new URLSearchParams(window.location.search).has('filter') ? 'dashboard' : (localStorage.getItem('dashboard_active_tab') || 'search'),
     showAnalytics: localStorage.getItem('dashboard_show_analytics') === 'true'
 }" x-init="$watch('activeTab', val => localStorage.setItem('dashboard_active_tab', val)); $watch('showAnalytics', val => localStorage.setItem('dashboard_show_analytics', val))">
     <!-- Page Header Tabs -->
@@ -570,7 +570,20 @@
                             searchPhone: '',
                             isLoading: false,
                             errorMsg: '',
+                            init() {
+                                const url = new URL(window.location.href);
+                                const phone = url.searchParams.get('phone');
+                                if (phone === null) return;
+
+                                this.searchPhone = phone;
+                                // Consume the link once so cancelling the modal or refreshing does not reopen it.
+                                url.searchParams.delete('phone');
+                                window.history.replaceState(window.history.state, '', url.toString());
+                                // Wait until the global creation modal has registered its Alpine listener.
+                                this.$nextTick(() => this.searchCustomer());
+                            },
                             searchCustomer() {
+                                if (this.isLoading) return;
                                 this.searchPhone = this.searchPhone.replace(/\D/g, '');
                                 if (this.searchPhone.length !== 10) {
                                     this.errorMsg = 'Please enter exactly 10 digits.';

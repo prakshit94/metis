@@ -196,7 +196,7 @@ class CustomerController extends Controller implements HasMiddleware
         if ($customer) {
             return response()->json([
                 'found' => true,
-                'redirect' => route('orders.create', ['customer_id' => $customer->id]),
+                'redirect' => route('orders.create', ['customer_id' => $customer->id], false),
             ]);
         }
 
