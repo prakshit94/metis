@@ -368,7 +368,7 @@
                         </div>
                         <div class="d-flex gap-1">
                             @can('chat-export')
-                            <button type="button" @click="exportUsersToCSV" class="btn btn-outline-secondary btn-sm rounded-circle d-flex align-items-center justify-content-center border shadow-sm" style="width:28px;height:28px;" title="Export Data">
+                            <button type="button" @click="exportUsersToCSV" :disabled="exportingUsers" class="btn btn-outline-secondary btn-sm rounded-circle d-flex align-items-center justify-content-center border shadow-sm" style="width:28px;height:28px;" title="Export users who logged in today">
                                 <i class="bi bi-download"></i>
                             </button>
                             @endcan
@@ -1569,31 +1569,32 @@
                 return liveUser?.is_online === true;
             },
             
-            exportUsersToCSV() {
-                const rows = [
-                    ['Name', 'Email', 'Location', 'Status', 'Today Orders', 'Today Revenue', 'Last Seen']
-                ];
-                
-                this.visibleUsers.forEach(u => {
-                    rows.push([
-                        u.name || '',
-                        u.email || '',
-                        u.location || '',
-                        u.is_online ? 'Online' : 'Offline',
-                        u.today_orders || 0,
-                        u.today_revenue || 0,
-                        u.last_seen_label || ''
-                    ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(','));
-                });
-                
-                const csvContent = "data:text/csv;charset=utf-8," + rows.join("\n");
-                const encodedUri = encodeURI(csvContent);
-                const link = document.createElement("a");
-                link.setAttribute("href", encodedUri);
-                link.setAttribute("download", `online_users_${new Date().toISOString().split('T')[0]}.csv`);
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
+            exportingUsers: false,
+            async exportUsersToCSV() {
+                if (this.exportingUsers) return;
+                this.exportingUsers = true;
+                try {
+                    const response = await axios.get('/api/chat/users/export', { responseType: 'blob' });
+                    const url = URL.createObjectURL(response.data);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = response.headers?.['content-disposition']?.match(/filename="?([^";]+)/)?.[1] || 'users_logged_in_today.csv';
+                    document.body.appendChild(link);
+                    link.click();
+                    link.remove();
+                    URL.revokeObjectURL(url);
+                } catch (error) {
+                    let message = 'Unable to export today’s users. Please try again.';
+                    try {
+                        const payload = error.response?.data;
+                        const data = payload instanceof Blob ? JSON.parse(await payload.text()) : payload;
+                        message = data?.message || message;
+                    } catch (_) {}
+                    this.errorMessage = message;
+                    window.AdminApp?.notificationManager?.error(message);
+                } finally {
+                    this.exportingUsers = false;
+                }
             }
         };
     }

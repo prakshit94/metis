@@ -6,7 +6,7 @@
                 <p class="small text-muted mb-0">{{ $statusFilter === 'Pending' ? 'Review leave dates, reasons, and submission details before making a decision.' : 'Browse processed requests and their approval or rejection details.' }}</p>
             </div>
             <div class="col-auto d-flex flex-wrap gap-2">
-                <button class="btn btn-sm btn-outline-primary" type="button" @click="exportReport()" :disabled="isLoading">Export CSV</button>
+                @can('leave-export')<button class="btn btn-sm btn-outline-primary" type="button" @click="exportReport()" :disabled="isLoading">Export CSV</button>@endcan
                 <button class="btn btn-sm btn-outline-secondary" type="button" @click="loadItems()" :disabled="isLoading" title="Refresh">
                     <i class="bi bi-arrow-clockwise"></i> Refresh
                 </button>
@@ -63,7 +63,7 @@
                     </span>
                 </div>
                 <div class="d-flex gap-2">
-                    @can('leave-edit')
+                    @can('leave-approve')
                     <button class="btn btn-sm btn-success" @click="bulkAction('approve')" x-show="canReviewSelection">
                         <i class="bi bi-check-circle me-1"></i>Approve
                     </button>
@@ -174,13 +174,15 @@
                                         @can('leave-edit')
                                         <li x-show="@js($isGlobalHr) || String(item.user_id) === '{{ auth()->id() }}'">
                                             <a class="dropdown-item" href="#" @click.prevent="editItem(item)">
-                                                <i class="bi bi-pencil me-2"></i>Edit / Update Status
+                                                <i class="bi bi-pencil me-2"></i>Edit
                                             </a>
                                         </li>
                                         <li><hr class="dropdown-divider"></li>
                                         @endcan
+                                        @can('leave-approve')
                                         <li x-show="canReview(item)"><button class="dropdown-item text-success" type="button" @click="reviewItem(item, 'Approved')">Approve</button></li>
                                         <li x-show="canReview(item)"><button class="dropdown-item text-warning" type="button" @click="reviewItem(item, 'Rejected')">Reject</button></li>
+                                        @endcan
                                         @can('leave-delete')
                                         <li>
                                             <a x-show="@js($isGlobalHr) || String(item.user_id) === '{{ auth()->id() }}'" class="dropdown-item text-danger" href="#" @click.prevent="deleteItem(item.id)">
@@ -240,7 +242,7 @@
             <p class="small text-muted" x-show="viewingItem?.approved_at">Processed by <span x-text="viewingItem?.approver?.name || '—'"></span> · <span x-text="viewingItem?.approved_at ? new Date(viewingItem.approved_at).toLocaleString() : ''"></span></p>
         </div>
         <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
-            @can('leave-edit')
+            @can('leave-approve')
             <button type="button" class="btn btn-success" x-show="viewingItem && canReview(viewingItem)" @click="reviewItem(viewingItem, 'Approved')">Approve</button>
             <button type="button" class="btn btn-warning" x-show="viewingItem && canReview(viewingItem)" @click="reviewItem(viewingItem, 'Rejected')">Reject</button>
             @endcan

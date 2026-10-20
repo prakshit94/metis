@@ -227,6 +227,7 @@
                                                 </div>
                                             </template>
                                             
+                                            @can('goodsreceipt-restore')
                                             <template x-if="item.deleted_at">
                                                 <div>
                                                     <li><hr class="dropdown-divider"></li>
@@ -237,6 +238,7 @@
                                                     </li>
                                                 </div>
                                             </template>
+                                            @endcan
                                         </ul>
                                     </div>
                                 </td>
@@ -251,13 +253,13 @@
                 <nav>
                     <ul class="pagination pagination-sm mb-0">
                         <li class="page-item" :class="{ 'disabled': currentPage === 1 }">
-                            <a class="page-link" href="#" @click.prevent="currentPage--; fetchData()">Previous</a>
+                            <a class="page-link" href="#" @click.prevent="currentPage = Math.max(1, currentPage - 1); fetchData()">Previous</a>
                         </li>
                         <li class="page-item disabled">
                             <span class="page-link">Page <span x-text="currentPage"></span> of <span x-text="totalPages"></span></span>
                         </li>
                         <li class="page-item" :class="{ 'disabled': currentPage === totalPages }">
-                            <a class="page-link" href="#" @click.prevent="currentPage++; fetchData()">Next</a>
+                            <a class="page-link" href="#" @click.prevent="currentPage = Math.min(totalPages, currentPage + 1); fetchData()">Next</a>
                         </li>
                     </ul>
                 </nav>
@@ -360,10 +362,10 @@
                                                             <td class="text-end fw-semibold text-muted" style="font-size: 12px;" x-text="item.ordered_qty"></td>
                                                             <td class="text-end fw-semibold text-primary" style="font-size: 12px;" x-text="item.previously_received"></td>
                                                             <td class="text-end">
-                                                                <input type="number" step="0.01" class="form-control form-control-sm fw-semibold text-end bg-success-subtle border-success text-success" x-model="item.accepted_qty" style="font-size: 12px;" min="0">
+                                                                <input type="number" step="0.01" class="form-control form-control-sm fw-semibold text-end bg-success-subtle border-success text-success" x-model.number="item.accepted_qty" style="font-size: 12px;" min="0">
                                                             </td>
                                                             <td class="text-end">
-                                                                <input type="number" step="0.01" class="form-control form-control-sm fw-semibold text-end bg-danger-subtle border-danger text-danger" x-model="item.rejected_qty" style="font-size: 12px;" min="0">
+                                                                <input type="number" step="0.01" class="form-control form-control-sm fw-semibold text-end bg-danger-subtle border-danger text-danger" x-model.number="item.rejected_qty" style="font-size: 12px;" min="0">
                                                             </td>
                                                             <td>
                                                                 <input type="text" class="form-control form-control-sm" x-model="item.batch_number" placeholder="e.g. B2026-01" style="font-size: 11px; font-family: monospace;">
@@ -581,6 +583,7 @@ input[type="text"]:focus, input[type="search"]:focus {
 @push('scripts')
 <script>
 document.addEventListener('alpine:init', () => {
+    const today = () => { const date = new Date(); return new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 10); };
     Alpine.data('goodsReceiptsTable', () => ({
         items: [],
         isLoading: false,
@@ -602,6 +605,7 @@ document.addEventListener('alpine:init', () => {
         
 
         pendingPOs: @json($pendingPOs),
+        isReceiving: false,
         receiveForm: {
             po_id: null,
             po_number: '',
@@ -613,7 +617,7 @@ document.addEventListener('alpine:init', () => {
         },
         selectPO(id) {
             const po = this.pendingPOs.find(p => p.id == id);
-            if (!po) return;
+            if (!po) { this.receiveForm.po_id = ''; this.receiveForm.items = []; return; }
             this.receiveForm.po_id = po.id;
             this.receiveForm.po_number = po.po_number;
             this.receiveForm.supplier_name = po.supplier ? (po.supplier.company_name || po.supplier.firstname) : 'Unknown';
@@ -634,7 +638,7 @@ document.addEventListener('alpine:init', () => {
         openReceiveModal() {
             this.receiveForm.po_id = '';
             this.receiveForm.po_number = '';
-            this.receiveForm.received_date = new Date().toISOString().split('T')[0];
+            this.receiveForm.received_date = today();
             this.receiveForm.notes = '';
             this.receiveForm.items = [];
             this.receiveForm.supplier_name = '';
@@ -642,6 +646,7 @@ document.addEventListener('alpine:init', () => {
             bootstrap.Modal.getOrCreateInstance(document.getElementById('receiveGoodsModal')).show();
         },
         async submitReceiveForm() {
+            if (this.isReceiving) return;
             if(!this.receiveForm.po_id) {
                 this.showNotification('Please select a Purchase Order.', 'error');
                 return;
@@ -662,7 +667,7 @@ document.addEventListener('alpine:init', () => {
             }
 
             try {
-                this.isLoading = true;
+                this.isReceiving = true;
                 const response = await fetch(`/procurement/purchase-orders/${this.receiveForm.po_id}/receive`, {
                     method: 'POST',
                     headers: { 
@@ -678,7 +683,7 @@ document.addEventListener('alpine:init', () => {
                     this.fetchData();
                     this.showNotification('Goods received successfully!', "success");
                     // Optionally remove the PO from pendingPOs to prevent duplicate receives
-                    this.pendingPOs = this.pendingPOs.filter(p => p.id != this.receiveForm.po_id);
+                    this.pendingPOs = this.pendingPOs.map(p => p.id == this.receiveForm.po_id ? { ...p, ...data.purchase_order } : p).filter(p => p.status !== 'received');
                 } else {
                     this.showNotification(data.message || 'Failed to receive goods.', "error");
                 }
@@ -686,29 +691,36 @@ document.addEventListener('alpine:init', () => {
                 console.error(err);
                 this.showNotification('An error occurred.', "error");
             } finally {
-                this.isLoading = false;
+                this.isReceiving = false;
             }
         },
 
-        fetchData() {
+        loadSequence: 0,
+        async fetchData() {
+            const sequence = ++this.loadSequence;
             this.isLoading = true;
-            let url = new URL(window.location.href);
+            const url = new URL(window.location.href);
             url.searchParams.set('page', this.currentPage);
-            if (this.searchQuery) url.searchParams.set('search', this.searchQuery);
-            if (this.trashedFilter) url.searchParams.set('trashed', this.trashedFilter);
-            
-            fetch(url, { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } })
-                .then(res => res.json())
-                .then(data => {
-                    this.items = data.data;
-                    this.currentPage = data.current_page;
-                    this.totalPages = data.last_page;
+            url.searchParams.set('search', this.searchQuery);
+            url.searchParams.set('trashed', this.trashedFilter);
+            try {
+                const response = await fetch(url, { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
+                const data = await response.json();
+                if (sequence !== this.loadSequence) return;
+                if (!response.ok) throw new Error(data.message || 'Unable to load records.');
+                if (data.current_page > data.last_page) { this.currentPage = Math.max(1, data.last_page); return this.fetchData(); }
+                this.items = data.data || [];
+                this.selected = [];
+                this.currentPage = data.current_page;
+                this.totalPages = data.last_page;
                     this.total = data.total || 0;
                     this.from = data.from || 0;
                     this.to = data.to || 0;
-                })
-                .catch(err => console.error(err))
-                .finally(() => this.isLoading = false);
+            } catch (error) {
+                if (sequence === this.loadSequence) this.showNotification(error.message || 'Unable to load records.', 'error');
+            } finally {
+                if (sequence === this.loadSequence) this.isLoading = false;
+            }
         },
 
         toggleAll(e) { this.selected = e.target.checked ? this.items.map(i => i.id) : []; },
@@ -717,21 +729,9 @@ document.addEventListener('alpine:init', () => {
         
         viewItem(item) {
             this.selectedGRN = item;
-            // Fetch detailed items if needed, but we already eager load them in index usually.
-            // If they are not eager loaded in index (due to pagination size), we would fetch here. 
-            // GoodsReceiptController index doesn't eager load items. Let's do it now. 
-            // Wait, we need to ensure items are fetched.
-            fetch(`/procurement/goods-receipts?search=${item.grn_number}`, { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } })
-                .then(res => res.json())
-                .then(data => {
-                    // Usually we'd have a show endpoint, but since we don't, we can just use the item data if items are included.
-                    // Wait, GoodsReceiptController::index does not eager load `items`. Let's just use what's available or update the controller.
-                    // Actually, let's update the controller's eager loading to include `items.product` in the Python script below.
-                    this.selectedGRN = item;
-                    bootstrap.Modal.getOrCreateInstance(document.getElementById('viewGrnModal')).show();
-                });
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('viewGrnModal')).show();
         },
-        
+
         showNotification(message, type = 'success') {
             const toastContainer = document.getElementById('toast-container') || (() => {
                 const tc = document.createElement('div');
@@ -751,12 +751,13 @@ document.addEventListener('alpine:init', () => {
             toastEl.innerHTML = `
                 <div class="d-flex">
                     <div class="toast-body">
-                        ${message}
+                        <span></span>
                     </div>
                     <button type="button" class="btn-close btn-close me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
                 </div>
             `;
 
+            toastEl.querySelector('.toast-body span').textContent = message;
             toastContainer.appendChild(toastEl);
             const toast = new bootstrap.Toast(toastEl, { delay: 3000 });
             toast.show();
@@ -804,7 +805,6 @@ document.addEventListener('alpine:init', () => {
                 if (response.ok) {
                     bootstrap.Modal.getInstance(document.getElementById('deleteGrnModal')).hide();
                     this.selected = [];
-                    this.allSelected = false;
                     this.fetchData();
                     this.showNotification(data.message || 'Deleted successfully.', "success");
                 } else {
@@ -859,7 +859,6 @@ document.addEventListener('alpine:init', () => {
                 if (response.ok) {
                     bootstrap.Modal.getInstance(document.getElementById('restoreGrnModal')).hide();
                     this.selected = [];
-                    this.allSelected = false;
                     this.fetchData();
                     this.showNotification(data.message || 'Restored successfully.', "success");
                 } else {

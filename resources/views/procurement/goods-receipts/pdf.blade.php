@@ -197,7 +197,7 @@ th {
                   {{ $item->product->name ?? 'Product' }}
                   <span class="muted">({{ $item->product->sku ?? 'N/A' }})</span>
                </td>
-               <td class="text-center">{{ floatval($item->purchaseOrder->items->where('product_id', $item->product_id)->first()->quantity ?? 0) }}</td>
+               <td class="text-center">{{ floatval($item->purchaseOrderItem?->quantity ?? 0) }}</td>
                <td class="text-center">{{ floatval($item->received_qty) }}</td>
                <td class="text-center">{{ floatval($item->accepted_qty) }}</td>
                <td class="text-center" style="{{ floatval($item->rejected_qty) > 0 ? 'color: red; font-weight: bold;' : '' }}">

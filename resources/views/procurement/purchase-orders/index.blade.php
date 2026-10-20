@@ -13,7 +13,7 @@
             <p class="text-muted mb-0">Manage supplier purchase orders and GRNs</p>
         </div>
         <div class="d-flex gap-2">
-            <button type="button" class="btn btn-outline-secondary" @click="exportData()">
+            <button type="button" class="btn btn-outline-secondary" @click="exportData()" :disabled="isExporting">
                 <i class="bi bi-download me-2"></i>Export
             </button>
             @can('purchaseorder-create')
@@ -148,11 +148,13 @@
                             </div>
                         </template>
 
+                        @can('purchaseorder-restore')
                         <template x-if="selected.length > 0 && items.filter(i => selected.includes(i.id) && i.deleted_at).length > 0">
                             <button class="btn btn-sm btn-warning fw-medium shadow-sm" @click="openBulkRestoreModal()">
                                 <i class="bi bi-arrow-counterclockwise me-1"></i>Restore Selected
                             </button>
                         </template>
+                        @endcan
                     </div>
                 </div>
             </div>
@@ -333,6 +335,7 @@
                                                 </div>
                                             </template>
                                             
+                                            @can('purchaseorder-restore')
                                             <template x-if="item.deleted_at">
                                                 <div>
                                                     <li><hr class="dropdown-divider"></li>
@@ -343,6 +346,7 @@
                                                     </li>
                                                 </div>
                                             </template>
+                                            @endcan
                                         </ul>
                                     </div>
                                 </td>
@@ -357,13 +361,13 @@
                 <nav>
                     <ul class="pagination pagination-sm mb-0">
                         <li class="page-item" :class="{ 'disabled': currentPage === 1 }">
-                            <a class="page-link" href="#" @click.prevent="currentPage--; fetchData()">Previous</a>
+                            <a class="page-link" href="#" @click.prevent="currentPage = Math.max(1, currentPage - 1); fetchData()">Previous</a>
                         </li>
                         <li class="page-item disabled">
                             <span class="page-link">Page <span x-text="currentPage"></span> of <span x-text="totalPages"></span></span>
                         </li>
                         <li class="page-item" :class="{ 'disabled': currentPage === totalPages }">
-                            <a class="page-link" href="#" @click.prevent="currentPage++; fetchData()">Next</a>
+                            <a class="page-link" href="#" @click.prevent="currentPage = Math.min(totalPages, currentPage + 1); fetchData()">Next</a>
                         </li>
                     </ul>
                 </nav>
@@ -537,7 +541,7 @@
                                                                 <input type="number" step="0.01" min="0" class="form-control form-control-sm fw-semibold" x-model="item.discount_amount" style="font-size: 12px;">
                                                             </td>
                                                             <td class="text-end fw-bold text-primary" style="font-size: 13px;">
-                                                                ₹<span x-text="(Math.max(0, (item.quantity || 0) * (item.unit_price || 0) - (item.discount_amount || 0)) * (1 + (item.tax_rate || 0) / 100)).toFixed(2)"></span>
+                                                                ₹<span x-text="lineAmounts(item).net.toFixed(2)"></span>
                                                             </td>
                                                             <td class="text-center">
                                                                 <button type="button" class="btn btn-sm btn-link text-danger" @click="removeLineItem(index)" x-show="createForm.items.length > 1" title="Remove Item">
@@ -558,13 +562,13 @@
                                                     <tr>
                                                         <td colspan="5" class="text-end text-muted small py-1 border-0">Sub Total:</td>
                                                         <td colspan="2" class="text-end py-1 border-0 fw-medium">
-                                                            ₹<span x-text="createForm.items.reduce((sum, item) => sum + ((item.quantity || 0) * (item.unit_price || 0)), 0).toFixed(2)"></span>
+                                                            ₹<span x-text="createForm.items.reduce((sum, item) => sum + lineAmounts(item).gross, 0).toFixed(2)"></span>
                                                         </td>
                                                     </tr>
                                                     <tr>
                                                         <td colspan="5" class="text-end text-muted small py-1 border-0">Total Tax:</td>
                                                         <td colspan="2" class="text-end py-1 border-0 fw-medium">
-                                                            ₹<span x-text="createForm.items.reduce((sum, item) => sum + (Math.max(0, (item.quantity || 0) * (item.unit_price || 0) - (item.discount_amount || 0)) * ((item.tax_rate || 0) / 100)), 0).toFixed(2)"></span>
+                                                            ₹<span x-text="createForm.items.reduce((sum, item) => sum + lineAmounts(item).tax, 0).toFixed(2)"></span>
                                                         </td>
                                                     </tr>
                                                     <tr>
@@ -576,7 +580,7 @@
                                                     <tr>
                                                         <td colspan="5" class="text-end fw-bold py-2">Grand Total:</td>
                                                         <td colspan="2" class="text-end fw-bold text-primary fs-6 py-2">
-                                                            ₹<span x-text="createForm.items.reduce((sum, item) => sum + (Math.max(0, (item.quantity || 0) * (item.unit_price || 0) - (item.discount_amount || 0)) * (1 + (item.tax_rate || 0) / 100)), 0).toFixed(2)"></span>
+                                                            ₹<span x-text="createForm.items.reduce((sum, item) => sum + lineAmounts(item).net, 0).toFixed(2)"></span>
                                                         </td>
                                                     </tr>
                                                 </tfoot>
@@ -687,10 +691,10 @@
                                                             <td class="text-end fw-semibold text-muted" style="font-size: 12px;" x-text="item.ordered_qty"></td>
                                                             <td class="text-end fw-semibold text-primary" style="font-size: 12px;" x-text="item.previously_received"></td>
                                                             <td class="text-end">
-                                                                <input type="number" step="0.01" class="form-control form-control-sm fw-semibold text-end bg-success-subtle border-success text-success" x-model="item.accepted_qty" style="font-size: 12px;" min="0">
+                                                                <input type="number" step="0.01" class="form-control form-control-sm fw-semibold text-end bg-success-subtle border-success text-success" x-model.number="item.accepted_qty" style="font-size: 12px;" min="0">
                                                             </td>
                                                             <td class="text-end">
-                                                                <input type="number" step="0.01" class="form-control form-control-sm fw-semibold text-end bg-danger-subtle border-danger text-danger" x-model="item.rejected_qty" style="font-size: 12px;" min="0">
+                                                                <input type="number" step="0.01" class="form-control form-control-sm fw-semibold text-end bg-danger-subtle border-danger text-danger" x-model.number="item.rejected_qty" style="font-size: 12px;" min="0">
                                                             </td>
                                                             <td>
                                                                 <input type="text" class="form-control form-control-sm" x-model="item.batch_number" placeholder="e.g. B2026-01" style="font-size: 11px; font-family: monospace;">
@@ -1233,6 +1237,7 @@
 @push('scripts')
 <script>
 document.addEventListener('alpine:init', () => {
+    const today = () => { const date = new Date(); return new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 10); };
     Alpine.data('purchaseOrdersTable', () => ({
         items: [],
         isLoading: false,
@@ -1251,23 +1256,30 @@ document.addEventListener('alpine:init', () => {
             this.$watch('trashedFilter', () => { this.currentPage = 1; this.fetchData(); });
         },
         
-        fetchData() {
+        loadSequence: 0,
+        async fetchData() {
+            const sequence = ++this.loadSequence;
             this.isLoading = true;
-            let url = new URL(window.location.href);
+            const url = new URL(window.location.href);
             url.searchParams.set('page', this.currentPage);
-            if (this.searchQuery) url.searchParams.set('search', this.searchQuery);
-            if (this.statusFilter) url.searchParams.set('status', this.statusFilter);
-            if (this.trashedFilter) url.searchParams.set('trashed', this.trashedFilter);
-            
-            fetch(url, { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } })
-                .then(res => res.json())
-                .then(data => {
-                    this.items = data.data;
-                    this.currentPage = data.current_page;
-                    this.totalPages = data.last_page;
-                })
-                .catch(err => console.error(err))
-                .finally(() => this.isLoading = false);
+            url.searchParams.set('search', this.searchQuery);
+            url.searchParams.set('trashed', this.trashedFilter);
+                    url.searchParams.set('status', this.statusFilter);
+            try {
+                const response = await fetch(url, { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
+                const data = await response.json();
+                if (sequence !== this.loadSequence) return;
+                if (!response.ok) throw new Error(data.message || 'Unable to load records.');
+                if (data.current_page > data.last_page) { this.currentPage = Math.max(1, data.last_page); return this.fetchData(); }
+                this.items = data.data || [];
+                this.selected = [];
+                this.currentPage = data.current_page;
+                this.totalPages = data.last_page;
+            } catch (error) {
+                if (sequence === this.loadSequence) this.showNotification(error.message || 'Unable to load records.', 'error');
+            } finally {
+                if (sequence === this.loadSequence) this.isLoading = false;
+            }
         },
 
         toggleAll(e) {
@@ -1293,7 +1305,8 @@ document.addEventListener('alpine:init', () => {
                 const bsType = type === 'error' ? 'danger' : (type === 'info' ? 'info' : 'success');
                 toast.className = `toast align-items-center text-bg-${bsType} border-0 show mb-2 shadow-sm`;
                 toast.setAttribute("role", "alert");
-                toast.innerHTML = `<div class="d-flex"><div class="toast-body fw-semibold">${msg}</div><button type="button" class="btn-close btn-close me-2 m-auto" data-bs-dismiss="toast"></button></div>`;
+                toast.innerHTML = `<div class="d-flex"><div class="toast-body fw-semibold"></div><button type="button" class="btn-close btn-close me-2 m-auto" data-bs-dismiss="toast"></button></div>`;
+                toast.querySelector('.toast-body').textContent = msg;
                 container.appendChild(toast);
                 setTimeout(() => toast.remove(), 5000);
             }
@@ -1380,7 +1393,7 @@ document.addEventListener('alpine:init', () => {
 
         openCreateModal() {
             this.createForm = {
-                supplier_ids: [], warehouse_id: '', expected_delivery_date: new Date().toISOString().split('T')[0], notes: '',
+                supplier_ids: [], warehouse_id: '', expected_delivery_date: today(), notes: '',
                 items: [{ product_id: '', quantity: 1, unit_price: 0, tax_rate: 0, discount_amount: 0, _showDropdown: false, _search: '' }]
             };
             this.supplierSearch = '';
@@ -1388,6 +1401,14 @@ document.addEventListener('alpine:init', () => {
             bootstrap.Modal.getOrCreateInstance(document.getElementById('createPoModal')).show();
         },
         
+        lineAmounts(item) {
+            const round = value => Math.round((value + Number.EPSILON) * 100) / 100;
+            const gross = round(Number(item.quantity || 0) * Number(item.unit_price || 0));
+            const taxable = Math.max(0, gross - Number(item.discount_amount || 0));
+            const tax = round(taxable * Number(item.tax_rate || 0) / 100);
+            return { gross, tax, net: round(taxable + tax) };
+        },
+
         addLineItem() {
             this.createForm.items.push({ product_id: '', quantity: 1, unit_price: 0, tax_rate: 0, discount_amount: 0, _showDropdown: false, _search: '' });
         },
@@ -1399,8 +1420,14 @@ document.addEventListener('alpine:init', () => {
         },
 
         async submitCreateForm() {
+            if (this.isSubmitting) return;
             this.isSubmitting = true;
             try {
+                if (this.createForm.items.some(item => !this.getProductObj(item.product_id)
+                    || !this.createForm.supplier_ids.includes(this.getProductObj(item.product_id).supplier_id))) {
+                    this.showNotification('Every line item must belong to a selected supplier.', 'error');
+                    return;
+                }
                 const payloads = [];
                 for (let supplierId of this.createForm.supplier_ids) {
                     const supplierItems = this.createForm.items.filter(item => {
@@ -1442,7 +1469,11 @@ document.addEventListener('alpine:init', () => {
                     }).then(res => res.json().then(data => ({ status: res.ok, data })))
                 );
                 
-                const results = await Promise.all(promises);
+                const settled = await Promise.allSettled(promises);
+                const results = settled.map(result => result.status === 'fulfilled' ? result.value : { status: false, data: { message: 'Network error. Check the order list before retrying.' } });
+                const successfulSuppliers = payloads.filter((payload, index) => results[index].status).map(payload => payload.supplier_id);
+                this.createForm.supplier_ids = this.createForm.supplier_ids.filter(id => !successfulSuppliers.includes(id));
+                this.createForm.items = this.createForm.items.filter(item => !successfulSuppliers.includes(this.getProductObj(item.product_id)?.supplier_id));
                 const failures = results.filter(r => !r.status);
                 
                 if (failures.length === 0) {
@@ -1450,6 +1481,7 @@ document.addEventListener('alpine:init', () => {
                     bootstrap.Modal.getInstance(document.getElementById('createPoModal')).hide();
                     this.fetchData();
                 } else {
+                    this.fetchData();
                     this.showNotification(failures.length + ' purchase order(s) failed. ' + (failures[0].data.message || 'Validation failed.'), "error");
                 }
             } catch (error) {
@@ -1466,14 +1498,47 @@ document.addEventListener('alpine:init', () => {
             bootstrap.Modal.getOrCreateInstance(document.getElementById('viewPoModal')).show();
         },
         
-        exportData() {
-            this.showNotification('Exporting data...', "info");
+        isExporting: false,
+        async exportData() {
+            if (this.isExporting) return;
+            this.isExporting = true;
+            try {
+                const url = new URL(window.location.href);
+                url.searchParams.set('search', this.searchQuery);
+                url.searchParams.set('status', this.statusFilter);
+                url.searchParams.set('trashed', this.trashedFilter);
+                const orders = [];
+                let page = 1, lastPage = 1;
+                do {
+                    url.searchParams.set('page', page);
+                    const response = await fetch(url, { headers: { Accept: 'application/json' } });
+                    const data = await response.json();
+                    if (!response.ok) throw new Error(data.message || 'Export failed.');
+                    orders.push(...(data.data || []));
+                    lastPage = data.last_page || 1;
+                    page++;
+                } while (page <= lastPage);
+                const escape = value => '"' + String(value ?? '').replace(/"/g, '""') + '"';
+                const rows = [['PO Number', 'Supplier', 'Warehouse', 'Status', 'Expected Delivery Date', 'Subtotal', 'Tax', 'Discount', 'Grand Total', 'Paid Amount', 'Due Amount', 'Payment Status']];
+                orders.forEach(po => rows.push([po.po_number, po.supplier?.company_name || po.supplier?.firstname, po.warehouse?.name, po.status, po.expected_delivery_date,
+                    po.total_amount, po.tax_amount, po.discount_amount, po.net_amount, po.paid_amount, po.due_amount, po.payment_status]));
+                const blob = new Blob(['\uFEFF' + rows.map(row => row.map(escape).join(',')).join('\r\n')], { type: 'text/csv;charset=utf-8' });
+                const downloadUrl = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = downloadUrl;
+                link.download = 'purchase_orders.csv';
+                link.click();
+                URL.revokeObjectURL(downloadUrl);
+                this.showNotification(`${orders.length} purchase order(s) exported.`, 'success');
+            } catch (error) {
+                this.showNotification(error.message || 'Export failed.', 'error');
+            } finally { this.isExporting = false; }
         },
 
         receiveForm: {
             po_id: '',
             po_number: '',
-            received_date: new Date().toISOString().split('T')[0],
+            received_date: today(),
             notes: '',
             items: []
         },
@@ -1482,7 +1547,7 @@ document.addEventListener('alpine:init', () => {
         openReceiveModal(po) {
             this.receiveForm.po_id = po.id;
             this.receiveForm.po_number = po.po_number;
-            this.receiveForm.received_date = new Date().toISOString().split('T')[0];
+            this.receiveForm.received_date = today();
             this.receiveForm.notes = '';
             
             this.receiveForm.items = po.items.map(i => {
@@ -1502,6 +1567,7 @@ document.addEventListener('alpine:init', () => {
         },
 
         async submitReceiveForm() {
+            if (this.isReceiving) return;
             this.isReceiving = true;
             try {
                 const response = await fetch(`/procurement/purchase-orders/${this.receiveForm.po_id}/receive`, {
@@ -1612,7 +1678,6 @@ document.addEventListener('alpine:init', () => {
                 if (response.ok) {
                     bootstrap.Modal.getInstance(document.getElementById('deletePoModal')).hide();
                     this.selected = [];
-                    this.allSelected = false;
                     this.fetchData();
                     this.showNotification(data.message || 'PO deleted successfully.', "success");
                 } else {
@@ -1677,7 +1742,6 @@ document.addEventListener('alpine:init', () => {
                 if (response.ok) {
                     bootstrap.Modal.getInstance(document.getElementById('restorePoModal')).hide();
                     this.selected = [];
-                    this.allSelected = false;
                     this.fetchData();
                     this.showNotification(data.message || 'PO restored successfully.', "success");
                 } else {
@@ -1741,7 +1805,6 @@ document.addEventListener('alpine:init', () => {
                 if (response.ok) {
                     bootstrap.Modal.getInstance(document.getElementById('approvePoModal')).hide();
                     this.selected = [];
-                    this.allSelected = false;
                     this.fetchData();
                     this.showNotification(data.message || 'PO approved successfully.', "success");
                 } else {
@@ -1798,7 +1861,6 @@ document.addEventListener('alpine:init', () => {
                 if (response.ok) {
                     bootstrap.Modal.getInstance(document.getElementById('rejectPoModal')).hide();
                     this.selected = [];
-                    this.allSelected = false;
                     this.fetchData();
                     this.showNotification(data.message || 'PO rejected successfully.', "success");
                 } else {
@@ -1827,7 +1889,6 @@ document.addEventListener('alpine:init', () => {
                 const data = await response.json();
                 if (response.ok) {
                     this.selected = [];
-                    this.allSelected = false;
                     this.fetchData();
                     this.showNotification(data.message || 'Action applied successfully.', "success");
                 } else {
@@ -1849,7 +1910,7 @@ document.addEventListener('alpine:init', () => {
             net_amount: 0,
             due_amount: 0,
             amount: '',
-            payment_date: new Date().toISOString().split('T')[0],
+            payment_date: today(),
             payment_method: '',
             payment_reference: '',
             notes: ''
@@ -1867,7 +1928,7 @@ document.addEventListener('alpine:init', () => {
             this.paymentForm.due_amount = dueAmount.toFixed(2);
             
             this.paymentForm.amount = dueAmount > 0 ? dueAmount.toFixed(2) : '';
-            this.paymentForm.payment_date = new Date().toISOString().split('T')[0];
+            this.paymentForm.payment_date = today();
             this.paymentForm.payment_method = '';
             this.paymentForm.payment_reference = '';
             this.paymentForm.notes = '';
@@ -1876,6 +1937,7 @@ document.addEventListener('alpine:init', () => {
         },
 
         async submitPaymentForm() {
+            if (this.isPaying) return;
             const formEl = document.getElementById('paymentForm');
             if (!formEl.checkValidity()) {
                 formEl.reportValidity();
@@ -1919,7 +1981,9 @@ document.addEventListener('alpine:init', () => {
             }
         },
 
+        historySequence: 0,
         async openPaymentHistoryModal(po) {
+            const sequence = ++this.historySequence;
             this.currentPoNumber = po.po_number;
             this.paymentHistory = [];
             this.isLoadingHistory = true;
@@ -1930,6 +1994,7 @@ document.addEventListener('alpine:init', () => {
                     headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
                 });
                 const res = await response.json();
+                if (sequence !== this.historySequence) return;
                 if (response.ok) {
                     this.paymentHistory = res.data || [];
                 } else {
@@ -1939,7 +2004,7 @@ document.addEventListener('alpine:init', () => {
                 console.error(err);
                 this.showNotification('An error occurred.', "error");
             } finally {
-                this.isLoadingHistory = false;
+                if (sequence === this.historySequence) this.isLoadingHistory = false;
             }
         }
     }));

@@ -33,8 +33,8 @@
         <button type="button" class="btn" :class="workspaceSection === 'attendance' ? 'btn-primary' : 'btn-light'" :aria-current="workspaceSection === 'attendance' ? 'page' : null" @click="workspaceSection = 'attendance'">Attendance</button>
         <button type="button" class="btn" :class="workspaceSection === 'corrections' ? 'btn-primary' : 'btn-light'" :aria-current="workspaceSection === 'corrections' ? 'page' : null" @click="workspaceSection = 'corrections'">Corrections</button>
         <button type="button" class="btn" :class="workspaceSection === 'co' ? 'btn-primary' : 'btn-light'" :aria-current="workspaceSection === 'co' ? 'page' : null" @click="workspaceSection = 'co'">Compensatory off</button>
-        @can('attendance-edit')<button type="button" class="btn" :class="workspaceSection === 'roster' ? 'btn-primary' : 'btn-light'" :aria-current="workspaceSection === 'roster' ? 'page' : null" @click="workspaceSection = 'roster'">Roster import</button>@endcan
-        <button type="button" class="btn" :class="workspaceSection === 'balances' ? 'btn-primary' : 'btn-light'" :aria-current="workspaceSection === 'balances' ? 'page' : null" @click="workspaceSection = 'balances'">My leave balances</button>
+        @can('attendance-roster-import')<button type="button" class="btn" :class="workspaceSection === 'roster' ? 'btn-primary' : 'btn-light'" :aria-current="workspaceSection === 'roster' ? 'page' : null" @click="workspaceSection = 'roster'">Roster import</button>@endcan
+        @can('leave-view')<button type="button" class="btn" :class="workspaceSection === 'balances' ? 'btn-primary' : 'btn-light'" :aria-current="workspaceSection === 'balances' ? 'page' : null" @click="workspaceSection = 'balances'">My leave balances</button>@endcan
     </nav>
 <div class="user-management" x-show="workspaceSection === 'attendance'" x-data="attendancesTable({{ auth()->id() }}, { global: @js($isGlobalHr), edit: @js(auth()->user()->can('attendance-edit')), create: @js(auth()->user()->can('attendance-create')), leaveEdit: @js(auth()->user()->can('leave-edit')), holidays: @js(auth()->user()->can('leave-view')), timeZone: @js(config('app.timezone')) })">
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
@@ -51,6 +51,7 @@
                     <i class="bi bi-calendar3"></i>
                 </button>
             </div>
+            @can('attendance-export')
             <div class="dropdown">
                 <button class="btn btn-outline-secondary dropdown-toggle shadow-sm" type="button" id="exportDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                     <i class="bi bi-download me-2"></i>Export
@@ -61,6 +62,8 @@
                     <li><button class="dropdown-item" @click="exportDetailed()"><i class="bi bi-list-task me-2"></i>Detailed Log — displayed month (CSV)</button></li>
                 </ul>
             </div>
+            @endcan
+            @canany(['attendance-create', 'leave-create'])
             <div class="dropdown">
                 <button class="btn btn-primary dropdown-toggle shadow-sm" type="button" id="requestDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                     <i class="bi bi-plus-circle me-2"></i>New Request
@@ -82,6 +85,7 @@
                     @endcan
                 </ul>
             </div>
+            @endcanany
         </div>
     </div>
 
@@ -145,6 +149,7 @@
                 </select>
 </x-searchable-select>
 
+                @canany(['attendance-delete', 'attendance-permanent-delete'])
                 <div class="dropdown" x-show="currentView === 'list'">
                     <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" :disabled="selectedItems.length === 0">
                         Bulk Actions <span class="badge bg-secondary ms-1" x-text="selectedItems.length" x-show="selectedItems.length > 0"></span>
@@ -154,12 +159,15 @@
                         <li><a class="dropdown-item text-danger" href="#" @click.prevent="bulkAction('delete')">
                             <i class="bi bi-trash me-2"></i>Delete Selected
                         </a></li>
+                        @endcan
+                        @can('attendance-permanent-delete')
                         <li><a class="dropdown-item text-danger" href="#" @click.prevent="bulkAction('force-delete')">
                             <i class="bi bi-trash-fill me-2"></i>Force Delete Selected
                         </a></li>
                         @endcan
                     </ul>
                 </div>
+                @endcanany
 
                 <button class="btn btn-sm btn-outline-secondary" type="button" @click="loadItems()" :disabled="isLoading" title="Refresh">
                     <i class="bi bi-arrow-clockwise" :class="isLoading ? 'spin' : ''"></i>
@@ -287,6 +295,7 @@
                                 </td>
                                 <td class="text-end pe-4">
                                     <button type="button" class="btn btn-link btn-sm p-0 mb-1" x-show="String(item.user_id) === '{{ auth()->id() }}'" @click="requestCorrection(item)">Request correction</button>
+                                    @canany(['attendance-edit', 'attendance-delete'])
                                     <div class="dropdown">
                                         <button x-show="@js($isGlobalHr) || String(item.user_id) === '{{ auth()->id() }}'" class="btn btn-sm btn-outline-secondary btn-icon rounded-circle shadow-sm" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Actions">
                                             <i class="bi bi-three-dots-vertical"></i>
@@ -309,6 +318,7 @@
                                             @endcan
                                         </ul>
                                     </div>
+                                    @endcanany
                                 </td>
                             </tr>
                         </template>
@@ -409,6 +419,7 @@
 <div x-show="workspaceSection === 'co' || workspaceSection === 'roster'" x-cloak>
     @include('users.partials.attendance-roster')
 </div>
+@can('leave-view')
 <div x-show="workspaceSection === 'balances'" x-cloak>
     <!-- My Leave Balances Widget -->
     @php
@@ -446,6 +457,7 @@
     </div>
 
 </div>
+@endcan
 </div>
 
 
@@ -585,7 +597,8 @@
                     <textarea class="form-control" id="leaveReason" x-model="form.reason" rows="3" placeholder="Explain the reason for your leave request" required></textarea>
                 </div>
 
-                <div class="mb-3" x-show="editingId" @if(!$isGlobalHr) style="display: none !important;" @endif>
+                @if($isGlobalHr && auth()->user()->can('leave-approve'))
+                <div class="mb-3" x-show="editingId" x-cloak>
 <label class="form-label" for="leaveStatus">Status</label>
 <x-searchable-select model="form.status" label="Leave status">
 <select x-ref="native" aria-hidden="true" tabindex="-1" @focus="$refs.trigger.focus()" @invalid.prevent="validationMessage = $event.target.validationMessage; $refs.trigger.focus()" class="visually-hidden" id="leaveStatus" x-model="form.status">
@@ -595,6 +608,7 @@
                     </select>
 </x-searchable-select>
 </div>
+                @endif
             </div>
             <div class="modal-footer bg-body-tertiary">
                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>

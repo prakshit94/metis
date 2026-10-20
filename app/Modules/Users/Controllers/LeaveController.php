@@ -30,7 +30,7 @@ class LeaveController extends Controller
 
     private function canReview(Request $request, Leave $leave): bool
     {
-        return $request->user()?->can('leave-edit')
+        return $request->user()?->can('leave-approve')
             && $this->reviewableQuery($request)->whereKey($leave->id)->exists();
     }
 
@@ -95,7 +95,7 @@ class LeaveController extends Controller
             ->pluck('user')->filter()->values();
         $leaves = $query->paginate(min(max($request->integer('per_page', 15), 1), 100));
 
-        $reviewableIds = $request->user()?->can('leave-edit')
+        $reviewableIds = $request->user()?->can('leave-approve')
             ? $this->reviewableQuery($request)->whereIn('id', $leaves->getCollection()->pluck('id'))->pluck('id')->all() : [];
         $leaves->getCollection()->each(fn ($leave) => $leave->setAttribute('can_review', in_array($leave->id, $reviewableIds)));
 
@@ -107,6 +107,7 @@ class LeaveController extends Controller
 
     public function export(Request $request)
     {
+        abort_unless($request->user()?->can('leave-export'), 403);
         $query = $this->reportQuery($request);
         return response()->streamDownload(function () use ($query) {
             $file = fopen('php://output', 'w');
@@ -192,6 +193,7 @@ class LeaveController extends Controller
             }
 
             if (in_array($validated['status'], ['Approved', 'Rejected'])) {
+                abort_unless($request->user()?->can('leave-approve'), 403);
                 $validated['approved_by'] = auth()->id();
                 $validated['approved_at'] = now();
             } elseif ($validated['status'] === 'Pending') {
@@ -260,7 +262,7 @@ class LeaveController extends Controller
     public function updateStatus(Request $request, Leave $leave): JsonResponse
     {
         return DB::transaction(function () use ($request, $leave) {
-            abort_unless($request->user()?->can('leave-edit'), 403);
+            abort_unless($request->user()?->can('leave-approve'), 403);
             $leave = Leave::query()->lockForUpdate()->findOrFail($leave->id);
 
             abort_unless($this->canReview($request, $leave), 403, 'Unauthorized to approve or reject this leave request.');
@@ -324,7 +326,7 @@ class LeaveController extends Controller
                 return response()->json(['message' => 'Selected pending leaves deleted successfully.']);
             }
 
-            abort_unless($request->user()?->can('leave-edit'), 403);
+            abort_unless($request->user()?->can('leave-approve'), 403);
 
             $status = $action === 'approve' ? 'Approved' : 'Rejected';
 

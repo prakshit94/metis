@@ -19,7 +19,10 @@ class AttendanceController extends Controller implements HasMiddleware
             new Middleware('permission:attendance-view', only: ['index', 'show']),
             new Middleware('permission:attendance-create', only: ['store']),
             new Middleware('permission:attendance-edit', only: ['update']),
-            new Middleware('permission:attendance-delete', only: ['destroy', 'bulkAction', 'forceDelete']),
+            new Middleware('permission:attendance-delete', only: ['destroy']),
+            new Middleware('permission:attendance-restore', only: ['restore']),
+            new Middleware('permission:attendance-permanent-delete', only: ['forceDelete']),
+            new Middleware('permission:attendance-export', only: ['exportFiltered', 'exportSummary', 'exportDetailed']),
         ];
     }
 
@@ -317,8 +320,7 @@ class AttendanceController extends Controller implements HasMiddleware
 
     public function restore(Request $request, int|string $id): JsonResponse
     {
-        // For simplicity reusing user-restore or a new permission attendance-restore
-        abort_unless($request->user()?->can('attendance-edit'), 403);
+        abort_unless($request->user()?->can('attendance-restore'), 403);
 
         $attendance = Attendance::withTrashed()->findOrFail($id);
 
@@ -342,7 +344,7 @@ class AttendanceController extends Controller implements HasMiddleware
 
     public function forceDelete(Request $request, int|string $id): JsonResponse
     {
-        abort_unless($request->user()?->can('attendance-delete'), 403);
+        abort_unless($request->user()?->can('attendance-permanent-delete'), 403);
 
         $attendance = Attendance::withTrashed()->findOrFail($id);
 
@@ -360,6 +362,7 @@ class AttendanceController extends Controller implements HasMiddleware
 
     public function exportFiltered(Request $request)
     {
+        abort_unless($request->user()?->can('attendance-export') && $request->user()?->can('attendance-view'), 403);
         $reportRequest = $request->duplicate();
         $reportRequest->merge(['per_page' => -1, 'page' => 1]);
         $rows = $this->index($reportRequest)->getData(true)['data'];
@@ -376,7 +379,7 @@ class AttendanceController extends Controller implements HasMiddleware
 
     public function exportSummary(Request $request)
     {
-        abort_unless($request->user()?->can('attendance-view'), 403);
+        abort_unless($request->user()?->can('attendance-export') && $request->user()?->can('attendance-view'), 403);
 
         $request->validate(['month' => 'nullable|date_format:Y-m', 'user_id' => 'nullable|integer']);
         $month = $request->input('month', date('Y-m')); // 'YYYY-MM'
@@ -464,7 +467,7 @@ class AttendanceController extends Controller implements HasMiddleware
 
     public function exportDetailed(Request $request)
     {
-        abort_unless($request->user()?->can('attendance-view'), 403);
+        abort_unless($request->user()?->can('attendance-export') && $request->user()?->can('attendance-view'), 403);
 
         $request->validate(['month' => 'nullable|date_format:Y-m', 'user_id' => 'nullable|integer']);
         $month = $request->input('month', date('Y-m')); // 'YYYY-MM'
@@ -523,7 +526,7 @@ class AttendanceController extends Controller implements HasMiddleware
 
     public function bulkAction(Request $request): JsonResponse
     {
-        abort_unless($request->user()?->can('attendance-delete'), 403);
+        abort_unless($request->user()?->can($request->input('action') === 'force-delete' ? 'attendance-permanent-delete' : 'attendance-delete'), 403);
 
         $validated = $request->validate([
             'action' => 'required|in:delete,force-delete',

@@ -270,6 +270,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         Route::post('/groups/{conversation}/leave', [GroupController::class, 'leave']);
         Route::get('/active-status', [PresenceController::class, 'index']);
         Route::post('/active-status', [PresenceController::class, 'update']);
+        Route::get('/users/export', [UserController::class, 'export']);
         Route::get('/users', [UserController::class, 'index']);
         Route::get('/search', SearchController::class);
     });

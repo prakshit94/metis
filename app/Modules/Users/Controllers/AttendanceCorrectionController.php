@@ -31,7 +31,7 @@ class AttendanceCorrectionController extends Controller
             $teamIds = $request->user()->getLobTeamUserIds();
             $query->where(function ($scope) use ($request) {
                 $scope->where('user_id', $request->user()->id);
-                if ($request->user()->can('attendance-edit')) {
+                if ($request->user()->can('attendance-correction-review')) {
                     $scope->orWhereIn('user_id', $this->reviewerIds($request));
                 }
             });
@@ -44,7 +44,7 @@ class AttendanceCorrectionController extends Controller
 
     private function canReview(Request $request, AttendanceCorrection $correction): bool
     {
-        if (! $request->user()->can('attendance-edit')) return false;
+        if (! $request->user()->can('attendance-correction-review')) return false;
         if ($this->global($request)) return true;
         return (int) $correction->user_id !== (int) $request->user()->id
             && $this->visibleQuery($request)->whereKey($correction->id)->exists();
@@ -68,7 +68,7 @@ class AttendanceCorrectionController extends Controller
             ->when($request->filled('status'), fn ($query) => $query->where('status', $request->input('status')))
             ->when($request->input('scope') === 'mine', fn ($query) => $query->where('user_id', $request->user()->id));
         if ($request->input('scope') === 'review') {
-            abort_unless($request->user()->can('attendance-edit'), 403);
+            abort_unless($request->user()->can('attendance-correction-review'), 403);
             if (! $this->global($request)) $query->whereIn('user_id', $this->reviewerIds($request));
         }
         $items = $query->with(['user:id,name,employee_id,manager_id', 'reviewer:id,name'])->latest('id')
@@ -116,7 +116,7 @@ class AttendanceCorrectionController extends Controller
 
     public function review(Request $request, AttendanceCorrection $correction)
     {
-        abort_unless($request->user()?->can('attendance-edit'), 403);
+        abort_unless($request->user()?->can('attendance-correction-review'), 403);
         $data = $request->validate(['status' => 'required|in:Approved,Rejected', 'reviewer_comment' => 'nullable|string|max:5000']);
         return DB::transaction(function () use ($request, $correction, $data) {
             $item = AttendanceCorrection::whereKey($correction->id)->lockForUpdate()->firstOrFail();

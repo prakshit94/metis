@@ -729,7 +729,9 @@
                 villageResults: [],
 
             
+            villageSequence: 0,
             async searchVillages() {
+                const sequence = ++this.villageSequence;
                 if (!this.villageSearchQuery || this.villageSearchQuery.length < 3) {
                     this.villageResults = [];
                     return;
@@ -739,13 +741,14 @@
                         headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
                     });
                     const data = await res.json();
-                    this.villageResults = data.data || [];
+                    if (sequence === this.villageSequence) this.villageResults = data.data || [];
                 } catch (e) {
                     console.error('Village search failed:', e);
                 }
             },
 
             selectVillage(v) {
+                this.villageSequence++;
                 this.form.village_id = v.id;
                 this.form.village_name = v.village_name || v.name || '';
                 this.form.post_office = v.post_so_name || v.post_office || '';
@@ -764,7 +767,9 @@
                 this.modalInstance = new bootstrap.Modal(document.getElementById('supplierModal'));
             },
 
+            loadSequence: 0,
             async fetchSuppliers(page = 1) {
+                const sequence = ++this.loadSequence;
                 this.loading = true;
                 try {
                     const params = new URLSearchParams({
@@ -786,13 +791,15 @@
                     if (!response.ok) throw new Error('Network response was not ok');
                     
                     const data = await response.json();
+                    if (sequence !== this.loadSequence) return;
+                    if (data.current_page > data.last_page) return this.fetchSuppliers(Math.max(1, data.last_page));
                     this.items = data.data;
                     this.pagination = data;
                     this.selectedSuppliers = [];
                 } catch (error) {
                     console.error('Error fetching suppliers:', error);
                 } finally {
-                    this.loading = false;
+                    if (sequence === this.loadSequence) this.loading = false;
                 }
             },
 
@@ -810,7 +817,9 @@
                 this.selectedSuppliers = checked ? this.items.map(item => item.id) : [];
             },
 
+            bulkSubmitting: false,
             async bulkAction(action) {
+                if (this.bulkSubmitting) return;
                 if (!this.selectedSuppliers.length) return;
                 const msgs = {
                     delete: 'delete',
@@ -819,6 +828,7 @@
                 };
                 if (!confirm(`Are you sure you want to ${msgs[action]} ${this.selectedSuppliers.length} supplier(s)?`)) return;
 
+                this.bulkSubmitting = true;
                 try {
                     const response = await fetch(`/procurement/suppliers/bulk`, {
                         method: 'POST',
@@ -837,6 +847,9 @@
                     }
                 } catch (error) {
                     console.error('Error in bulk action:', error);
+                    alert('The bulk action failed. Please try again.');
+                } finally {
+                    this.bulkSubmitting = false;
                 }
             },
 
@@ -862,10 +875,14 @@
             },
 
             resetForm() {
+                this.villageSequence++;
+                this.villageSearchQuery = '';
+                this.villageResults = [];
                 this.form = { id: null, company_name: '', firstname: '', lastname: '', email: '', phone: '', gst_no: '', pan_no: '', credit_limit: '', credit_days: '', internal_notes: '', status: 'active', address_line_1: '', address_line_2: '', village_id: null, village_name: '', post_office: '', taluka: '', district: '', city: '', state: '', pincode: '' };
             },
 
             async submitForm() {
+                if (this.submitting) return;
                 const formEl = document.getElementById('supplierForm');
                 if (!formEl.checkValidity()) {
                     formEl.reportValidity();

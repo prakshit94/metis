@@ -25,4 +25,26 @@ class UserController extends Controller
             ),
         ]);
     }
+
+    public function export(Request $request, ChatService $chat)
+    {
+        abort_unless(config('chat.enabled'), 404);
+        abort_unless($request->user()?->can('chat-export'), 403);
+
+        $users = $chat->listUsersWithPresence($request->user(), includeSelf: true, loggedInToday: true);
+        return response()->streamDownload(function () use ($users) {
+            $file = fopen('php://output', 'w');
+            fwrite($file, "\xEF\xBB\xBF");
+            fputcsv($file, ['Name', 'Email', 'Location', 'Status', 'Today Orders', 'Today Revenue', 'Last Seen']);
+            $text = static fn ($value) => preg_match('/^[=+@\-\t\r]/', (string) $value) ? "'".$value : (string) $value;
+            foreach ($users as $user) {
+                fputcsv($file, [
+                    $text($user['name'] ?? ''), $text($user['email'] ?? ''), $text($user['location'] ?? ''),
+                    $user['is_online'] ? 'Online' : 'Offline', $user['today_orders'] ?? 0,
+                    $user['today_revenue'] ?? 0, $text($user['last_seen_label'] ?? ''),
+                ]);
+            }
+            fclose($file);
+        }, 'users_logged_in_today_'.today()->toDateString().'.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
+    }
 }

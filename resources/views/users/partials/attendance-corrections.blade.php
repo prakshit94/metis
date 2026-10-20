@@ -1,4 +1,4 @@
-<div x-data="attendanceCorrections({{ auth()->id() }}, @js(auth()->user()->can('attendance-edit')))">
+<div x-data="attendanceCorrections({{ auth()->id() }}, @js(auth()->user()->can('attendance-correction-review')))">
 <section class="card mt-4">
     <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
         <div><h2 class="h5 mb-1">Attendance correction requests</h2><p class="small text-muted mb-0">Pending requests leave attendance unchanged. Your assigned manager or HR/Admin reviews them.</p></div>
@@ -8,7 +8,7 @@
         <div class="alert alert-danger" x-show="error" x-text="error" x-cloak role="alert"></div>
         <div class="d-flex flex-wrap gap-3 mb-3 align-items-end">
             <div><label class="form-label small">Inbox</label><x-searchable-select model="scope" label="Correction inbox" small>
-                <select x-ref="native" class="visually-hidden" tabindex="-1" aria-hidden="true" x-model="scope" @change="filterItems()"><option value="mine">My requests</option>@can('attendance-edit')<option value="review">Requests I can review</option>@endcan</select>
+                <select x-ref="native" class="visually-hidden" tabindex="-1" aria-hidden="true" x-model="scope" @change="filterItems()"><option value="mine">My requests</option>@can('attendance-correction-review')<option value="review">Requests I can review</option>@endcan</select>
             </x-searchable-select></div>
             <div><label class="form-label small">Status</label><x-searchable-select model="statusFilter" label="Correction status filter" small>
                 <select x-ref="native" class="visually-hidden" tabindex="-1" aria-hidden="true" x-model="statusFilter" @change="filterItems()"><option value="">All statuses</option><option>Pending</option><option>Approved</option><option>Rejected</option></select>

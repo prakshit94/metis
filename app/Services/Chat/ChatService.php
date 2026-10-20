@@ -286,7 +286,7 @@ class ChatService
         ]);
     }
 
-    public function listUsersWithPresence(User $viewer, ?string $term = null, bool $includeSelf = false): SupportCollection
+    public function listUsersWithPresence(User $viewer, ?string $term = null, bool $includeSelf = false, bool $loggedInToday = false): SupportCollection
     {
         $users = User::query()
             ->select('id', 'name', 'first_name', 'last_name', 'email', 'employee_id', 'photo', 'gender', 'is_active as status', 'village_name', 'district', 'state')
@@ -299,8 +299,15 @@ class ChatService
                     ->orWhere('employee_id', 'like', "%{$term}%")
                     ->orWhere('email', 'like', "%{$term}%");
             }))
+            ->when($loggedInToday, fn ($query) => $query->whereExists(function ($logins) {
+                $logins->selectRaw('1')->from('login_histories')
+                    ->whereColumn('login_histories.user_id', 'users.id')
+                    ->where('login_histories.status', 'success')
+                    ->where('login_histories.attempted_at', '>=', today())
+                    ->where('login_histories.attempted_at', '<', today()->addDay());
+            }))
             ->orderBy('name')
-            ->limit(250)
+            ->when(! $loggedInToday, fn ($query) => $query->limit(250))
             ->get();
 
         $userIds = $users->pluck('id');

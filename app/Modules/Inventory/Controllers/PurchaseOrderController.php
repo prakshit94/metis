@@ -22,8 +22,11 @@ class PurchaseOrderController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:purchaseorder-view', only: ['index']),
-            new Middleware('permission:purchaseorder-create', only: ['store']),
+            new Middleware('permission:purchaseorder-view', only: ['index', 'downloadPdf', 'bulkDownloadPdf', 'getPayments']),
+            new Middleware('permission:purchaseorder-create', only: ['store', 'uploadInvoice', 'addPayment']),
+            new Middleware('permission:purchaseorder-approve', only: ['approve', 'reject']),
+            new Middleware('permission:purchaseorder-delete', only: ['destroy']),
+            new Middleware('permission:purchaseorder-restore', only: ['restore']),
         ];
     }
 
@@ -100,10 +103,10 @@ class PurchaseOrderController extends Controller implements HasMiddleware
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'supplier_id' => 'required|exists:suppliers,id',
+            'supplier_id' => ['required', \Illuminate\Validation\Rule::exists('suppliers', 'id')->whereNull('deleted_at')],
             'warehouse_id' => [
                 'required',
-                'exists:warehouses,id',
+                \Illuminate\Validation\Rule::exists('warehouses', 'id')->whereNull('deleted_at')->where('status', 'active'),
                 function ($attribute, $value, $fail) use ($request) {
                     if ($lobState = $request->user()?->lob_state_name) {
                         $wh = Warehouse::find($value);
@@ -116,11 +119,11 @@ class PurchaseOrderController extends Controller implements HasMiddleware
             'expected_delivery_date' => 'nullable|date',
             'notes' => 'nullable|string',
             'items' => 'required|array|min:1',
-            'items.*.product_id' => 'required|exists:products,id',
-            'items.*.quantity' => 'required|numeric|min:0.01',
-            'items.*.unit_price' => 'required|numeric|min:0',
+            'items.*.product_id' => ['required', \Illuminate\Validation\Rule::exists('products', 'id')->whereNull('deleted_at')->where('is_active', true)],
+            'items.*.quantity' => 'required|numeric|min:0.01|decimal:0,2',
+            'items.*.unit_price' => 'required|numeric|min:0|decimal:0,2',
             'items.*.tax_rate' => 'nullable|numeric|min:0|max:100',
-            'items.*.discount_amount' => 'nullable|numeric|min:0',
+            'items.*.discount_amount' => 'nullable|numeric|min:0|decimal:0,2',
         ]);
 
         \DB::beginTransaction();
@@ -146,10 +149,10 @@ class PurchaseOrderController extends Controller implements HasMiddleware
                 $taxRate = isset($item['tax_rate']) ? (float) $item['tax_rate'] : 0.0;
                 $discountAmount = isset($item['discount_amount']) ? (float) $item['discount_amount'] : 0.0;
 
-                $totalPrice = $item['quantity'] * $item['unit_price']; // gross
+                $totalPrice = round((float) $item['quantity'] * (float) $item['unit_price'], 2); // gross
                 $taxableAmount = max(0, $totalPrice - $discountAmount);
-                $taxAmount = ($taxableAmount * $taxRate) / 100;
-                $netAmount = $taxableAmount + $taxAmount;
+                $taxAmount = round(($taxableAmount * $taxRate) / 100, 2);
+                $netAmount = round($taxableAmount + $taxAmount, 2);
 
                 $totalAmount += $totalPrice;
                 $poTaxAmount += $taxAmount;
@@ -187,6 +190,7 @@ class PurchaseOrderController extends Controller implements HasMiddleware
 
     public function downloadPdf(PurchaseOrder $order)
     {
+        $this->authorizeWarehouse($order->warehouse_id);
         $order->load(['supplier', 'warehouse', 'items.product.taxRate']);
 
         $pdf = Pdf::loadView('procurement.purchase-orders.pdf', compact('order'));
@@ -203,6 +207,7 @@ class PurchaseOrderController extends Controller implements HasMiddleware
 
         $orders = PurchaseOrder::with(['supplier', 'warehouse', 'items.product.taxRate'])
             ->whereIn('id', $ids)
+            ->when(auth()->user()?->lob_state_name, fn ($q, $state) => $q->whereHas('warehouse', fn ($w) => $w->where('state', $state)))
             ->get();
 
         if ($orders->isEmpty()) {
@@ -216,53 +221,66 @@ class PurchaseOrderController extends Controller implements HasMiddleware
 
     public function approve(PurchaseOrder $order): JsonResponse
     {
-        if ($order->status !== 'pending') {
-            return response()->json(['message' => 'Only pending orders can be approved.'], 400);
-        }
+        $this->authorizeWarehouse($order->warehouse_id);
+        return \DB::transaction(function () use ($order) {
+            $order = PurchaseOrder::lockForUpdate()->findOrFail($order->id);
+            if ($order->status !== 'pending') {
+                return response()->json(['message' => 'Only pending orders can be approved.'], 400);
+            }
 
-        $order->update([
-            'status' => 'approved',
-            'approved_by' => auth()->id(),
-            'approved_at' => now(),
-        ]);
+            $order->update([
+                'status' => 'approved',
+                'approved_by' => auth()->id(),
+                'approved_at' => now(),
+            ]);
 
-        return response()->json(['message' => 'Purchase Order approved successfully.', 'data' => $order]);
+            return response()->json(['message' => 'Purchase Order approved successfully.', 'data' => $order]);
+        });
     }
 
     public function reject(Request $request, PurchaseOrder $order): JsonResponse
     {
-        if ($order->status !== 'pending') {
-            return response()->json(['message' => 'Only pending orders can be rejected.'], 400);
-        }
+        $this->authorizeWarehouse($order->warehouse_id);
+        return \DB::transaction(function () use ($order, $request) {
+            $order = PurchaseOrder::lockForUpdate()->findOrFail($order->id);
+            if ($order->status !== 'pending') {
+                return response()->json(['message' => 'Only pending orders can be rejected.'], 400);
+            }
 
-        $validated = $request->validate([
-            'rejection_reason' => 'required|string|max:1000',
-        ]);
+            $validated = $request->validate([
+                'rejection_reason' => 'required|string|max:1000',
+            ]);
 
-        $order->update([
-            'status' => 'rejected',
-            'approved_by' => auth()->id(),
-            'approved_at' => now(),
-            'rejection_reason' => $validated['rejection_reason'],
-        ]);
+            $order->update([
+                'status' => 'rejected',
+                'approved_by' => auth()->id(),
+                'approved_at' => now(),
+                'rejection_reason' => $validated['rejection_reason'],
+            ]);
 
-        return response()->json(['message' => 'Purchase Order rejected successfully.', 'data' => $order]);
+            return response()->json(['message' => 'Purchase Order rejected successfully.', 'data' => $order]);
+        });
     }
 
     public function destroy(PurchaseOrder $order): JsonResponse
     {
-        if (in_array($order->status, ['received', 'partially_received'])) {
-            return response()->json(['message' => 'Cannot delete a Purchase Order that has already been processed.'], 400);
-        }
+        $this->authorizeWarehouse($order->warehouse_id);
+        return \DB::transaction(function () use ($order) {
+            $order = PurchaseOrder::lockForUpdate()->findOrFail($order->id);
+            if (in_array($order->status, ['received', 'partially_received'])) {
+                return response()->json(['message' => 'Cannot delete a Purchase Order that has already been processed.'], 400);
+            }
 
-        $order->delete();
+            $order->delete();
 
-        return response()->json(['message' => 'Purchase Order deleted successfully.']);
+            return response()->json(['message' => 'Purchase Order deleted successfully.']);
+        });
     }
 
     public function restore($id): JsonResponse
     {
         $order = PurchaseOrder::withTrashed()->findOrFail($id);
+        $this->authorizeWarehouse($order->warehouse_id);
         $order->restore();
 
         return response()->json(['message' => 'Purchase Order restored successfully.']);
@@ -272,82 +290,70 @@ class PurchaseOrderController extends Controller implements HasMiddleware
     {
         $validated = $request->validate([
             'action' => 'required|string|in:approve,reject,delete,restore',
-            'ids' => 'required|array',
-            'ids.*' => 'integer',
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'required|integer|distinct|exists:purchase_orders,id',
             'rejection_reason' => 'required_if:action,reject|string|max:1000|nullable',
         ]);
+
+        $permission = in_array($validated['action'], ['approve', 'reject'], true) ? 'purchaseorder-approve' : 'purchaseorder-'.$validated['action'];
+        abort_unless($request->user()?->can($permission), 403);
+        PurchaseOrder::withTrashed()->whereIn('id', $validated['ids'])->get()->each(fn ($order) => $this->authorizeWarehouse($order->warehouse_id));
 
         $action = $validated['action'];
         $ids = $validated['ids'];
         $reason = $validated['rejection_reason'] ?? null;
 
-        if ($action === 'delete') {
-            $deletedCount = PurchaseOrder::whereIn('id', $ids)
-                ->whereNotIn('status', ['received', 'partially_received'])
-                ->delete();
-
-            if ($deletedCount === 0) {
-                return response()->json(['message' => 'Cannot delete processed Purchase Orders.'], 400);
+        return \DB::transaction(function () use ($action, $ids, $reason) {
+            $orders = PurchaseOrder::withTrashed()->whereIn('id', $ids)->orderBy('id')->lockForUpdate()->get();
+            $affected = 0;
+            foreach ($orders as $order) {
+                if ($action === 'restore') {
+                    if ($order->trashed()) { $order->restore(); $affected++; }
+                    continue;
+                }
+                if ($order->trashed()) { continue; }
+                if ($action === 'delete') {
+                    if (! in_array($order->status, ['received', 'partially_received'], true)) { $order->delete(); $affected++; }
+                } elseif ($order->status === 'pending') {
+                    $order->update(['status' => $action === 'approve' ? 'approved' : 'rejected',
+                        'approved_by' => auth()->id(), 'approved_at' => now(),
+                        ...($action === 'reject' ? ['rejection_reason' => $reason] : [])]);
+                    $affected++;
+                }
             }
-
-            return response()->json(['message' => 'Selected Purchase Orders deleted successfully.']);
-        }
-
-        if ($action === 'restore') {
-            PurchaseOrder::withTrashed()->whereIn('id', $ids)->restore();
-
-            return response()->json(['message' => 'Selected Purchase Orders restored successfully.']);
-        }
-
-        // Only apply to pending POs to prevent re-approving/rejecting already processed ones
-        $query = PurchaseOrder::whereIn('id', $ids)->where('status', 'pending');
-
-        if ($action === 'approve') {
-            $query->update([
-                'status' => 'approved',
-                'approved_by' => auth()->id(),
-                'approved_at' => now(),
-            ]);
-
-            return response()->json(['message' => 'Selected Purchase Orders approved successfully.']);
-        }
-
-        if ($action === 'reject') {
-            $query->update([
-                'status' => 'rejected',
-                'approved_by' => auth()->id(),
-                'approved_at' => now(),
-                'rejection_reason' => $reason,
-            ]);
-
-            return response()->json(['message' => 'Selected Purchase Orders rejected successfully.']);
-        }
-
-        return response()->json(['message' => 'Invalid action.'], 400);
+            $skipped = count($ids) - $affected;
+            return response()->json(['message' => "{$affected} purchase order(s) updated; {$skipped} ineligible or unchanged order(s) skipped.",
+                'affected' => $affected, 'skipped' => $skipped], $affected ? 200 : 422);
+        });
     }
 
     public function uploadInvoice(Request $request, PurchaseOrder $order): JsonResponse
     {
+        $this->authorizeWarehouse($order->warehouse_id);
         $request->validate([
             'invoice' => 'required|file|mimes:pdf,jpg,jpeg,png|max:5120',
         ]);
 
         if ($request->hasFile('invoice')) {
-            // Delete old invoice if it exists
-            if ($order->invoice_path) {
-                Storage::disk('public')->delete($order->invoice_path);
-            }
-
             $path = $request->file('invoice')->store('invoices', 'public');
-
-            $order->update([
-                'invoice_path' => $path,
-            ]);
-
-            return response()->json([
-                'message' => 'Invoice uploaded successfully.',
-                'invoice_url' => $order->invoice_url,
-            ]);
+            if (! $path) {
+                return response()->json(['message' => 'Could not store the invoice. Please try again.'], 500);
+            }
+            try {
+                $oldPath = \DB::transaction(function () use ($order, $path) {
+                    $locked = PurchaseOrder::lockForUpdate()->findOrFail($order->id);
+                    $oldPath = $locked->invoice_path;
+                    $locked->update(['invoice_path' => $path]);
+                    return $oldPath;
+                });
+            } catch (\Throwable $e) {
+                Storage::disk('public')->delete($path);
+                throw $e;
+            }
+            if ($oldPath && $oldPath !== $path) {
+                try { Storage::disk('public')->delete($oldPath); } catch (\Throwable $e) { report($e); }
+            }
+            return response()->json(['message' => 'Invoice uploaded successfully.', 'invoice_url' => $order->refresh()->invoice_url]);
         }
 
         return response()->json(['message' => 'No file was uploaded.'], 400);
@@ -355,12 +361,14 @@ class PurchaseOrderController extends Controller implements HasMiddleware
 
     public function getPayments(PurchaseOrder $order): JsonResponse
     {
+        $this->authorizeWarehouse($order->warehouse_id);
         $payments = $order->payments()->with('recorder:id,name')->latest()->get();
         return response()->json(['data' => $payments]);
     }
 
     public function addPayment(Request $request, PurchaseOrder $order): JsonResponse
     {
+        $this->authorizeWarehouse($order->warehouse_id);
         $validated = $request->validate([
             'amount' => 'required|numeric|min:0.01',
             'payment_date' => 'required|date',
@@ -371,12 +379,13 @@ class PurchaseOrderController extends Controller implements HasMiddleware
 
         \DB::beginTransaction();
         try {
+            $order = PurchaseOrder::lockForUpdate()->findOrFail($order->id);
             $payment = $order->payments()->create([
                 'amount' => $validated['amount'],
                 'payment_date' => $validated['payment_date'],
                 'payment_method' => $validated['payment_method'],
-                'payment_reference' => $validated['payment_reference'],
-                'notes' => $validated['notes'],
+                'payment_reference' => $validated['payment_reference'] ?? null,
+                'notes' => $validated['notes'] ?? null,
                 'recorded_by' => auth()->id(),
             ]);
 
@@ -399,6 +408,12 @@ class PurchaseOrderController extends Controller implements HasMiddleware
         } catch (\Exception $e) {
             \DB::rollBack();
             return response()->json(['message' => 'Failed to record payment: '.$e->getMessage()], 500);
+        }
+    }
+    private function authorizeWarehouse($warehouseId): void
+    {
+        if ($state = auth()->user()?->lob_state_name) {
+            abort_unless(Warehouse::withTrashed()->whereKey($warehouseId)->where('state', $state)->exists(), 403);
         }
     }
 }

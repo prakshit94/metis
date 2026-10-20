@@ -145,6 +145,7 @@ class RolesAndPermissionsSeeder extends Seeder
         'purchaseorder-view',
         'purchaseorder-create',
         'purchaseorder-edit',
+        'purchaseorder-approve',
         'purchaseorder-delete',
         'purchaseorder-restore',
         'purchaseorder-permanent-delete',
@@ -847,7 +848,7 @@ class RolesAndPermissionsSeeder extends Seeder
         app(PermissionRegistrar::class)->forgetCachedPermissions();
 
         // ── Create permissions ───────────────────────────────────────────────
-        foreach (self::PERMISSIONS as $permissionName) {
+        foreach (\App\Support\HrPermissions::expand(self::PERMISSIONS) as $permissionName) {
             Permission::firstOrCreate([
                 'name' => $permissionName,
                 'guard_name' => 'web',
@@ -867,7 +868,7 @@ class RolesAndPermissionsSeeder extends Seeder
                 $permissions = array_values(array_diff($permissions, ['chat-create-group']));
             }
 
-            $role->syncPermissions($permissions);
+            $role->syncPermissions(\App\Support\HrPermissions::expand($permissions));
 
             $this->command->info("✔ Role [{$roleName}] seeded".(! empty($permissions) ? ' with: '.implode(', ', $permissions) : '.'));
         }

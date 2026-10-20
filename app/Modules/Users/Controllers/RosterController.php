@@ -52,7 +52,7 @@ class RosterController extends Controller
 
     public function import(Request $request)
     {
-        abort_unless($request->user()->can('attendance-edit'), 403);
+        abort_unless($request->user()->can('attendance-roster-import'), 403);
         $request->validate(['file' => 'required|file|max:2048', 'commit' => 'nullable|boolean', 'preview_hash' => 'nullable|string']);
         $file = $request->file('file');
         $hash = hash_file('sha256', $file->getRealPath());
@@ -143,7 +143,7 @@ class RosterController extends Controller
         if (! $this->global($request)) {
             $query->where(function ($q) use ($request) {
                 $q->where('r.user_id', $request->user()->id);
-                if ($request->user()->can('attendance-edit')) {
+                if ($request->user()->can('attendance-co-review')) {
                     $q->orWhere('u.manager_id', $request->user()->id);
                 }
             });
@@ -152,7 +152,7 @@ class RosterController extends Controller
         $events = DB::table('roster_events')->leftJoin('users as actor', 'actor.id', '=', 'roster_events.actor_id')->whereIn('roster_id', $items->getCollection()->pluck('id'))->select('roster_events.*', 'actor.name as actor_name')->orderBy('roster_events.id')->get()->groupBy('roster_id');
         $items->getCollection()->transform(function ($item) use ($request, $events) {
             $item->history = $events->get($item->id, collect());
-            $item->can_review = $item->co_status === 'Pending' && $request->user()->can('attendance-edit') && ($this->global($request) || ((int) $item->manager_id === (int) $request->user()->id && (int) $item->user_id !== (int) $request->user()->id));
+            $item->can_review = $item->co_status === 'Pending' && $request->user()->can('attendance-co-review') && ($this->global($request) || ((int) $item->manager_id === (int) $request->user()->id && (int) $item->user_id !== (int) $request->user()->id));
 
             return $item;
         });
@@ -179,7 +179,7 @@ class RosterController extends Controller
 
     public function review(Request $request, int $id)
     {
-        abort_unless($request->user()->can('attendance-edit'), 403);
+        abort_unless($request->user()->can('attendance-co-review'), 403);
         $data = $request->validate(['status' => 'required|in:Approved,Rejected', 'comment' => 'nullable|string|max:2000']);
         DB::transaction(function () use ($request, $id, $data) {
             $row = DB::table('employee_rosters')->where('id', $id)->first();

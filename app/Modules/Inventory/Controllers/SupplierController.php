@@ -44,7 +44,12 @@ class SupplierController extends Controller implements HasMiddleware
                 $query->where('status', $request->query('status'));
             }
 
-            $perPage = $request->query('per_page', 15);
+            $sort = $request->query('sort_by', 'company_name');
+            $direction = $request->query('sort_dir', 'asc');
+            if (in_array($sort, ['company_name', 'firstname', 'lastname', 'email', 'phone', 'status', 'credit_limit', 'credit_days', 'created_at', 'id'], true) && in_array($direction, ['asc', 'desc'], true)) {
+                $query->reorder($sort, $direction)->orderBy('id');
+            }
+            $perPage = min(100, max(1, (int) $request->query('per_page', 15)));
 
             return response()->json($query->paginate($perPage));
         }
@@ -98,7 +103,7 @@ class SupplierController extends Controller implements HasMiddleware
         $validated['credit_limit'] = $validated['credit_limit'] ?? 0;
         $validated['credit_days'] = $validated['credit_days'] ?? 0;
 
-        $supplier = Supplier::create($validated);
+        $supplier = \Illuminate\Support\Facades\DB::transaction(fn () => Supplier::create($validated), 3);
 
         return response()->json([
             'message' => 'Supplier created successfully',
@@ -133,8 +138,9 @@ class SupplierController extends Controller implements HasMiddleware
             'pincode' => 'nullable|string|max:20',
         ]);
 
-        $validated['credit_limit'] = $validated['credit_limit'] ?? 0;
-        $validated['credit_days'] = $validated['credit_days'] ?? 0;
+        foreach (['credit_limit', 'credit_days'] as $field) {
+            if (array_key_exists($field, $validated)) { $validated[$field] = $validated[$field] ?? 0; }
+        }
 
         $supplier->update($validated);
 
@@ -156,21 +162,21 @@ class SupplierController extends Controller implements HasMiddleware
     {
         $validated = $request->validate([
             'action' => 'required|string|in:active,inactive,delete',
-            'ids' => 'required|array',
-            'ids.*' => 'integer|exists:suppliers,id',
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'required|integer|distinct|exists:suppliers,id',
         ]);
 
+        abort_unless($request->user()?->can($validated['action'] === 'delete' ? 'supplier-delete' : 'supplier-edit'), 403);
         $action = $validated['action'];
         $ids = $validated['ids'];
 
-        if ($action === 'delete') {
-            Supplier::whereIn('id', $ids)->delete();
-
-            return response()->json(['message' => 'Suppliers deleted successfully']);
-        }
-
-        Supplier::whereIn('id', $ids)->update(['status' => $action]);
-
-        return response()->json(['message' => 'Suppliers status updated successfully']);
+        return \Illuminate\Support\Facades\DB::transaction(function () use ($action, $ids) {
+            $suppliers = Supplier::whereIn('id', $ids)->orderBy('id')->lockForUpdate()->get();
+            foreach ($suppliers as $supplier) {
+                if ($action === 'delete') { $supplier->delete(); }
+                else { $supplier->update(['status' => $action]); }
+            }
+            return response()->json(['message' => count($suppliers).' supplier(s) updated successfully.', 'affected' => count($suppliers)]);
+        });
     }
 }

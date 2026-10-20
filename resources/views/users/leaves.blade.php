@@ -25,7 +25,7 @@
             <p class="text-muted mb-0">Manage employee leave requests, approvals, balances, and holidays</p>
         </div>
         <div class="d-flex flex-wrap gap-2">
-            <a href="{{ url('/attendances') }}" class="btn btn-outline-secondary">Attendance workspace</a>
+            @can('attendance-view')<a href="{{ url('/attendances') }}" class="btn btn-outline-secondary">Attendance workspace</a>@endcan
             @can('leave-create')
             <button type="button" class="btn btn-primary" x-show="currentTab === 'requests'" @click="$dispatch('open-leave-modal')">
                 <i class="bi bi-plus-circle me-2"></i>Request Leave
@@ -290,7 +290,8 @@
                     <label for="leaveReason">Reason <span class="text-danger">*</span></label>
                 </div>
 
-                <div class="mb-3" x-show="editingId" @if(!$isGlobalHr) style="display: none !important;" @endif>
+                @if($isGlobalHr && auth()->user()->can('leave-approve'))
+                <div class="mb-3" x-show="editingId" x-cloak>
 <label class="form-label" for="leaveStatus">Status</label>
 <x-searchable-select model="form.status" label="Leave status">
 <select x-ref="native" aria-hidden="true" tabindex="-1" @focus="$refs.trigger.focus()" @invalid.prevent="validationMessage = $event.target.validationMessage; $refs.trigger.focus()" class="visually-hidden" id="leaveStatus" x-model="form.status">
@@ -300,6 +301,7 @@
                     </select>
 </x-searchable-select>
 </div>
+                @endif
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>

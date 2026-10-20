@@ -37,12 +37,12 @@ class GoodsReceipt extends Model implements Auditable
 
     public function purchaseOrder(): BelongsTo
     {
-        return $this->belongsTo(PurchaseOrder::class);
+        return $this->belongsTo(PurchaseOrder::class)->withTrashed();
     }
 
     public function warehouse(): BelongsTo
     {
-        return $this->belongsTo(Warehouse::class);
+        return $this->belongsTo(Warehouse::class)->withTrashed();
     }
 
     public function items(): HasMany

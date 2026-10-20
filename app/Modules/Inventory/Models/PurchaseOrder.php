@@ -68,12 +68,12 @@ class PurchaseOrder extends Model
 
     public function supplier(): BelongsTo
     {
-        return $this->belongsTo(Supplier::class, 'supplier_id');
+        return $this->belongsTo(Supplier::class, 'supplier_id')->withTrashed();
     }
 
     public function warehouse(): BelongsTo
     {
-        return $this->belongsTo(Warehouse::class, 'warehouse_id');
+        return $this->belongsTo(Warehouse::class, 'warehouse_id')->withTrashed();
     }
 
     public function creator(): BelongsTo
@@ -98,7 +98,7 @@ class PurchaseOrder extends Model
 
     public function getInvoiceUrlAttribute(): ?string
     {
-        return $this->invoice_path ? Storage::url($this->invoice_path) : null;
+        return $this->invoice_path ? Storage::disk('public')->url($this->invoice_path) : null;
     }
 
     public function getActivitylogOptions(): LogOptions
