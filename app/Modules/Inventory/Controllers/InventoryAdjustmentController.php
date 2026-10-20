@@ -337,7 +337,11 @@ class InventoryAdjustmentController extends Controller implements HasMiddleware
     public function options(Request $request): JsonResponse
     {
         abort_unless($request->user()?->can('inventoryadjustment-view'), 403);
-        $productQuery = Product::query()->where('status', '!=', 'draft');
+        $validated = $request->validate([
+            'product_ids' => ['sometimes', 'array', 'max:250'],
+            'product_ids.*' => ['integer'],
+        ]);
+        $productQuery = Product::query()->where('status', '!=', 'draft')->where('is_active', true);
         if ($search = trim((string) $request->query('q', ''))) {
             $productQuery->where(function ($query) use ($search) {
                 $query->where('name', 'like', "{$search}%")
@@ -363,7 +367,7 @@ class InventoryAdjustmentController extends Controller implements HasMiddleware
             'products' => $products,
             'stocks' => $warehouseId
                 ? Stock::withTrashed()->where('warehouse_id', $warehouseId)
-                    ->whereIn('product_id', $products->pluck('id'))
+                    ->whereIn('product_id', $products->pluck('id')->merge($validated['product_ids'] ?? [])->unique())
                     ->get(['product_id', 'quantity'])->keyBy('product_id')
                 : [],
         ]);

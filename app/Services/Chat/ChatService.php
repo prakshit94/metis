@@ -309,6 +309,17 @@ class ChatService
             return collect();
         }
 
+        // Display assigned LOBs in one query without changing permission/team context.
+        $lobAssignments = DB::table(config('permission.table_names.model_has_roles').' as assignments')
+            ->join('teams', 'teams.id', '=', 'assignments.team_id')
+            ->where('assignments.model_type', $viewer->getMorphClass())
+            ->whereIn('assignments.'.config('permission.column_names.model_morph_key'), $userIds)
+            ->select('assignments.'.config('permission.column_names.model_morph_key').' as user_id', 'teams.name')
+            ->distinct()
+            ->orderBy('teams.name')
+            ->get()
+            ->groupBy('user_id');
+
         $presences = DB::table('chat_presence')
             ->select('user_id', 'status', 'last_seen_at')
             ->whereIn('user_id', $userIds)
@@ -342,7 +353,7 @@ class ChatService
             ->unique('user_id')
             ->keyBy('user_id');
 
-        return $users->map(function (User $user) use ($presences, $todayOrders, $tokens, $sessions) {
+        return $users->map(function (User $user) use ($presences, $todayOrders, $tokens, $sessions, $lobAssignments) {
             $session = $sessions->get($user->id);
             $token = $tokens->get($user->id);
             $presence = $presences->get($user->id);
@@ -368,7 +379,7 @@ class ChatService
                 || $lastTokenAt?->greaterThanOrEqualTo(now()->subMinutes(self::ONLINE_WINDOW_MINUTES)) === true
                 || ($presenceStatus === 'online' && $presenceLastSeenAt?->greaterThanOrEqualTo(now()->subMinutes(self::ONLINE_WINDOW_MINUTES)) === true);
 
-            $location = collect([$user->village_name, $user->district, $user->state])->filter()->implode(', ');
+            $location = $this->locationForUser($user);
 
             $activeDevice = $this->deviceFromUserAgent($session->user_agent ?? null);
             if ($lastTokenAt && (! $lastSessionAt || $lastTokenAt->greaterThan($lastSessionAt))) {
@@ -383,6 +394,7 @@ class ChatService
                 'photo' => $user->photo,
                 'gender' => $user->gender,
                 'location' => $location,
+                'lob_team_name' => $lobAssignments->get($user->id, collect())->pluck('name')->implode(', ') ?: 'Global',
                 'is_online' => $isOnline,
                 'presence_status' => $isOnline ? 'online' : 'offline',
                 'last_seen_at' => $lastSeenAt?->toIso8601String(),
@@ -426,7 +438,7 @@ class ChatService
 
     public function locationForUser(User $user): ?string
     {
-        return collect([$user->village_name, $user->district, $user->state])->filter()->implode(', ');
+        return trim((string) $user->village_name) ?: null;
     }
 
     public function ensureMember(Conversation $conversation, User $user): Member

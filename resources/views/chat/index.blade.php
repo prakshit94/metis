@@ -85,8 +85,8 @@
                                             <span class="text-truncate fw-bold small mb-0" x-text="user.name"></span>
                                         </div>
                                         <div class="text-truncate text-muted mb-1" style="font-size: 10px;">
-                                            <template x-if="user.location">
-                                                <span><i class="bi bi-geo-alt me-1 opacity-75"></i><span x-text="user.location"></span></span>
+                                            <template x-if="user.location || user.lob_team_name">
+                                                <span><i class="bi bi-geo-alt me-1 opacity-75"></i><span x-text="userDetailsLabel(user)"></span></span>
                                             </template>
                                         </div>
                                         <div class="text-truncate text-muted small" style="font-size: 11px;" x-text="user.last_seen_label || user.email"></div>
@@ -458,10 +458,10 @@
 
                                 <!-- Second Row: Location or Email -->
                                 <div class="text-truncate text-muted mb-1 min-w-0" style="font-size: 11px;">
-                                    <template x-if="user.location">
-                                        <span class="text-truncate"><i class="bi bi-geo-alt me-1 opacity-75"></i><span x-text="user.location"></span></span>
+                                    <template x-if="user.location || user.lob_team_name">
+                                        <span class="text-truncate"><i class="bi bi-geo-alt me-1 opacity-75"></i><span x-text="userDetailsLabel(user)"></span></span>
                                     </template>
-                                    <template x-if="!user.location">
+                                    <template x-if="!user.location && !user.lob_team_name">
                                         <span class="text-truncate"><i class="bi bi-envelope me-1 opacity-75"></i><span x-text="user.email"></span></span>
                                     </template>
                                 </div>
@@ -563,8 +563,8 @@
                                                         : 'background: rgba(var(--bs-secondary-rgb), 0.15); color: var(--bs-secondary); border: 1px solid rgba(var(--bs-secondary-rgb), 0.3);'"
                                                       x-text="user.is_online ? 'Online' : 'Offline'"></span>
                                             </div>
-                                            <div class="text-muted text-truncate" style="font-size:10px;" x-show="user.location">
-                                                <i class="bi bi-geo-alt me-1 opacity-75"></i><span x-text="user.location"></span>
+                                            <div class="text-muted text-truncate" style="font-size:10px;" x-show="user.location || user.lob_team_name">
+                                                <i class="bi bi-geo-alt me-1 opacity-75"></i><span x-text="userDetailsLabel(user)"></span>
                                             </div>
                                         </div>
                                     </label>
@@ -674,8 +674,8 @@
                                                     <div class="d-flex align-items-center gap-1 text-truncate mb-1">
                                                         <span class="small fw-semibold text-truncate flex-grow-1" x-text="user.name"></span>
                                                     </div>
-                                                    <div class="text-muted text-truncate" style="font-size:9px;" x-show="user.location">
-                                                        <i class="bi bi-geo-alt me-1 opacity-75"></i><span x-text="user.location"></span>
+                                                    <div class="text-muted text-truncate" style="font-size:9px;" x-show="user.location || user.lob_team_name">
+                                                        <i class="bi bi-geo-alt me-1 opacity-75"></i><span x-text="userDetailsLabel(user)"></span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -762,7 +762,7 @@
             search: '',
             userSearch: '',
             filter: localStorage.getItem('metis_chat_filter_' + @js(auth()->id())) || 'all',
-            userFilter: localStorage.getItem('metis_chat_userFilter_' + @js(auth()->id())) || 'all',
+            userFilter: 'online',
             userSort: localStorage.getItem('metis_chat_userSort_' + @js(auth()->id())) || 'revenue_desc',
 
             // Logged-in user's own stats (injected server-side, refreshed on poll)
@@ -823,7 +823,6 @@
                     if (composer) { composer.style.height = 'auto'; composer.style.height = Math.min(composer.scrollHeight, 120) + 'px'; }
                 }));
                 this.$watch('filter', val => localStorage.setItem('metis_chat_filter_' + this.currentUserId, val));
-                this.$watch('userFilter', val => localStorage.setItem('metis_chat_userFilter_' + this.currentUserId, val));
                 this.$watch('userSort', val => localStorage.setItem('metis_chat_userSort_' + this.currentUserId, val));
 
                 this.poll();
@@ -1514,24 +1513,29 @@
                 return onlineUser?.is_online ? 'Active now' : (onlineUser?.last_seen_label || 'Direct Message');
             },
 
+            userDetailsLabel(user) {
+                return [user?.location, user?.lob_team_name ? 'LOB: ' + user.lob_team_name : null]
+                    .filter(Boolean).join(' · ');
+            },
+
             conversationLocation(conv) {
                 if (!conv) return null;
                 if (conv.type === 'group') return null;
                 const other = conv.active_members?.find(m => Number(m.user_id) !== Number(this.currentUserId));
                 const user = this.users.find(u => Number(u.id) === Number(other?.user_id));
-                return user?.location || null;
+                return this.userDetailsLabel(user) || null;
             },
 
             senderLocation(message) {
                 if (!message || !message.sender_id) return null;
                 const user = this.users.find(u => Number(u.id) === Number(message.sender_id));
-                return user?.location || null;
+                return this.userDetailsLabel(user) || null;
             },
 
             userLocation(userId) {
                 if (!userId) return null;
                 const user = this.users.find(u => Number(u.id) === Number(userId));
-                return user?.location || null;
+                return this.userDetailsLabel(user) || null;
             },
 
             lastTime(item) {

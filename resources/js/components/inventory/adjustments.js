@@ -45,6 +45,7 @@ export default () => ({
   productNames: {},
   productSearchVersion: 0,
   listRequestVersion: 0,
+  warehouseRequestVersion: 0,
   isLoading: false,
   saving: false,
   isEditing: false,
@@ -126,11 +127,12 @@ export default () => ({
 
   async searchProducts(query) {
     const version = ++this.productSearchVersion;
+    const warehouseId = this.form.warehouse_id;
     try {
       const params = new URLSearchParams({ q: query || '' });
       if (this.form.warehouse_id) params.set('warehouse_id', this.form.warehouse_id);
       const data = await this.apiRequest(`/api/inventory/adjustments/options?${params}`);
-      if (version !== this.productSearchVersion) return;
+      if (version !== this.productSearchVersion || String(warehouseId) !== String(this.form.warehouse_id)) return;
       this.products = data.products || [];
       this.rememberProducts(this.products);
       Object.values(data.stocks || {}).forEach((stock) => {
@@ -230,6 +232,8 @@ export default () => ({
   },
 
   async fetchWarehouseStocks() {
+    const version = ++this.warehouseRequestVersion;
+    ++this.productSearchVersion;
     const warehouseId = this.form.warehouse_id;
     if (!warehouseId) {
       this.warehouseStocks = {};
@@ -237,7 +241,10 @@ export default () => ({
     }
     try {
       const params = new URLSearchParams({ warehouse_id: warehouseId });
+      [...new Set(this.form.items.map(item => item.product_id).filter(Boolean))]
+        .forEach(id => params.append('product_ids[]', id));
       const data = await this.apiRequest(`/api/inventory/adjustments/options?${params}`);
+      if (version !== this.warehouseRequestVersion || String(warehouseId) !== String(this.form.warehouse_id)) return;
       const stocks = {};
       Object.values(data.stocks || {}).forEach((stock) => {
         stocks[stock.product_id] = parseFloat(stock.quantity);
@@ -251,6 +258,7 @@ export default () => ({
         }
       });
     } catch (e) {
+      if (version !== this.warehouseRequestVersion) return;
       console.error('Failed to fetch warehouse stocks:', e);
       this.warehouseStocks = {};
     }
@@ -291,6 +299,8 @@ export default () => ({
   },
 
   resetForm() {
+    ++this.warehouseRequestVersion;
+    ++this.productSearchVersion;
     this.isEditing = false;
     this.form = {
       id: null,
@@ -398,6 +408,7 @@ export default () => ({
   },
 
   async saveItem() {
+    if (this.saving) return;
     if (!this.form.warehouse_id) {
       showToast('Please select a warehouse location.', 'error');
       return;
