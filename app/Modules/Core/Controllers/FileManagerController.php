@@ -6,6 +6,7 @@ use App\Models\SystemFile;
 use App\Models\SystemSetting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class FileManagerController extends Controller
@@ -22,11 +23,12 @@ class FileManagerController extends Controller
     public function preview(Request $request)
     {
         $filename = $request->query('f');
-        if (!is_string($filename) || !$filename || $filename === '.' || $filename === '..' || str_contains($filename, '/') || str_contains($filename, '\\')) {
+        if (!is_string($filename) || !$filename || $filename === '.' || $filename === '..' || str_contains($filename, "\0") || str_contains($filename, '/') || str_contains($filename, '\\')) {
             abort(404);
         }
 
-        $absolutePath = storage_path('app/public/uploads/' . $filename);
+        abort_unless(config('filesystems.disks.public.driver') === 'local', 404);
+        $absolutePath = Storage::disk('public')->path('uploads/' . $filename);
         if (!is_file($absolutePath)) {
             abort(404);
         }
@@ -36,29 +38,35 @@ class FileManagerController extends Controller
             session()->save();
         }
 
-        return response()->file($absolutePath, [
+        $mime = (new \Symfony\Component\Mime\MimeTypes)->guessMimeType($absolutePath) ?: 'application/octet-stream';
+        $inline = str_starts_with($mime, 'image/') || str_starts_with($mime, 'video/') || $mime === 'application/pdf';
+        $response = $inline ? response()->file($absolutePath) : response()->download($absolutePath, $filename);
+        $response->headers->add([
             'Access-Control-Allow-Origin' => '*',
-            'Cache-Control' => 'public, max-age=31536000'
+            'Cache-Control' => 'public, max-age=31536000',
+            'X-Content-Type-Options' => 'nosniff',
         ]);
+        if ($mime === 'image/svg+xml') $response->headers->set('Content-Security-Policy', 'sandbox');
+        return $response;
     }
 
     public function index()
     {
         $files = SystemFile::latest()->get()->map(function ($fileRecord) {
-            $disk = Storage::disk('public');
             $url = $this->getFileUrl($fileRecord);
 
             $typeCategory = 'other';
             $icon = 'bi-file-earmark';
-            if (str_starts_with($fileRecord->mime_type, 'image/')) {
+            $mime = (string) $fileRecord->mime_type;
+            if (str_starts_with($mime, 'image/')) {
                 $typeCategory = 'image';
                 $icon = 'bi-file-earmark-image';
-            } elseif (str_starts_with($fileRecord->mime_type, 'video/')) {
+            } elseif (str_starts_with($mime, 'video/')) {
                 $typeCategory = 'video';
                 $icon = 'bi-file-earmark-play';
-            } elseif (str_starts_with($fileRecord->mime_type, 'application/pdf')) {
+            } elseif ($mime === 'application/pdf' || str_starts_with($mime, 'text/') || preg_match('/(word|excel|powerpoint|officedocument|opendocument|rtf|json)/i', $mime)) {
                 $typeCategory = 'document';
-                $icon = 'bi-file-earmark-pdf';
+                $icon = $mime === 'application/pdf' ? 'bi-file-earmark-pdf' : 'bi-file-earmark-text';
             }
 
             return [
@@ -68,8 +76,8 @@ class FileManagerController extends Controller
                 'type' => $typeCategory,
                 'icon' => $icon,
                 'size' => $this->formatBytes($fileRecord->size),
-                'modifiedDate' => $fileRecord->created_at?->format('M d, Y h:i A') ?? 'Unknown',
-                'modifiedAt' => $fileRecord->created_at?->toIso8601String(),
+                'modifiedDate' => ($fileRecord->updated_at ?? $fileRecord->created_at)?->format('M d, Y h:i A') ?? 'Unknown',
+                'modifiedAt' => ($fileRecord->updated_at ?? $fileRecord->created_at)?->toIso8601String(),
                 'sizeBytes' => (int) $fileRecord->size,
                 'url' => $url,
                 'typeLabel' => ucfirst($typeCategory),
@@ -138,18 +146,30 @@ class FileManagerController extends Controller
 
         $file = $request->file('file');
 
-        // Ensure secure, unique physical filename on disk
-        $originalName = $file->getClientOriginalName();
-        $filename = time().'_'.Str::random(10).'.'.$file->getClientOriginalExtension();
+        $originalName = basename(str_replace('\\', '/', $file->getClientOriginalName()));
+        $originalName = trim(preg_replace('/[\x00-\x1F\x7F]/', '', $originalName));
+        abort_if(in_array($originalName, ['', '.', '..'], true) || mb_strlen($originalName) > 255, 422, 'Choose a file name between 1 and 255 characters');
+        $mime = $file->getMimeType() ?: 'application/octet-stream';
+        $extension = strtolower($file->guessExtension() ?: 'bin');
+        if (in_array($extension, ['php', 'phtml', 'phar', 'cgi', 'pl', 'py', 'sh', 'asp', 'aspx', 'jsp'], true)) {
+            $extension = 'bin';
+        }
+        $filename = time().'_'.Str::random(20).'.'.$extension;
         $path = $file->storeAs('uploads', $filename, 'public');
+        abort_unless(is_string($path) && $path !== '', 500, 'Could not store uploaded file');
 
-        $fileRecord = SystemFile::create([
-            'original_name' => $originalName,
-            'filename' => $filename,
-            'mime_type' => $file->getClientMimeType(),
-            'size' => $file->getSize(),
-            'path' => $path,
-        ]);
+        try {
+            $fileRecord = DB::transaction(fn () => SystemFile::create([
+                'original_name' => $originalName,
+                'filename' => $filename,
+                'mime_type' => $mime,
+                'size' => $file->getSize(),
+                'path' => $path,
+            ]));
+        } catch (\Throwable $error) {
+            Storage::disk('public')->delete($path);
+            throw $error;
+        }
 
         return response()->json([
             'message' => 'File uploaded successfully',
@@ -160,65 +180,77 @@ class FileManagerController extends Controller
     public function delete(Request $request)
     {
         $request->validate([
-            'id' => 'required',
+            'id' => 'required|integer|min:1',
         ]);
 
-        $id = $request->input('id');
-        $fileRecord = SystemFile::find($id);
-
-        if ($fileRecord) {
-            if (Storage::disk('public')->exists($fileRecord->path)) {
-                abort_unless(Storage::disk('public')->delete($fileRecord->path), 500, 'Could not delete file');
-            }
-
-            // Remove only settings that reference this exact file, including its query string.
-            $url = $this->getFileUrl($fileRecord);
-            $storageUrl = Storage::disk('public')->url($fileRecord->path);
-            $references = array_unique([$url, $this->relativeFileUrl($url), $storageUrl, $this->relativeFileUrl($storageUrl)]);
-            SystemSetting::whereIn('key', [
+        $deleted = DB::transaction(function () use ($request) {
+            $fileRecord = SystemFile::lockForUpdate()->find($request->input('id'));
+            if (! $fileRecord) return false;
+            $disk = Storage::disk('public');
+            $references = array_unique([
+                $this->relativeFileUrl($this->getFileUrl($fileRecord)),
+                $this->relativeFileUrl($disk->url($fileRecord->path)),
+            ]);
+            $settings = SystemSetting::whereIn('key', [
                 'login_background_image', 'default_image_logo_png', 'default_image_logo_svg',
                 'default_image_default_avatar_jpeg', 'default_image_product-placeholder_svg',
-            ])->whereIn('value', $references)->delete();
+            ])->get();
+            foreach ($settings as $setting) {
+                if (in_array($this->relativeFileUrl((string) $setting->value), $references, true)) $setting->delete();
+            }
             $fileRecord->delete();
-
-            return response()->json(['message' => 'File deleted successfully']);
-        }
-
-        return response()->json(['error' => 'File not found'], 404);
+            if ($disk->exists($fileRecord->path)) {
+                abort_unless($disk->delete($fileRecord->path), 500, 'Could not delete file');
+            }
+            return true;
+        });
+        return $deleted
+            ? response()->json(['message' => 'File deleted successfully'])
+            : response()->json(['error' => 'File not found'], 404);
     }
 
     public function rename(Request $request)
     {
+        if (is_string($request->input('newName'))) $request->merge(['newName' => trim($request->input('newName'))]);
         $request->validate([
-            'id' => 'required',
-            'newName' => 'required|string|max:255|not_in:.,..',
+            'id' => 'required|integer|min:1',
+            'newName' => ['required', 'string', 'max:255', 'not_in:.,..', function ($attribute, $value, $fail) {
+                if (preg_match('/[\\\\\/\x00-\x1F\x7F]/', $value)) $fail('File names cannot contain path separators or control characters.');
+            }],
         ]);
 
-        $id = $request->input('id');
-        $newName = basename($request->input('newName'));
+        $newName = $request->input('newName');
+        $fileRecord = DB::transaction(function () use ($request, $newName) {
+            $file = SystemFile::lockForUpdate()->find($request->input('id'));
+            if (! $file) return null;
+            // Logical rename preserves the physical filename and existing links.
+            $file->original_name = $newName;
+            $file->save();
+            return $file;
+        });
+        if (! $fileRecord) return response()->json(['error' => 'File not found'], 404);
 
-        $fileRecord = SystemFile::find($id);
-
-        if (! $fileRecord) {
-            return response()->json(['error' => 'File not found'], 404);
-        }
-
-        // We only rename the logical presentation name in the DB.
-        // We do not change the actual file on disk to preserve caching/links.
-        $fileRecord->original_name = $newName;
-        $fileRecord->save();
-
-        $disk = Storage::disk('public');
         $newUrl = $this->getFileUrl($fileRecord);
 
-        return response()->json(['message' => 'File renamed successfully', 'url' => $newUrl]);
+        return response()->json(['message' => 'File renamed successfully', 'url' => $newUrl, 'name' => $newName]);
+    }
+
+    public function download(Request $request)
+    {
+        $request->validate(['id' => ['required', 'integer', 'min:1']]);
+        $file = SystemFile::findOrFail($request->input('id'));
+        $disk = Storage::disk('public');
+        abort_unless($disk->exists($file->path), 404);
+        return $disk->download($file->path, $file->original_name, ['X-Content-Type-Options' => 'nosniff']);
     }
 
     public function downloadZip(Request $request)
     {
         $request->validate([
             'ids' => 'required|array|min:1',
-            'ids.*' => 'required',
+            'ids.*' => ['required', function ($attribute, $value, $fail) {
+                if ((! is_string($value) && ! is_int($value)) || (! ctype_digit((string) $value) && ! str_starts_with((string) $value, 'asset:'))) $fail('Invalid file selection.');
+            }],
         ]);
 
         $ids = collect($request->input('ids'))->unique();
@@ -236,25 +268,28 @@ class FileManagerController extends Controller
                 abort(500, 'Could not create zip file');
             }
             $opened = true;
-            $addEntry = function (string $name, string $contents) use ($zip, &$entries, &$names) {
+            $addEntry = function (string $name, ?string $contents = null, ?string $sourcePath = null) use ($zip, &$entries, &$names) {
                 $name = basename(str_replace('\\', '/', $name));
                 if ($name === '' || $name === '.' || $name === '..') $name = 'file';
                 $candidate = $name;
                 $suffix = 1;
                 while (isset($names[$candidate])) $candidate = ($suffix++).'_'.$name;
-                if (!$zip->addFromString($candidate, $contents)) abort(500, 'Could not add file to zip');
+                if (!($sourcePath !== null ? $zip->addFile($sourcePath, $candidate) : $zip->addFromString($candidate, $contents))) abort(500, 'Could not add file to zip');
                 $names[$candidate] = true;
                 $entries++;
             };
             foreach ($fileRecords as $record) {
-                if ($disk->exists($record->path)) $addEntry($record->original_name, $disk->get($record->path));
+                if ($disk->exists($record->path)) {
+                    if (config('filesystems.disks.public.driver') === 'local') $addEntry($record->original_name, null, $disk->path($record->path));
+                    else $addEntry($record->original_name, $disk->get($record->path));
+                }
             }
             foreach ($ids as $id) {
                 if (!str_starts_with((string) $id, 'asset:')) continue;
                 $name = substr($id, 6);
                 if (basename($name) !== $name || str_contains($name, '\\')) continue;
                 $path = public_path('assets/images/'.$name);
-                if (is_file($path)) $addEntry($name, file_get_contents($path));
+                if (is_file($path)) $addEntry($name, null, $path);
             }
             abort_if($entries === 0, 404, 'No downloadable files found');
             if (!$zip->close()) abort(500, 'Could not finish zip file');
@@ -271,16 +306,30 @@ class FileManagerController extends Controller
     public function setLoginBackground(Request $request)
     {
         $request->validate([
-            'url' => 'required|string',
+            'file_id' => ['required_without:url', 'nullable', 'string'],
+            'url' => ['required_without:file_id', 'nullable', 'string'],
         ]);
-
-        $url = $request->input('url');
-        $path = $this->relativeFileUrl($url);
-
-        SystemSetting::updateOrCreate(
-            ['key' => 'login_background_image'],
-            ['value' => $path]
-        );
+        $fileId = $request->input('file_id');
+        if (! $fileId) {
+            // Retain compatibility with callers that send a listed file URL.
+            $relative = $this->relativeFileUrl($request->input('url'));
+            if (str_starts_with($relative, '/assets/images/')) {
+                $fileId = 'asset:'.substr($relative, strlen('/assets/images/'));
+            } else {
+                $record = SystemFile::all()->first(function ($file) use ($relative) {
+                    return in_array($relative, [
+                        $this->relativeFileUrl($this->getFileUrl($file)),
+                        $this->relativeFileUrl(Storage::disk('public')->url($file->path)),
+                    ], true);
+                });
+                abort_unless($record, 422, 'Choose an existing image file');
+                $fileId = (string) $record->id;
+            }
+        }
+        DB::transaction(function () use ($fileId) {
+            $path = $this->imageUrlForId($fileId);
+            SystemSetting::updateOrCreate(['key' => 'login_background_image'], ['value' => $path]);
+        });
 
         return response()->json(['message' => 'Login background updated successfully']);
     }
@@ -292,9 +341,19 @@ class FileManagerController extends Controller
             'target_name' => 'required|string|in:logo.png,logo.svg,default_avatar.jpeg,product-placeholder.svg',
         ]);
 
-        $fileId = $request->input('file_id');
         $targetName = $request->input('target_name');
+        $url = DB::transaction(function () use ($request, $targetName) {
+            $url = $this->imageUrlForId($request->input('file_id'));
+            $settingKey = 'default_image_' . str_replace('.', '_', $targetName);
+            SystemSetting::updateOrCreate(['key' => $settingKey], ['value' => $url]);
+            return $url;
+        });
 
+        return response()->json(['message' => 'Default image updated successfully', 'url' => $url]);
+    }
+
+    private function imageUrlForId(string $fileId): string
+    {
         $url = '';
         if (str_starts_with($fileId, 'asset:')) {
             $filename = substr($fileId, 6);
@@ -302,21 +361,14 @@ class FileManagerController extends Controller
             abort_unless(in_array(strtolower(pathinfo($filename, PATHINFO_EXTENSION)), ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg']), 422, 'Choose an image file');
             $url = '/assets/images/' . $filename;
         } else {
-            $fileRecord = SystemFile::findOrFail($fileId);
-            abort_unless(str_starts_with($fileRecord->mime_type, 'image/'), 422, 'Choose an image file');
+            $fileRecord = SystemFile::lockForUpdate()->findOrFail($fileId);
+            abort_unless(str_starts_with((string) $fileRecord->mime_type, 'image/'), 422, 'Choose an image file');
             abort_unless(Storage::disk('public')->exists($fileRecord->path), 404);
             $url = $this->getFileUrl($fileRecord);
-            $url = $this->relativeFileUrl($url);
+            if (config('filesystems.disks.public.driver') === 'local') $url = $this->relativeFileUrl($url);
         }
 
-        $settingKey = 'default_image_' . str_replace('.', '_', $targetName);
-
-        SystemSetting::updateOrCreate(
-            ['key' => $settingKey],
-            ['value' => $url]
-        );
-
-        return response()->json(['message' => 'Default image updated successfully', 'url' => $url]);
+        return $url;
     }
 
     private function relativeFileUrl(string $url): string

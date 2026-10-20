@@ -223,6 +223,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         Route::post('/upload', [FileManagerController::class, 'upload']);
         Route::delete('/', [FileManagerController::class, 'delete']);
         Route::post('/rename', [FileManagerController::class, 'rename']);
+        Route::get('/download', [FileManagerController::class, 'download']);
         Route::post('/download-zip', [FileManagerController::class, 'downloadZip']);
         Route::post('/login-background', [FileManagerController::class, 'setLoginBackground']);
         Route::post('/set-default-image', [FileManagerController::class, 'setDefaultImage']);

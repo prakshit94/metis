@@ -12,7 +12,7 @@
             <p class="text-muted mb-0 small">Organize, share, and manage your files.</p>
         </div>
         <div>
-            <button class="btn btn-primary" @click="uploadFile()">
+            <button class="btn btn-primary" @click="uploadFile()" :disabled="uploading">
                 <i class="bi bi-cloud-upload me-1"></i>Upload File
             </button>
         </div>
@@ -111,10 +111,10 @@
                         <strong x-text="selectedFiles.length"></strong> file(s) selected
                     </span>
                     <div class="d-flex gap-2 flex-wrap">
-                        <button class="btn btn-sm btn-primary" @click="downloadSelected()">
+                        <button class="btn btn-sm btn-primary" @click="downloadSelected()" :disabled="downloading">
                             <i class="bi bi-download me-1"></i>Download
                         </button>
-                        <button class="btn btn-sm btn-outline-danger" @click="deleteSelected()">
+                        <button class="btn btn-sm btn-outline-danger" @click="deleteSelected()" :disabled="bulkDeleting">
                             <i class="bi bi-trash me-1"></i>Delete
                         </button>
                         <button class="btn btn-sm btn-outline-secondary" @click="selectedFiles = []"><i class="bi bi-x-lg"></i></button>
@@ -123,8 +123,9 @@
             </div>
 
             {{-- Empty/Upload State --}}
+            <div x-show="loadError" x-text="loadError" x-cloak class="alert alert-danger m-3" role="alert"></div>
             <div x-show="loading" x-cloak class="text-center py-4 text-muted" role="status">Loading files…</div>
-            <div x-show="!loading && currentFiles.length === 0" x-cloak class="text-center py-5">
+            <div x-show="!loading && !loadError && currentFiles.length === 0" x-cloak class="text-center py-5">
                 <i class="bi bi-folder2-open fs-1 text-muted mb-3 d-block opacity-50"></i>
                 <h5 class="text-muted">No files found</h5>
                 <p class="small text-muted mt-1 mb-4">Upload your first file or adjust your search filters.</p>
@@ -191,6 +192,7 @@
                                             <li x-show="file.type === 'image'"><hr class="dropdown-divider"></li>
                                             <li x-show="file.type === 'image'"><h6 class="dropdown-header">Set as Default</h6></li>
                                             <li x-show="file.type === 'image'"><a class="dropdown-item" href="#" @click.prevent="setDefaultImage(file, 'logo.png')"><i class="bi bi-star me-2 text-primary"></i>App Logo (PNG)</a></li>
+                                            <li x-show="file.type === 'image'"><a class="dropdown-item" href="#" @click.prevent="setDefaultImage(file, 'logo.svg')"><i class="bi bi-star me-2 text-primary"></i>App Logo (SVG)</a></li>
                                             <li x-show="file.type === 'image'"><a class="dropdown-item" href="#" @click.prevent="setDefaultImage(file, 'default_avatar.jpeg')"><i class="bi bi-person me-2 text-primary"></i>Default Avatar</a></li>
                                             <li x-show="file.type === 'image'"><a class="dropdown-item" href="#" @click.prevent="setDefaultImage(file, 'product-placeholder.svg')"><i class="bi bi-box me-2 text-primary"></i>Product Placeholder</a></li>
                                             <li x-show="!file.isAsset"><hr class="dropdown-divider"></li>
@@ -214,10 +216,36 @@
                 <div class="row g-3">
                     <template x-for="file in currentFiles" :key="file.id">
                         <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6">
-                            <div class="card h-100 cursor-pointer border hover-shadow transition-all" 
+                            <div class="card files-grid-card h-100 cursor-pointer border hover-shadow transition-all"
                                  :class="selectedFiles.includes(file.id) ? 'border-primary bg-primary bg-opacity-10' : 'border-secondary-subtle'"
                                  @click="selectFile(file)" @dblclick="openFile(file)">
                                 <div class="card-body text-center p-3 position-relative">
+                                    <div class="position-absolute top-0 start-0 p-2 dropdown" @click.stop @dblclick.stop>
+                                        <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="dropdown" :aria-label="'Actions for ' + file.name">
+                                            <i class="bi bi-three-dots"></i>
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                                            <li><a class="dropdown-item" href="#" @click.prevent="downloadFile(file)">
+                                                <i class="bi bi-download me-2 text-primary"></i>Download
+                                            </a></li>
+                                            <li x-show="file.type === 'image'"><a class="dropdown-item" href="#" @click.prevent="setLoginBackground(file)">
+                                                <i class="bi bi-card-image me-2 text-success"></i>Set Login Background
+                                            </a></li>
+                                            <li x-show="file.type === 'image'"><hr class="dropdown-divider"></li>
+                                            <li x-show="file.type === 'image'"><h6 class="dropdown-header">Set as Default</h6></li>
+                                            <li x-show="file.type === 'image'"><a class="dropdown-item" href="#" @click.prevent="setDefaultImage(file, 'logo.png')"><i class="bi bi-star me-2 text-primary"></i>App Logo (PNG)</a></li>
+                                            <li x-show="file.type === 'image'"><a class="dropdown-item" href="#" @click.prevent="setDefaultImage(file, 'logo.svg')"><i class="bi bi-star me-2 text-primary"></i>App Logo (SVG)</a></li>
+                                            <li x-show="file.type === 'image'"><a class="dropdown-item" href="#" @click.prevent="setDefaultImage(file, 'default_avatar.jpeg')"><i class="bi bi-person me-2 text-primary"></i>Default Avatar</a></li>
+                                            <li x-show="file.type === 'image'"><a class="dropdown-item" href="#" @click.prevent="setDefaultImage(file, 'product-placeholder.svg')"><i class="bi bi-box me-2 text-primary"></i>Product Placeholder</a></li>
+                                            <li x-show="!file.isAsset"><hr class="dropdown-divider"></li>
+                                            <li x-show="!file.isAsset"><a class="dropdown-item" href="#" @click.prevent="renameFile(file)">
+                                                <i class="bi bi-pencil me-2 text-warning"></i>Rename
+                                            </a></li>
+                                            <li x-show="!file.isAsset"><a class="dropdown-item text-danger" href="#" @click.prevent="deleteFile(file)">
+                                                <i class="bi bi-trash me-2"></i>Delete
+                                            </a></li>
+                                        </ul>
+                                    </div>
                                     <div class="position-absolute top-0 end-0 p-2">
                                         <input type="checkbox" class="form-check-input border-secondary" :aria-label="'Select ' + file.name" :checked="selectedFiles.includes(file.id)" @change="toggleFileSelection(file.id)" @click.stop style="cursor:pointer;">
                                     </div>
@@ -248,6 +276,7 @@
 .files-management .files-table-scroll table { min-width: 720px; }
 .files-management .files-table-scroll:has(.dropdown-menu.show) { padding-bottom: 14rem; }
 .files-management .files-table-scroll td:nth-child(2) a { overflow-wrap: anywhere; }
+.files-management .files-grid-card:has(.dropdown-menu.show) { z-index: 3; }
 
 .hover-shadow:hover {
     box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important;
