@@ -4,204 +4,187 @@
 @section('page', 'files')
 
 @section('content')
-<div class="files-management" x-data="filesComponent">
-    {{-- Page Header --}}
-    <div class="d-flex flex-wrap gap-3 justify-content-between align-items-center mb-4">
+<div class="files-management" x-data="filesComponent" x-cloak>
+    <div class="files-page-header d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4 mb-lg-5">
         <div>
-            <h1 class="h3 mb-1 fw-bold"><i class="bi bi-folder-fill text-primary me-2"></i>File Manager</h1>
-            <p class="text-muted mb-0 small">Organize, share, and manage your files.</p>
+            <h1 class="h3 fw-bold mb-1"><i class="bi bi-folder2-open text-primary me-2" aria-hidden="true"></i>File Manager</h1>
+            <p class="text-body-secondary mb-0">Manage uploaded files, images, and application assets.</p>
         </div>
-        <div>
-            <button class="btn btn-primary" @click="uploadFile()" :disabled="uploading">
-                <i class="bi bi-cloud-upload me-1"></i>Upload File
+        <div class="files-page-actions d-flex gap-2">
+            <button type="button" class="btn btn-outline-secondary" @click="refreshFiles()" :disabled="loading" aria-label="Refresh files">
+                <i class="bi bi-arrow-clockwise me-2" aria-hidden="true"></i>Refresh
+            </button>
+            <button type="button" class="btn btn-primary" @click="uploadFile()" :disabled="uploading">
+                <span x-show="uploading" class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
+                <i x-show="!uploading" class="bi bi-cloud-arrow-up me-2" aria-hidden="true"></i><span x-text="uploading ? 'Uploading…' : 'Upload Files'"></span>
             </button>
         </div>
     </div>
 
-    {{-- Stats Cards --}}
-    <div class="row g-3 mb-4">
-        <div class="col-xl-3 col-lg-6">
+    <div class="row g-4 mb-4 mb-lg-5">
+        <div class="col-12 col-sm-6 col-xl-3">
             <div class="card stats-card h-100 border-start border-4 border-primary">
-                <div class="card-body p-3 p-lg-4">
-                    <div class="d-flex align-items-center gap-3">
-                        <div class="stats-icon bg-primary bg-opacity-10 text-primary fs-3 rounded-3 p-2 flex-shrink-0"><i class="bi bi-folder2-open"></i></div>
-                        <div>
-                            <p class="mb-1 small text-muted">Total Files</p>
-                            <div class="h4 mb-0 fw-bold" x-text="allFiles.length || '0'"></div>
-                        </div>
+                <div class="card-body d-flex align-items-center gap-3 p-3 p-lg-4">
+                    <div class="stats-icon bg-primary bg-opacity-10 text-primary flex-shrink-0"><i class="bi bi-folder2-open" aria-hidden="true"></i></div>
+                    <div class="min-w-0">
+                        <p class="h6 mb-1 text-muted">Total Files</p>
+                        <div class="h3 fw-bold mb-1 text-body-emphasis" aria-live="polite" x-text="allFiles.length || '0'"></div>
+                        <small class="text-body-secondary">Uploaded files and core assets</small>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-xl-3 col-lg-6">
-            <div class="card stats-card h-100 border-start border-4 border-success">
-                <div class="card-body p-3 p-lg-4">
-                    <div class="d-flex align-items-center gap-3">
-                        <div class="stats-icon bg-info bg-opacity-10 text-info fs-3 rounded-3 p-2 flex-shrink-0"><i class="bi bi-image"></i></div>
-                        <div>
-                            <p class="mb-1 small text-muted">Images</p>
-                            <div class="h4 mb-0 fw-bold text-info" x-text="allFiles.filter(f => f.type === 'image').length || '0'"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-xl-3 col-lg-6">
-            <div class="card stats-card h-100 border-start border-4 border-warning">
-                <div class="card-body p-3 p-lg-4">
-                    <div class="d-flex align-items-center gap-3">
-                        <div class="stats-icon bg-warning bg-opacity-10 text-warning fs-3 rounded-3 p-2 flex-shrink-0"><i class="bi bi-hdd-fill"></i></div>
-                        <div class="w-100">
-                            <p class="mb-1 small text-muted">Total File Size</p>
-                            <div class="h4 mb-0 fw-bold" x-text="storageUsed"></div>
-                            <small class="text-muted">Uploaded files and listed assets</small>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-xl-3 col-lg-6">
+        <div class="col-12 col-sm-6 col-xl-3">
             <div class="card stats-card h-100 border-start border-4 border-info">
-                <div class="card-body p-3 p-lg-4">
-                    <div class="d-flex align-items-center gap-3">
-                        <div class="stats-icon bg-success bg-opacity-10 text-success fs-3 rounded-3 p-2 flex-shrink-0"><i class="bi bi-hdd-network-fill"></i></div>
-                        <div>
-                            <p class="mb-1 small text-muted">Documents</p>
-                            <div class="h4 mb-0 fw-bold text-success" x-text="allFiles.filter(file => file.type === 'document').length"></div>
-                        </div>
+                <div class="card-body d-flex align-items-center gap-3 p-3 p-lg-4">
+                    <div class="stats-icon bg-info bg-opacity-10 text-info flex-shrink-0"><i class="bi bi-image" aria-hidden="true"></i></div>
+                    <div class="min-w-0">
+                        <p class="h6 mb-1 text-muted">Images</p>
+                        <div class="h3 fw-bold mb-1 text-body-emphasis" aria-live="polite" x-text="allFiles.filter(file => file.type === 'image').length"></div>
+                        <small class="text-body-secondary">Photos, logos, and illustrations</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card stats-card h-100 border-start border-4 border-success">
+                <div class="card-body d-flex align-items-center gap-3 p-3 p-lg-4">
+                    <div class="stats-icon bg-success bg-opacity-10 text-success flex-shrink-0"><i class="bi bi-file-earmark-text" aria-hidden="true"></i></div>
+                    <div class="min-w-0">
+                        <p class="h6 mb-1 text-muted">Documents</p>
+                        <div class="h3 fw-bold mb-1 text-body-emphasis" aria-live="polite" x-text="allFiles.filter(file => file.type === 'document').length"></div>
+                        <small class="text-body-secondary">Documents in your library</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card stats-card h-100 border-start border-4 border-warning">
+                <div class="card-body d-flex align-items-center gap-3 p-3 p-lg-4">
+                    <div class="stats-icon bg-warning bg-opacity-10 text-warning flex-shrink-0"><i class="bi bi-hdd" aria-hidden="true"></i></div>
+                    <div class="min-w-0">
+                        <p class="h6 mb-1 text-muted">Storage Used</p>
+                        <div class="h3 fw-bold mb-1 text-body-emphasis" aria-live="polite" x-text="storageUsed"></div>
+                        <small class="text-body-secondary">Total size of listed files</small>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    {{-- Data Table Card --}}
-    <div class="card">
-        <div class="card-header">
-            <div class="row align-items-center g-2">
-                <div class="col"><h2 class="h5 card-title mb-0">Files Overview</h2></div>
-                <div class="col-auto">
-                    <div class="d-flex flex-wrap gap-2 justify-content-end align-items-center">
-                        <div class="position-relative">
-                            <input type="search" aria-label="Search files" class="form-control form-control-sm pe-4" placeholder="Search files..." x-model="searchQuery" @input.debounce.400ms="filterFiles()" style="width:220px;">
-                            <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-2 text-muted small"></i>
-                        </div>
-                        <select aria-label="Sort files" class="form-select form-select-sm" x-model="sortBy" @change="sortFiles()" style="width:140px;">
-                            <option value="name">Sort by Name</option>
-                            <option value="date">Sort by Date</option>
-                            <option value="size">Sort by Size</option>
-                            <option value="type">Sort by Type</option>
-                        </select>
-                        <div class="btn-group btn-group-sm">
-                            <button aria-label="Grid view" :aria-pressed="viewMode === 'grid'" class="btn" :class="viewMode === 'grid' ? 'btn-primary' : 'btn-outline-secondary'" @click="viewMode = 'grid'"><i class="bi bi-grid"></i></button>
-                            <button aria-label="List view" :aria-pressed="viewMode === 'list'" class="btn" :class="viewMode === 'list' ? 'btn-primary' : 'btn-outline-secondary'" @click="viewMode = 'list'"><i class="bi bi-list-ul"></i></button>
-                        </div>
-                        <button class="btn btn-sm btn-outline-secondary" @click="refreshFiles()" :disabled="loading" aria-label="Refresh files" title="Refresh"><i class="bi bi-arrow-clockwise"></i></button>
-                    </div>
+    <div class="card files-library">
+        <div class="card-header p-3 p-lg-4">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                <div>
+                    <h2 class="h5 card-title mb-1">File Library</h2>
+                    <p class="small text-body-secondary mb-0">Browse files, manage names, and choose your application images.</p>
+                </div>
+                <span class="files-library-count badge bg-primary-subtle text-primary-emphasis border border-primary-subtle rounded-pill px-3 py-2"><span x-text="allFiles.length"></span> files</span>
+            </div>
+            <div class="files-toolbar d-flex flex-wrap align-items-center gap-2 mt-4">
+                <div class="files-search position-relative flex-grow-1">
+                    <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-body-secondary" aria-hidden="true"></i>
+                    <input type="search" aria-label="Search files" class="form-control form-control-sm ps-5" placeholder="Search files by name or type…" x-model="searchQuery" @input.debounce.400ms="filterFiles()">
+                </div>
+                <select aria-label="Sort files" class="form-select form-select-sm files-sort" x-model="sortBy" @change="sortFiles()">
+                    <option value="name">Name: A to Z</option>
+                    <option value="date">Recently modified</option>
+                    <option value="size">Size: Small to large</option>
+                    <option value="type">File type</option>
+                </select>
+                <div class="btn-group btn-group-sm files-view-toggle" role="group" aria-label="File view">
+                    <button type="button" aria-label="List view" :aria-pressed="viewMode === 'list'" class="btn" :class="viewMode === 'list' ? 'btn-primary' : 'btn-outline-secondary'" @click="viewMode = 'list'"><i class="bi bi-list-ul" aria-hidden="true"></i></button>
+                    <button type="button" aria-label="Grid view" :aria-pressed="viewMode === 'grid'" class="btn" :class="viewMode === 'grid' ? 'btn-primary' : 'btn-outline-secondary'" @click="viewMode = 'grid'"><i class="bi bi-grid" aria-hidden="true"></i></button>
                 </div>
             </div>
         </div>
 
+        <div class="files-library-navigation d-flex flex-wrap justify-content-between align-items-center gap-2 px-3 px-lg-4 pt-3 border-bottom">
+            <nav class="nav nav-tabs border-0 gap-1" aria-label="File collections">
+                <button type="button" class="nav-link" :class="{ 'active': !currentFolder }" @click="navigateToBreadcrumb(0)"><i class="bi bi-files me-2" aria-hidden="true"></i>All Files</button>
+                <button type="button" class="nav-link" :class="{ 'active': currentFolder?.name === 'Uploads' }" @click="openFolder({name: 'Uploads'})"><i class="bi bi-cloud-arrow-up me-2" aria-hidden="true"></i>Uploads</button>
+                <button type="button" class="nav-link" :class="{ 'active': currentFolder?.name === 'Assets' }" @click="openFolder({name: 'Assets'})"><i class="bi bi-shield-check me-2" aria-hidden="true"></i>Core Assets</button>
+            </nav>
+            <small class="text-body-secondary pb-3"><i class="bi bi-shield-lock me-1" aria-hidden="true"></i>Core assets are protected</small>
+        </div>
+
         <div class="card-body p-0">
-            {{-- Bulk Actions Bar --}}
-            <div class="px-3 py-2 border-bottom bg-primary bg-opacity-10" x-show="selectedFiles.length > 0" x-transition x-cloak>
-                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-                    <span class="fw-medium text-primary small">
-                        <i class="bi bi-check-circle-fill me-1"></i>
-                        <strong x-text="selectedFiles.length"></strong> file(s) selected
-                    </span>
-                    <div class="d-flex gap-2 flex-wrap">
-                        <button class="btn btn-sm btn-primary" @click="downloadSelected()" :disabled="downloading">
-                            <i class="bi bi-download me-1"></i>Download
-                        </button>
-                        <button class="btn btn-sm btn-outline-danger" @click="deleteSelected()" :disabled="bulkDeleting">
-                            <i class="bi bi-trash me-1"></i>Delete
-                        </button>
-                        <button class="btn btn-sm btn-outline-secondary" @click="selectedFiles = []"><i class="bi bi-x-lg"></i></button>
+            <div class="bulk-actions-bar files-selection p-3 bg-primary bg-opacity-10 border-bottom border-primary border-opacity-25" x-show="selectedFiles.length > 0" x-transition>
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                    <span class="fw-semibold text-primary small"><i class="bi bi-check-circle-fill me-2" aria-hidden="true"></i><strong x-text="selectedFiles.length"></strong> file(s) selected</span>
+                    <div class="d-flex flex-wrap gap-2">
+                        <button type="button" class="btn btn-sm btn-primary" @click="downloadSelected()" :disabled="downloading"><i class="bi bi-download me-1" aria-hidden="true"></i>Download ZIP</button>
+                        <button type="button" class="btn btn-sm btn-outline-danger" @click="deleteSelected()" :disabled="bulkDeleting"><i class="bi bi-trash me-1" aria-hidden="true"></i>Delete</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" @click="selectedFiles = []" aria-label="Clear file selection"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
                     </div>
                 </div>
             </div>
+            <div x-show="loadError" x-text="loadError" class="alert alert-danger m-3" role="alert"></div>
+            <div x-show="loading" class="files-loading text-center p-4 text-body-secondary" role="status"><span class="spinner-border spinner-border-sm text-primary me-2" aria-hidden="true"></span>Loading files…</div>
 
-            {{-- Empty/Upload State --}}
-            <div x-show="loadError" x-text="loadError" x-cloak class="alert alert-danger m-3" role="alert"></div>
-            <div x-show="loading" x-cloak class="text-center py-4 text-muted" role="status">Loading files…</div>
-            <div x-show="!loading && !loadError && currentFiles.length === 0" x-cloak class="text-center py-5">
-                <i class="bi bi-folder2-open fs-1 text-muted mb-3 d-block opacity-50"></i>
-                <h5 class="text-muted">No files found</h5>
-                <p class="small text-muted mt-1 mb-4">Upload your first file or adjust your search filters.</p>
-                <div class="border border-dashed rounded-3 p-4 mx-auto" style="max-width: 400px; cursor: pointer; background: var(--bs-secondary-bg);" @click="uploadFile()">
-                    <i class="bi bi-cloud-upload fs-3 text-primary mb-2 d-block"></i>
-                    <span class="fw-medium">Click to upload files</span>
-                </div>
+            <div x-show="!loading && !loadError && currentFiles.length === 0" class="files-empty text-center px-3 py-5">
+                <div class="files-empty-icon mx-auto mb-3"><i class="bi bi-folder2-open" aria-hidden="true"></i></div>
+                <h3 class="h5 fw-semibold mb-2">No files found</h3>
+                <p class="text-body-secondary small mb-4">Upload a file or adjust your search to find what you need.</p>
+                <button type="button" class="btn btn-primary" @click="uploadFile()" :disabled="uploading"><i class="bi bi-cloud-arrow-up me-2" aria-hidden="true"></i>Upload Files</button>
             </div>
 
-            {{-- List View --}}
-            <div class="table-responsive files-table-scroll" x-show="viewMode === 'list' && currentFiles.length > 0" x-cloak>
-                <table class="table table-hover align-middle mb-0">
+            <div class="table-responsive files-table-scroll" x-show="viewMode === 'list' && currentFiles.length > 0">
+                <table class="table table-hover align-middle mb-0 files-table">
                     <thead class="table-light">
                         <tr>
-                            <th style="width:40px;">
-                                <input type="checkbox" class="form-check-input border-secondary" aria-label="Select all visible files" :checked="allVisibleSelected" x-effect="$el.indeterminate = selectedFiles.length > 0 && !allVisibleSelected" @change="toggleSelectAll()" style="cursor:pointer;">
-                            </th>
-                            <th>Name</th>
-                            <th>Size</th>
-                            <th>Modified</th>
-                            <th>Type</th>
-                            <th style="width:100px;">Actions</th>
+                            <th scope="col" class="files-selection-column"><input type="checkbox" class="form-check-input" aria-label="Select all visible files" :checked="allVisibleSelected" x-effect="$el.indeterminate = selectedFiles.length > 0 && !allVisibleSelected" @change="toggleSelectAll()"></th>
+                            <th scope="col">File Name</th>
+                            <th scope="col">Type</th>
+                            <th scope="col">Size</th>
+                            <th scope="col">Last Modified</th>
+                            <th scope="col" class="text-end">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         <template x-for="file in currentFiles" :key="file.id">
                             <tr :class="{ 'table-active': selectedFiles.includes(file.id) }">
-                                <td>
-                                    <input type="checkbox" class="form-check-input border-secondary" :aria-label="'Select ' + file.name" :checked="selectedFiles.includes(file.id)" @change="toggleFileSelection(file.id)" style="cursor:pointer;">
-                                </td>
-                                <td>
-                                    <div class="d-flex align-items-center">
-                                        <div :class="file.type !== 'image' ? `file-icon ${file.type} text-center me-3 rounded text-white` : 'me-3'" :style="file.type !== 'image' ? 'width:36px; height:36px; display:flex; align-items:center; justify-content:center; overflow:hidden;' : ''">
-                                            <img x-show="file.type === 'image'" :src="file.type === 'image' ? file.url : null" alt="Preview" class="border" style="width: 40px; height: 40px; object-fit: cover; border-radius: 8px; cursor: pointer;" x-on:error="if ($el.getAttribute('src') !== '/assets/images/default_avatar.jpeg') $el.src = '/assets/images/default_avatar.jpeg'; else $el.style.display = 'none'" @click.stop="openFile(file)">
-                                            <i x-show="file.type !== 'image'" :class="file.icon" class="fs-5"></i>
-                                        </div>
-                                        <div class="d-flex flex-column">
-                                            <a href="#" class="fw-medium small text-decoration-none text-body-emphasis" @click.prevent.stop="openFile(file)" x-text="file.name"></a>
-                                            <div class="d-flex flex-wrap mt-1">
-                                                <template x-for="role in (file.defaultRoles || [])">
-                                                    <span class="badge bg-primary-subtle text-primary-emphasis me-1 border border-primary-subtle" style="width:fit-content; font-size:0.65rem;" x-text="role"></span>
-                                                </template>
+                                <td><input type="checkbox" class="form-check-input" :aria-label="'Select ' + file.name" :checked="selectedFiles.includes(file.id)" @change="toggleFileSelection(file.id)"></td>
+                                <td class="files-name-column">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <button type="button" class="files-thumbnail flex-shrink-0" @click.stop="openFile(file)" :aria-label="'Preview ' + file.name">
+                                            <img x-show="file.type === 'image'" :src="file.type === 'image' ? file.url : null" alt="" x-on:error="if ($el.getAttribute('src') !== '/assets/images/default_avatar.jpeg') $el.src = '/assets/images/default_avatar.jpeg'; else $el.style.display = 'none'">
+                                            <i x-show="file.type !== 'image'" :class="file.icon" class="fs-4 text-primary" aria-hidden="true"></i>
+                                        </button>
+                                        <div class="min-w-0">
+                                            <a href="#" class="files-name fw-semibold text-body-emphasis text-decoration-none" :title="file.name" @click.prevent.stop="openFile(file)" x-text="file.name"></a>
+                                            <div class="small text-body-secondary mt-1"><i x-show="file.isAsset" class="bi bi-shield-lock me-1" aria-hidden="true"></i><span x-text="file.isAsset ? 'Core asset' : 'Uploaded file'"></span></div>
+                                            <div class="d-flex flex-wrap gap-1 mt-1" x-show="(file.defaultRoles || []).length">
+                                                <template x-for="role in (file.defaultRoles || [])" :key="role"><span class="badge files-role bg-primary-subtle text-primary-emphasis border border-primary-subtle" x-text="role === 'App Logo (PNG)' ? 'App Logo' : role"></span></template>
                                             </div>
                                         </div>
                                     </div>
                                 </td>
-                                <td><span class="small text-muted font-monospace" x-text="file.size"></span></td>
-                                <td><span class="small text-muted" x-text="file.modifiedDate"></span></td>
-                                <td>
-                                    <span class="badge bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle small text-capitalize" x-text="file.typeLabel"></span>
-                                </td>
-                                <td>
+                                <td><span class="badge files-type bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle" x-text="file.typeLabel"></span></td>
+                                <td class="small text-body-secondary text-nowrap font-monospace" x-text="file.size"></td>
+                                <td class="small text-body-secondary text-nowrap" x-text="file.modifiedDate"></td>
+                                <td class="text-end">
                                     <div class="dropdown">
-                                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" :aria-label="'Actions for ' + file.name">
-                                            <i class="bi bi-three-dots"></i>
-                                        </button>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary files-action-button" data-bs-toggle="dropdown" :aria-label="'Actions for ' + file.name" :disabled="!!busyFiles[file.id]"><i class="bi bi-three-dots" aria-hidden="true"></i></button>
                                         <ul class="dropdown-menu dropdown-menu-end shadow-sm">
-                                            <li><a class="dropdown-item" href="#" @click.prevent="downloadFile(file)">
-                                                <i class="bi bi-download me-2 text-primary"></i>Download
-                                            </a></li>
-                                            <li x-show="file.type === 'image'"><a class="dropdown-item" href="#" @click.prevent="setLoginBackground(file)">
-                                                <i class="bi bi-card-image me-2 text-success"></i>Set Login Background
-                                            </a></li>
-                                            <li x-show="file.type === 'image'"><hr class="dropdown-divider"></li>
-                                            <li x-show="file.type === 'image'"><h6 class="dropdown-header">Set as Default</h6></li>
-                                            <li x-show="file.type === 'image'"><a class="dropdown-item" href="#" @click.prevent="setDefaultImage(file, 'logo.png')"><i class="bi bi-star me-2 text-primary"></i>App Logo (PNG)</a></li>
-                                            <li x-show="file.type === 'image'"><a class="dropdown-item" href="#" @click.prevent="setDefaultImage(file, 'logo.svg')"><i class="bi bi-star me-2 text-primary"></i>App Logo (SVG)</a></li>
-                                            <li x-show="file.type === 'image'"><a class="dropdown-item" href="#" @click.prevent="setDefaultImage(file, 'default_avatar.jpeg')"><i class="bi bi-person me-2 text-primary"></i>Default Avatar</a></li>
-                                            <li x-show="file.type === 'image'"><a class="dropdown-item" href="#" @click.prevent="setDefaultImage(file, 'product-placeholder.svg')"><i class="bi bi-box me-2 text-primary"></i>Product Placeholder</a></li>
-                                            <li x-show="!file.isAsset"><hr class="dropdown-divider"></li>
-                                            <li x-show="!file.isAsset"><a class="dropdown-item" href="#" @click.prevent="renameFile(file)">
-                                                <i class="bi bi-pencil me-2 text-warning"></i>Rename
-                                            </a></li>
-                                            <li x-show="!file.isAsset"><a class="dropdown-item text-danger" href="#" @click.prevent="deleteFile(file)">
-                                                <i class="bi bi-trash me-2"></i>Delete
-                                            </a></li>
+                                        <li><a class="dropdown-item" href="#" @click.prevent="downloadFile(file)">
+                                        <i class="bi bi-download me-2 text-primary"></i>Download
+                                        </a></li>
+                                        <li x-show="file.type === 'image'"><a class="dropdown-item" href="#" @click.prevent="setLoginBackground(file)">
+                                        <i class="bi bi-card-image me-2 text-success"></i>Set Login Background
+                                        </a></li>
+                                        <li x-show="file.type === 'image'"><hr class="dropdown-divider"></li>
+                                        <li x-show="file.type === 'image'"><h6 class="dropdown-header">Use image as</h6></li>
+                                        <li x-show="file.type === 'image'"><a class="dropdown-item" href="#" @click.prevent="setDefaultImage(file, 'logo.png')"><i class="bi bi-star me-2 text-primary"></i>App Logo</a></li>
+                                        <li x-show="file.type === 'image'"><a class="dropdown-item" href="#" @click.prevent="setDefaultImage(file, 'default_avatar.jpeg')"><i class="bi bi-person me-2 text-primary"></i>Default Avatar</a></li>
+                                        <li x-show="file.type === 'image'"><a class="dropdown-item" href="#" @click.prevent="setDefaultImage(file, 'product-placeholder.svg')"><i class="bi bi-box me-2 text-primary"></i>Product Placeholder</a></li>
+                                        <li x-show="!file.isAsset"><hr class="dropdown-divider"></li>
+                                        <li x-show="!file.isAsset"><a class="dropdown-item" href="#" @click.prevent="renameFile(file)">
+                                        <i class="bi bi-pencil me-2 text-warning"></i>Rename
+                                        </a></li>
+                                        <li x-show="!file.isAsset"><a class="dropdown-item text-danger" href="#" @click.prevent="deleteFile(file)">
+                                        <i class="bi bi-trash me-2"></i>Delete
+                                        </a></li>
                                         </ul>
                                     </div>
                                 </td>
@@ -211,82 +194,57 @@
                 </table>
             </div>
 
-            {{-- Grid View --}}
-            <div class="p-4" x-show="viewMode === 'grid' && currentFiles.length > 0" x-cloak>
-                <div class="row g-3">
-                    <template x-for="file in currentFiles" :key="file.id">
-                        <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6">
-                            <div class="card files-grid-card h-100 cursor-pointer border hover-shadow transition-all"
-                                 :class="selectedFiles.includes(file.id) ? 'border-primary bg-primary bg-opacity-10' : 'border-secondary-subtle'"
-                                 @click="selectFile(file)" @dblclick="openFile(file)">
-                                <div class="card-body text-center p-3 position-relative">
-                                    <div class="position-absolute top-0 start-0 p-2 dropdown" @click.stop @dblclick.stop>
-                                        <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="dropdown" :aria-label="'Actions for ' + file.name">
-                                            <i class="bi bi-three-dots"></i>
-                                        </button>
+            <div class="files-grid p-3 p-lg-4" x-show="viewMode === 'grid' && currentFiles.length > 0">
+                <template x-for="file in currentFiles" :key="file.id">
+                    <article class="card files-grid-card h-100" :class="selectedFiles.includes(file.id) ? 'border-primary bg-primary bg-opacity-10' : ''" @click="selectFile(file)" @dblclick="openFile(file)">
+                        <div class="d-flex justify-content-between align-items-center p-3 pb-0">
+                            <input type="checkbox" class="form-check-input mt-0" :aria-label="'Select ' + file.name" :checked="selectedFiles.includes(file.id)" @change="toggleFileSelection(file.id)" @click.stop>
+                            <div class="dropdown" @click.stop @dblclick.stop>
+                                <button type="button" class="btn btn-sm btn-outline-secondary files-action-button" data-bs-toggle="dropdown" :aria-label="'Actions for ' + file.name" :disabled="!!busyFiles[file.id]"><i class="bi bi-three-dots" aria-hidden="true"></i></button>
                                         <ul class="dropdown-menu dropdown-menu-end shadow-sm">
-                                            <li><a class="dropdown-item" href="#" @click.prevent="downloadFile(file)">
-                                                <i class="bi bi-download me-2 text-primary"></i>Download
-                                            </a></li>
-                                            <li x-show="file.type === 'image'"><a class="dropdown-item" href="#" @click.prevent="setLoginBackground(file)">
-                                                <i class="bi bi-card-image me-2 text-success"></i>Set Login Background
-                                            </a></li>
-                                            <li x-show="file.type === 'image'"><hr class="dropdown-divider"></li>
-                                            <li x-show="file.type === 'image'"><h6 class="dropdown-header">Set as Default</h6></li>
-                                            <li x-show="file.type === 'image'"><a class="dropdown-item" href="#" @click.prevent="setDefaultImage(file, 'logo.png')"><i class="bi bi-star me-2 text-primary"></i>App Logo (PNG)</a></li>
-                                            <li x-show="file.type === 'image'"><a class="dropdown-item" href="#" @click.prevent="setDefaultImage(file, 'logo.svg')"><i class="bi bi-star me-2 text-primary"></i>App Logo (SVG)</a></li>
-                                            <li x-show="file.type === 'image'"><a class="dropdown-item" href="#" @click.prevent="setDefaultImage(file, 'default_avatar.jpeg')"><i class="bi bi-person me-2 text-primary"></i>Default Avatar</a></li>
-                                            <li x-show="file.type === 'image'"><a class="dropdown-item" href="#" @click.prevent="setDefaultImage(file, 'product-placeholder.svg')"><i class="bi bi-box me-2 text-primary"></i>Product Placeholder</a></li>
-                                            <li x-show="!file.isAsset"><hr class="dropdown-divider"></li>
-                                            <li x-show="!file.isAsset"><a class="dropdown-item" href="#" @click.prevent="renameFile(file)">
-                                                <i class="bi bi-pencil me-2 text-warning"></i>Rename
-                                            </a></li>
-                                            <li x-show="!file.isAsset"><a class="dropdown-item text-danger" href="#" @click.prevent="deleteFile(file)">
-                                                <i class="bi bi-trash me-2"></i>Delete
-                                            </a></li>
+                                        <li><a class="dropdown-item" href="#" @click.prevent="downloadFile(file)">
+                                        <i class="bi bi-download me-2 text-primary"></i>Download
+                                        </a></li>
+                                        <li x-show="file.type === 'image'"><a class="dropdown-item" href="#" @click.prevent="setLoginBackground(file)">
+                                        <i class="bi bi-card-image me-2 text-success"></i>Set Login Background
+                                        </a></li>
+                                        <li x-show="file.type === 'image'"><hr class="dropdown-divider"></li>
+                                        <li x-show="file.type === 'image'"><h6 class="dropdown-header">Use image as</h6></li>
+                                        <li x-show="file.type === 'image'"><a class="dropdown-item" href="#" @click.prevent="setDefaultImage(file, 'logo.png')"><i class="bi bi-star me-2 text-primary"></i>App Logo</a></li>
+                                        <li x-show="file.type === 'image'"><a class="dropdown-item" href="#" @click.prevent="setDefaultImage(file, 'default_avatar.jpeg')"><i class="bi bi-person me-2 text-primary"></i>Default Avatar</a></li>
+                                        <li x-show="file.type === 'image'"><a class="dropdown-item" href="#" @click.prevent="setDefaultImage(file, 'product-placeholder.svg')"><i class="bi bi-box me-2 text-primary"></i>Product Placeholder</a></li>
+                                        <li x-show="!file.isAsset"><hr class="dropdown-divider"></li>
+                                        <li x-show="!file.isAsset"><a class="dropdown-item" href="#" @click.prevent="renameFile(file)">
+                                        <i class="bi bi-pencil me-2 text-warning"></i>Rename
+                                        </a></li>
+                                        <li x-show="!file.isAsset"><a class="dropdown-item text-danger" href="#" @click.prevent="deleteFile(file)">
+                                        <i class="bi bi-trash me-2"></i>Delete
+                                        </a></li>
                                         </ul>
-                                    </div>
-                                    <div class="position-absolute top-0 end-0 p-2">
-                                        <input type="checkbox" class="form-check-input border-secondary" :aria-label="'Select ' + file.name" :checked="selectedFiles.includes(file.id)" @change="toggleFileSelection(file.id)" @click.stop style="cursor:pointer;">
-                                    </div>
-                                    <div :class="file.type !== 'image' ? `file-icon ${file.type} text-white rounded d-inline-flex align-items-center justify-content-center mb-2` : 'mb-2'" :style="file.type !== 'image' ? 'width:48px; height:48px; overflow:hidden;' : ''">
-                                        <img x-show="file.type === 'image'" :src="file.type === 'image' ? file.url : null" alt="Preview" class="border" style="width: 48px; height: 48px; object-fit: cover; border-radius: 8px; cursor: pointer;" x-on:error="if ($el.getAttribute('src') !== '/assets/images/default_avatar.jpeg') $el.src = '/assets/images/default_avatar.jpeg'; else $el.style.display = 'none'" @click.stop="openFile(file)">
-                                        <i x-show="file.type !== 'image'" :class="file.icon" class="fs-3"></i>
-                                    </div>
-                                    <h6 class="fw-semibold text-truncate small mb-1"><a href="#" class="text-decoration-none text-body-emphasis" @click.prevent.stop="openFile(file)" x-text="file.name" :title="file.name"></a></h6>
-                                    <p class="text-muted small mb-0" style="font-size:0.7rem;" x-text="`${file.size} • ${file.modifiedDate}`"></p>
-                                    <div class="d-flex flex-wrap justify-content-center mt-2">
-                                        <template x-for="role in (file.defaultRoles || [])">
-                                            <span class="badge bg-primary-subtle text-primary-emphasis m-1 border border-primary-subtle" style="font-size:0.6rem;" x-text="role"></span>
-                                        </template>
-                                    </div>
-                                </div>
                             </div>
                         </div>
-                    </template>
-                </div>
+                        <button type="button" class="files-grid-preview mx-3 mt-3" @click.stop="openFile(file)" @dblclick.stop :aria-label="'Preview ' + file.name">
+                            <img x-show="file.type === 'image'" :src="file.type === 'image' ? file.url : null" alt="" loading="lazy" x-on:error="if ($el.getAttribute('src') !== '/assets/images/default_avatar.jpeg') $el.src = '/assets/images/default_avatar.jpeg'; else $el.style.display = 'none'">
+                            <i x-show="file.type !== 'image'" :class="file.icon" class="text-primary" aria-hidden="true"></i>
+                        </button>
+                        <div class="card-body p-3">
+                            <div class="d-flex justify-content-between align-items-center gap-2 mb-2"><span class="badge files-type bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle" x-text="file.typeLabel"></span><small class="text-body-secondary" x-text="file.size"></small></div>
+                            <a href="#" class="files-name fw-semibold text-body-emphasis text-decoration-none" :title="file.name" @click.prevent.stop="openFile(file)" x-text="file.name"></a>
+                            <p class="small text-body-secondary mt-1 mb-2"><i x-show="file.isAsset" class="bi bi-shield-lock me-1" aria-hidden="true"></i><span x-text="file.isAsset ? 'Core asset' : 'Uploaded file'"></span></p>
+                            <div class="d-flex flex-wrap gap-1" x-show="(file.defaultRoles || []).length"><template x-for="role in (file.defaultRoles || [])" :key="role"><span class="badge files-role bg-primary-subtle text-primary-emphasis border border-primary-subtle" x-text="role === 'App Logo (PNG)' ? 'App Logo' : role"></span></template></div>
+                        </div>
+                        <div class="card-footer px-3 py-2 d-flex justify-content-between align-items-center gap-2">
+                            <small class="text-body-secondary files-grid-date" x-text="file.modifiedDate"></small>
+                            <button type="button" class="btn btn-sm btn-outline-secondary flex-shrink-0" @click.stop="downloadFile(file)" @dblclick.stop :disabled="!!busyFiles[file.id]" :aria-label="'Download ' + file.name"><i class="bi bi-download" aria-hidden="true"></i></button>
+                        </div>
+                    </article>
+                </template>
             </div>
-
+        </div>
+        <div class="card-footer files-library-footer d-flex flex-wrap justify-content-between align-items-center gap-2 px-3 px-lg-4 py-3">
+            <small class="text-body-secondary">Showing <strong class="text-body-emphasis" x-text="currentFiles.length"></strong> of <strong class="text-body-emphasis" x-text="allFiles.length"></strong> files</small>
+            <small class="text-body-secondary"><i class="bi bi-info-circle me-1" aria-hidden="true"></i>Maximum upload size: 10 MB per file</small>
         </div>
     </div>
 </div>
-
-<style>
-.files-management .files-table-scroll { overflow-x: auto; }
-.files-management .files-table-scroll table { min-width: 720px; }
-.files-management .files-table-scroll:has(.dropdown-menu.show) { padding-bottom: 14rem; }
-.files-management .files-table-scroll td:nth-child(2) a { overflow-wrap: anywhere; }
-.files-management .files-grid-card:has(.dropdown-menu.show) { z-index: 3; }
-
-.hover-shadow:hover {
-    box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important;
-    transform: translateY(-2px);
-}
-.transition-all {
-    transition: all .2s ease-in-out;
-}
-.border-dashed {
-    border-style: dashed !important;
-}
-</style>
 @endsection

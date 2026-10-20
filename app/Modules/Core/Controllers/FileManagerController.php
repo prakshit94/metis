@@ -7,6 +7,7 @@ use App\Models\SystemSetting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class FileManagerController extends Controller
@@ -118,7 +119,6 @@ class FileManagerController extends Controller
         $resolvedRoles = [
             'Login Background' => SystemSetting::where('key', 'login_background_image')->value('value') ?: asset('assets/images/background.png'),
             'App Logo (PNG)' => SystemSetting::where('key', 'default_image_logo_png')->value('value') ?: asset('assets/images/logo.png'),
-            'App Logo (SVG)' => SystemSetting::where('key', 'default_image_logo_svg')->value('value') ?: asset('assets/images/logo.svg'),
             'Default Avatar' => $configuredDefaultAvatar ?: asset('assets/images/default_avatar.jpeg'),
             'Product Placeholder' => SystemSetting::where('key', 'default_image_product-placeholder_svg')->value('value') ?: asset('assets/images/product-placeholder.svg')
         ];
@@ -155,8 +155,36 @@ class FileManagerController extends Controller
             $extension = 'bin';
         }
         $filename = time().'_'.Str::random(20).'.'.$extension;
-        $path = $file->storeAs('uploads', $filename, 'public');
-        abort_unless(is_string($path) && $path !== '', 500, 'Could not store uploaded file');
+        $path = 'uploads/'.$filename;
+        $disk = null;
+        $stream = null;
+        try {
+            $disk = Storage::disk('public');
+            $stream = fopen($file->getRealPath(), 'rb');
+            if (! is_resource($stream)) throw new \RuntimeException('The temporary uploaded file could not be opened.');
+            // Use the configured disk's driver so write errors are not swallowed by throw=false.
+            // The stream API preserves the disk's root, visibility and other storage settings.
+            $disk->getDriver()->writeStream($path, $stream);
+        } catch (\Throwable $error) {
+            $reference = (string) Str::uuid();
+            $diagnostics = $this->uploadStorageDiagnostics();
+            $this->logUploadIssue('error', 'Files upload storage write failed', array_merge($diagnostics, [
+                'reference' => $reference,
+                'exception_class' => get_class($error),
+                'reason' => $error->getMessage(),
+            ]));
+            if ($disk) $this->cleanupFailedUpload($disk, $path, $reference);
+
+            $message = 'Upload storage is unavailable. Ask the administrator to check production storage.';
+            if (isset($diagnostics['directory_writable']) && ! $diagnostics['directory_writable']) {
+                $message = 'The upload folder is not writable by the server. Ask the administrator to correct its ownership or permissions.';
+            } elseif (isset($diagnostics['free_space_bytes']) && $diagnostics['free_space_bytes'] < $file->getSize()) {
+                $message = 'The server does not have enough free storage for this upload.';
+            }
+            return response()->json(['message' => $message.' Reference: '.$reference, 'reference' => $reference], 500);
+        } finally {
+            if (is_resource($stream)) fclose($stream);
+        }
 
         try {
             $fileRecord = DB::transaction(fn () => SystemFile::create([
@@ -167,7 +195,7 @@ class FileManagerController extends Controller
                 'path' => $path,
             ]));
         } catch (\Throwable $error) {
-            Storage::disk('public')->delete($path);
+            $this->cleanupFailedUpload($disk, $path);
             throw $error;
         }
 
@@ -175,6 +203,49 @@ class FileManagerController extends Controller
             'message' => 'File uploaded successfully',
             'path' => $this->getFileUrl($fileRecord),
         ]);
+    }
+
+    private function uploadStorageDiagnostics(): array
+    {
+        $driver = config('filesystems.disks.public.driver');
+        $diagnostics = ['disk' => 'public', 'driver' => $driver];
+        if ($driver !== 'local') return $diagnostics;
+
+        $root = (string) config('filesystems.disks.public.root');
+        $directory = rtrim($root, '/\\').DIRECTORY_SEPARATOR.'uploads';
+        $ancestor = $directory;
+        while (! is_dir($ancestor) && dirname($ancestor) !== $ancestor) $ancestor = dirname($ancestor);
+        clearstatcache(true, $directory);
+        $freeSpace = is_dir($ancestor) ? @disk_free_space($ancestor) : false;
+        return array_merge($diagnostics, [
+            'root' => $root,
+            'upload_directory' => $directory,
+            'directory_exists' => is_dir($directory),
+            'directory_writable' => is_dir($directory) ? is_writable($directory) : is_writable($ancestor),
+            'free_space_bytes' => $freeSpace === false ? null : $freeSpace,
+            'process_uid' => function_exists('posix_geteuid') ? posix_geteuid() : null,
+        ]);
+    }
+
+    private function logUploadIssue(string $level, string $message, array $context): void
+    {
+        try {
+            Log::log($level, $message, $context);
+        } catch (\Throwable $loggingError) {
+            // Preserve diagnostics in the PHP server log if Laravel's log directory is also unwritable.
+            error_log($message.' '.json_encode($context, JSON_UNESCAPED_SLASHES));
+        }
+    }
+
+    private function cleanupFailedUpload($disk, string $path, ?string $reference = null): void
+    {
+        try {
+            if ($disk->delete($path)) return;
+        } catch (\Throwable $error) {
+            $this->logUploadIssue('warning', 'Files failed-upload cleanup failed', ['reference' => $reference, 'reason' => $error->getMessage()]);
+            return;
+        }
+        $this->logUploadIssue('warning', 'Files failed-upload cleanup failed', ['reference' => $reference]);
     }
 
     public function delete(Request $request)
