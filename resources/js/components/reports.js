@@ -30,15 +30,17 @@ const registerComponent = () => {
     },
 
     downloadAdvancedReport() {
-      if (!this.dateFrom || !this.dateTo) {
+      if (this.reportType !== 'india_post' && (!this.dateFrom || !this.dateTo)) {
         this.showToast('Error', 'Please select both Date From and Date To', 'danger');
         return;
       }
 
       const url = new URL(window.location.origin + '/reports/export');
       url.searchParams.append('type', this.reportType);
-      url.searchParams.append('from', this.dateFrom);
-      url.searchParams.append('to', this.dateTo);
+      if (this.reportType !== 'india_post') {
+        url.searchParams.append('from', this.dateFrom);
+        url.searchParams.append('to', this.dateTo);
+      }
 
       window.location.href = url.toString();
 

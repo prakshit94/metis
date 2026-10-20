@@ -1062,6 +1062,7 @@ class PageController extends Controller
 
         return match ($type) {
             'sales_overview' => $this->exportSalesOverview($dateFrom, $dateTo),
+            'india_post' => $this->exportSalesOverview(null, null, true),
             'product_sales' => $this->exportProductSales($dateFrom, $dateTo),
             'sales_region' => $this->exportSalesRegion($dateFrom, $dateTo),
             'payment_reconciliation' => $this->exportPaymentReconciliation($dateFrom, $dateTo),
@@ -1117,7 +1118,7 @@ class PageController extends Controller
         return response()->stream($callback, 200, $headers);
     }
 
-    private function exportSalesOverview($dateFrom, $dateTo)
+    private function exportSalesOverview($dateFrom, $dateTo, bool $indiaPost = false)
     {
         $query = Order::query()->with([
             'party',
@@ -1128,6 +1129,10 @@ class PageController extends Controller
             'shippingAddress',
             'statusLogs.user:id,name',
         ]);
+        if ($indiaPost) {
+            $query->whereIn('status', ['ready_to_ship', 'dispatched']);
+        }
+
         if ($lobStateName = auth()->user()?->lob_state_name) {
             $query->where('shipping_state', $lobStateName);
         }
@@ -1141,7 +1146,7 @@ class PageController extends Controller
 
         $query->orderBy('id');
 
-        $fileName = 'sales_report_'.now()->format('Y-m-d_H-i-s').'.csv';
+        $fileName = ($indiaPost ? 'india_post_report_' : 'sales_report_').now()->format('Y-m-d_H-i-s').'.csv';
 
         $headers = [
             'Content-type' => 'text/csv',

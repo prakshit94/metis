@@ -22,7 +22,7 @@
                     <span class="report-summary-icon report-tone-primary" aria-hidden="true"><i class="bi bi-file-earmark-text"></i></span>
                     <div class="min-w-0">
                         <p class="report-summary-label text-body-secondary mb-1">Available reports</p>
-                        <p class="h5 fw-semibold mb-0">16</p>
+                        <p class="h5 fw-semibold mb-0">17</p>
                     </div>
                 </div>
             </div>
@@ -78,6 +78,7 @@
                         <select id="reportType" name="type" class="form-select report-control" x-model="reportType" aria-describedby="reportTypeHelp" required>
                         <optgroup label="Sales & Revenue">
                             <option value="sales_overview">Sales Performance Overview</option>
+                            <option value="india_post">India Post</option>
                             <option value="product_sales">Product Sales (Bestsellers)</option>
                             <option value="sales_region">Sales by Region</option>
                             <option value="payment_reconciliation">Payment Reconciliation</option>
@@ -107,18 +108,18 @@
                         </select>
                         <div id="reportTypeHelp" class="form-text">Browse reports grouped by business area.</div>
                     </div>
-                    <div class="col-sm-6 col-lg-3">
+                    <div class="col-sm-6 col-lg-3" x-show="reportType !== 'india_post'">
                         <label for="reportDateFrom" class="form-label fw-semibold">Date from</label>
-                        <input id="reportDateFrom" name="from" type="date" class="form-control report-control" x-model="dateFrom" :max="dateTo || null" aria-describedby="reportDateHelp" required>
+                        <input id="reportDateFrom" name="from" type="date" class="form-control report-control" x-model="dateFrom" :max="dateTo || null" aria-describedby="reportDateHelp" :disabled="reportType === 'india_post'" :required="reportType !== 'india_post'">
                     </div>
-                    <div class="col-sm-6 col-lg-3">
+                    <div class="col-sm-6 col-lg-3" x-show="reportType !== 'india_post'">
                         <label for="reportDateTo" class="form-label fw-semibold">Date to</label>
-                        <input id="reportDateTo" name="to" type="date" class="form-control report-control" x-model="dateTo" :min="dateFrom || null" aria-describedby="reportDateHelp" required>
+                        <input id="reportDateTo" name="to" type="date" class="form-control report-control" x-model="dateTo" :min="dateFrom || null" aria-describedby="reportDateHelp" :disabled="reportType === 'india_post'" :required="reportType !== 'india_post'">
                     </div>
                 </div>
                 <p id="reportDateHelp" class="small text-body-secondary mt-3 mb-0 d-flex align-items-start gap-2">
                     <i class="bi bi-info-circle flex-shrink-0" aria-hidden="true"></i>
-                    <span>Date filters apply where supported by the selected report.</span>
+                    <span x-text="reportType === 'india_post' ? 'Exports all ready-to-ship and dispatched orders across all dates, with complete status dates and times.' : 'Date filters apply where supported by the selected report.'">Date filters apply where supported by the selected report.</span>
                 </p>
             </div>
             <div class="card-footer report-export-footer p-4 d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-3">
