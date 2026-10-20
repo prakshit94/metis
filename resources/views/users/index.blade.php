@@ -571,11 +571,13 @@
                                                                         <i class="bi bi-pencil me-2"></i>Edit
                                                                     </a>
                                                                 </li>
+                                                                @if(auth()->user()->hasRole('Super Admin') && !session()->has('impersonated_by'))
                                                                 <li>
-                                                                    <a class="dropdown-item" href="#" @click.prevent="impersonateUser(user)" x-show="!user.isDeleted && user.id !== {{ auth()->id() }}">
+                                                                    <a class="dropdown-item" href="#" @click.prevent="impersonateUser(user)" :class="{ 'disabled': impersonating }" x-show="!user.isDeleted && user.id !== {{ auth()->id() }}">
                                                                         <i class="bi bi-box-arrow-in-right me-2 text-warning"></i> Impersonate
                                                                     </a>
                                                                 </li>
+                                                                @endif
                                                                 <li>
                                                                     <a class="dropdown-item" href="#" @click.prevent="$dispatch('open-change-password-modal', { userId: user.id })" x-show="!user.isDeleted">
                                                                         <i class="bi bi-key me-2"></i>Change Password

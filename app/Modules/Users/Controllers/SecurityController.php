@@ -12,7 +12,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Session;
 
 class SecurityController extends Controller
 {
@@ -179,49 +178,75 @@ class SecurityController extends Controller
     /**
      * Impersonate another user (Super Admin only).
      */
-    public function impersonate(Request $request, User $user)
+    public function impersonate(Request $request, User $user): JsonResponse
     {
+        $guard = Auth::guard('web');
+        abort_unless($request->hasSession() && $guard->check() && ! $request->bearerToken()
+            && (string) $guard->id() === (string) $request->user()?->id, 403, 'Impersonation requires a signed-in browser session.');
+        abort_if($request->session()->has('impersonated_by'), 409, 'Stop the current impersonation before starting another.');
         abort_unless($request->user()->hasRole('Super Admin'), 403, 'Only Super Admins can impersonate.');
-        abort_if($user->id === $request->user()->id, 400, 'Cannot impersonate yourself.');
-        abort_if(! $user->isActive() || $user->isSuspended(), 422, 'Cannot impersonate an inactive or suspended user.');
+        abort_if((string) $user->id === (string) $request->user()->id, 400, 'Cannot impersonate yourself.');
+        abort_if($user->trashed() || ! $user->isActive() || $user->isSuspended(), 422, 'Cannot impersonate a deleted, inactive or suspended user.');
 
-        $originalId = $request->user()->id;
-        
-        // Log in as the target user using the web guard
-        Auth::guard('web')->login($user);
-        $request->session()->regenerate();
-        
-        // Store original ID in session AFTER login
-        Session::put('impersonated_by', $originalId);
-        Session::forget('team_id');
-        Session::save();
+        $originalId = $guard->id();
+        $originalPasswordHash = $guard->hashPasswordForCookie($guard->user()->getAuthPassword());
+        $originalTeamId = $request->session()->get('team_id');
+        $this->switchImpersonationUser($request, $user);
+        $request->session()->put('impersonated_by', $originalId);
+        $request->session()->put('impersonation_original_team_id', $originalTeamId);
+        $request->session()->put('impersonation_original_password_hash', $originalPasswordHash);
 
-        return response()->json(['message' => 'Impersonating ' . $user->name, 'redirect' => '/']);
+        return response()->json(['message' => 'Impersonating '.$user->name, 'redirect' => '/']);
     }
 
     /**
-     * Stop impersonating and return to original user.
+     * Stop impersonating and return to the original eligible Super Admin.
      */
-    public function stopImpersonating(Request $request)
+    public function stopImpersonating(Request $request): JsonResponse
     {
-        if (!Session::has('impersonated_by')) {
+        abort_unless($request->hasSession() && ! $request->bearerToken(), 403, 'Impersonation requires a signed-in browser session.');
+        if (! $request->session()->has('impersonated_by')) {
             return response()->json(['message' => 'Not currently impersonating anyone.'], 400);
         }
 
-        $originalUserId = Session::get('impersonated_by');
-        $originalUser = User::find($originalUserId);
+        $originalUser = User::find($request->session()->get('impersonated_by'));
+        $originalTeamId = $request->session()->get('impersonation_original_team_id');
+        $originalPasswordHash = $request->session()->get('impersonation_original_password_hash');
+        // The target account's team context must not hide the original admin's roles.
+        $canReturn = $originalUser && $originalUser->isActive() && ! $originalUser->isSuspended()
+            && is_string($originalPasswordHash)
+            && hash_equals(Auth::guard('web')->hashPasswordForCookie($originalUser->getAuthPassword()), $originalPasswordHash)
+            && $originalUser->allRoles()->where('name', 'Super Admin')->where('guard_name', 'web')->exists();
 
-        Session::forget('impersonated_by');
-        Session::forget('team_id');
+        if (! $canReturn) {
+            Auth::guard('web')->logoutCurrentDevice();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+            setPermissionsTeamId(null);
 
-        if ($originalUser && $originalUser->isActive() && ! $originalUser->isSuspended()) {
-            Auth::guard('web')->login($originalUser);
-            $request->session()->regenerate();
-            Session::save();
-            return response()->json(['message' => 'Welcome back, ' . $originalUser->name, 'redirect' => '/users']);
+            return response()->json(['message' => 'The original account is no longer available for impersonation. You have been logged out.', 'redirect' => '/login']);
         }
 
-        return response()->json(['message' => 'Original user not found. Logging out.'], 400);
+        $this->switchImpersonationUser($request, $originalUser);
+        if ($originalTeamId !== null) {
+            $request->session()->put('team_id', $originalTeamId);
+            setPermissionsTeamId($originalTeamId);
+        }
+
+        return response()->json(['message' => 'Welcome back, '.$originalUser->name, 'redirect' => '/users']);
+    }
+
+    /** Keep identities, CSRF tokens, and permission/session data separate. */
+    private function switchImpersonationUser(Request $request, User $user): void
+    {
+        Auth::guard('web')->logoutCurrentDevice();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+        setPermissionsTeamId(null);
+        $user->unsetRelation('roles');
+        $user->unsetRelation('permissions');
+        Auth::guard('web')->login($user);
+        Auth::shouldUse('web');
     }
 
     /**

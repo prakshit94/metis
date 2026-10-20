@@ -242,6 +242,18 @@ class AuthController extends Controller
      */
     public function logout(Request $request): JsonResponse|RedirectResponse
     {
+        // Leaving a borrowed identity must not check out the real employee or
+        // rotate their remember token on their other devices.
+        if ($request->hasSession() && $request->session()->has('impersonated_by') && ! $request->bearerToken()) {
+            Auth::guard('web')->logoutCurrentDevice();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            return $this->isMobileRequest($request)
+                ? response()->json(['message' => 'Logged out successfully.'])
+                : redirect()->route('login');
+        }
+
         $apiUser = $request->user('sanctum');
         $user = $apiUser ?? Auth::guard('web')->user();
         if ($user) {
@@ -348,6 +360,11 @@ class AuthController extends Controller
     {
         // A new browser login invalidates every older browser and mobile login.
         $this->invalidateExistingCredentials($user);
+
+        if ($request->session()->has('impersonated_by')) {
+            $request->session()->forget(['impersonated_by', 'impersonation_original_team_id',
+                'impersonation_original_password_hash', 'team_id', 'password_hash_web']);
+        }
 
         $remember = (bool) $request->boolean('remember');
         Auth::guard('web')->login($user, $remember);

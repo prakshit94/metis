@@ -42,6 +42,7 @@ use App\Modules\Orders\Controllers\PaymentImportController;
 use App\Modules\Orders\Controllers\PromotionsController;
 use App\Modules\Orders\Controllers\RefundController;
 use App\Modules\Users\Controllers\AuthController;
+use App\Modules\Users\Controllers\SecurityController;
 use Illuminate\Support\Facades\Route;
 
 // ─── Public Auth Routes ───────────────────────────────────────────────────────
@@ -51,7 +52,15 @@ Route::middleware('guest')->group(function (): void {
     Route::post('/login', [AuthController::class, 'login'])->name('login.submit');
 });
 
+// These browser-only endpoints always need sessions and CSRF protection,
+// independently of Sanctum's configured first-party domain list.
+// A valid impersonation session may return even after its target is deleted.
+Route::post('/api/security/stop-impersonate', [SecurityController::class, 'stopImpersonating'])
+    ->middleware('throttle:api')->block(10, 10);
+
 Route::middleware('auth')->group(function (): void {
+    Route::post('/api/security/impersonate/{user}', [SecurityController::class, 'impersonate'])
+        ->middleware('throttle:api')->block(10, 10);
     Route::match(['get', 'post'], '/logout', [AuthController::class, 'logout'])->name('logout');
 });
 

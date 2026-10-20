@@ -205,8 +205,6 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::delete('/security/sessions/{id}', [SecurityController::class, 'terminateSession']);
         Route::post('/security/sessions/terminate-other', [SecurityController::class, 'terminateOtherSessions']);
         Route::post('/security/emergency-lockdown', [SecurityController::class, 'emergencyLockdown']);
-        Route::post('/security/impersonate/{user}', [SecurityController::class, 'impersonate']);
-        Route::post('/security/stop-impersonate', [SecurityController::class, 'stopImpersonating']);
         Route::post('/roles/{role}/clone', [SecurityController::class, 'cloneRole']);
 
         // Org Chart

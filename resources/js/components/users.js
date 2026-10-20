@@ -878,27 +878,34 @@ document.addEventListener('alpine:init', () => {
       }
     },
 
+    impersonating: false,
     async impersonateUser(user) {
+      if (this.impersonating) return;
       if (user.isDeleted) {
         showToast('Restore this user before impersonating.', 'warning');
         return;
       }
 
-      const confirmed = await confirmDelete({
-        title: 'Impersonate User?',
-        text: `Are you sure you want to log in as ${user.name}? All actions you take will be logged as them.`,
-        confirmButtonText: 'Yes, impersonate',
-      });
-      if (!confirmed) return;
-
+      this.impersonating = true;
       try {
-        const res = await apiFetch(`/api/security/impersonate/${user.id}`, { method: 'POST' });
-        showToast(res.message, 'success');
-        if (res.redirect) {
-          window.location.href = res.redirect;
+        const confirmed = await confirmDelete({
+          title: 'Impersonate User?',
+          text: `Are you sure you want to log in as ${user.name}? All actions you take will be logged as them.`,
+          confirmButtonText: 'Yes, impersonate',
+        });
+        if (!confirmed) return;
+
+        try {
+          const res = await apiFetch(`/api/security/impersonate/${user.id}`, { method: 'POST' });
+          showToast(res.message, 'success');
+          if (res.redirect) {
+            window.location.href = res.redirect;
+          }
+        } catch (err) {
+          showToast(`Failed to impersonate ${user.name}: ${err.message}`, 'danger');
         }
-      } catch (err) {
-        showToast(`Failed to impersonate ${user.name}: ${err.message}`, 'danger');
+      } finally {
+        this.impersonating = false;
       }
     },
 

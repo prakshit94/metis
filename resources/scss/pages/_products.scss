@@ -278,7 +278,7 @@
   // Keep wide tables inside their own scroll surface, including on mobile.
   .table-responsive { max-width: 100%; overflow-x: auto !important; }
   @media (max-width: 575.98px) {
-    .catalog-page-header > .d-flex { display: grid !important; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .catalog-page-header > .d-flex { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .catalog-page-header > .d-flex .btn { padding: .65rem .3rem; font-size: .75rem; white-space: nowrap; }
     .catalog-page-header > .d-flex .btn i { margin-right: .25rem !important; }
     .catalog-stat-value { font-size: 1.05rem; }

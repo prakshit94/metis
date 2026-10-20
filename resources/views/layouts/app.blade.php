@@ -64,11 +64,46 @@
 
 <body data-page="@yield('page', 'dashboard')" class="admin-layout">
     @if(Session::has('impersonated_by'))
-    <div id="impersonation-banner" class="alert alert-warning text-center rounded-0 mb-0 d-flex justify-content-center align-items-center shadow-sm w-100" style="position: fixed; top: 0; left: 0; right: 0; z-index: 1060; min-height: 40px;" x-data="{ initBanner() { const setH = () => document.documentElement.style.setProperty('--banner-h', this.$el.offsetHeight + 'px'); setH(); window.addEventListener('resize', setH); } }" x-init="initBanner()">
+    <div id="impersonation-banner" class="alert alert-warning text-center rounded-0 mb-0 d-flex flex-wrap justify-content-center align-items-center shadow-sm w-100" style="position: fixed; top: 0; left: 0; right: 0; z-index: 1060; min-height: 40px;" x-data="{
+        stopping: false,
+        error: '',
+        resizeHandler: null,
+        initBanner() {
+            this.resizeHandler = () => document.documentElement.style.setProperty('--banner-h', this.$el.offsetHeight + 'px');
+            this.resizeHandler();
+            window.addEventListener('resize', this.resizeHandler);
+        },
+        destroy() { window.removeEventListener('resize', this.resizeHandler); },
+        async stopImpersonating() {
+            if (this.stopping) return;
+            this.stopping = true;
+            this.error = '';
+            try {
+                const response = await fetch('/api/security/stop-impersonate', {
+                    method: 'POST', credentials: 'same-origin',
+                    headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content || '', 'Accept': 'application/json' }
+                });
+                if (response.status === 401 || response.status === 419) {
+                    window.location.href = '/login';
+                    return;
+                }
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.message || 'Unable to stop impersonating. Please try again.');
+                if (!data.redirect) throw new Error('The server did not return a destination. Please reload and try again.');
+                window.location.href = data.redirect;
+            } catch (error) {
+                this.error = error.message || 'Unable to stop impersonating. Please try again.';
+                this.$nextTick(() => this.resizeHandler());
+            } finally {
+                this.stopping = false;
+            }
+        }
+    }" x-init="initBanner()">
         <span class="me-3 fs-6"><i class="bi bi-box-arrow-in-right me-2"></i> You are currently impersonating <strong>{{ auth()->user()->name ?? '' }}</strong>.</span>
-        <button class="btn btn-sm btn-dark fw-bold px-3" @click="fetch('/api/security/stop-impersonate', {method:'POST', credentials: 'same-origin', headers:{'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, 'Accept':'application/json'}}).then(r=>r.json()).then(r=>{if(r.redirect) window.location.href=r.redirect;})">
-            Stop Impersonating
+        <button type="button" class="btn btn-sm btn-dark fw-bold px-3" @click="stopImpersonating()" :disabled="stopping" :aria-busy="stopping">
+            <span x-text="stopping ? 'Returning…' : 'Stop Impersonating'">Stop Impersonating</span>
         </button>
+        <span class="small text-danger w-100" role="alert" x-show="error" x-text="error" x-cloak></span>
     </div>
     <style>
         :root { --banner-h: 40px; }

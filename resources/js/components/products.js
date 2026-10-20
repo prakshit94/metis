@@ -198,6 +198,7 @@ document.addEventListener('alpine:init', () => {
     sortField: 'name',
     sortDirection: 'asc',
     isLoading: false,
+    showKpis: false,
     apiBase: '/api/products',
     charts: {},
     _resizeHandler: null,

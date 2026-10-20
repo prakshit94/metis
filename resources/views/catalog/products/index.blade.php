@@ -2,6 +2,7 @@
 
 @section('title', 'Product Management')
 @section('page', 'catalog-products')
+@section('hideBreadcrumbs', true)
 
 @section('content')
 @php
@@ -71,12 +72,11 @@
 </script>
 <div class="product-management" x-data="productTable" x-cloak>
 <!-- Page Header -->
-                    <div class="catalog-page-header d-flex justify-content-between align-items-center gap-3 mb-4">
-                        <div>
-                            <h1 class="h3 mb-0">Product Management</h1>
-                            <p class="text-muted mb-0">Manage your product catalog and inventory</p>
-                        </div>
+                    <div class="catalog-page-header d-flex justify-content-end align-items-center gap-3 mb-3">
                         <div class="d-flex flex-wrap gap-2 justify-content-end">
+                            <button type="button" class="btn btn-outline-secondary" @click="showKpis = !showKpis" :aria-expanded="showKpis" aria-controls="product-kpis">
+                                <i class="bi me-2" :class="showKpis ? 'bi-eye-slash' : 'bi-eye'" aria-hidden="true"></i><span x-text="showKpis ? 'Hide KPIs' : 'Show KPIs'">Show KPIs</span>
+                            </button>
                             @can('product-export')
                             <button type="button" class="btn btn-outline-secondary" @click="exportProducts()">
                                 <i class="bi bi-download me-2"></i>Export
@@ -97,7 +97,7 @@
 
                     <!-- Product Management Container -->
                     <div>
-<div class="row g-3 mb-2 catalog-summary">
+<div id="product-kpis" class="row g-3 mb-2 catalog-summary" x-show="showKpis">
     <div class="col-6 col-lg-4">
         <div class="catalog-stat w-100 h-100 text-start">
             <div class="d-flex justify-content-between gap-2"><span class="catalog-stat-label">Total products</span><i class="bi bi-box text-primary" aria-hidden="true"></i></div>
@@ -141,7 +141,7 @@
         </button>
     </div>
 </div>
-<p class="small text-muted mb-4">Summary follows search, category and warehouse. Availability and SKU filters apply to the table.</p>
+<p class="small text-muted mb-4" x-show="showKpis">Summary follows search, category and warehouse. Availability and SKU filters apply to the table.</p>
 
                         <!-- Products Table -->
                         <div class="card">

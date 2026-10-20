@@ -167,6 +167,9 @@ document.addEventListener('alpine:init', () => {
                     this.formData.password_confirmation = '';
                     this.showPassword = false;
                     this.showPasswordConfirmation = false;
+
+                    window.AdminApp?.notificationManager?.success(this.successMessage);
+                    bootstrap.Modal.getOrCreateInstance(document.getElementById('changePasswordModal')).hide();
                 }
             } catch (error) {
                 if (requestId !== this._requestId) return;

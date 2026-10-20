@@ -23,6 +23,14 @@ class EnsureUserIsActive
         // the application's default guard is the web session guard.
         $user = $request->user('sanctum') ?? Auth::guard('web')->user();
 
+        // A disabled target may only leave impersonation; the controller rechecks
+        // the original account before restoring it, or securely logs this session out.
+        if ($request->isMethod('POST') && $request->is('api/security/stop-impersonate')
+            && $request->hasSession() && $request->session()->has('impersonated_by')
+            && ! $request->bearerToken()) {
+            return $next($request);
+        }
+
         if ($user && (! $user->isActive() || $user->isSuspended())) {
             
             // Log out the user
