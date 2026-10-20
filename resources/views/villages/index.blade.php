@@ -769,6 +769,8 @@
                         <strong class="text-body" x-text="villageName"></strong> (<span x-text="pincode"></span>)
                     </div>
 
+                    <div x-show="loading" class="text-muted small mb-2">Loading service mappings…</div>
+                    <div x-show="loadError" x-text="loadError" class="alert alert-danger" role="alert"></div>
                     <div class="table-responsive">
                         <table class="table align-middle">
                             <thead>
@@ -806,7 +808,7 @@
                     </div>
                     <div class="modal-footer border-top-0 pt-3 px-0 pb-0">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-primary" :disabled="saving">
+                        <button type="submit" class="btn btn-primary" :disabled="saving || loading || !!loadError">
                             <span x-show="saving" class="spinner-border spinner-border-sm me-1"></span>
                             Save Configuration
                         </button>
@@ -831,22 +833,28 @@
                         <span x-text="status === 'available' ? 'Assigning' : 'Removing'"></span> services for <strong x-text="count"></strong> selected village(s).
                     </div>
                     <div class="mb-3">
-                        <label class="form-label fw-semibold">Select Services <span class="text-danger">*</span></label>
+                        <label class="form-label fw-semibold" x-text="status === 'available' ? 'Services to assign' : 'Services to keep assigned'"></label>
+                        <div x-show="loading" class="small text-muted mb-2">Loading current assignments…</div>
+                        <div x-show="loadError" x-text="loadError" class="alert alert-danger" role="alert"></div>
                         <div class="border rounded p-2" style="max-height: 200px; overflow-y: auto;">
                             <template x-for="s in services" :key="s.id">
                                 <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" :value="s.id" :id="'bulk_service_' + s.id" x-model="serviceIds">
-                                    <label class="form-check-label" :for="'bulk_service_' + s.id" x-text="s.name"></label>
+                                    <input class="form-check-input" type="checkbox" :value="s.id" :id="'bulk_service_' + s.id" x-model="serviceIds" :disabled="loading || saving || !!loadError"
+                                           :indeterminate="status === 'available' && isPartiallyAssigned(s) && !serviceIds.includes(String(s.id))">
+                                    <label class="form-check-label" :for="'bulk_service_' + s.id">
+                                        <span x-text="s.name"></span>
+                                        <small class="text-muted ms-1" x-text="'(' + s.assigned_count + '/' + count + ' assigned)' "></small>
+                                    </label>
                                 </div>
                             </template>
                         </div>
-                        <div class="form-text mt-1" x-text="status === 'available' ? 'Select the services to assign.' : 'Select the services to remove (active services are pre-selected).' "></div>
+                        <div class="form-text mt-1" x-text="status === 'available' ? 'Services assigned to every selected village are checked. A dash means assigned to some villages; check it to assign to all. Unchecking does not remove services here.' : 'Assigned services start checked. Uncheck only the services to remove; checked services stay unchanged.' "></div>
                     </div>
                     <div class="modal-footer border-top-0 pt-3 px-0 pb-0">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn" :class="status === 'available' ? 'btn-primary' : 'btn-warning'" :disabled="saving">
+                        <button type="submit" class="btn" :class="status === 'available' ? 'btn-primary' : 'btn-warning'" :disabled="saving || loading || !!loadError || !changedServiceIds.length">
                             <span x-show="saving" class="spinner-border spinner-border-sm me-1"></span>
-                            <span x-text="status === 'available' ? 'Assign to Selected' : 'Remove from Selected'"></span>
+                            <span x-text="status === 'available' ? 'Assign to Selected' : 'Remove Unchecked Services'"></span>
                         </button>
                     </div>
                 </form>

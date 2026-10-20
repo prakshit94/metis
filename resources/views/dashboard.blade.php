@@ -30,6 +30,7 @@
                 <option value="this_week" {{ ($filter ?? 'today') === 'this_week' ? 'selected' : '' }}>This Week</option>
                 <option value="this_month" {{ ($filter ?? 'today') === 'this_month' ? 'selected' : '' }}>This Month</option>
                 <option value="prev_month" {{ ($filter ?? 'today') === 'prev_month' ? 'selected' : '' }}>Previous Month</option>
+                <option value="this_year" {{ ($filter ?? 'today') === 'this_year' ? 'selected' : '' }}>This Year</option>
             </select>
             <button type="button" class="btn btn-outline-primary btn-sm rounded-pill px-3 ms-1 shadow-sm bg-body-tertiary" onclick="window.location.reload()" data-bs-toggle="tooltip" title="Refresh data">
                 <i class="bi bi-arrow-clockwise icon-hover"></i>

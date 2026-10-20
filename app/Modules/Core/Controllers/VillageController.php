@@ -22,7 +22,7 @@ class VillageController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:village-view', only: ['index', 'show', 'servicesOptions', 'search']),
+            new Middleware('permission:village-view', only: ['index', 'show', 'servicesOptions', 'serviceSelection', 'search']),
             new Middleware('permission:village-create', only: ['store']),
             new Middleware('permission:village-import', only: ['import', 'importTemplate']),
             new Middleware('permission:village-edit', only: ['update', 'syncIndiaPostPincodes']),
@@ -421,6 +421,18 @@ class VillageController extends Controller implements HasMiddleware
         ]);
 
         if (isset($validated['services'])) {
+            $priorities = [];
+            foreach ($validated['services'] as $service) {
+                if (! empty($service['is_available'])) {
+                    $priority = (int) ($service['priority'] ?? 1);
+                    if (in_array($priority, $priorities, true)) {
+                        throw \Illuminate\Validation\ValidationException::withMessages([
+                            'services' => 'Each available service must have a unique priority.',
+                        ]);
+                    }
+                    $priorities[] = $priority;
+                }
+            }
             $serviceIds = array_map('intval', array_keys($validated['services']));
             $validServiceIds = Service::whereIn('id', $serviceIds)->pluck('id')->map(fn ($id) => (int) $id)->all();
             if (count(array_unique($validServiceIds)) !== count(array_unique($serviceIds))) {
@@ -431,6 +443,7 @@ class VillageController extends Controller implements HasMiddleware
         }
 
         DB::transaction(function () use ($village, $validated): void {
+            $village = Village::whereKey($village->id)->lockForUpdate()->firstOrFail();
             $village->update(collect($validated)->except('services')->all());
 
             if (!isset($validated['services'])) {
@@ -772,7 +785,9 @@ class VillageController extends Controller implements HasMiddleware
             'action' => ['required', 'string', 'in:delete,service-update,restore,force-delete'],
             'ids' => ['required', 'array', 'min:1'],
             'ids.*' => ['integer', 'exists:villages,id'],
-            'service_id' => ['required_if:action,service-update', 'nullable', 'integer', 'exists:services,id'],
+            'service_id' => [\Illuminate\Validation\Rule::requiredIf(fn () => $request->input('action') === 'service-update' && ! $request->has('service_ids')), 'nullable', 'integer', 'exists:services,id'],
+            'service_ids' => ['sometimes', 'array', 'min:1', 'max:100'],
+            'service_ids.*' => ['required', 'integer', 'distinct', 'exists:services,id'],
             'status' => ['required_if:action,service-update', 'nullable', 'string', 'in:available,unavailable'],
         ]);
 
@@ -821,30 +836,56 @@ class VillageController extends Controller implements HasMiddleware
 
         if ($action === 'service-update') {
             abort_unless($request->user()?->can('village-edit'), 403);
-            $serviceId = (int) $validated['service_id'];
+            $serviceIds = $validated['service_ids'] ?? [(int) $validated['service_id']];
             $isAvailable = $validated['status'] === 'available';
 
-            $mappings = [];
-            foreach ($ids as $id) {
-                $mappings[] = [
-                    'village_id' => $id,
-                    'service_id' => $serviceId,
-                    'is_available' => $isAvailable,
-                    'serviceable_from_date' => null,
-                    'serviceable_to_date' => null,
-                    'remarks' => 'Bulk updated via admin',
-                    'priority' => 1,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ];
-            }
+            DB::transaction(function () use ($ids, $serviceIds, $isAvailable): void {
+                // Lock villages in a stable order so concurrent assignments cannot reuse priorities.
+                $villages = Village::whereIn('id', $ids)->orderBy('id')->lockForUpdate()->get();
+                if ($villages->count() !== count(array_unique($ids))) {
+                    throw \Illuminate\Validation\ValidationException::withMessages([
+                        'ids' => 'Services can only be updated for existing, non-deleted villages.',
+                    ]);
+                }
 
-            // Using upsert
-            DB::table('village_service_mappings')->upsert(
-                $mappings,
-                ['village_id', 'service_id'],
-                ['is_available', 'remarks', 'updated_at']
-            );
+                if (! $isAvailable) {
+                    DB::table('village_service_mappings')->whereIn('village_id', $ids)
+                        ->whereIn('service_id', $serviceIds)
+                        ->update(['is_available' => false, 'remarks' => 'Bulk updated via admin', 'updated_at' => now()]);
+                    return;
+                }
+
+                $existing = DB::table('village_service_mappings')->whereIn('village_id', $ids)
+                    ->lockForUpdate()->get()->groupBy('village_id');
+                $rows = [];
+                foreach ($villages as $village) {
+                    $mappings = $existing->get($village->id, collect())->keyBy('service_id');
+                    $used = $mappings->where('is_available', true)->pluck('priority', 'service_id')->all();
+                    foreach ($serviceIds as $serviceId) {
+                        $mapping = $mappings->get($serviceId);
+                        $priority = (int) ($mapping->priority ?? 1);
+                        $otherPriorities = array_diff_key($used, [$serviceId => true]);
+                        if ($priority < 1 || in_array($priority, array_map('intval', $otherPriorities), true)) {
+                            $priority = 1;
+                            while (in_array($priority, array_map('intval', $otherPriorities), true)) $priority++;
+                        }
+                        $used[$serviceId] = $priority;
+                        $rows[] = [
+                            'village_id' => $village->id, 'service_id' => $serviceId,
+                            'is_available' => true, 'priority' => $priority,
+                            'serviceable_from_date' => null, 'serviceable_to_date' => null,
+                            'remarks' => 'Bulk updated via admin', 'created_at' => now(), 'updated_at' => now(),
+                        ];
+                    }
+                    if (count($rows) >= 500) {
+                        DB::table('village_service_mappings')->upsert($rows, ['village_id', 'service_id'], ['is_available', 'priority', 'remarks', 'updated_at']);
+                        $rows = [];
+                    }
+                }
+                if ($rows) {
+                    DB::table('village_service_mappings')->upsert($rows, ['village_id', 'service_id'], ['is_available', 'priority', 'remarks', 'updated_at']);
+                }
+            });
 
             return response()->json([
                 'message' => 'Service status updated successfully for '.count($ids).' village(s).',
@@ -863,6 +904,27 @@ class VillageController extends Controller implements HasMiddleware
         $services = Service::active()->get();
 
         return response()->json($services);
+    }
+
+    /** Current assignment counts for every selected village, including other pages. */
+    public function serviceSelection(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['required', 'integer', 'distinct', 'exists:villages,id'],
+        ]);
+        $ids = $validated['ids'];
+        $villages = Village::whereIn('id', $ids)
+            ->when($request->user()?->lob_state_name, fn ($query, $state) => $query->where('state_name', $state));
+        abort_unless($villages->count() === count($ids), 404);
+
+        $assigned = fn ($query) => $query->whereIn('village_id', $ids)->where('is_available', true);
+        $services = Service::query()
+            ->where(fn ($query) => $query->where('is_active', true)->orWhereHas('mappings', $assigned))
+            ->withCount(['mappings as assigned_count' => $assigned])
+            ->orderBy('name')->get(['id', 'name', 'is_active']);
+
+        return response()->json(['services' => $services, 'village_count' => count($ids)]);
     }
 
     private function indiaPostOfficesForPincode(string $pincode, IndiaPostProvider $indiaPostProvider): array

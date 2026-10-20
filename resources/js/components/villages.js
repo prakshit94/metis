@@ -32,7 +32,7 @@ async function apiFetch(url, options = {}) {
       message.toLowerCase().includes('forbidden')
     ) {
       window.location.href = '/';
-      return;
+      throw new Error(message);
     }
     throw new Error(message);
   }
@@ -1028,8 +1028,14 @@ document.addEventListener('alpine:init', () => {
     services: [],
     mappings: {},
     saving: false,
+    loading: false,
+    loadError: '',
+    loadVersion: 0,
 
     async loadVillageServices(v) {
+      const version = ++this.loadVersion;
+      this.loading = true;
+      this.loadError = '';
       this.villageId = v.id;
       this.villageName = v.village_name;
       this.pincode = v.pincode;
@@ -1038,6 +1044,8 @@ document.addEventListener('alpine:init', () => {
 
       try {
         const table = Alpine.$data(document.querySelector('[x-data="villageTable"]'));
+        if (table && !table.servicesOptions.length) await table.loadServicesOptions();
+        if (version !== this.loadVersion) return;
         const options = table?.servicesOptions ?? [];
         this.services = options;
 
@@ -1054,7 +1062,15 @@ document.addEventListener('alpine:init', () => {
 
         // Load existing mappings
         const data = await apiFetch(`/api/villages/${v.id}`);
+        if (version !== this.loadVersion) return;
         const existing = data.data?.mappings ?? [];
+        // Existing assignments must remain removable even if their service was deactivated.
+        existing.forEach((mapping) => {
+          if (mapping.is_available && mapping.service && !this.mappings[mapping.service_id]) {
+            this.services = [...this.services, mapping.service];
+            this.mappings[mapping.service_id] = { is_available: false, priority: 1 };
+          }
+        });
         existing.forEach((m) => {
           if (this.mappings[m.service_id]) {
             this.mappings[m.service_id] = {
@@ -1070,11 +1086,16 @@ document.addEventListener('alpine:init', () => {
         // sequence before the administrator makes further changes.
         existing.forEach((m) => this.ensureUniquePriority(m.service_id));
       } catch (err) {
-        showToast('Failed to load mappings: ' + err.message, 'danger');
+        if (version !== this.loadVersion) return;
+        this.loadError = 'Failed to load mappings: ' + err.message;
+        showToast(this.loadError, 'danger');
+      } finally {
+        if (version === this.loadVersion) this.loading = false;
       }
     },
 
     async saveServices() {
+      if (this.saving || this.loading || this.loadError || !this.villageId) return;
       if (this.hasDuplicatePriorities() || this.hasInvalidPriorities()) {
         showToast('Each available service must have a unique priority of 1 or higher.', 'warning');
         return;
@@ -1129,7 +1150,7 @@ document.addEventListener('alpine:init', () => {
     hasInvalidPriorities() {
       return Object.values(this.mappings)
         .filter((mapping) => mapping.is_available)
-        .some((mapping) => Number(mapping.priority) < 1);
+        .some((mapping) => !Number.isInteger(Number(mapping.priority)) || Number(mapping.priority) < 1);
     },
 
     ensureUniquePriority(serviceId) {
@@ -1155,64 +1176,75 @@ document.addEventListener('alpine:init', () => {
     count: 0,
     ids: [],
     serviceIds: [],
+    initialServiceIds: [],
     status: 'available',
     saving: false,
+    loading: false,
+    loadError: '',
+    loadVersion: 0,
     services: [],
 
-    resetForm(status = 'available') {
+    async resetForm(status = 'available') {
+      const version = ++this.loadVersion;
       this.status = status;
-
-      const table = Alpine.$data(document.querySelector('[x-data="villageTable"]'));
-      this.services = table?.servicesOptions ?? [];
-
-      if (status === 'unavailable' && table) {
-        const activeServiceIds = new Set();
-        table.villages.forEach((v) => {
-          if (this.ids.includes(String(v.id))) {
-            (v.active_mappings || []).forEach((m) => {
-              if (m.service_id) activeServiceIds.add(Number(m.service_id));
-            });
-          }
+      this.serviceIds = [];
+      this.initialServiceIds = [];
+      this.services = [];
+      this.loading = true;
+      this.loadError = '';
+      try {
+        const data = await apiFetch('/api/villages/service-selection', {
+          method: 'POST', body: JSON.stringify({ ids: this.ids }),
         });
-        this.serviceIds = Array.from(activeServiceIds);
-      } else {
-        this.serviceIds = [];
+        if (version !== this.loadVersion) return;
+        this.count = data.village_count;
+        this.services = data.services.filter(service => status === 'available' ? service.is_active : Number(service.assigned_count) > 0);
+        this.serviceIds = this.services
+          .filter(service => status === 'unavailable' || Number(service.assigned_count) === this.count)
+          .map(service => String(service.id));
+        this.initialServiceIds = [...this.serviceIds];
+      } catch (err) {
+        if (version === this.loadVersion) this.loadError = 'Unable to load service assignments: ' + err.message;
+      } finally {
+        if (version === this.loadVersion) this.loading = false;
       }
     },
 
+    get changedServiceIds() {
+      const selected = new Set(this.serviceIds.map(String));
+      const initial = new Set(this.initialServiceIds.map(String));
+      return this.status === 'unavailable'
+        ? [...initial].filter(id => !selected.has(id))
+        : [...selected].filter(id => !initial.has(id));
+    },
+
+    isPartiallyAssigned(service) {
+      return Number(service.assigned_count) > 0 && Number(service.assigned_count) < this.count;
+    },
+
     async updateServices() {
-      if (!this.serviceIds.length) {
-        showToast('Please select at least one service.', 'warning');
+      if (this.saving || this.loading || this.loadError) return;
+      const serviceIds = this.changedServiceIds;
+      if (!serviceIds.length) {
+        showToast(this.status === 'unavailable' ? 'Uncheck the assigned services you want to remove.' : 'No new services selected to assign.', 'warning');
         return;
       }
 
       this.saving = true;
       try {
-        // Reuse the existing single-service bulk endpoint for each selected
-        // service, keeping the server-side mapping logic unchanged.
-        for (const serviceId of this.serviceIds) {
-          await apiFetch('/api/villages/bulk-action', {
-            method: 'POST',
-            body: JSON.stringify({
-              action: 'service-update',
-              ids: this.ids,
-              service_id: serviceId,
-              status: this.status,
-            }),
-          });
-        }
-
-        showToast(
-          `${this.serviceIds.length} service(s) updated for ${this.ids.length} village(s).`,
-          'success'
-        );
-
+        await apiFetch('/api/villages/bulk-action', {
+          method: 'POST',
+          body: JSON.stringify({
+            action: 'service-update', ids: this.ids,
+            service_ids: serviceIds, status: this.status,
+          }),
+        });
+        showToast(`${serviceIds.length} service(s) ${this.status === 'available' ? 'assigned to' : 'removed from'} ${this.ids.length} village(s).`, 'success');
         const table = Alpine.$data(document.querySelector('[x-data="villageTable"]'));
         if (table) {
           table.selectedVillages = [];
-          table.loadVillages();
+          await table.loadVillages();
         }
-
         getModal('#bulkServicesModal')?.hide();
       } catch (err) {
         showToast(err.message, 'danger');

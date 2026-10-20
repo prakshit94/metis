@@ -463,6 +463,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
         ->withoutMiddleware([\Illuminate\Routing\Middleware\ThrottleRequests::class.':api', 'throttle:api'])
         ->name('api.villages.sync-indiapost');
     Route::post('/villages/bulk-action', [VillageController::class, 'bulkAction'])->name('api.villages.bulk');
+    Route::post('/villages/service-selection', [VillageController::class, 'serviceSelection'])->name('api.villages.service-selection');
     Route::get('/villages/services-options', [VillageController::class, 'servicesOptions'])->name('api.villages.services-options');
     Route::get('/villages/search', [VillageController::class, 'search'])->name('api.villages.search');
     Route::post('/villages/import', [VillageController::class, 'import'])->name('api.villages.import');
