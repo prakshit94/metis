@@ -7,7 +7,7 @@
 <div class="purchase-orders-management" x-data="purchaseOrdersTable()" x-cloak>
 
     <!-- ═══════════════════════ Page Header ════════════════════════════════ -->
-    <div class="d-flex justify-content-between align-items-center mb-4 mb-lg-5">
+    <div class="po-page-header d-flex justify-content-between align-items-center mb-4">
         <div>
             <h1 class="h3 mb-0">Purchase Orders</h1>
             <p class="text-muted mb-0">Manage supplier purchase orders and GRNs</p>
@@ -25,9 +25,9 @@
     </div>
 
     <!-- ═══════════════════════ Stats Widgets ══════════════════════════════ -->
-    <div class="row g-4 g-lg-5 mb-5">
+    <div class="row g-3 mb-4 po-stats">
         <div class="col-xl-4 col-lg-4 col-md-4">
-            <div class="card stats-card border-start border-4 border-primary" style="cursor: default;">
+            <div class="card stats-card h-100 po-stat-primary" style="cursor: default;">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-primary bg-opacity-10 text-primary me-3">
@@ -43,7 +43,7 @@
             </div>
         </div>
         <div class="col-xl-4 col-lg-4 col-md-4">
-            <div class="card stats-card border-start border-4 border-success" style="cursor: default;">
+            <div class="card stats-card h-100 po-stat-warning" style="cursor: default;">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-warning bg-opacity-10 text-warning me-3">
@@ -61,7 +61,7 @@
             </div>
         </div>
         <div class="col-xl-4 col-lg-4 col-md-4">
-            <div class="card stats-card border-start border-4 border-warning" style="cursor: default;">
+            <div class="card stats-card h-100 po-stat-success" style="cursor: default;">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-success bg-opacity-10 text-success me-3">
@@ -81,25 +81,25 @@
     <!-- ═══════════════════════ Main Table Card ═════════════════════════════ -->
     <div class="card mb-5">
         <div class="card-header">
-            <div class="row align-items-center">
+            <div class="row align-items-center g-3 po-directory-header">
                 <div class="col">
                     <h2 class="h5 card-title mb-0">Purchase Orders Directory</h2>
                 </div>
-                <div class="col-auto mt-3 mt-md-0">
-                    <div class="d-flex gap-2 flex-wrap justify-content-end">
-                        <div class="position-relative">
+                <div class="col-12 col-xl-auto">
+                    <div class="d-flex gap-2 flex-wrap po-filters">
+                        <div class="position-relative po-search">
                             <input type="search"
                                    class="form-control form-control-sm"
-                                   placeholder="Search PO Number or Supplier..."
+                                   placeholder="Search PO number or supplier…" aria-label="Search purchase orders"
                                    x-model.debounce.300ms="searchQuery"
-                                   style="width:250px;">
+                                   style="padding-right: 2.5rem;">
                             <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-2 text-muted"></i>
                         </div>
-                        <select class="form-select form-select-sm" x-model="trashedFilter" style="width:120px;">
+                        <select class="form-select form-select-sm" x-model="trashedFilter" aria-label="Record visibility" style="width:120px;">
                             <option value="">Active</option>
                             <option value="only">Deleted</option>
                         </select>
-                        <select class="form-select form-select-sm" x-model="statusFilter" style="width:160px;">
+                        <select class="form-select form-select-sm" x-model="statusFilter" aria-label="Order status" style="width:180px;">
                             <option value="">All Statuses</option>
                             <option value="pending">Pending Approval</option>
                             <option value="approved">Approved (Sent)</option>
@@ -165,7 +165,7 @@
                     <thead class="table-group-divider">
                         <tr>
                             <th class="ps-3" style="width:44px;">
-                                <input type="checkbox" class="user-select-checkbox" @change="$event.isTrusted && toggleAll($event)" :checked="allSelected">
+                                <input type="checkbox" class="user-select-checkbox" @change="toggleAll($event)" :checked="allSelected" :disabled="isLoading || !items.length" aria-label="Select all purchase orders">
                             </th>
                             <th style="width:120px;">PO Number</th>
                             <th>Supplier</th>
@@ -182,7 +182,7 @@
                         <!-- Loading State -->
                         <template x-if="isLoading">
                             <tr>
-                                <td colspan="9" class="text-center py-5">
+                                <td colspan="10" class="text-center py-5">
                                     <div class="spinner-border text-primary" role="status"></div>
                                     <p class="text-muted small mt-2 mb-0 fw-medium">Loading purchase orders…</p>
                                 </td>
@@ -192,7 +192,7 @@
                         <!-- Empty State -->
                         <template x-if="!isLoading && items.length === 0">
                             <tr>
-                                <td colspan="9" class="text-center py-5 text-muted">
+                                <td colspan="10" class="text-center py-5 text-muted">
                                     <i class="bi bi-file-earmark-x fs-2 d-block mb-2"></i>
                                     No purchase orders found matching your criteria.
                                 </td>
@@ -200,10 +200,10 @@
                         </template>
 
                         <!-- Data Rows -->
-                        <template x-for="item in items" :key="item.id">
+                        <template x-for="item in (isLoading ? [] : items)" :key="item.id">
                             <tr :class="{ 'selected': selected.includes(item.id) }">
                                 <td class="ps-3">
-                                    <input type="checkbox" class="user-select-checkbox" :value="item.id" x-model="selected">
+                                    <input type="checkbox" class="user-select-checkbox" :value="item.id" x-model="selected" :aria-label="'Select ' + item.po_number">
                                 </td>
                                 <td>
                                     <div class="d-flex align-items-center gap-2">
@@ -281,7 +281,7 @@
                                 </td>
                                 <td class="text-end pe-4">
                                     <div class="dropdown">
-                                        <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="dropdown" data-bs-boundary="window">
+                                        <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="dropdown" data-bs-boundary="window" :aria-label="'Actions for ' + item.po_number">
                                             <i class="bi bi-three-dots-vertical"></i>
                                         </button>
                                         <ul class="dropdown-menu dropdown-menu-end shadow-sm">
@@ -357,7 +357,7 @@
             </div>
 
             <!-- Pagination -->
-            <div class="d-flex justify-content-between align-items-center p-3 border-top" x-show="totalPages > 1">
+            <div class="d-flex justify-content-between align-items-center p-3 border-top" x-show.important="totalPages > 1">
                 <nav>
                     <ul class="pagination pagination-sm mb-0">
                         <li class="page-item" :class="{ 'disabled': currentPage === 1 }">
@@ -738,7 +738,7 @@
                 </div>
                 <form @submit.prevent="submitRejectForm" autocomplete="off">
                     <div class="modal-body pt-3 bg-body-tertiary">
-                        <p class="text-muted small mb-3">Please provide a reason for rejecting this purchase order. This action cannot be undone.</p>
+                        <p class="text-muted small mb-3">Please provide a reason for rejecting this purchase order. You can restore deleted purchase orders from the Deleted filter.</p>
                         <div class="mb-3">
                             <label class="form-label fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 1px;">Rejection Reason *</label>
                             <textarea class="form-control" x-model="rejectForm.rejection_reason" rows="3" required placeholder="Enter the reason for rejection..."></textarea>
@@ -1069,7 +1069,7 @@
                 </div>
                 <form @submit.prevent="submitDeleteForm" autocomplete="off">
                     <div class="modal-body pt-3 bg-body-tertiary">
-                        <p class="text-muted small mb-0">Are you sure you want to delete the selected Purchase Order<span x-show="isBulkDelete">s</span>? This action cannot be undone.</p>
+                        <p class="text-muted small mb-0">Are you sure you want to delete the selected Purchase Order<span x-show="isBulkDelete">s</span>? You can restore deleted purchase orders from the Deleted filter.</p>
                     </div>
                     <div class="modal-footer bg-body-tertiary border-top-0">
                         <button type="button" data-bs-dismiss="modal" class="btn text-muted fw-bold text-uppercase" style="font-size: 11px; letter-spacing: 1px;">Cancel</button>
@@ -1125,7 +1125,7 @@
                         
                         <div class="mb-3">
                             <label class="form-label fw-medium text-muted small">Payment Amount (₹) <span class="text-danger">*</span></label>
-                            <input type="number" step="0.01" class="form-control" x-model="paymentForm.amount" required>
+                            <input type="number" step="0.01" class="form-control" x-model="paymentForm.amount" min="0.01" :max="paymentForm.due_amount" required>
                         </div>
                         
                         <div class="mb-3">
@@ -1177,7 +1177,7 @@
                 </div>
                 <div class="modal-body pt-3">
                     <div class="d-flex justify-content-between align-items-center mb-3">
-                        <span class="fw-medium text-muted">Purchase Order: <strong class="text-dark" x-text="currentPoNumber"></strong></span>
+                        <span class="fw-medium text-muted">Purchase Order: <strong class="text-body" x-text="currentPoNumber"></strong></span>
                     </div>
 
                     <template x-if="isLoadingHistory">
@@ -1196,7 +1196,7 @@
                     <template x-if="!isLoadingHistory && paymentHistory.length > 0">
                         <div class="table-responsive">
                             <table class="table table-sm table-hover align-middle">
-                                <thead class="table-light text-muted" style="font-size: 12px;">
+                                <thead class="text-muted" style="font-size: 12px;">
                                     <tr>
                                         <th>Date</th>
                                         <th>Amount</th>
@@ -1228,6 +1228,33 @@
     </div>
 
     <style>
+        .purchase-orders-management .po-page-header { gap: 1rem; flex-wrap: wrap; }
+        .purchase-orders-management .po-stats > div { display: flex; }
+        .purchase-orders-management .stats-card { width: 100%; border: 1px solid var(--bs-border-color) !important; border-left: 4px solid var(--po-accent) !important; }
+        .purchase-orders-management .po-stat-primary { --po-accent: var(--bs-primary); }
+        .purchase-orders-management .po-stat-warning { --po-accent: var(--bs-warning); }
+        .purchase-orders-management .po-stat-success { --po-accent: var(--bs-success); }
+        .purchase-orders-management .stats-icon { flex-shrink: 0; }
+        .purchase-orders-management .card:hover { transform: none; }
+        .purchase-orders-management .po-search { flex: 1 1 250px; min-width: 0; }
+        .purchase-orders-management .po-filters { min-width: 0; }
+        .purchase-orders-management .po-filters .form-select { flex: 1 1 120px; }
+        .purchase-orders-management .bulk-actions-bar .d-flex { flex-wrap: wrap; gap: .5rem; }
+        .purchase-orders-management .modal-content { background: var(--bs-body-bg) !important; backdrop-filter: none; }
+        .purchase-orders-management #createPoModal .modal-dialog { max-width: min(1320px, calc(100vw - 2rem)); }
+        .purchase-orders-management #createPoModal table { min-width: 880px !important; }
+        .purchase-orders-management #createPoModal td:first-child { min-width: 180px; }
+        .purchase-orders-management .modal .form-label { font-size: .75rem !important; }
+        .purchase-orders-management .modal .table thead { --bs-table-bg: var(--bs-tertiary-bg); color: var(--bs-body-color); }
+        .purchase-orders-management .badge.bg-warning-subtle { color: var(--bs-warning-text-emphasis) !important; }
+        .purchase-orders-management .badge.bg-success-subtle { color: var(--bs-success-text-emphasis) !important; }
+        .purchase-orders-management .badge.bg-info-subtle { color: var(--bs-info-text-emphasis) !important; }
+        @media (max-width: 575.98px) {
+            .purchase-orders-management .po-page-header > div { width: 100%; }
+            .purchase-orders-management .po-page-header .btn { flex: 1; }
+            .purchase-orders-management #createPoModal .modal-dialog { max-width: calc(100vw - 1rem); margin: .5rem; }
+        }
+
         .custom-hover-bg:hover { background-color: rgba(var(--bs-primary-rgb), 0.1); }
         .cursor-pointer { cursor: pointer; }
     </style>
@@ -1264,7 +1291,7 @@ document.addEventListener('alpine:init', () => {
             url.searchParams.set('page', this.currentPage);
             url.searchParams.set('search', this.searchQuery);
             url.searchParams.set('trashed', this.trashedFilter);
-                    url.searchParams.set('status', this.statusFilter);
+            url.searchParams.set('status', this.statusFilter);
             try {
                 const response = await fetch(url, { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
                 const data = await response.json();

@@ -7,22 +7,24 @@
 <div class="goods-receipts-management" x-data="goodsReceiptsTable()" x-cloak>
 
     <!-- ═══════════════════════ Page Header ════════════════════════════════ -->
-    <div class="d-flex justify-content-between align-items-center mb-4 mb-lg-5">
+    <div class="grn-page-header d-flex justify-content-between align-items-center mb-4">
         <div>
             <h1 class="h3 mb-0">Goods Receipts</h1>
             <p class="text-muted mb-0">View and track all received inventory and supplier deliveries</p>
         </div>
         <div class="d-flex gap-2">
+            @can('goodsreceipt-create')
             <button type="button" class="btn btn-primary" @click.prevent="openReceiveModal()">
                 <i class="bi bi-plus-lg me-2"></i>Receive Against PO
             </button>
+            @endcan
         </div>
     </div>
 
     <!-- ═══════════════════════ Stats Widgets ══════════════════════════════ -->
-    <div class="row g-4 g-lg-5 mb-5">
+    <div class="row g-3 mb-4 grn-stats">
         <div class="col-xl-4 col-lg-4 col-md-4">
-            <div class="card stats-card border-start border-4 border-primary" style="cursor: default;">
+            <div class="card stats-card h-100 grn-stat-primary" style="cursor: default;">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-primary bg-opacity-10 text-primary me-3">
@@ -38,7 +40,7 @@
             </div>
         </div>
         <div class="col-xl-4 col-lg-4 col-md-4">
-            <div class="card stats-card border-start border-4 border-success" style="cursor: default;">
+            <div class="card stats-card h-100 grn-stat-success" style="cursor: default;">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-success bg-opacity-10 text-success me-3">
@@ -56,16 +58,16 @@
             </div>
         </div>
         <div class="col-xl-4 col-lg-4 col-md-4">
-            <div class="card stats-card border-start border-4 border-warning" style="cursor: default;">
+            <div class="card stats-card h-100 grn-stat-warning" style="cursor: default;">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-warning bg-opacity-10 text-warning me-3">
-                            <i class="bi bi-clock-history"></i>
+                            <i class="bi bi-exclamation-triangle"></i>
                         </div>
                         <div>
-                            <p class="h6 mb-0 text-muted">Pending Putaway</p>
-                            <div class="h3 mb-0" aria-live="polite"><span x-text="stats.pending"></span></div>
-                            <small class="text-warning">Requires action</small>
+                            <p class="h6 mb-0 text-muted">Rejected Line Items</p>
+                            <div class="h3 mb-0" aria-live="polite"><span x-text="stats.discrepancies"></span></div>
+                            <small class="text-warning">Lines with rejected quantities</small>
                         </div>
                     </div>
                 </div>
@@ -76,21 +78,21 @@
     <!-- ═══════════════════════ Main Table Card ═════════════════════════════ -->
     <div class="card mb-5">
         <div class="card-header">
-            <div class="row align-items-center">
+            <div class="row align-items-center g-3">
                 <div class="col">
                     <h2 class="h5 card-title mb-0">Receipts Directory</h2>
                 </div>
-                <div class="col-auto mt-3 mt-md-0">
-                    <div class="d-flex gap-2 flex-wrap justify-content-end">
-                        <div class="position-relative">
+                <div class="col-12">
+                    <div class="d-flex gap-2 flex-wrap grn-filters">
+                        <div class="position-relative grn-search">
                             <input type="search"
                                    class="form-control form-control-sm"
-                                   placeholder="Search GRN or PO..."
+                                   placeholder="Search GRN or PO…" aria-label="Search goods receipts"
                                    x-model.debounce.300ms="searchQuery"
-                                   style="width:250px;">
+                                   style="padding-right: 2.5rem;">
                             <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-2 text-muted"></i>
                         </div>
-                        <select class="form-select form-select-sm" x-model="trashedFilter" @change="currentPage=1; fetchData()" style="width:130px;">
+                        <select class="form-select form-select-sm" x-model="trashedFilter" aria-label="Record visibility" @change="currentPage=1; fetchData()" style="width:130px;">
                             <option value="">Active Items</option>
                             <option value="with">With Deleted</option>
                             <option value="only">Only Deleted</option>
@@ -112,12 +114,12 @@
                     </div>
                     <div class="d-flex gap-2">
                         @can('goodsreceipt-delete')
-                        <button class="btn btn-sm btn-outline-danger fw-medium shadow-sm bg-body" x-show="trashedFilter !== 'only'" @click="openBulkDeleteModal()">
+                        <button class="btn btn-sm btn-outline-danger fw-medium shadow-sm bg-body" x-show="selectedActiveIds.length > 0" @click="openBulkDeleteModal()">
                             <i class="bi bi-trash me-1"></i>Delete
                         </button>
                         @endcan
                         @can('goodsreceipt-restore')
-                        <button class="btn btn-sm btn-outline-warning fw-medium shadow-sm bg-body" x-show="trashedFilter === 'only'" @click="openBulkRestoreModal()">
+                        <button class="btn btn-sm btn-outline-warning fw-medium shadow-sm bg-body" x-show="selectedDeletedIds.length > 0" @click="openBulkRestoreModal()">
                             <i class="bi bi-arrow-counterclockwise me-1"></i>Restore
                         </button>
                         @endcan
@@ -131,7 +133,7 @@
                     <thead class="table-group-divider">
                         <tr>
                             <th class="ps-3" style="width:44px;">
-                                <input type="checkbox" class="user-select-checkbox" @change="$event.isTrusted && toggleAll($event)" :checked="allSelected">
+                                <input type="checkbox" class="user-select-checkbox" @change="toggleAll($event)" :checked="allSelected" :disabled="isLoading || !items.length" aria-label="Select all receipts">
                             </th>
                             <th style="width:140px;">GRN Number</th>
                             <th>Purchase Order</th>
@@ -146,7 +148,7 @@
                         <!-- Loading State -->
                         <template x-if="isLoading">
                             <tr>
-                                <td colspan="7" class="text-center py-5">
+                                <td colspan="8" class="text-center py-5">
                                     <div class="spinner-border text-primary" role="status"></div>
                                     <p class="text-muted small mt-2 mb-0 fw-medium">Loading goods receipts…</p>
                                 </td>
@@ -156,7 +158,7 @@
                         <!-- Empty State -->
                         <template x-if="!isLoading && items.length === 0">
                             <tr>
-                                <td colspan="7" class="text-center py-5 text-muted">
+                                <td colspan="8" class="text-center py-5 text-muted">
                                     <i class="bi bi-file-earmark-x fs-2 d-block mb-2"></i>
                                     No goods receipts found matching your criteria.
                                 </td>
@@ -164,14 +166,14 @@
                         </template>
 
                         <!-- Data Rows -->
-                        <template x-for="item in items" :key="item.id">
+                        <template x-for="item in (isLoading ? [] : items)" :key="item.id">
                             <tr :class="{ 'selected': selected.includes(item.id) }">
                                 <td class="ps-3">
-                                    <input type="checkbox" class="user-select-checkbox" :value="item.id" x-model="selected">
+                                    <input type="checkbox" class="user-select-checkbox" :value="item.id" x-model="selected" :aria-label="'Select ' + item.grn_number">
                                 </td>
                                 <td>
                                     <div class="d-flex align-items-center gap-2">
-                                        <a href="#" @click.prevent="alert('View GRN details feature coming soon')" class="font-monospace fw-bold text-primary text-decoration-none custom-hover-bg rounded px-2 py-1" style="margin-left:-0.5rem;" x-text="item.grn_number"></a>
+                                        <a href="#" @click.prevent="viewItem(item)" class="font-monospace fw-bold text-primary text-decoration-none custom-hover-bg rounded px-2 py-1" style="margin-left:-0.5rem;" x-text="item.grn_number"></a>
                                     </div>
                                 </td>
                                 <td>
@@ -206,7 +208,7 @@
                                 </td>
                                 <td class="text-end pe-4">
                                     <div class="dropdown">
-                                        <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="dropdown" data-bs-boundary="window">
+                                        <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="dropdown" data-bs-boundary="window" :aria-label="'Actions for ' + item.grn_number">
                                             <i class="bi bi-three-dots-vertical"></i>
                                         </button>
                                         <ul class="dropdown-menu dropdown-menu-end shadow-sm">
@@ -249,7 +251,7 @@
             </div>
 
             <!-- Pagination -->
-            <div class="d-flex justify-content-between align-items-center p-3 border-top" x-show="totalPages > 1">
+            <div class="d-flex justify-content-between align-items-center p-3 border-top" x-show.important="totalPages > 1">
                 <nav>
                     <ul class="pagination pagination-sm mb-0">
                         <li class="page-item" :class="{ 'disabled': currentPage === 1 }">
@@ -283,6 +285,7 @@
                     </div>
                     
                     <div class="modal-body p-4 bg-body-tertiary custom-scrollbar">
+                        <div x-show="!pendingPOs.length" class="alert alert-info" role="status">No approved purchase orders are available to receive.</div>
                         <div class="row g-4">
                             <div class="col-12 position-relative" style="z-index: 100;">
                                 <div class="card mb-0 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary">
@@ -341,6 +344,9 @@
                                                     </tr>
                                                 </thead>
                                                 <tbody>
+                                                    <template x-if="!receiveForm.items.length">
+                                                        <tr><td colspan="8" class="text-center text-muted py-4">Select an approved purchase order to load items.</td></tr>
+                                                    </template>
                                                     <template x-for="(item, index) in receiveForm.items" :key="index">
                                                         <tr>
                                                             <td>
@@ -362,10 +368,10 @@
                                                             <td class="text-end fw-semibold text-muted" style="font-size: 12px;" x-text="item.ordered_qty"></td>
                                                             <td class="text-end fw-semibold text-primary" style="font-size: 12px;" x-text="item.previously_received"></td>
                                                             <td class="text-end">
-                                                                <input type="number" step="0.01" class="form-control form-control-sm fw-semibold text-end bg-success-subtle border-success text-success" x-model.number="item.accepted_qty" style="font-size: 12px;" min="0">
+                                                                <input type="number" step="0.01" class="form-control form-control-sm fw-semibold text-end bg-success-subtle border-success text-success" x-model.number="item.accepted_qty" :max="Math.max(0, item.ordered_qty - item.previously_received)" required :aria-label="'Accepted quantity for ' + (item.product?.name || 'item')" style="font-size: 12px;" min="0">
                                                             </td>
                                                             <td class="text-end">
-                                                                <input type="number" step="0.01" class="form-control form-control-sm fw-semibold text-end bg-danger-subtle border-danger text-danger" x-model.number="item.rejected_qty" style="font-size: 12px;" min="0">
+                                                                <input type="number" step="0.01" class="form-control form-control-sm fw-semibold text-end bg-danger-subtle border-danger text-danger" x-model.number="item.rejected_qty" required :aria-label="'Rejected quantity for ' + (item.product?.name || 'item')" style="font-size: 12px;" min="0">
                                                             </td>
                                                             <td>
                                                                 <input type="text" class="form-control form-control-sm" x-model="item.batch_number" placeholder="e.g. B2026-01" style="font-size: 11px; font-family: monospace;">
@@ -374,7 +380,7 @@
                                                                 <input type="date" class="form-control form-control-sm" x-model="item.manufacturing_date" style="font-size: 11px;">
                                                             </td>
                                                             <td>
-                                                                <input type="date" class="form-control form-control-sm bg-warning-subtle" x-model="item.expiry_date" style="font-size: 11px;">
+                                                                <input type="date" class="form-control form-control-sm bg-warning-subtle" x-model="item.expiry_date" :min="item.manufacturing_date || undefined" style="font-size: 11px;">
                                                             </td>
                                                         </tr>
                                                     </template>
@@ -389,7 +395,7 @@
                     </div>
                     <div class="modal-footer bg-body-tertiary">
                         <button type="button" data-bs-dismiss="modal" class="btn text-muted fw-bold text-uppercase" style="font-size: 11px; letter-spacing: 1px;">Cancel</button>
-                        <button type="submit" class="btn btn-success rounded-pill px-4 fw-bold shadow-sm" :disabled="isReceiving">
+                        <button type="submit" class="btn btn-success rounded-pill px-4 fw-bold shadow-sm" :disabled="isReceiving || !receiveForm.items.length">
                             <span x-show="isReceiving" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
                             <span>Process GRN</span>
                         </button>
@@ -401,7 +407,7 @@
 
     
 <!-- View GRN Modal -->
-<div class="modal fade" id="viewGrnModal" tabindex="-1" aria-hidden="true">
+<div class="modal fade" id="viewGrnModal" tabindex="-1" aria-labelledby="viewGrnModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content border-0 shadow-lg">
             <div class="modal-header bg-body-tertiary border-bottom-0 pb-3">
@@ -409,7 +415,7 @@
                     <div class="bg-primary bg-opacity-10 text-primary rounded p-2 me-3 d-flex align-items-center justify-content-center">
                         <i class="bi bi-receipt"></i>
                     </div>
-                    Goods Receipt Details
+                    <span id="viewGrnModalLabel">Goods Receipt Details</span>
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
@@ -507,12 +513,12 @@
 <div class="modal fade" id="deleteGrnModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow">
-            <div class="modal-header bg-danger text-white border-bottom-0 pb-3">
+            <div class="modal-header bg-danger-subtle text-danger-emphasis border-bottom-0 pb-3">
                 <h5 class="modal-title fw-medium d-flex align-items-center">
                     <i class="bi bi-exclamation-triangle-fill me-2"></i>
                     <span x-text="isBulkDelete ? 'Bulk Delete Receipts' : 'Delete Receipt'"></span>
                 </h5>
-                <button type="button" class="btn-close btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body p-4 text-center">
                 <div class="mb-3">
@@ -520,7 +526,7 @@
                 </div>
                 <h5 class="mb-3">Are you sure?</h5>
                 <p class="text-muted mb-0">
-                    <span x-text="isBulkDelete ? `You are about to delete ${selected.length} receipts.` : 'You are about to delete this goods receipt.'"></span>
+                    <span x-text="isBulkDelete ? `You are about to delete ${selectedActiveIds.length} receipts.` : 'You are about to delete this goods receipt.'"></span>
                     <br>This action can be reversed from the trash.
                 </p>
             </div>
@@ -539,7 +545,7 @@
 <div class="modal fade" id="restoreGrnModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow">
-            <div class="modal-header bg-warning border-bottom-0 pb-3">
+            <div class="modal-header bg-warning-subtle border-bottom-0 pb-3">
                 <h5 class="modal-title fw-medium d-flex align-items-center text-body">
                     <i class="bi bi-arrow-counterclockwise me-2"></i>
                     <span x-text="isBulkRestore ? 'Bulk Restore Receipts' : 'Restore Receipt'"></span>
@@ -552,7 +558,7 @@
                 </div>
                 <h5 class="mb-3">Restore Items</h5>
                 <p class="text-muted mb-0">
-                    <span x-text="isBulkRestore ? `You are about to restore ${selected.length} receipts.` : 'You are about to restore this goods receipt.'"></span>
+                    <span x-text="isBulkRestore ? `You are about to restore ${selectedDeletedIds.length} receipts.` : 'You are about to restore this goods receipt.'"></span>
                 </p>
             </div>
             <div class="modal-footer bg-body-tertiary border-top-0 justify-content-center py-3">
@@ -569,6 +575,35 @@
 </div>
 
 <style>
+    .goods-receipts-management .grn-page-header { gap: 1rem; flex-wrap: wrap; }
+    .goods-receipts-management .grn-stats > div { display: flex; }
+    .goods-receipts-management .stats-card { width: 100%; border: 1px solid var(--bs-border-color) !important; border-left: 4px solid var(--grn-accent) !important; }
+    .goods-receipts-management .grn-stat-primary { --grn-accent: var(--bs-primary); }
+    .goods-receipts-management .grn-stat-success { --grn-accent: var(--bs-success); }
+    .goods-receipts-management .grn-stat-warning { --grn-accent: var(--bs-warning); }
+    .goods-receipts-management .stats-icon { flex-shrink: 0; }
+    .goods-receipts-management .card:hover { transform: none; }
+    .goods-receipts-management .grn-search { flex: 1 1 250px; min-width: 0; }
+    .goods-receipts-management .grn-filters .form-select { flex: 1 1 145px; }
+    .goods-receipts-management .bulk-actions-bar .d-flex { flex-wrap: wrap; gap: .5rem; }
+    .goods-receipts-management .modal-content { background: var(--bs-body-bg) !important; backdrop-filter: none; }
+    .goods-receipts-management .modal-xl { max-width: min(1320px, calc(100vw - 2rem)); }
+    .goods-receipts-management #receiveGoodsModal .modal-content > form { display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+    .goods-receipts-management #receiveGoodsModal .modal-header,
+    .goods-receipts-management #receiveGoodsModal .modal-footer { flex-shrink: 0; }
+    .goods-receipts-management .modal .form-label { font-size: .75rem !important; }
+    .goods-receipts-management .modal .table thead { --bs-table-bg: var(--bs-tertiary-bg); }
+    .goods-receipts-management .modal .text-success.bg-success-subtle,
+    .goods-receipts-management .modal-header .text-success { color: var(--bs-success-text-emphasis) !important; }
+    .goods-receipts-management .modal .text-danger.bg-danger-subtle { color: var(--bs-danger-text-emphasis) !important; }
+    .goods-receipts-management #receiveGoodsModal td:first-child { min-width: 180px; white-space: normal; }
+    .goods-receipts-management #receiveGoodsModal input[type="date"] { min-width: 135px; }
+    @media (max-width: 575.98px) {
+        .goods-receipts-management .grn-page-header > div { width: 100%; }
+        .goods-receipts-management .grn-page-header .btn { width: 100%; }
+        .goods-receipts-management .modal-xl { max-width: calc(100vw - 1rem); margin: .5rem; }
+    }
+
 .custom-hover-bg:hover { background-color: rgba(var(--bs-primary-rgb), 0.1); }
 input[type="text"]:focus, input[type="search"]:focus {
     box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.15) !important;
@@ -651,10 +686,14 @@ document.addEventListener('alpine:init', () => {
                 this.showNotification('Please select a Purchase Order.', 'error');
                 return;
             }
+            if (!this.receiveForm.items.some(item => Number(item.accepted_qty) + Number(item.rejected_qty) > 0)) {
+                this.showNotification('Enter at least one positive received quantity.', 'error');
+                return;
+            }
             let isValid = true;
             for(let i=0; i<this.receiveForm.items.length; i++) {
                 const item = this.receiveForm.items[i];
-                if ((item.accepted_qty + item.rejected_qty) === 0) continue;
+                if ((Number(item.accepted_qty) + Number(item.rejected_qty)) === 0) continue;
                 if(item.product && item.product.batch_tracking) {
                     if(!item.batch_number || !item.manufacturing_date || !item.expiry_date) {
                         isValid = false;
@@ -725,6 +764,8 @@ document.addEventListener('alpine:init', () => {
 
         toggleAll(e) { this.selected = e.target.checked ? this.items.map(i => i.id) : []; },
         
+        get selectedActiveIds() { return this.items.filter(item => this.selected.includes(item.id) && !item.deleted_at).map(item => item.id); },
+        get selectedDeletedIds() { return this.items.filter(item => this.selected.includes(item.id) && item.deleted_at).map(item => item.id); },
         selectedGRN: null,
         
         viewItem(item) {
@@ -775,7 +816,7 @@ document.addEventListener('alpine:init', () => {
         },
 
         openBulkDeleteModal() {
-            if (this.selected.length === 0) return;
+            if (this.selectedActiveIds.length === 0) return;
             this.isBulkDelete = true;
             this.deleteForm.id = '';
             bootstrap.Modal.getOrCreateInstance(document.getElementById('deleteGrnModal')).show();
@@ -789,7 +830,7 @@ document.addEventListener('alpine:init', () => {
                 if (this.isBulkDelete) {
                     url = `/procurement/goods-receipts/bulk`;
                     method = 'POST';
-                    bodyData = { action: 'delete', ids: this.selected };
+                    bodyData = { action: 'delete', ids: this.selectedActiveIds };
                 } else {
                     url = `/procurement/goods-receipts/${this.deleteForm.id}`;
                     method = 'DELETE';
@@ -829,7 +870,7 @@ document.addEventListener('alpine:init', () => {
         },
 
         openBulkRestoreModal() {
-            if (this.selected.length === 0) return;
+            if (this.selectedDeletedIds.length === 0) return;
             this.isBulkRestore = true;
             this.restoreForm.id = '';
             bootstrap.Modal.getOrCreateInstance(document.getElementById('restoreGrnModal')).show();
@@ -843,7 +884,7 @@ document.addEventListener('alpine:init', () => {
                 if (this.isBulkRestore) {
                     url = `/procurement/goods-receipts/bulk`;
                     method = 'POST';
-                    bodyData = { action: 'restore', ids: this.selected };
+                    bodyData = { action: 'restore', ids: this.selectedDeletedIds };
                 } else {
                     url = `/procurement/goods-receipts/${this.restoreForm.id}/restore`;
                     method = 'POST';
