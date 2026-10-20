@@ -1131,6 +1131,15 @@ class PageController extends Controller
         ]);
         if ($indiaPost) {
             $query->whereIn('status', ['ready_to_ship', 'dispatched']);
+            // Historical exports must retain explicitly linked records even if archived.
+            $query->with([
+                'party' => fn ($q) => $q->withTrashed(),
+                'warehouse' => fn ($q) => $q->withTrashed(),
+                'items.product' => fn ($q) => $q->withTrashed(),
+                'shippingAddress' => fn ($q) => $q->withTrashed(),
+                'shippingAddress.village' => fn ($q) => $q->withTrashed(),
+                'shippingVillage' => fn ($q) => $q->withTrashed(),
+            ]);
         }
 
         if ($lobStateName = auth()->user()?->lob_state_name) {
@@ -1156,7 +1165,7 @@ class PageController extends Controller
             'Expires' => '0',
         ];
 
-        $callback = function () use ($query) {
+        $callback = function () use ($query, $indiaPost) {
             $file = fopen('php://output', 'w');
             
             // Output BOM to fix UTF-8 in Excel
@@ -1187,9 +1196,23 @@ class PageController extends Controller
                 'Status Log Changed By Names', 'Status Log Created At',
                 'Product Variant ID', 'Item Is Gift', 'Item Gift Source', 'Item Created At', 'Item Updated At',
             ];
-            fputcsv($file, $columns);
+            $exportColumns = $indiaPost ? [
+                'Order No', 'Order Date', 'Status', 'Grand Total',
+                'Customer Name', 'Customer Phone', 'Alternate Mobile',
+                'Shipping Address 1', 'Shipping Address 2', 'Shipping Village', 'Shipping PO/BO',
+                'Shipping Taluka', 'Shipping District', 'Shipping City', 'Shipping State', 'Shipping Pincode',
+                'Warehouse Name', 'Carrier Name', 'Tracking No', 'Product Name', 'Product SKU', 'Quantity',
+                'Dispatched At', 'Dispatched By Name', 'Weight (g)',
+            ] : $columns;
+            $weightPosition = count($columns);
+            $columnPositions = array_flip($indiaPost ? [...$columns, 'Weight (g)'] : $columns);
+            $exportPositions = array_map(fn ($column) => $columnPositions[$column], $exportColumns);
+            fputcsv($file, $exportColumns);
+            $writeRow = function (array $row, $weight = null) use ($file, $exportPositions, $weightPosition) {
+                fputcsv($file, array_map(fn ($position) => $position === $weightPosition ? $weight : $row[$position], $exportPositions));
+            };
 
-            $query->chunk(100, function ($orders) use ($file) {
+            $query->chunk(100, function ($orders) use ($writeRow, $indiaPost) {
                 $actorIds = $orders->flatMap(fn ($order) => [
                     $order->pending_by,
                     $order->pending_confirmation_by,
@@ -1236,19 +1259,49 @@ class PageController extends Controller
                     $billingState = $order->billing_state ?? '';
                     $billingPin = $order->billing_pincode ?? '';
 
-                    $shippingAdd1 = $order->shipping_address_line_1 ?? '';
-                    $shippingAdd2 = $order->shipping_address_line_2 ?? '';
-                    $shippingVillage = $order->shipping_village_name ?? '';
-                    $shippingPO = $order->shipping_post_office ?? '';
-                    $shippingTaluka = $order->shipping_taluka ?? '';
-                    $shippingDistrict = $order->shipping_district ?? '';
-                    $shippingCity = $order->shipping_city ?? '';
-                    $shippingState = $order->shipping_state ?? '';
-                    $shippingPin = $order->shipping_pincode ?? '';
+                    $shippingValue = function (string $field) use ($order, $indiaPost) {
+                        $snapshot = $order->getAttribute('shipping_'.$field);
+                        if (! $indiaPost || ($snapshot !== null && ! in_array(trim((string) $snapshot), ['', '-'], true))) {
+                            return $snapshot ?? '';
+                        }
+                        $linked = $order->shippingAddress?->getAttribute($field);
+                        if ($linked !== null && ! in_array(trim((string) $linked), ['', '-'], true)) {
+                            return $linked;
+                        }
+                        $village = $order->shippingVillage ?? $order->shippingAddress?->village;
+                        $villageFields = ['village_name' => 'village_name', 'post_office' => 'post_so_name',
+                            'taluka' => 'taluka_name', 'district' => 'district_name', 'state' => 'state_name', 'pincode' => 'pincode'];
+                        return isset($villageFields[$field]) ? ($village?->getAttribute($villageFields[$field]) ?? '') : '';
+                    };
+
+                    $shippingAdd1 = $shippingValue('address_line_1');
+                    $shippingAdd2 = $shippingValue('address_line_2');
+                    $shippingVillage = $shippingValue('village_name');
+                    $shippingPO = $shippingValue('post_office');
+                    $shippingTaluka = $shippingValue('taluka');
+                    $shippingDistrict = $shippingValue('district');
+                    $shippingCity = $shippingValue('city');
+                    $shippingState = $shippingValue('state');
+                    $shippingPin = $shippingValue('pincode');
 
                     $warehouseName = $order->warehouse?->name ?? '';
 
                     $statusLogs = $order->statusLogs->sortBy('id');
+                    $dispatchLog = $indiaPost ? $statusLogs->where('status', 'dispatched')->last() : null;
+                    $dispatchedAt = $order->dispatched_at;
+                    $dispatchedBy = $actorNames->get($order->dispatched_by, '');
+                    $reportWeight = null;
+                    if ($indiaPost) {
+                        $dispatchedAt = $dispatchedAt ?? $dispatchLog?->created_at
+                            ?? $order->shipments->whereNotNull('shipped_at')->min('shipped_at');
+                        $dispatchedBy = $dispatchedBy ?: ($dispatchLog?->user?->name ?? '');
+                        // Export total parcel weight in grams. Never invent a default weight.
+                        if ($order->shipments->isNotEmpty() && $order->shipments->every(fn ($shipment) => (float) $shipment->actual_weight_g > 0)) {
+                            $reportWeight = $order->shipments->sum('actual_weight_g');
+                        } elseif ($order->items->isNotEmpty() && $order->items->every(fn ($item) => (float) $item->product?->weight_g > 0 && (float) $item->quantity > 0)) {
+                            $reportWeight = $order->items->sum(fn ($item) => (float) $item->product->weight_g * (float) $item->quantity);
+                        }
+                    }
                     $statusLogIds = $statusLogs->pluck('id')->implode(' | ');
                     $statusLogStatuses = $statusLogs->pluck('status')->implode(' | ');
                     $statusLogNotes = $statusLogs->pluck('notes')->map(fn ($value) => $value ?? '')->implode(' | ');
@@ -1263,7 +1316,7 @@ class PageController extends Controller
                             $customerFirstName,
                             $customerMiddleName,
                             $customerLastName,
-                        ]))) ?: '-',
+                        ]))) ?: ($indiaPost ? ($customerCompanyName ?: '-') : '-'),
                         $customerCompanyName ?: '-', $customerEmail ?: '-', $customerPhone ?: '-', $customerAltMobile ?: '-', $customerRelName ?: '-', $customerRelPhone ?: '-', $customerGst ?: '-', $customerPan ?: '-',
                         $billingAdd1 ?: '-', $billingAdd2 ?: '-', $billingVillage ?: '-', $billingPO ?: '-', $billingTaluka ?: '-', $billingDistrict ?: '-', $billingCity ?: '-', $billingState ?: '-', $billingPin ?: '-',
                         $shippingAdd1 ?: '-', $shippingAdd2 ?: '-', $shippingVillage ?: '-', $shippingPO ?: '-', $shippingTaluka ?: '-', $shippingDistrict ?: '-', $shippingCity ?: '-', $shippingState ?: '-', $shippingPin ?: '-',
@@ -1278,7 +1331,7 @@ class PageController extends Controller
                         $order->confirmed_at, $actorNames->get($order->confirmed_by, ''),
                         $order->processing_at, $actorNames->get($order->processing_by, ''),
                         $order->ready_to_ship_at, $actorNames->get($order->ready_to_ship_by, ''),
-                        $order->dispatched_at, $actorNames->get($order->dispatched_by, ''),
+                        $dispatchedAt, $dispatchedBy,
                         $order->shipped_at, $actorNames->get($order->shipped_by, ''),
                         $order->delivered_at, $actorNames->get($order->delivered_by, ''),
                         $order->cancelled_at, $actorNames->get($order->cancelled_by, ''),
@@ -1292,22 +1345,22 @@ class PageController extends Controller
                     ];
 
                     if ($order->items->isEmpty()) {
-                        fputcsv($file, array_merge(
+                        $writeRow(array_merge(
                             $commonOrderData,
                             ['-', '-', '-', '-', '-', '-', '-', '-', '-'],
                             $additionalOrderData,
                             ['-', '-', '-', '-', '-']
-                        ));
+                        ), $reportWeight);
                     } else {
                         foreach ($order->items as $item) {
                             $productName = $item->product ? $item->product->name : 'Unknown Product';
                             $productSku = $item->product ? $item->product->sku : '-';
-                            fputcsv($file, array_merge(
+                            $writeRow(array_merge(
                                 $commonOrderData,
                                 [$productName, $productSku, $item->batch_number ?: '-', $item->quantity, $item->unit_price, $item->tax_rate, $item->tax_amount, $item->discount_amount, $item->total_amount],
                                 $additionalOrderData,
                                 [$item->product_variant_id, $item->is_gift, $item->gift_source, $item->created_at, $item->updated_at]
-                            ));
+                            ), $reportWeight);
                         }
                     }
                 }
