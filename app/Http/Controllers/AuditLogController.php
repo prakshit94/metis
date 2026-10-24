@@ -224,7 +224,7 @@ class AuditLogController extends Controller implements HasMiddleware
                     'plain_description'     => self::plainActivityDescription($formattedDescription),
                     'causer_name'           => $causerName,
                     'causer_photo'          => $causer?->photo ?? null,
-                    'time_ago'              => $a->created_at->diffForHumans(),
+                    'time_ago'              => $a->created_at?->diffForHumans() ?? '',
                     'is_read'               => in_array($a->id, $readIds),
                 ];
             }),
@@ -437,11 +437,11 @@ class AuditLogController extends Controller implements HasMiddleware
                 
                 $relatedOrderActivity = $a->relationLoaded('feedRelatedOrderActivity')
                     ? $a->getRelation('feedRelatedOrderActivity')
-                    : \Spatie\Activitylog\Models\Activity::with('subject')
+                    : ($a->created_at ? \Spatie\Activitylog\Models\Activity::with('subject')
                     ->where('subject_type', 'App\Modules\Orders\Models\Order')
                     ->where('causer_id', $a->causer_id)
                     ->whereBetween('created_at', [$a->created_at->copy()->subSeconds(2), $a->created_at->copy()->addSeconds(2)])
-                    ->first();
+                    ->first() : null);
                     
                 if ($relatedOrderActivity) {
                     $order = $relatedOrderActivity->subject;

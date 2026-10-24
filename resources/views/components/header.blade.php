@@ -527,7 +527,7 @@
                 'plain_description' => \App\Http\Controllers\AuditLogController::plainActivityDescription($formattedDescription),
                 'causer_name' => $causer?->name ?? 'System',
                 'causer_photo' => $causer?->photo,
-                'time_ago' => $a->created_at->diffForHumans(),
+                'time_ago' => $a->created_at?->diffForHumans() ?? '',
                 'is_read' => in_array($a->id, $initialReadIds, true),
             ];
         });

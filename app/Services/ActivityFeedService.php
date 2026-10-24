@@ -112,6 +112,8 @@ class ActivityFeedService
         ]);
 
         $addressPartyIds = [];
+        $stockLookupIds = [];
+        $stockLookupKeys = [];
         $lookups = null;
         foreach ($activities as $activity) {
             $subjectName = class_basename($activity->subject_type);
@@ -127,6 +129,20 @@ class ActivityFeedService
             if ($subjectName !== 'Stock' || ! $activity->properties) {
                 continue;
             }
+            if (! $activity->created_at) {
+                $activity->setRelation('feedRelatedOrderActivity', null)->makeHidden('feedRelatedOrderActivity');
+                continue;
+            }
+
+            // Stock rows from one operation often share a causer and timestamp.
+            // Identical predicates need only one lookup, not one per stock row.
+            $lookupKey = json_encode([$activity->causer_id, $activity->created_at->format('Y-m-d H:i:s.u')]);
+            if (isset($stockLookupKeys[$lookupKey])) {
+                $stockLookupIds[$activity->id] = $stockLookupKeys[$lookupKey];
+                continue;
+            }
+            $stockLookupKeys[$lookupKey] = $activity->id;
+            $stockLookupIds[$activity->id] = $activity->id;
 
             // Run the same per-entry time/causer lookup in one round trip.
             // Each scalar subquery retains the original first-match semantics.
@@ -149,7 +165,9 @@ class ActivityFeedService
             $orders = $ids ? Activity::with('subject')->whereKey($ids)->get()->keyBy('id') : collect();
             foreach ($activities as $activity) {
                 if (class_basename($activity->subject_type) === 'Stock') {
-                    $activity->setRelation('feedRelatedOrderActivity', $orders->get($matches->get($activity->id)?->related_activity_id))->makeHidden('feedRelatedOrderActivity');
+                    $lookupId = $stockLookupIds[$activity->id] ?? null;
+                    $relatedId = $matches->get($lookupId)?->related_activity_id;
+                    $activity->setRelation('feedRelatedOrderActivity', $orders->get($relatedId))->makeHidden('feedRelatedOrderActivity');
                 }
             }
         }
