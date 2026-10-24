@@ -258,7 +258,7 @@ class PageController extends Controller
         ];
 
         $orderStatusPercent = [];
-        $statusesToTrack = ['pending', 'confirmed', 'processing', 'ready_to_ship', 'dispatched', 'completed', 'cancelled'];
+        $statusesToTrack = ['pending', 'pending_confirmation', 'confirmed', 'processing', 'ready_to_ship', 'dispatched', 'completed', 'cancelled'];
         foreach ($statusesToTrack as $s) {
             $orderStatusPercent[$s] = $totalOrders > 0 ? round((($orderStatusRaw[$s] ?? 0) / $totalOrders) * 100) : 0;
         }

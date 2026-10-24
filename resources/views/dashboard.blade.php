@@ -183,6 +183,13 @@
                                     </div>
                                 </div>
                                 <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="text-muted small fw-semibold">Pending Confirmation</span>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="fw-bold text-body-emphasis fs-6">{{ $orderStatusRaw['pending_confirmation'] ?? 0 }}</span>
+                                        <span class="badge bg-warning bg-opacity-25 text-warning-emphasis border border-warning border-opacity-50" style="font-size: 9px;">{{ $orderStatusPercent['pending_confirmation'] ?? 0 }}%</span>
+                                    </div>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center mb-2">
                                     <span class="text-muted small fw-semibold">Confirmed</span>
                                     <div class="d-flex align-items-center gap-2">
                                         <span class="fw-bold text-body-emphasis fs-6">{{ $orderStatusRaw['confirmed'] ?? 0 }}</span>
