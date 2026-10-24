@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Catalog\Models;
 
+use App\Concerns\LogsActivity;
 use App\Modules\Core\Models\Village;
 use App\Modules\Inventory\Models\Stock;
 use App\Modules\Orders\Models\Order;
@@ -12,7 +13,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Auditable as AuditableTrait;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Activitylog\LogOptions;
-use Spatie\Activitylog\Traits\LogsActivity;
 
 class Warehouse extends Model implements Auditable
 {

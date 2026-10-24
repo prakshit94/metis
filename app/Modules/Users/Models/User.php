@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Users\Models;
 
+use App\Concerns\LogsActivity;
 use App\Models\Chat\Presence;
 use App\Modules\Catalog\Models\Service;
 use Database\Factories\UserFactory;
@@ -22,7 +23,6 @@ use OwenIt\Auditing\Auditable as AuditableTrait;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Models\Activity;
-use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable implements Auditable

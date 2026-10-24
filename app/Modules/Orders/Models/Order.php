@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Orders\Models;
 
+use App\Concerns\LogsActivity;
 use App\Modules\Catalog\Models\Warehouse;
 use App\Modules\Core\Models\Village;
 use App\Modules\Customers\Models\Party;
@@ -19,7 +20,6 @@ use Illuminate\Support\Facades\Cache;
 use OwenIt\Auditing\Auditable as AuditableTrait;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Activitylog\LogOptions;
-use Spatie\Activitylog\Traits\LogsActivity;
 
 class Order extends Model implements Auditable
 {
@@ -122,7 +122,9 @@ class Order extends Model implements Auditable
 
     public function statusLabel(): string
     {
-        return match ($this->lifecycleStatus()) {
+        $status = $this->lifecycleStatus();
+
+        return match ($status) {
             'future_order' => 'Future Order',
             'ready_to_ship' => 'Ready to Ship',
             'dispatched' => 'Dispatched',
@@ -132,7 +134,7 @@ class Order extends Model implements Auditable
             'cancelled' => 'Cancelled',
             'returned' => 'Returned',
             'return_requested' => 'Return Requested',
-            default => ucfirst(str_replace('_', ' ', $this->lifecycleStatus())),
+            default => ucfirst(str_replace('_', ' ', $status)),
         };
     }
 

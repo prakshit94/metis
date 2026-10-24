@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Customers\Models;
 
+use App\Concerns\LogsActivity;
 use App\Models\CallLog;
 use App\Modules\Orders\Models\Order;
 use App\Modules\Orders\Models\OrderComplaint;
@@ -16,7 +17,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Auditable as AuditableTrait;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Activitylog\LogOptions;
-use Spatie\Activitylog\Traits\LogsActivity;
 
 class Customer extends Model implements Auditable
 {

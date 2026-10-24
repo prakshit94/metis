@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Core\Models;
 
+use App\Concerns\LogsActivity;
 use App\Modules\Catalog\Models\Service;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -13,7 +14,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Auditable as AuditableTrait;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Activitylog\LogOptions;
-use Spatie\Activitylog\Traits\LogsActivity;
 
 class Village extends Model implements Auditable
 {

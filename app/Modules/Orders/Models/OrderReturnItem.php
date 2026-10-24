@@ -2,13 +2,13 @@
 
 namespace App\Modules\Orders\Models;
 
+use App\Concerns\LogsActivity;
 use App\Modules\Catalog\Models\Product;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use OwenIt\Auditing\Auditable as AuditableTrait;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Activitylog\LogOptions;
-use Spatie\Activitylog\Traits\LogsActivity;
 
 class OrderReturnItem extends Model implements Auditable
 {

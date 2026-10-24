@@ -1,7 +1,5 @@
-import Alpine from 'alpinejs';
 import { Modal } from 'bootstrap';
 import Swal from 'sweetalert2';
-import ApexCharts from 'apexcharts';
 
 function showToast(message, type = 'success') {
   const container = document.getElementById('toast-container');
@@ -54,7 +52,7 @@ export default () => {
     },
 
     searchQuery: '',
-    statusFilter: '',
+    statusFilter: 'pending,in_transit,failed',
     carrierFilter: '',
     dateType: 'created_at',
     fromDate: '',
@@ -62,7 +60,7 @@ export default () => {
     sortField: 'id',
     sortDirection: 'desc',
     currentPage: 1,
-    itemsPerPage: 10,
+    itemsPerPage: 25,
     selectedItems: [],
 
     // Provider Tracker State
@@ -70,10 +68,6 @@ export default () => {
     providerSearchQuery: '',
     providerCurrentPage: 1,
     providerPerPage: 5,
-    providerDatePreset: 'today',
-    providerFromDate: '',
-    providerToDate: '',
-
     get filteredProviders() {
       if (!this.topProviders) return [];
       let p = this.topProviders;
@@ -85,90 +79,23 @@ export default () => {
 
     get paginatedProviders() {
       const start = (this.providerCurrentPage - 1) * this.providerPerPage;
-      return this.filteredProviders.slice(start, start + this.providerPerPage);
+      return this.filteredProviders.slice(start, start + Number(this.providerPerPage));
+    },
+
+    goToProviderPage(page) {
+      if (page >= 1 && page <= this.providerTotalPages) this.providerCurrentPage = page;
     },
 
     get providerTotalPages() {
       return Math.ceil(this.filteredProviders.length / this.providerPerPage) || 1;
     },
 
-    applyProviderPreset() {
-      if (this.providerDatePreset === 'custom') return;
-      const today = new Date();
-      let from = '';
-      let to = '';
-
-      const formatDate = (date) => {
-        const d = new Date(date);
-        let month = '' + (d.getMonth() + 1);
-        let day = '' + d.getDate();
-        const year = d.getFullYear();
-        if (month.length < 2) month = '0' + month;
-        if (day.length < 2) day = '0' + day;
-        return [year, month, day].join('-');
-      };
-
-      switch (this.providerDatePreset) {
-        case 'today':
-          from = to = formatDate(today);
-          break;
-        case 'yesterday':
-          const yesterday = new Date(today);
-          yesterday.setDate(yesterday.getDate() - 1);
-          from = to = formatDate(yesterday);
-          break;
-        case 'this_week':
-          const firstDay = new Date(today);
-          firstDay.setDate(firstDay.getDate() - firstDay.getDay());
-          from = formatDate(firstDay);
-          to = formatDate(today);
-          break;
-        case 'this_month':
-          from = formatDate(new Date(today.getFullYear(), today.getMonth(), 1));
-          to = formatDate(today);
-          break;
-        case 'prev_month':
-          from = formatDate(new Date(today.getFullYear(), today.getMonth() - 1, 1));
-          to = formatDate(new Date(today.getFullYear(), today.getMonth(), 0));
-          break;
-        case 'this_year':
-          from = formatDate(new Date(today.getFullYear(), 0, 1));
-          to = formatDate(today);
-          break;
-      }
-
-      this.providerFromDate = from;
-      this.providerToDate = to;
-      this.calculateProviders();
-    },
-
     calculateProviders() {
       if (!this.allFetchedItems) return;
 
-      let itemsToProcess = this.allFetchedItems;
-
-      if (this.providerFromDate || this.providerToDate) {
-        itemsToProcess = itemsToProcess.filter((item) => {
-          const dateStr = item.shipped_at || item.delivered_at || item.created_at;
-          if (!dateStr) return true;
-
-          const itemDate = new Date(dateStr).setHours(0, 0, 0, 0);
-          let isValid = true;
-
-          if (this.providerFromDate) {
-            const from = new Date(this.providerFromDate).setHours(0, 0, 0, 0);
-            if (itemDate < from) isValid = false;
-          }
-          if (this.providerToDate) {
-            const to = new Date(this.providerToDate).setHours(23, 59, 59, 999);
-            if (itemDate > to) isValid = false;
-          }
-          return isValid;
-        });
-      }
-
-      const providerMap = {};
-      itemsToProcess.forEach((item) => {
+      const providerMap = Object.create(null);
+      this.allFetchedItems.forEach((item) => {
+        const count = Number(item.total);
         const c = item.carrier_name || 'Unassigned';
         if (!providerMap[c]) {
           providerMap[c] = {
@@ -191,25 +118,25 @@ export default () => {
               providerMap[c].contact_persons.push(contact);
             }
             if (String(item.service_provider_id) === String(p.id)) {
-              contact.assigned_orders++;
+              contact.assigned_orders += count;
             }
           });
         }
 
-        providerMap[c].total++;
-        if (item.status === 'pending') providerMap[c].pending++;
-        if (item.status === 'in_transit') providerMap[c].in_transit++;
-        if (item.status === 'delivered') providerMap[c].delivered++;
-        if (item.status === 'returned') providerMap[c].returned++;
-        if (item.status === 'failed') providerMap[c].failed++;
+        providerMap[c].total += count;
+        if (item.status === 'pending') providerMap[c].pending += count;
+        if (item.status === 'in_transit') providerMap[c].in_transit += count;
+        if (item.status === 'delivered') providerMap[c].delivered += count;
+        if (item.status === 'returned') providerMap[c].returned += count;
+        if (item.status === 'failed') providerMap[c].failed += count;
       });
 
       const colorClasses = ['primary', 'info', 'warning', 'danger', 'success'];
       this.topProviders = Object.values(providerMap)
         .map((p, idx) => {
           p.contact_persons.sort((a, b) => {
-            let pA = a.pivot && a.pivot.priority ? parseInt(a.pivot.priority) : 999;
-            let pB = b.pivot && b.pivot.priority ? parseInt(b.pivot.priority) : 999;
+            const pA = a.pivot && a.pivot.priority ? parseInt(a.pivot.priority) : 999;
+            const pB = b.pivot && b.pivot.priority ? parseInt(b.pivot.priority) : 999;
             return pA - pB;
           });
           const activeTotal = p.total - p.pending;
@@ -228,7 +155,7 @@ export default () => {
             failed: p.failed,
             contact_persons: p.contact_persons,
             onTimeRate: onTimeRate,
-            avgTime: (Math.random() * 2 + 1.5).toFixed(1) + ' Days',
+
             exceptionRate: parseFloat(exceptionRate),
             successScore: Math.round(successScore),
             deliveryPercentage: deliveryPercentage,
@@ -240,13 +167,19 @@ export default () => {
       this.providerCurrentPage = 1;
     },
 
-    charts: {},
-    chartsInitialized: false,
-    statusStats: [],
     topProviders: [],
 
+    summaryKey: null,
+    loadController: null,
+    popstateHandler: null,
+    loadSequence: 0,
+    trackingSequence: 0,
+    liveTrackingSequence: 0,
     isLoading: false,
     saving: false,
+    loadError: '',
+    trackingLoading: false,
+    trackingError: '',
 
     selectedShipment: null,
     trackingEvents: [],
@@ -289,6 +222,9 @@ export default () => {
     },
 
     init() {
+      this.restoreFilters();
+      this.popstateHandler = () => { this.restoreFilters(); this.loadData(); };
+      window.addEventListener('popstate', this.popstateHandler);
       this.loadData();
 
       const statusEl = document.getElementById('statusModal');
@@ -312,11 +248,64 @@ export default () => {
       }
     },
 
+    destroy() {
+      this.loadController?.abort();
+      window.removeEventListener('popstate', this.popstateHandler);
+    },
+
+    get statusOptions() {
+      return [
+        { value: 'pending', label: 'Pending' },
+        { value: 'in_transit', label: 'Dispatched' },
+        { value: 'failed', label: 'Failed' },
+        { value: 'delivered', label: 'Delivered' },
+        { value: 'returned', label: 'Returned' },
+      ];
+    },
+
+    hasStatus(status) {
+      return this.statusFilter.split(',').includes(status);
+    },
+
+    toggleStatus(status) {
+      const selected = this.statusOptions.filter((option) => this.hasStatus(option.value)).map((option) => option.value);
+      this.statusFilter = (selected.includes(status)
+        ? selected.filter((value) => value !== status) : [...selected, status]).join(',') || '__no_status_selected__';
+      this.filterData();
+    },
+
+    restoreFilters() {
+      const params = new URLSearchParams(window.location.search);
+      this.searchQuery = params.get('search') || '';
+      const statuses = params.has('status') ? params.get('status').split(',') : ['pending', 'in_transit', 'failed'];
+      this.statusFilter = statuses.length === 1 && statuses[0] === '__no_status_selected__'
+        ? '__no_status_selected__'
+        : [...new Set(statuses.filter((status) => this.statusOptions.some((option) => option.value === status)))].join(',');
+      this.carrierFilter = params.get('carrier') || '';
+      this.dateType = ['created_at', 'shipped_at', 'delivered_at'].includes(params.get('date_type')) ? params.get('date_type') : 'created_at';
+      this.fromDate = params.get('from_date') || '';
+      this.toDate = params.get('to_date') || '';
+      this.itemsPerPage = [10, 15, 20, 25, 50, 100].includes(Number(params.get('limit'))) ? Number(params.get('limit')) : 25;
+      this.currentPage = Math.max(1, Number.parseInt(params.get('page'), 10) || 1);
+      this.sortField = ['id', 'shipment_no', 'status', 'shipped_at', 'delivered_at'].includes(params.get('sort_field')) ? params.get('sort_field') : 'id';
+      this.sortDirection = params.get('sort_direction') === 'asc' ? 'asc' : 'desc';
+      this.selectedItems = [];
+    },
+
+    filterParams() {
+      const params = new URLSearchParams({ status: this.statusFilter || 'all', date_type: this.dateType });
+      if (this.searchQuery) params.set('search', this.searchQuery);
+      if (this.carrierFilter) params.set('carrier', this.carrierFilter);
+      if (this.fromDate) params.set('from_date', this.fromDate);
+      if (this.toDate) params.set('to_date', this.toDate);
+      return params;
+    },
+
     async apiRequest(url, options = {}) {
       const { headers, ...otherOptions } = options;
       const response = await fetch(url, {
         headers: {
-          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
           'X-Requested-With': 'XMLHttpRequest',
           Accept: 'application/json',
           'Content-Type': 'application/json',
@@ -326,14 +315,14 @@ export default () => {
       });
 
       const text = await response.text();
-      let payload = {};
+      let payload;
       try {
         payload = text ? JSON.parse(text) : {};
-      } catch (e) {
+      } catch (error) {
         if (!response.ok) {
-          throw new Error(`Server error (${response.status}): The server returned an invalid HTML response instead of JSON.`);
+          throw new Error(`Server error (${response.status}): The server returned an invalid HTML response instead of JSON.`, { cause: error });
         }
-        throw new Error('Received invalid JSON from server.');
+        throw new Error('Received invalid JSON from server.', { cause: error });
       }
 
       if (!response.ok) {
@@ -344,87 +333,43 @@ export default () => {
       return payload;
     },
 
-    async loadData() {
+    async loadData(refreshSummary = true) {
+      const sequence = ++this.loadSequence;
+      this.loadController?.abort();
+      this.loadController = typeof AbortController === 'undefined' ? null : new AbortController();
       this.isLoading = true;
+      this.loadError = '';
       try {
-        // Fetch stats and all items to calculate metrics
-        const allPayload = await this.apiRequest(`${this.apiBase}?per_page=100`);
-        const allItems = (allPayload.data || []).map((item) => ({
-          ...item,
-          status: this.normalizeStatus(item.status),
-        }));
-
-        this.stats.total = allItems.length;
-        this.stats.pending = allItems.filter((i) => i.status === 'pending').length;
-        this.stats.in_transit = allItems.filter((i) => i.status === 'in_transit').length;
-        this.stats.delivered = allItems.filter((i) => i.status === 'delivered').length;
-        this.stats.failed = allItems.filter((i) => i.status === 'failed').length;
-        this.stats.returned = allItems.filter((i) => i.status === 'returned').length;
-
-        this.statusStats = [
-          {
-            name: 'Pending',
-            count: this.stats.pending,
-            percentage: this.stats.total
-              ? Math.round((this.stats.pending / this.stats.total) * 100)
-              : 0,
-            color: 'var(--bs-warning)',
-          },
-          {
-            name: 'In Transit',
-            count: this.stats.in_transit,
-            percentage: this.stats.total
-              ? Math.round((this.stats.in_transit / this.stats.total) * 100)
-              : 0,
-            color: 'var(--bs-primary)',
-          },
-          {
-            name: 'Delivered',
-            count: this.stats.delivered,
-            percentage: this.stats.total
-              ? Math.round((this.stats.delivered / this.stats.total) * 100)
-              : 0,
-            color: 'var(--bs-success)',
-          },
-          {
-            name: 'Returned',
-            count: this.stats.returned,
-            percentage: this.stats.total
-              ? Math.round((this.stats.returned / this.stats.total) * 100)
-              : 0,
-            color: 'var(--bs-secondary)',
-          },
-          {
-            name: 'Failed',
-            count: this.stats.failed,
-            percentage: this.stats.total
-              ? Math.round((this.stats.failed / this.stats.total) * 100)
-              : 0,
-            color: 'var(--bs-danger)',
-          },
-        ].filter((stat) => stat.count > 0);
-
-        this.allFetchedItems = allItems;
-        this.applyProviderPreset();
-
-        if (this.chartsInitialized) {
-          this.updateCharts();
+        const params = this.filterParams();
+        const summaryKey = params.toString();
+        const includeSummary = refreshSummary || this.summaryKey !== summaryKey;
+        params.set('page', this.currentPage);
+        params.set('limit', this.itemsPerPage);
+        params.set('sort_field', this.sortField);
+        params.set('sort_direction', this.sortDirection);
+        if (window.history && window.location) {
+          window.history.replaceState({}, '', `${window.location.pathname}?${params}`);
+        }
+        params.set('include_summary', includeSummary ? '1' : '0');
+        const payload = await this.apiRequest(`${this.apiBase}?${params}`, { signal: this.loadController?.signal });
+        if (sequence !== this.loadSequence) return;
+        if (payload.stats && payload.providers) {
+          this.stats = payload.stats;
+          this.allFetchedItems = payload.providers;
+          this.calculateProviders();
+          this.summaryKey = summaryKey;
         }
 
-        // Fetch paginated active list with all filters
-        let query = `page=${this.currentPage}&per_page=${this.itemsPerPage}&search=${encodeURIComponent(this.searchQuery)}&sort_by=${this.sortField}&sort_dir=${this.sortDirection}`;
-        if (this.statusFilter) query += `&status=${this.statusFilter}`;
-        if (this.carrierFilter) query += `&carrier=${this.carrierFilter}`;
-        if (this.fromDate) query += `&from_date=${this.fromDate}`;
-        if (this.toDate) query += `&to_date=${this.toDate}`;
-        if (this.dateType) query += `&date_type=${this.dateType}`;
-
-        const payload = await this.apiRequest(`${this.apiBase}?${query}`);
-
+        if (sequence !== this.loadSequence) return;
         this.items = (payload.data || []).map((item) => ({
           ...item,
           status: this.normalizeStatus(item.status),
         }));
+        this.selectedItems = this.selectedItems.filter((id) => this.items.some((item) => String(item.id) === id));
+        if (this.currentPage > payload.last_page) {
+          this.currentPage = payload.last_page;
+          return await this.loadData(false);
+        }
         this.paginator = {
           current_page: payload.current_page,
           last_page: payload.last_page,
@@ -434,10 +379,12 @@ export default () => {
           per_page: payload.per_page,
         };
       } catch (error) {
+        if (sequence !== this.loadSequence) return;
+        this.loadError = error.message || 'Unable to load shipments.';
         console.error('Failed to load shipments:', error);
         showToast(error.message, 'error');
       } finally {
-        this.isLoading = false;
+        if (sequence === this.loadSequence) this.isLoading = false;
       }
     },
 
@@ -448,10 +395,11 @@ export default () => {
 
     clearFilters() {
       this.searchQuery = '';
-      this.statusFilter = '';
+      this.statusFilter = 'pending,in_transit,failed';
       this.carrierFilter = '';
       this.fromDate = '';
       this.toDate = '';
+      this.dateType = 'created_at';
       this.currentPage = 1;
       this.loadData();
     },
@@ -482,7 +430,7 @@ export default () => {
     },
 
     async bulkAction(action) {
-      if (this.selectedItems.length === 0) return;
+      if (this.selectedItems.length === 0 || this.isLoading) return;
 
       const selectedObjs = this.items.filter((i) => this.selectedItems.includes(String(i.id)));
       let applicableObjs = [];
@@ -552,34 +500,34 @@ export default () => {
       this.isLoading = true;
       try {
         if (action === 'mark_returned') {
+          // One return request per order even when several selected parcels belong to it.
+          const returnedOrders = new Set();
           for (const shipment of applicableObjs) {
             const orderId = shipment.order?.id || shipment.order_id;
-            if (shipment.order && shipment.order.items) {
-              const itemsToReturn = shipment.order.items.map((item) => ({
-                product_id: item.product_id,
-                requested_qty: item.quantity,
-                max_qty: item.quantity,
-              }));
-
-              await this.apiRequest(`/orders/${orderId}/returns`, {
+            if (!shipment.order?.items?.length) {
+              throw new Error('Order items unavailable. Reload shipments before returning.');
+            }
+            if (!returnedOrders.has(orderId)) {
+              await this.apiRequest(`${this.apiBase}/${shipment.id}/return`, {
                 method: 'POST',
                 body: JSON.stringify({
                   reason: returnReason,
                   notes: 'Bulk return processed via Shipments dashboard.',
-                  items: itemsToReturn,
+                  items: shipment.order.items.map((item) => ({
+                    product_id: item.product_id,
+                    requested_qty: item.quantity,
+                  })),
                 }),
-              }).catch((e) => console.error(e));
+              });
+              returnedOrders.add(orderId);
+            } else {
+              await this.apiRequest(`${this.apiBase}/bulk-action`, {
+                method: 'POST',
+                body: JSON.stringify({ action, ids: [String(shipment.id)], skip_order_sync: true }),
+              });
             }
           }
 
-          await this.apiRequest(`${this.apiBase}/bulk-action`, {
-            method: 'POST',
-            body: JSON.stringify({
-              action: action,
-              ids: applicableIds,
-              skip_order_sync: true,
-            }),
-          });
         } else {
           await this.apiRequest(`${this.apiBase}/bulk-action`, {
             method: 'POST',
@@ -595,7 +543,7 @@ export default () => {
         this.loadData();
       } catch (error) {
         showToast(error.message || 'Bulk action failed.', 'error');
-        this.isLoading = false;
+        await this.loadData();
       }
     },
 
@@ -606,13 +554,14 @@ export default () => {
         this.sortField = field;
         this.sortDirection = 'desc';
       }
-      this.loadData();
+      this.currentPage = 1;
+      this.loadData(false);
     },
 
     goToPage(page) {
       if (page >= 1 && page <= this.paginator.last_page) {
         this.currentPage = page;
-        this.loadData();
+        this.loadData(false);
       }
     },
 
@@ -651,7 +600,7 @@ export default () => {
       } else {
         const tomorrow = new Date();
         tomorrow.setDate(tomorrow.getDate() + 1);
-        defaultFollowUp = tomorrow.toISOString().split('T')[0];
+        defaultFollowUp = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;
       }
 
       const userNameMeta = document.querySelector('meta[name="user-name"]');
@@ -701,14 +650,14 @@ export default () => {
           if (!this.statusForm.next_followup_date) {
             const tomorrow = new Date();
             tomorrow.setDate(tomorrow.getDate() + 1);
-            this.statusForm.next_followup_date = tomorrow.toISOString().split('T')[0];
+            this.statusForm.next_followup_date = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;
           }
         }
       }
     },
 
     async saveStatus() {
-      if (!this.selectedShipment) return;
+      if (!this.selectedShipment || this.saving) return false;
       this.saving = true;
       try {
         if (this.statusForm.status === 'returned') {
@@ -722,34 +671,40 @@ export default () => {
             );
           }
 
-          const orderId = this.selectedShipment.order?.id || this.selectedShipment.order_id;
-          await this.apiRequest(`/orders/${orderId}/returns`, {
+          await this.apiRequest(`${this.apiBase}/${this.selectedShipment.id}/return`, {
             method: 'POST',
             body: JSON.stringify({
+              ...this.statusForm,
               reason: this.returnForm.reason,
               notes: this.statusForm.description,
               items: itemsToReturn,
             }),
           });
+        } else {
+          await this.apiRequest(`${this.apiBase}/${this.selectedShipment.id}/status`, {
+            method: 'POST',
+            body: JSON.stringify(this.statusForm),
+          });
         }
-
-        await this.apiRequest(`${this.apiBase}/${this.selectedShipment.id}/status`, {
-          method: 'POST',
-          body: JSON.stringify({ ...this.statusForm, skip_order_sync: true }),
-        });
         showToast('Shipment status updated successfully.', 'success');
         this.statusModal?.hide();
-        this.loadData();
+        await this.loadData();
+        return true;
       } catch (error) {
         showToast(error.message, 'error');
+        return false;
       } finally {
         this.saving = false;
       }
     },
 
     async openTrackingModal(shipment) {
+      const sequence = ++this.trackingSequence;
+      ++this.liveTrackingSequence;
       this.selectedShipment = shipment;
       this.trackingEvents = [];
+      this.trackingLoading = true;
+      this.trackingError = '';
       // Reset live tracking state so previous shipment's data doesn't bleed through
       this.liveTrackingData = null;
       this.liveTrackingError = null;
@@ -758,9 +713,14 @@ export default () => {
 
       try {
         const response = await this.apiRequest(`${this.apiBase}/${shipment.id}/tracking`);
+        if (sequence !== this.trackingSequence || this.selectedShipment?.id !== shipment.id) return;
+        this.selectedShipment = { ...shipment, ...response.shipment };
         this.trackingEvents = response.events || [];
       } catch (error) {
-        showToast(error.message, 'error');
+        if (sequence !== this.trackingSequence || this.selectedShipment?.id !== shipment.id) return;
+        this.trackingError = error.message || 'Unable to load tracking history.';
+      } finally {
+        if (sequence === this.trackingSequence) this.trackingLoading = false;
       }
     },
 
@@ -771,6 +731,8 @@ export default () => {
      */
     async fetchLiveTracking() {
       if (!this.selectedShipment) return;
+      const shipmentId = this.selectedShipment.id;
+      const sequence = ++this.liveTrackingSequence;
       this.liveTrackingLoading = true;
       this.liveTrackingError = null;
       this.liveTrackingData = null;
@@ -778,11 +740,13 @@ export default () => {
         const response = await this.apiRequest(
           `${this.apiBase}/${this.selectedShipment.id}/live-tracking`
         );
+        if (sequence !== this.liveTrackingSequence || this.selectedShipment?.id !== shipmentId) return;
         this.liveTrackingData = response;
       } catch (error) {
+        if (sequence !== this.liveTrackingSequence || this.selectedShipment?.id !== shipmentId) return;
         this.liveTrackingError = error.message || 'Failed to fetch live tracking data.';
       } finally {
-        this.liveTrackingLoading = false;
+        if (sequence === this.liveTrackingSequence) this.liveTrackingLoading = false;
       }
     },
 
@@ -797,7 +761,7 @@ export default () => {
     },
 
     async saveTrackingEvent() {
-      if (!this.selectedShipment) return;
+      if (!this.selectedShipment || this.saving) return false;
       this.saving = true;
       try {
         await this.apiRequest(`${this.apiBase}/${this.selectedShipment.id}/tracking-event`, {
@@ -807,12 +771,9 @@ export default () => {
         showToast('Tracking event added successfully.', 'success');
         this.addEventModal?.hide();
 
-        // If tracking modal is open or needs to refresh, load again
-        if (this.trackingModal && this.selectedShipment) {
-          this.openTrackingModal(this.selectedShipment);
-        }
       } catch (error) {
         showToast(error.message, 'error');
+        return false;
       } finally {
         this.saving = false;
       }
@@ -853,9 +814,8 @@ export default () => {
         return;
       }
 
-      this.saving = true;
+      if (this.saving) return;
       try {
-        const itemsToReturn = this.returnItems.filter((i) => i.requested_qty > 0);
 
         this.statusForm = {
           status: 'returned',
@@ -865,10 +825,10 @@ export default () => {
           next_followup_date: this.selectedShipment.next_followup_date || '',
           delivered_by: this.selectedShipment.delivered_by || '',
         };
-        await this.saveStatus();
-        this.returnModal?.hide();
+        if (await this.saveStatus()) this.returnModal?.hide();
       } catch (error) {
         showToast(error.message, 'error');
+        return false;
       } finally {
         this.saving = false;
       }
@@ -882,8 +842,14 @@ export default () => {
 
       const formatDate = (dateString) => {
         if (!dateString) return '';
-        const d = new Date(dateString);
-        return isNaN(d.getTime()) ? dateString : `"${d.toLocaleString()}"`;
+        const date = new Date(dateString);
+        return isNaN(date.getTime()) ? dateString : date.toLocaleString();
+      };
+      const csvCell = (value) => {
+        let text = String(value ?? '');
+        // Preserve literal text when opened by a spreadsheet program.
+        if (/^[=+@\-\t\r]/.test(text)) text = "'" + text;
+        return '"' + text.replace(/"/g, '""') + '"';
       };
 
       const headers = [
@@ -905,30 +871,21 @@ export default () => {
         'Dimensions (cm)',
         'Shipping Cost',
       ];
-      const csvRows = [headers.join(',')];
+      const csvRows = [headers.map(csvCell).join(',')];
 
       this.items.forEach((item) => {
         const providers = item.service?.providers?.map((p) => p.name).join('; ') || '';
         const values = [
-          item.id,
-          `"${item.shipment_no || ''}"`,
-          `"${item.order?.order_no || item.order_id || ''}"`,
-          `"${(item.carrier_name || '').replace(/"/g, '""')}"`,
-          `"${providers.replace(/"/g, '""')}"`,
-          `"${(item.tracking_no || '').replace(/"/g, '""')}"`,
-          `"${item.status.toUpperCase()}"`,
-          item.delivery_attempts || 0,
-          formatDate(item.next_followup_date),
-          `"${(item.reschedule_reason || '').replace(/"/g, '""')}"`,
-          `"${(item.delivered_by || '').replace(/"/g, '""')}"`,
-          formatDate(item.shipped_at),
-          formatDate(item.delivered_at),
-          formatDate(item.created_at),
-          item.actual_weight_g || '',
+          item.id, item.shipment_no, item.order?.order_no || item.order_id,
+          item.carrier_name, providers, item.tracking_no, item.status?.toUpperCase(),
+          item.delivery_attempts || 0, formatDate(item.next_followup_date),
+          item.reschedule_reason, item.delivered_by, formatDate(item.shipped_at),
+          formatDate(item.delivered_at), formatDate(item.created_at),
+          item.actual_weight_g ?? '',
           item.length_cm ? `${item.length_cm}x${item.width_cm}x${item.height_cm}` : '',
-          item.shipping_cost || '',
+          item.shipping_cost ?? '',
         ];
-        csvRows.push(values.join(','));
+        csvRows.push(values.map(csvCell).join(','));
       });
 
       const blob = new Blob([csvRows.join('\n')], { type: 'text/csv' });

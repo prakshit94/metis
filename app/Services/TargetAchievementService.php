@@ -63,33 +63,14 @@ class TargetAchievementService
     /** Sum of net_amount (fallback: total_amount) of valid orders. */
     private function calcSalesRevenue(Target $target): float
     {
-        $orders = $this->buildOrdersQuery($target)
-            ->with('orderReturns') // eager-load to avoid N+1 in lifecycleStatus()
-            ->get();
-
-        $total = 0.0;
-        foreach ($orders as $order) {
-            if (!$this->isExcludedLifecycle($order->lifecycleStatus())) {
-                $total += (float) ($order->net_amount ?? $order->total_amount ?? 0);
-            }
-        }
-        return $total;
+        return (float) $this->eligibleOrdersQuery($target)
+            ->toBase()->sum(DB::raw('COALESCE(net_amount, total_amount, 0)'));
     }
 
     /** Count of valid (non-cancelled/returned/future) orders. */
     private function calcOrdersCount(Target $target): float
     {
-        $orders = $this->buildOrdersQuery($target)
-            ->with('orderReturns')
-            ->get();
-
-        $count = 0;
-        foreach ($orders as $order) {
-            if (!$this->isExcludedLifecycle($order->lifecycleStatus())) {
-                $count++;
-            }
-        }
-        return (float) $count;
+        return (float) $this->eligibleOrdersQuery($target)->count();
     }
 
     /** Sum of issued invoice value; unpaid invoices count, cancelled invoices do not. */
@@ -147,9 +128,17 @@ class TargetAchievementService
 
     // ─── Helpers ──────────────────────────────────────────────────────────────
 
-    private function isExcludedLifecycle(string $status): bool
+    private function eligibleOrdersQuery(Target $target)
     {
-        return in_array($status, ['cancelled', 'returned', 'return_requested', 'future_order']);
+        // Match Order::lifecycleStatus(): only the newest return decides whether
+        // an order is returned/requested. An older completed return followed by
+        // a rejected return must not exclude the order. Shipment attempts and
+        // unfulfillable pending orders remain eligible for these two metrics.
+        // Binary comparison preserves PHP strict matching under case-insensitive
+        // database collations, including legacy mixed-case/trailing-space values.
+        return $this->buildOrdersQuery($target)
+            ->whereNotIn(DB::raw('CAST(orders.status AS BINARY)'), ['cancelled', 'returned', 'return_requested', 'future_order'])
+            ->whereRaw("COALESCE((SELECT CASE WHEN CAST(target_return.status AS BINARY) = CAST(? AS BINARY) THEN 1 ELSE 0 END FROM order_returns AS target_return WHERE target_return.order_id = orders.id ORDER BY target_return.id DESC LIMIT 1), 1) = 1", ['rejected']);
     }
 
     /**

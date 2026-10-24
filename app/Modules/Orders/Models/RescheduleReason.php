@@ -2,13 +2,13 @@
 
 namespace App\Modules\Orders\Models;
 
+use App\Concerns\LogsActivity;
 use App\Modules\Users\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 use OwenIt\Auditing\Auditable as AuditableTrait;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Activitylog\LogOptions;
-use Spatie\Activitylog\Traits\LogsActivity;
 
 class RescheduleReason extends Model implements Auditable
 {

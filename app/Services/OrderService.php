@@ -227,37 +227,39 @@ class OrderService
                 $admins = User::whereHas('roles', function ($q) {
                     $q->whereIn('name', ['Admin', 'Super Admin', 'Sales Admin']);
                 })->get();
-                Notification::send($admins, new OrderCreatedNotification($order->order_no, (float) $order->net_amount, clone $order->party ? clone $order->party->name : 'Unknown'));
+                Notification::send($admins, new OrderCreatedNotification($order->order_no, (float) $order->net_amount, $order->party?->name ?? 'Unknown'));
             } catch (\Throwable) {
                 // Silently fail — notification delivery is non-critical
             }
 
             // Fire a single consolidated activity log for the whole order creation,
             // replacing the noisy per-item + per-order logs.
-            try {
-                $order->loadMissing(['party', 'items.product']);
-                $customerName = $order->party?->name ?? 'Unknown Customer';
-                $itemsSummary = $order->items->map(function ($item) {
-                    $productName = $item->product?->name ?? "Product #{$item->product_id}";
-                    $qty = rtrim(rtrim(number_format((float) $item->quantity, 2), '0'), '.');
-                    return "{$productName} (x{$qty})";
-                })->join(', ');
+            if (config('activitylog.enabled', true)) {
+                try {
+                    $order->loadMissing(['party', 'items.product']);
+                    $customerName = $order->party?->name ?? 'Unknown Customer';
+                    $itemsSummary = $order->items->map(function ($item) {
+                        $productName = $item->product?->name ?? "Product #{$item->product_id}";
+                        $qty = rtrim(rtrim(number_format((float) $item->quantity, 2), '0'), '.');
+                        return "{$productName} (x{$qty})";
+                    })->join(', ');
 
-                activity()
-                    ->causedBy(auth()->user())
-                    ->performedOn($order)
-                    ->withProperties([
-                        'attributes' => [
-                            'order_no'    => $order->order_no,
-                            'customer'    => $customerName,
-                            'net_amount'  => $order->net_amount,
-                            'items_count' => $order->items->count(),
-                            'items'       => $itemsSummary,
-                        ],
-                    ])
-                    ->log('created');
-            } catch (\Throwable) {
-                // Silently fail — activity log is non-critical
+                    activity()
+                        ->causedBy(auth()->user())
+                        ->performedOn($order)
+                        ->withProperties([
+                            'attributes' => [
+                                'order_no'    => $order->order_no,
+                                'customer'    => $customerName,
+                                'net_amount'  => $order->net_amount,
+                                'items_count' => $order->items->count(),
+                                'items'       => $itemsSummary,
+                            ],
+                        ])
+                        ->log('created');
+                } catch (\Throwable) {
+                    // Silently fail — activity log is non-critical
+                }
             }
 
             return $order->refresh();
@@ -924,7 +926,7 @@ class OrderService
                 $cashbackEarned += (float) $bestOrderOffer->cashback_fixed;
             }
         }
-        
+
         $cashbackEarned = round($cashbackEarned, 2);
 
         return [
@@ -1147,37 +1149,39 @@ class OrderService
             }
 
             // Fire one consolidated activity log for the full order update.
-            try {
-                // Force-reload items.product to get the freshly saved quantities after the update.
-                // loadMissing() would return stale cached data; load() always hits the DB.
-                $order->load(['party', 'items.product']);
-                $customerName = $order->party?->name ?? 'Unknown Customer';
-                $itemsSummary = $order->items->map(function ($item) {
-                    $productName = $item->product?->name ?? "Product #{$item->product_id}";
-                    $qty = rtrim(rtrim(number_format((float) $item->quantity, 2), '0'), '.');
-                    return "{$productName} (x{$qty})";
-                })->join(', ');
+            if (config('activitylog.enabled', true)) {
+                try {
+                    // Force-reload items.product to get the freshly saved quantities after the update.
+                    // loadMissing() would return stale cached data; load() always hits the DB.
+                    $order->load(['party', 'items.product']);
+                    $customerName = $order->party?->name ?? 'Unknown Customer';
+                    $itemsSummary = $order->items->map(function ($item) {
+                        $productName = $item->product?->name ?? "Product #{$item->product_id}";
+                        $qty = rtrim(rtrim(number_format((float) $item->quantity, 2), '0'), '.');
+                        return "{$productName} (x{$qty})";
+                    })->join(', ');
 
-                $statusNote = ($oldStatus !== $newStatus)
-                    ? ' · Status: ' . ucfirst(str_replace('_', ' ', $oldStatus)) . ' → ' . ucfirst(str_replace('_', ' ', $newStatus))
-                    : '';
+                    $statusNote = ($oldStatus !== $newStatus)
+                        ? ' · Status: ' . ucfirst(str_replace('_', ' ', $oldStatus)) . ' → ' . ucfirst(str_replace('_', ' ', $newStatus))
+                        : '';
 
-                activity()
-                    ->causedBy(auth()->user())
-                    ->performedOn($order)
-                    ->withProperties([
-                        'attributes' => [
-                            'order_no'    => $order->order_no,
-                            'customer'    => $customerName,
-                            'net_amount'  => $order->net_amount,
-                            'items_count' => $order->items->count(),
-                            'items'       => $itemsSummary,
-                            'status_note' => $statusNote,
-                        ],
-                    ])
-                    ->log('updated');
-            } catch (\Throwable) {
-                // Silently fail — activity log is non-critical
+                    activity()
+                        ->causedBy(auth()->user())
+                        ->performedOn($order)
+                        ->withProperties([
+                            'attributes' => [
+                                'order_no'    => $order->order_no,
+                                'customer'    => $customerName,
+                                'net_amount'  => $order->net_amount,
+                                'items_count' => $order->items->count(),
+                                'items'       => $itemsSummary,
+                                'status_note' => $statusNote,
+                            ],
+                        ])
+                        ->log('updated');
+                } catch (\Throwable) {
+                    // Silently fail — activity log is non-critical
+                }
             }
 
             return $order->refresh();

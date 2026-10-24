@@ -8,23 +8,55 @@
     window.AppConfig = window.AppConfig || {};
     window.AppConfig.returnReasons = @json($returnReasons->pluck('reason', 'reason'));
 </script>
-<script src="{{ Vite::asset('resources/js/components/shipping/shipments.js') }}"></script>
+@endpush
+
+@push('head')
+<style>
+    .shipments-directory .directory-filters { background-color: var(--bs-tertiary-bg) !important; }
+    .shipments-directory .directory-filters .form-control,
+    .shipments-directory .directory-filters .form-select,
+    .shipments-directory #shipments-status-toggle,
+    .shipments-directory .directory-filters [data-bs-target="#advancedFilters"] { min-height: 2.5rem; }
+
+    .shipments-directory .shipments-directory-scroll { max-height: 70vh; }
+    .shipments-directory .shipments-directory-table { min-width: 1440px; table-layout: fixed; }
+    .shipments-directory .shipments-directory-table thead th { position: sticky; top: 0; z-index: 2; background: var(--bs-tertiary-bg); vertical-align: middle; }
+    .shipments-directory .shipments-directory-table th,
+    .shipments-directory .shipments-directory-table td { padding: 1rem .875rem; }
+    .shipments-directory .shipments-directory-table td { overflow-wrap: anywhere; }
+    .shipments-directory .shipments-directory-table th:first-child { width: 48px !important; }
+    .shipments-directory .shipments-directory-table th:nth-child(2) { width: 180px; }
+    .shipments-directory .shipments-directory-table th:nth-child(3) { width: 145px; }
+    .shipments-directory .shipments-directory-table th:nth-child(4) { width: 200px; }
+    .shipments-directory .shipments-directory-table th:nth-child(5) { width: 180px; }
+    .shipments-directory .shipments-directory-table th:nth-child(6) { width: 145px; }
+    .shipments-directory .shipments-directory-table th:nth-child(7) { width: 130px; }
+    .shipments-directory .shipments-directory-table th:nth-child(8) { width: 160px; }
+    .shipments-directory .shipments-directory-table th:nth-child(9) { width: 195px; }
+    .shipments-directory .shipments-directory-table th:last-child { width: 90px !important; }
+    .shipments-directory .shipments-directory-table td:last-child:not([colspan]) { position: sticky; right: 0; z-index: 1; background-color: var(--bs-body-bg); border-left: 1px solid var(--bs-border-color); }
+    .shipments-directory .shipments-directory-table thead th:last-child { right: 0; z-index: 3; }
+    .shipments-directory .shipments-directory-table .table-primary > td:last-child { background-color: var(--bs-primary-bg-subtle); }
+
+    @media (max-width: 575.98px) {
+        .shipments-directory .directory-filters input[type="search"] { width: 100% !important; }
+        .shipments-directory .directory-filters .position-relative { width: 100%; }
+    }
+</style>
 @endpush
 
 @section('content')
 <div class="shipments-management" x-data="shipmentsTable" x-cloak>
     <!-- Page Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4 mb-lg-5">
+    <div class="d-flex flex-wrap gap-3 justify-content-between align-items-center mb-4 mb-lg-5">
         <div>
             <h1 class="h3 mb-0">Shipments &amp; Tracking</h1>
             <p class="text-muted mb-0">Monitor shipment fulfillment, tracking numbers, and delivery status</p>
         </div>
-        <div class="d-flex gap-2">
-            <button type="button" class="btn btn-outline-secondary" @click="exportData()">
-                <i class="bi bi-download me-2"></i>Export CSV
-            </button>
-        </div>
+
     </div>
+
+    <p class="small text-body-secondary">Summary and providers reflect the selected shipment filters. Default view: active shipments.</p>
 
     <!-- Key Metrics Row -->
     <div class="row g-3 mb-4 mb-lg-5">
@@ -34,7 +66,7 @@
                 <div class="card-body p-3">
                     <div class="d-flex align-items-center justify-content-between">
                         <div>
-                            <h6 class="text-muted mb-1 fw-bold text-uppercase" style="font-size: 10px; letter-spacing: 0.5px;">Total Orders</h6>
+                            <h6 class="text-muted mb-1 fw-bold text-uppercase" style="font-size: 10px; letter-spacing: 0.5px;">Total Shipments</h6>
                             <div class="h4 mb-0 fw-black text-body-emphasis"><span x-text="stats.total">0</span></div>
                         </div>
                         <div class="stats-icon bg-primary bg-opacity-10 text-primary p-2 rounded-3 d-flex align-items-center justify-content-center">
@@ -46,7 +78,7 @@
         </div>
         <!-- Pending -->
         <div class="col-xl-2 col-lg-4 col-sm-6">
-            <div class="card metric-card shadow-sm border-start border-4 border-success rounded-4 overflow-hidden h-100">
+            <div class="card metric-card shadow-sm border-start border-4 border-warning rounded-4 overflow-hidden h-100">
                 <div class="card-body p-3">
                     <div class="d-flex align-items-center justify-content-between">
                         <div>
@@ -62,7 +94,7 @@
         </div>
         <!-- In Transit / Dispatched -->
         <div class="col-xl-2 col-lg-4 col-sm-6">
-            <div class="card metric-card shadow-sm border-start border-4 border-warning rounded-4 overflow-hidden h-100 bg-primary bg-gradient text-white">
+            <div class="card metric-card shadow-sm border-start border-4 border-primary rounded-4 overflow-hidden h-100 bg-primary bg-gradient text-white">
                 <div class="card-body p-3">
                     <div class="d-flex align-items-center justify-content-between">
                         <div>
@@ -78,7 +110,7 @@
         </div>
         <!-- Delivered -->
         <div class="col-xl-2 col-lg-4 col-sm-6">
-            <div class="card metric-card shadow-sm border-start border-4 border-info rounded-4 overflow-hidden h-100">
+            <div class="card metric-card shadow-sm border-start border-4 border-success rounded-4 overflow-hidden h-100">
                 <div class="card-body p-3">
                     <div class="d-flex align-items-center justify-content-between">
                         <div>
@@ -94,7 +126,7 @@
         </div>
         <!-- Returned -->
         <div class="col-xl-2 col-lg-4 col-sm-6">
-            <div class="card metric-card shadow-sm border-start border-4 border-danger rounded-4 overflow-hidden h-100">
+            <div class="card metric-card shadow-sm border-start border-4 border-secondary rounded-4 overflow-hidden h-100">
                 <div class="card-body p-3">
                     <div class="d-flex align-items-center justify-content-between">
                         <div>
@@ -110,7 +142,7 @@
         </div>
         <!-- Failed -->
         <div class="col-xl-2 col-lg-4 col-sm-6">
-            <div class="card metric-card shadow-sm border-start border-4 border-secondary rounded-4 overflow-hidden h-100">
+            <div class="card metric-card shadow-sm border-start border-4 border-danger rounded-4 overflow-hidden h-100">
                 <div class="card-body p-3">
                     <div class="d-flex align-items-center justify-content-between">
                         <div>
@@ -127,32 +159,28 @@
     </div>
 
     <!-- Providers Row -->
-    <div class="row g-4 mb-4">
+    <section x-data="{ showProviders: false }" aria-label="Service Providers Tracker">
+        <div class="mb-3">
+            <button type="button" class="btn btn-sm btn-outline-secondary"
+                    @click="showProviders = !showProviders"
+                    :aria-expanded="showProviders.toString()"
+                    aria-controls="shipmentsProvidersTracker">
+                <i class="bi me-1" :class="showProviders ? 'bi-eye-slash' : 'bi-eye'" aria-hidden="true"></i>
+                <span x-text="showProviders ? 'Hide Service Providers Tracker' : 'Show Service Providers Tracker'">Show Service Providers Tracker</span>
+            </button>
+        </div>
+    <div id="shipmentsProvidersTracker" class="row g-4 mb-4" x-show.important="showProviders" x-cloak>
         <!-- Service Providers -->
         <div class="col-12">
             <div class="card shadow-sm border-start border-4 border-primary rounded-4 h-100 overflow-hidden d-flex flex-column">
                 <div class="card-header bg-transparent border-bottom py-3 px-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
                     <h2 class="h6 fw-bold mb-0 text-body-emphasis"><i class="bi bi-truck text-success me-2"></i>Service Providers Tracker</h2>
                     <div class="d-flex gap-2 align-items-center flex-wrap">
-                        <select class="form-select form-select-sm w-auto" x-model="providerDatePreset" @change="applyProviderPreset()">
-                            <option value="today">Today</option>
-                            <option value="yesterday">Yesterday</option>
-                            <option value="this_week">This Week</option>
-                            <option value="this_month">This Month</option>
-                            <option value="prev_month">Previous Month</option>
-                            <option value="this_year">This Year</option>
-                            <option value="custom">Custom Range</option>
-                        </select>
-                        <div class="input-group input-group-sm w-auto" x-show="providerDatePreset === 'custom'" style="display: none;">
-                            <input type="date" class="form-control" x-model="providerFromDate" @change="calculateProviders()">
-                            <span class="input-group-text bg-body-tertiary">to</span>
-                            <input type="date" class="form-control" x-model="providerToDate" @change="calculateProviders()">
-                        </div>
                         <div class="input-group input-group-sm" style="width: 200px;">
                             <span class="input-group-text bg-body-tertiary border-end-0"><i class="bi bi-search"></i></span>
-                            <input type="text" class="form-control border-start-0 ps-0" placeholder="Search providers..." x-model="providerSearchQuery" @input="providerCurrentPage = 1">
+                            <input type="text" class="form-control border-start-0 ps-0" placeholder="Search providers..." x-model="providerSearchQuery" @input="providerCurrentPage = 1" aria-label="Search providers">
                         </div>
-                        <select class="form-select form-select-sm w-auto" x-model="providerPerPage" @change="providerCurrentPage = 1">
+                        <select class="form-select form-select-sm w-auto" x-model.number="providerPerPage" @change="providerCurrentPage = 1" aria-label="Providers per page">
                             <option value="5">5 / page</option>
                             <option value="10">10 / page</option>
                             <option value="20">20 / page</option>
@@ -162,7 +190,7 @@
                 <div class="card-body p-0 d-flex flex-column">
                     <!-- Provider List (scrollable) -->
                     <div class="flex-grow-1 overflow-auto p-4" style="max-height: 400px;">
-                        <table class="table table-hover table-bordered align-middle mb-0">
+                        <table class="table table-hover table-bordered align-middle mb-0" style="min-width: 720px;">
                             <thead class="table-light">
                                 <tr>
                                     <th>Carrier & Support</th>
@@ -201,7 +229,7 @@
                                                     </template>
                                                 </div>
                                             </template>
-                                            <div x-show="!provider.contact_persons || provider.contact_persons.length === 0" class="text-muted small mt-2 border-top pt-2 border-secondary-subtle fst-italic">No contacts assigned</div>
+                                            <div x-show.important="!provider.contact_persons || provider.contact_persons.length === 0" class="text-muted small mt-2 border-top pt-2 border-secondary-subtle fst-italic">No contacts assigned</div>
                                         </td>
                                         <td>
                                             <div class="d-flex flex-column gap-2">
@@ -239,7 +267,7 @@
                                             <div class="mb-3">
                                                 <div class="d-flex justify-content-between align-items-center mb-1">
                                                     <span class="small text-muted fw-medium">Delivery Rate</span>
-                                                    <span class="fw-bold text-dark" style="font-size: 0.85rem;" x-text="provider.deliveryPercentage + '%'"></span>
+                                                    <span class="fw-bold text-body-emphasis" style="font-size: 0.85rem;" x-text="provider.deliveryPercentage + '%'"></span>
                                                 </div>
                                                 <div class="progress" style="height: 6px;">
                                                     <div class="progress-bar bg-info" role="progressbar" :style="'width: ' + provider.deliveryPercentage + '%'" :aria-valuenow="provider.deliveryPercentage" aria-valuemin="0" aria-valuemax="100"></div>
@@ -267,24 +295,24 @@
                     </div>
                     
                     <!-- Provider Pagination -->
-                    <div class="d-flex justify-content-between align-items-center p-3 border-top" x-show="filteredProviders.length > 0">
+                    <div class="d-flex flex-wrap gap-3 justify-content-between align-items-center p-3 border-top" x-show.important="filteredProviders.length > 0">
                         <div class="text-muted small">
                             Showing <span x-text="((providerCurrentPage - 1) * providerPerPage) + 1"></span> to 
                             <span x-text="Math.min(providerCurrentPage * providerPerPage, filteredProviders.length)"></span> of 
                             <span x-text="filteredProviders.length"></span> providers
                         </div>
-                        <nav>
-                            <ul class="pagination pagination-sm mb-0">
+                        <nav aria-label="Provider pages">
+                            <ul class="pagination pagination-sm mb-0 flex-wrap gap-1">
                                 <li class="page-item" :class="{ 'disabled': providerCurrentPage === 1 }">
-                                    <a class="page-link" href="#" @click.prevent="providerCurrentPage--">Previous</a>
+                                    <a class="page-link" href="#" @click.prevent="goToProviderPage(providerCurrentPage - 1)" :aria-disabled="providerCurrentPage <= 1" :tabindex="providerCurrentPage <= 1 ? -1 : 0">Previous</a>
                                 </li>
                                 <template x-for="page in Array.from({length: providerTotalPages}, (_, i) => i + 1)" :key="page">
                                     <li class="page-item" :class="{ 'active': page === providerCurrentPage }">
-                                        <a class="page-link" href="#" @click.prevent="providerCurrentPage = page" x-text="page"></a>
+                                        <a class="page-link" href="#" @click.prevent="goToProviderPage(page)" :aria-current="page === providerCurrentPage ? 'page' : null" x-text="page"></a>
                                     </li>
                                 </template>
                                 <li class="page-item" :class="{ 'disabled': providerCurrentPage >= providerTotalPages }">
-                                    <a class="page-link" href="#" @click.prevent="providerCurrentPage++">Next</a>
+                                    <a class="page-link" href="#" @click.prevent="goToProviderPage(providerCurrentPage + 1)" :aria-disabled="providerCurrentPage >= providerTotalPages" :tabindex="providerCurrentPage >= providerTotalPages ? -1 : 0">Next</a>
                                 </li>
                             </ul>
                         </nav>
@@ -294,92 +322,81 @@
         </div>
     </div>
 
+    </section>
+
     <!-- Main Directory Card -->
-    <div class="card shadow-sm border-start border-4 border-success rounded-4 mb-5">
-        <div class="card-header bg-transparent border-bottom pt-4 pb-3 px-4">
-            
-            <!-- Quick Filter Tabs -->
-            <ul class="nav nav-tabs nav-tabs-custom border-bottom-0 mb-3" role="tablist">
-                <li class="nav-item">
-                    <a class="nav-link fw-semibold px-3 py-2" :class="{ 'active': statusFilter === '' }" href="#" @click.prevent="statusFilter = ''; filterData()">All Shipments <span class="badge ms-1" :class="statusFilter === '' ? 'bg-secondary' : 'bg-secondary text-white'" x-text="stats.total || 0"></span></a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link fw-bold text-primary px-3 py-2" :class="{ 'active': statusFilter === 'in_transit', 'bg-primary text-white rounded-top-2': statusFilter === 'in_transit' }" href="#" @click.prevent="statusFilter = 'in_transit'; filterData()">Dispatched <span class="badge ms-1" :class="statusFilter === 'in_transit' ? 'bg-white text-primary' : 'bg-primary text-white'" x-text="stats.in_transit || 0"></span></a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link fw-semibold px-3 py-2" :class="{ 'active text-warning border-warning border-bottom-0': statusFilter === 'pending' }" href="#" @click.prevent="statusFilter = 'pending'; filterData()">Pending <span class="badge ms-1 bg-warning text-dark" x-text="stats.pending || 0"></span></a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link fw-semibold px-3 py-2" :class="{ 'active text-success border-success border-bottom-0': statusFilter === 'delivered' }" href="#" @click.prevent="statusFilter = 'delivered'; filterData()">Delivered <span class="badge ms-1 bg-success text-white" x-text="stats.delivered || 0"></span></a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link fw-semibold px-3 py-2" :class="{ 'active text-secondary border-secondary border-bottom-0': statusFilter === 'returned' }" href="#" @click.prevent="statusFilter = 'returned'; filterData()">Returned <span class="badge ms-1 bg-secondary text-white" x-text="stats.returned || 0"></span></a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link fw-semibold px-3 py-2" :class="{ 'active text-danger border-danger border-bottom-0': statusFilter === 'failed' }" href="#" @click.prevent="statusFilter = 'failed'; filterData()">Failed <span class="badge ms-1 bg-danger text-white" x-text="stats.failed || 0"></span></a>
-                </li>
-            </ul>
-
-            <div class="row align-items-center">
-                <div class="col-12 col-md-auto mb-3 mb-md-0">
-                    <h2 class="h5 card-title mb-0 fw-bold text-body-emphasis">Shipments Directory</h2>
-                </div>
-                <div class="col-12 col-md-auto ms-md-auto">
-                    <div class="d-flex flex-wrap gap-2 justify-content-md-end">
-                        <div class="position-relative">
-                            <input type="search" 
-                                   class="form-control form-control-sm border-secondary border-opacity-25" 
-                                   placeholder="Search tracking..."
-                                   x-model.debounce.300ms="searchQuery"
-                                   @input="filterData()"
-                                   style="width: 200px;">
-                            <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-2 text-muted"></i>
-                        </div>
-                        <select class="form-select form-select-sm border-secondary border-opacity-25" 
-                                x-model="statusFilter" 
-                                @change="filterData()"
-                                style="width: 150px;" x-show="false">
-                            <option value="">All Statuses</option>
-                            <option value="pending">Pending</option>
-                            <option value="in_transit">In Transit</option>
-                            <option value="delivered">Delivered</option>
-                            <option value="returned">Returned</option>
-                            <option value="failed">Failed</option>
-                        </select>
-
-                        <select class="form-select form-select-sm border-secondary border-opacity-25"
-                                x-model.number="itemsPerPage"
-                                @change="filterData()"
-                                style="width: 120px;">
-                            <option value="10">10 / page</option>
-                            <option value="15">15 / page</option>
-                            <option value="20">20 / page</option>
-                            <option value="25">25 / page</option>
-                            <option value="50">50 / page</option>
-                        </select>
-                        <!-- Advanced Filters Trigger -->
-                        <button class="btn btn-sm"
-                                :class="hasActiveAdvancedFilters() ? 'btn-primary' : 'btn-outline-secondary border-secondary border-opacity-25'"
-                                type="button"
-                                data-bs-toggle="collapse"
-                                data-bs-target="#advancedFilters"
-                                aria-expanded="false">
-                            <i class="bi bi-funnel me-1"></i>Filters
-                        </button>
+    <div class="card shipments-directory shadow-sm rounded-4 mb-5" id="shipmentsDirectory">
+        <div class="card-header bg-transparent p-3 p-lg-4 d-flex flex-wrap gap-3 justify-content-between align-items-center">
+            <div>
+                <h2 class="h5 mb-1">Shipments Directory</h2>
+                <p class="small text-body-secondary mb-0">Search, filter and manage your shipments.</p>
+            </div>
+        <div class="d-flex gap-2">
+            <button type="button" class="btn btn-outline-secondary" @click="exportData()" :disabled="isLoading || items.length === 0">
+                <i class="bi bi-download me-2"></i>Export Current Page CSV
+            </button>
+        </div>
+        </div>
+        <div class="directory-filters border-bottom p-3 p-lg-4">
+            <div class="row g-3 align-items-end">
+                <div class="col-12 col-md-6 col-xl-5">
+                    <label for="shipments-search" class="form-label small fw-semibold">Search</label>
+                    <div class="position-relative">
+                        <input id="shipments-search" type="search" class="form-control form-control-sm pe-5"
+                               placeholder="Shipment, tracking or order…" x-model="searchQuery" @input.debounce.300ms="filterData()">
+                        <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-3 text-muted" aria-hidden="true"></i>
                     </div>
+                </div>
+                <div class="col-12 col-sm-6 col-md-6 col-xl-4">
+                    <label id="shipments-status-label" class="form-label small fw-semibold">Shipment status</label>
+                    <div class="dropdown">
+                        <button id="shipments-status-toggle" type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle w-100 d-flex align-items-center justify-content-between"
+                                data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false" aria-labelledby="shipments-status-label shipments-status-toggle">
+                            <span x-text="statusFilter === '__no_status_selected__' ? 'No statuses selected' : (statusFilter ? statusFilter.split(',').length + ' statuses selected' : 'All statuses')">Shipment status</span>
+                        </button>
+                        <div class="dropdown-menu w-100 p-2" aria-labelledby="shipments-status-toggle">
+                            <button type="button" class="dropdown-item rounded" @click="statusFilter = statusOptions.map(option => option.value).join(','); filterData()">Select all</button>
+                            <button type="button" class="dropdown-item rounded" @click="statusFilter = '__no_status_selected__'; filterData()">Unselect all</button>
+                            <button type="button" class="dropdown-item rounded" @click="statusFilter = 'pending,in_transit,failed'; filterData()">Active shipments</button>
+                            <hr class="dropdown-divider">
+                            <template x-for="option in statusOptions" :key="option.value">
+                                <label class="dropdown-item rounded d-flex align-items-center gap-2 mb-0 py-2">
+                                    <input type="checkbox" class="form-check-input m-0" :checked="hasStatus(option.value)" @change="toggleStatus(option.value)">
+                                    <span x-text="option.label"></span>
+                                </label>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-sm-8 col-md-4 col-xl-2">
+                    <label for="shipments-page-size" class="form-label small fw-semibold">Rows per page</label>
+                    <select id="shipments-page-size" class="form-select form-select-sm" x-model.number="itemsPerPage" @change="filterData()">
+                        <option value="10">10 / page</option>
+                        <option value="15">15 / page</option>
+                        <option value="20">20 / page</option>
+                        <option value="25">25 / page</option>
+                        <option value="50">50 / page</option>
+                        <option value="100">100 / page</option>
+                    </select>
+                </div>
+                <div class="col-6 col-sm-4 col-md-3 col-xl-1">
+                    <button class="btn btn-sm w-100 px-2 text-nowrap d-inline-flex align-items-center justify-content-center" :class="hasActiveAdvancedFilters() ? 'btn-primary' : 'btn-outline-secondary'"
+                            type="button" data-bs-toggle="collapse" data-bs-target="#advancedFilters" aria-controls="advancedFilters" aria-expanded="true">
+                        <i class="bi bi-funnel me-1" aria-hidden="true"></i>Filters
+                    </button>
                 </div>
             </div>
         </div>
 
         <!-- Collapsible Advanced Filters Drawer -->
-        <div class="collapse" id="advancedFilters">
+        <div class="collapse show" id="advancedFilters">
             <div class="p-3 bg-body-tertiary border-top border-bottom border-secondary-subtle">
                 <div class="row g-3">
                     <!-- Date Type Filter -->
                     <div class="col-md-2">
-                        <label class="form-label small fw-semibold text-body-secondary">Date Type</label>
-                        <select class="form-select form-select-sm" x-model="dateType" @change="filterData()">
-                            <option value="created_at">Order Date</option>
+                        <label class="form-label small fw-semibold text-body-secondary" for="shipments-dateType">Date Type</label>
+                        <select id="shipments-dateType" class="form-select form-select-sm" x-model="dateType" @change="filterData()">
+                            <option value="created_at">Shipment Created Date</option>
                             <option value="shipped_at">Shipped Date</option>
                             <option value="delivered_at">Delivered Date</option>
                         </select>
@@ -387,82 +404,103 @@
 
                     <!-- Date Range From -->
                     <div class="col-md-2">
-                        <label class="form-label small fw-semibold text-body-secondary">From Date</label>
-                        <input type="date" class="form-control form-control-sm" x-model="fromDate" @change="filterData()">
+                        <label class="form-label small fw-semibold text-body-secondary" for="shipments-fromDate">From Date</label>
+                        <input id="shipments-fromDate" type="date" class="form-control form-control-sm" x-model="fromDate" @change="filterData()" :max="toDate || null">
                     </div>
 
                     <!-- Date Range To -->
                     <div class="col-md-2">
-                        <label class="form-label small fw-semibold text-body-secondary">To Date</label>
-                        <input type="date" class="form-control form-control-sm" x-model="toDate" @change="filterData()">
+                        <label class="form-label small fw-semibold text-body-secondary" for="shipments-toDate">To Date</label>
+                        <input id="shipments-toDate" type="date" class="form-control form-control-sm" x-model="toDate" @change="filterData()" :min="fromDate || null">
                     </div>
 
                     <!-- Carrier Filter -->
                     <div class="col-md-3">
-                        <label class="form-label small fw-semibold text-body-secondary">Carrier</label>
-                        <select class="form-select form-select-sm" x-model="carrierFilter" @change="filterData()">
+                        <label class="form-label small fw-semibold text-body-secondary" for="shipments-carrierFilter">Carrier</label>
+                        <select id="shipments-carrierFilter" class="form-select form-select-sm" x-model="carrierFilter" @change="filterData()">
                             <option value="">All Carriers</option>
                             @foreach($carriersList as $carrier)
                                 <option value="{{ $carrier }}">{{ $carrier }}</option>
                             @endforeach
                         </select>
                     </div>
-                    
+
                     <!-- Reset Filters -->
                     <div class="col-md-3 d-flex align-items-end">
                         <button type="button" class="btn btn-sm btn-outline-secondary w-100 d-inline-flex align-items-center justify-content-center" @click="clearFilters()">
-                            <i class="bi bi-arrow-counterclockwise me-1"></i>Reset
+                            <i class="bi bi-arrow-counterclockwise me-1"></i>Reset defaults
                         </button>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="card-body p-0">
+
+
+
+        <div class="card-body p-0" :aria-busy="isLoading">
+            <div x-show.important="isLoading" class="d-flex align-items-center gap-2 p-3 border-bottom text-body-secondary" role="status" aria-live="polite">
+                <span class="spinner-border spinner-border-sm" aria-hidden="true"></span> Loading shipments…
+            </div>
+            <div x-show.important="loadError" class="alert alert-danger m-3" role="alert">
+                <span x-text="loadError"></span>
+                <button type="button" class="btn btn-sm btn-outline-danger ms-2" @click="loadData()" :disabled="isLoading">Retry</button>
+            </div>
             <!-- Bulk Actions Bar -->
             <div class="bulk-actions-bar p-3 bg-primary bg-opacity-10 border-bottom border-primary border-opacity-25"
-                 x-show="selectedItems.length > 0" x-cloak>
-                <div class="d-flex justify-content-between align-items-center">
+                 x-show.important="selectedItems.length > 0" x-cloak>
+                <div class="d-flex flex-wrap gap-3 justify-content-between align-items-center">
                     <div class="d-flex align-items-center">
                         <i class="bi bi-check-circle-fill text-primary me-2"></i>
                         <span class="fw-medium text-primary">
-                            <span x-text="selectedItems.length"></span> shipment<span x-show="selectedItems.length !== 1">s</span> selected
+                            <span x-text="selectedItems.length"></span> shipment<span x-show.important="selectedItems.length !== 1">s</span> selected
                         </span>
                     </div>
-                    <div class="d-flex gap-2">
-                        <button class="btn btn-sm btn-primary" x-show="bulkAvailableActions.canInTransit" @click="bulkAction('mark_in_transit')">
+                    <div class="d-flex flex-wrap gap-2">
+                        @can('shipping-edit')
+                        <button class="btn btn-sm btn-primary" x-show.important="bulkAvailableActions.canInTransit" @click="bulkAction('mark_in_transit')" :disabled="isLoading || saving">
                             <i class="bi bi-truck me-1"></i>Mark In Transit
                         </button>
-                        <button class="btn btn-sm btn-success" x-show="bulkAvailableActions.canDelivered" @click="bulkAction('mark_delivered')">
+                        <button class="btn btn-sm btn-success" x-show.important="bulkAvailableActions.canDelivered" @click="bulkAction('mark_delivered')" :disabled="isLoading || saving">
                             <i class="bi bi-check-circle me-1"></i>Mark Delivered
                         </button>
-                        <button class="btn btn-sm btn-secondary" x-show="bulkAvailableActions.canReturned" @click="bulkAction('mark_returned')">
+                        @can('orders.return')
+                        <button class="btn btn-sm btn-secondary" x-show.important="bulkAvailableActions.canReturned" @click="bulkAction('mark_returned')" :disabled="isLoading || saving">
                             <i class="bi bi-arrow-return-left me-1"></i>Mark Returned
                         </button>
+                        @endcan
+                        @endcan
                         <button class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center justify-content-center px-2" @click="selectedItems = []" title="Clear selection">
-                            <i class="bi bi-x-lg" style="margin-left: 7px"></i>
+                            <i class="bi bi-x-lg" aria-hidden="true"></i>
                         </button>
                     </div>
                 </div>
             </div>
 
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
+            <div class="table-responsive shipments-directory-scroll" role="region" aria-label="Shipment records" tabindex="0">
+                <table class="table table-hover align-middle mb-0 shipments-directory-table">
+                    <caption class="visually-hidden">Shipments matching the selected status, search, carrier and date filters.</caption>
                     <thead class="table-light">
                         <tr>
                             <th style="width: 40px;" class="ps-3">
                                 <input type="checkbox" 
                                        class="user-select-checkbox"
                                        @change="$event.isTrusted && toggleAll($event.target.checked)"
-                                       :checked="selectedItems.length === items.length && items.length > 0">
+                                       :checked="selectedItems.length === items.length && items.length > 0"
+                                       x-effect="$el.indeterminate = selectedItems.length > 0 && selectedItems.length < items.length"
+                                       :disabled="isLoading || items.length === 0" aria-label="Select all shipments on this page">
                             </th>
-                            <th @click="sortBy('shipment_no')" class="sortable">Shipment & Tracking</th>
+                            <th :aria-sort="sortField === 'shipment_no' ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'">
+                                <button type="button" class="btn btn-link p-0 text-body fw-semibold text-decoration-none text-start" @click="sortBy('shipment_no')" :disabled="isLoading">Shipment & Tracking <span aria-hidden="true" x-text="sortField === 'shipment_no' ? (sortDirection === 'asc' ? '↑' : '↓') : '↕'"></span></button>
+                            </th>
                             <th>Order Details</th>
                             <th>Customer Info</th>
                             <th>Carrier & Support</th>
                             <th>Package & Shipping</th>
                             <th>Pricing & Taxes</th>
                             <th>Booking & ETA</th>
-                            <th @click="sortBy('status')" class="sortable">Status & Timeline</th>
+                            <th :aria-sort="sortField === 'status' ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'">
+                                <button type="button" class="btn btn-link p-0 text-body fw-semibold text-decoration-none text-start" @click="sortBy('status')" :disabled="isLoading">Status & Timeline <span aria-hidden="true" x-text="sortField === 'status' ? (sortDirection === 'asc' ? '↑' : '↓') : '↕'"></span></button>
+                            </th>
                             <th style="width: 120px;" class="text-end pe-4">Actions</th>
                         </tr>
                     </thead>
@@ -470,8 +508,8 @@
                         <template x-if="items.length === 0">
                             <tr>
                                 <td colspan="10" class="text-center py-5 text-muted">
-                                    <div x-show="isLoading" class="spinner-border text-primary spinner-border-sm mb-2" role="status"></div>
-                                    <div x-show="!isLoading">
+                                    <div x-show.important="isLoading" class="spinner-border text-primary spinner-border-sm mb-2" role="status"></div>
+                                    <div x-show.important="!isLoading && !loadError">
                                         <i class="bi bi-truck fs-2 d-block mb-2 text-muted"></i>
                                         No shipments found.
                                     </div>
@@ -484,7 +522,7 @@
                                     <input type="checkbox"
                                            class="user-select-checkbox"
                                            :value="String(item.id)"
-                                           x-model="selectedItems">
+                                           x-model="selectedItems" :disabled="isLoading" :aria-label="'Select shipment ' + item.shipment_no">
                                 </td>
                                 
                                 <!-- Shipment & Tracking -->
@@ -512,9 +550,9 @@
                                             </div>
                                             <template x-if="item.order.shipping_address">
                                                 <div class="text-muted lh-sm" style="font-size: 0.7rem;">
-                                                    <span x-text="item.order.shipping_address.city || ''"></span><span x-show="item.order.shipping_address.city && item.order.shipping_address.state">, </span>
+                                                    <span x-text="item.order.shipping_address.city || ''"></span><span x-show.important="item.order.shipping_address.city && item.order.shipping_address.state">, </span>
                                                     <span x-text="item.order.shipping_address.state || ''"></span>
-                                                    <div class="fw-semibold mt-1" x-show="item.order.shipping_address.pincode" x-text="'PIN: ' + item.order.shipping_address.pincode"></div>
+                                                    <div class="fw-semibold mt-1" x-show.important="item.order.shipping_address.pincode" x-text="'PIN: ' + item.order.shipping_address.pincode"></div>
                                                 </div>
                                             </template>
                                         </div>
@@ -570,15 +608,15 @@
                                 
                                 <!-- Pricing & Taxes -->
                                 <td>
-                                    <template x-if="item.shipping_cost">
+                                    <template x-if="item.shipping_cost !== null && item.shipping_cost !== undefined">
                                         <div class="d-inline-flex flex-column gap-1">
                                             <span class="badge bg-success-subtle text-success-emphasis fw-bold border border-success-subtle shadow-sm align-self-start" style="font-size: 0.8rem;">
                                                 <i class="bi bi-currency-rupee"></i><span x-text="item.shipping_cost"></span>
                                             </span>
                                             <template x-if="item.tax_components && Array.isArray(item.tax_components)">
                                                 <div class="small text-muted mt-1" style="font-size: 0.65rem;">
-                                                    <template x-for="tax in item.tax_components" :key="tax.tax_name || Math.random()">
-                                                        <div x-show="tax.tax_amount" x-text="(tax.tax_name || 'Tax') + ': ' + tax.tax_amount"></div>
+                                                    <template x-for="(tax, taxIndex) in item.tax_components" :key="taxIndex">
+                                                        <div x-show.important="tax.tax_amount" x-text="(tax.tax_name || 'Tax') + ': ' + tax.tax_amount"></div>
                                                     </template>
                                                 </div>
                                             </template>
@@ -589,7 +627,7 @@
                                             </template>
                                         </div>
                                     </template>
-                                    <template x-if="!item.shipping_cost">
+                                    <template x-if="item.shipping_cost === null || item.shipping_cost === undefined">
                                         <span class="text-muted small">-</span>
                                     </template>
                                 </td>
@@ -599,7 +637,7 @@
                                     <template x-if="item.estimated_delivery_date">
                                         <div class="small text-muted mb-2 d-flex align-items-center gap-1">
                                             <i class="bi bi-calendar-check text-success opacity-75"></i>
-                                            <span>Est: <span class="fw-medium text-dark" x-text="new Date(item.estimated_delivery_date).toLocaleDateString()"></span></span>
+                                            <span>Est: <span class="fw-medium text-body-emphasis" x-text="new Date(item.estimated_delivery_date).toLocaleDateString()"></span></span>
                                         </div>
                                     </template>
                                     <template x-if="item.booking_data && Object.keys(item.booking_data).length > 0">
@@ -649,7 +687,7 @@
                                 <!-- Actions -->
                                 <td class="text-end pe-4">
                                     <div class="dropdown">
-                                        <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="dropdown">
+                                        <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="dropdown" data-bs-config='{"popperConfig":{"strategy":"fixed"}}' :disabled="isLoading || saving" :aria-label="'Actions for shipment ' + item.shipment_no" aria-expanded="false">
                                             <i class="bi bi-three-dots-vertical"></i>
                                         </button>
                                         <ul class="dropdown-menu dropdown-menu-end shadow border-0">
@@ -658,21 +696,27 @@
                                                     <i class="bi bi-eye text-primary"></i> Track History
                                                 </a>
                                             </li>
+                                            @can('shipping-edit')
                                             <li>
                                                 <a class="dropdown-item d-flex align-items-center gap-2" href="#" @click.prevent="openStatusModal(item)">
                                                     <i class="bi bi-pencil-square text-info"></i> Update Status
                                                 </a>
                                             </li>
+                                            @endcan
+                                            @can('shipping-create')
                                             <li>
                                                 <a class="dropdown-item d-flex align-items-center gap-2" href="#" @click.prevent="openAddEventModal(item)">
                                                     <i class="bi bi-plus-circle text-success"></i> Add Event
                                                 </a>
                                             </li>
+                                            @endcan
+                                            @if(auth()->user()->can('shipping-edit') && auth()->user()->can('orders.return'))
                                             <li>
                                                 <a class="dropdown-item d-flex align-items-center gap-2" href="#" @click.prevent="openReturnModal(item)">
                                                     <i class="bi bi-arrow-return-left text-warning"></i> Return Order
                                                 </a>
                                             </li>
+                                            @endif
                                         </ul>
                                     </div>
                                 </td>
@@ -683,24 +727,24 @@
             </div>
 
             <!-- Pagination -->
-            <div class="d-flex justify-content-between align-items-center p-3 border-top" x-show="paginator.total > 0">
+            <div class="d-flex flex-wrap gap-3 justify-content-between align-items-center p-3 border-top" x-show.important="paginator.total > 0">
                 <div class="text-muted small">
                     Showing <span x-text="paginator.from"></span> to 
                     <span x-text="paginator.to"></span> of 
                     <span x-text="paginator.total"></span> results
                 </div>
-                <nav>
-                    <ul class="pagination pagination-sm mb-0">
+                <nav aria-label="Shipment pages">
+                    <ul class="pagination pagination-sm mb-0 flex-wrap gap-1">
                         <li class="page-item" :class="{ 'disabled': currentPage === 1 }">
-                            <a class="page-link" href="#" @click.prevent="goToPage(currentPage - 1)">Previous</a>
+                            <a class="page-link" href="#" @click.prevent="!isLoading && goToPage(currentPage - 1)" :aria-disabled="isLoading || currentPage <= 1" :tabindex="isLoading || currentPage <= 1 ? -1 : 0">Previous</a>
                         </li>
                         <template x-for="(page, index) in visiblePages" :key="`page-${index}`">
                             <li class="page-item" :class="{ 'active': page === currentPage }">
-                                <a class="page-link" href="#" @click.prevent="page !== '...' && goToPage(page)" x-text="page"></a>
+                                <a class="page-link" href="#" @click.prevent="!isLoading && page !== '...' && goToPage(page)" :aria-current="page === currentPage ? 'page' : null" :tabindex="isLoading || page === '...' ? -1 : 0" x-text="page"></a>
                             </li>
                         </template>
                         <li class="page-item" :class="{ 'disabled': currentPage === paginator.last_page }">
-                            <a class="page-link" href="#" @click.prevent="goToPage(currentPage + 1)">Next</a>
+                            <a class="page-link" href="#" @click.prevent="!isLoading && goToPage(currentPage + 1)" :aria-disabled="isLoading || currentPage >= paginator.last_page" :tabindex="isLoading || currentPage >= paginator.last_page ? -1 : 0">Next</a>
                         </li>
                     </ul>
                 </nav>
@@ -709,42 +753,42 @@
     </div>
 
     <!-- Update Status Modal -->
-    <div class="modal fade" id="statusModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
+    <div class="modal fade" id="statusModal" tabindex="-1" aria-labelledby="statusModalTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
             <div class="modal-content">
                 <div class="modal-header border-bottom-0 pb-0">
-                    <h5 class="modal-title fw-bold">Update Shipment Status</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <h5 id="statusModalTitle" class="modal-title fw-bold">Update Shipment Status</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" :disabled="saving"></button>
                 </div>
                 <div class="modal-body pt-3">
                     <form @submit.prevent="saveStatus">
                         <div class="mb-3">
-                            <label class="form-label fw-semibold">Status <span class="text-danger">*</span></label>
-                            <select class="form-select" x-model="statusForm.status" @change="onStatusChange()" required>
+                            <label class="form-label fw-semibold" for="shipments-statusForm-status">Status <span class="text-danger">*</span></label>
+                            <select id="shipments-statusForm-status" class="form-select" x-model="statusForm.status" @change="onStatusChange()" required>
                                 <option value="pending">Pending</option>
                                 <option value="in_transit">In Transit</option>
                                 <option value="delivered">Delivered</option>
-                                <option value="returned">Returned</option>
+                                @can('orders.return')<option value="returned">Returned</option>@endcan
                                 <option value="failed">Failed</option>
                             </select>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label fw-semibold">Hub / Location</label>
-                            <input type="text" class="form-control" x-model="statusForm.location" placeholder="e.g. Mumbai Gateway Hub">
+                            <label class="form-label fw-semibold" for="shipments-statusForm-location">Hub / Location</label>
+                            <input id="shipments-statusForm-location" type="text" class="form-control" x-model="statusForm.location" placeholder="e.g. Mumbai Gateway Hub">
                         </div>
-                        <div class="row mb-3" x-show="statusForm.status === 'failed' || statusForm.status === 'pending' || statusForm.status === 'in_transit'">
+                        <div class="row mb-3" x-show.important="statusForm.status === 'failed' || statusForm.status === 'pending' || statusForm.status === 'in_transit'">
                             <div class="col-md-6">
-                                <label class="form-label fw-semibold">Delivery Attempts</label>
-                                <input type="number" class="form-control" readonly min="0" x-model.number="statusForm.delivery_attempts">
+                                <label class="form-label fw-semibold" for="shipments-statusForm-delivery_attempts">Delivery Attempts</label>
+                                <input id="shipments-statusForm-delivery_attempts" type="number" class="form-control" readonly min="0" x-model.number="statusForm.delivery_attempts">
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label fw-semibold">Next Follow-up Date</label>
-                                <input type="date" class="form-control" x-model="statusForm.next_followup_date">
+                                <label class="form-label fw-semibold" for="shipments-statusForm-next_followup_date">Next Follow-up Date</label>
+                                <input id="shipments-statusForm-next_followup_date" type="date" class="form-control" x-model="statusForm.next_followup_date">
                             </div>
                         </div>
-                        <div class="mb-3" x-show="statusForm.next_followup_date">
-                            <label class="form-label fw-semibold">Reschedule Reason</label>
-                            <select class="form-select" x-model="statusForm.reschedule_reason">
+                        <div class="mb-3" x-show.important="statusForm.next_followup_date">
+                            <label class="form-label fw-semibold" for="shipments-statusForm-reschedule_reason">Reschedule Reason</label>
+                            <select id="shipments-statusForm-reschedule_reason" class="form-select" x-model="statusForm.reschedule_reason">
                                 <option value="">Select a reason...</option>
                                 <option value="Customer unavailable">Customer unavailable</option>
                                 <option value="Customer requested future delivery">Customer requested future delivery</option>
@@ -755,15 +799,15 @@
                             </select>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label fw-semibold">Note / Description</label>
-                            <textarea class="form-control" rows="3" x-model="statusForm.description" placeholder="Optional details for tracking history"></textarea>
+                            <label class="form-label fw-semibold" for="shipments-statusForm-description">Note / Description</label>
+                            <textarea id="shipments-statusForm-description" class="form-control" rows="3" x-model="statusForm.description" placeholder="Optional details for tracking history"></textarea>
                         </div>
                         
-                        <div x-show="statusForm.status === 'returned'" class="mt-4 pt-3 border-top border-warning border-opacity-50">
+                        <div x-show.important="statusForm.status === 'returned'" class="mt-4 pt-3 border-top border-warning border-opacity-50">
                             <h6 class="fw-bold text-warning mb-3"><i class="bi bi-arrow-return-left me-2"></i>Return Details</h6>
                             <div class="mb-3">
-                                <label class="form-label fw-semibold text-body-secondary small text-uppercase">Reason for Return <span class="text-danger">*</span></label>
-                                <select class="form-select shadow-sm" x-model="returnForm.reason" :required="statusForm.status === 'returned'">
+                                <label class="form-label fw-semibold text-body-secondary small text-uppercase" for="shipments-returnForm-reason">Reason for Return <span class="text-danger">*</span></label>
+                                <select id="shipments-returnForm-reason" class="form-select shadow-sm" x-model="returnForm.reason" :required="statusForm.status === 'returned'">
                                     <option value="" disabled selected>Select a reason...</option>
                                     @foreach($returnReasons as $reason)
                                         <option value="{{ $reason->reason }}">{{ $reason->reason }}</option>
@@ -771,7 +815,7 @@
                                 </select>
                             </div>
                             <div class="mb-3">
-                                <label class="form-label fw-semibold text-body-secondary small text-uppercase">Select Items to Return</label>
+                                <label class="form-label fw-semibold text-body-secondary small text-uppercase" for="shipments-eventForm-event_name">Select Items to Return</label>
                                 <div class="table-responsive rounded-3 border shadow-sm">
                                     <table class="table table-bordered table-sm align-middle mb-0">
                                         <thead class="table-secondary">
@@ -785,7 +829,7 @@
                                                 <tr>
                                                     <td class="px-3" x-text="item.name"></td>
                                                     <td class="px-3">
-                                                        <input type="number" class="form-control form-control-sm bg-body-tertiary text-body-secondary" style="cursor: not-allowed;" x-model.number="item.requested_qty" min="0" :max="item.max_qty" readonly>
+                                                        <input type="number" class="form-control form-control-sm bg-body-tertiary text-body-secondary" style="cursor: not-allowed;" x-model.number="item.requested_qty" min="0" :max="item.max_qty" readonly aria-label="Quantity to return">
                                                         <div class="form-text mt-1 text-muted" style="font-size: 0.75rem;">Max: <span x-text="item.max_qty"></span></div>
                                                     </td>
                                                 </tr>
@@ -799,7 +843,7 @@
                         <div class="modal-footer border-top-0 pt-0 px-0 mt-3">
                             <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
                             <button type="submit" class="btn btn-primary" :disabled="saving">
-                                <span x-show="saving" class="spinner-border spinner-border-sm me-1" role="status"></span>
+                                <span x-show.important="saving" class="spinner-border spinner-border-sm me-1" role="status"></span>
                                 Update Status
                             </button>
                         </div>
@@ -810,14 +854,14 @@
     </div>
 
     <!-- Tracking History Modal -->
-    <div class="modal fade" id="trackingModal" tabindex="-1" aria-hidden="true">
+    <div class="modal fade" id="trackingModal" tabindex="-1" aria-labelledby="trackingModalTitle" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title fw-bold">
+                    <h5 id="trackingModalTitle" class="modal-title fw-bold">
                         Tracking Timeline: <span class="text-primary font-monospace" x-text="selectedShipment ? selectedShipment.shipment_no : ''"></span>
                     </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" :disabled="saving"></button>
                 </div>
                 <div class="modal-body p-4 bg-body-tertiary bg-opacity-50">
                     <template x-if="selectedShipment">
@@ -825,7 +869,7 @@
                             <div class="card-body">
                                 <h6 class="fw-bold mb-3">Shipment Summary</h6>
                                 <div class="row g-3">
-                                    <div class="col-md-6" x-show="selectedShipment.actual_weight_g">
+                                    <div class="col-md-6" x-show.important="selectedShipment.actual_weight_g">
                                         <div class="text-muted small">Weight & Dimensions</div>
                                         <div class="fw-semibold">
                                             <span x-text="(selectedShipment.actual_weight_g / 1000).toFixed(2) + ' kg'"></span>
@@ -834,29 +878,29 @@
                                             </template>
                                         </div>
                                     </div>
-                                    <div class="col-md-6" x-show="selectedShipment.shipping_cost">
+                                    <div class="col-md-6" x-show.important="selectedShipment.shipping_cost !== null && selectedShipment.shipping_cost !== undefined">
                                         <div class="text-muted small">Shipping Cost</div>
                                         <div class="fw-semibold text-success">
                                             <i class="bi bi-currency-rupee"></i> <span x-text="selectedShipment.shipping_cost"></span>
                                         </div>
                                     </div>
-                                    <div class="col-md-6" x-show="selectedShipment.article_type || (selectedShipment.provider_response && selectedShipment.provider_response.article_type)">
+                                    <div class="col-md-6" x-show.important="selectedShipment.article_type || (selectedShipment.provider_response && selectedShipment.provider_response?.article_type)">
                                         <div class="text-muted small">Article Type</div>
-                                        <div class="fw-semibold" x-text="selectedShipment.article_type || selectedShipment.provider_response.article_type"></div>
+                                        <div class="fw-semibold" x-text="selectedShipment.article_type || selectedShipment.provider_response?.article_type"></div>
                                     </div>
-                                    <div class="col-md-6" x-show="selectedShipment.delivery_attempts > 0">
+                                    <div class="col-md-6" x-show.important="selectedShipment.delivery_attempts > 0">
                                         <div class="text-muted small">Delivery Attempts</div>
                                         <div class="fw-semibold text-danger" x-text="selectedShipment.delivery_attempts"></div>
                                     </div>
-                                    <div class="col-md-6" x-show="selectedShipment.next_followup_date">
+                                    <div class="col-md-6" x-show.important="selectedShipment.next_followup_date">
                                         <div class="text-muted small">Next Follow-up Date</div>
                                         <div class="fw-semibold" x-text="new Date(selectedShipment.next_followup_date).toLocaleDateString()"></div>
                                     </div>
-                                    <div class="col-md-6" x-show="selectedShipment.reschedule_reason">
+                                    <div class="col-md-6" x-show.important="selectedShipment.reschedule_reason">
                                         <div class="text-muted small">Reschedule Reason</div>
                                         <div class="fw-semibold" x-text="selectedShipment.reschedule_reason"></div>
                                     </div>
-                                    <div class="col-md-6" x-show="selectedShipment.delivered_by">
+                                    <div class="col-md-6" x-show.important="selectedShipment.delivered_by">
                                         <div class="text-muted small">Delivered By</div>
                                         <div class="fw-semibold text-success" x-text="selectedShipment.delivered_by"></div>
                                     </div>
@@ -876,7 +920,7 @@
                                                 <div class="timeline-badge bg-secondary text-white d-flex align-items-center justify-content-center rounded-circle me-3" style="width: 32px; height: 32px; flex-shrink: 0;">
                                                     <i class="bi bi-clock-history"></i>
                                                 </div>
-                                                <div class="timeline-panel border-bottom pb-2 w-100">
+                                                <div class="timeline-panel border-bottom pb-2 w-100 text-break">
                                                     <div class="d-flex justify-content-between align-items-center">
                                                         <h6 class="fw-bold mb-0 text-body text-capitalize" x-text="log.status.replace(/_/g, ' ')"></h6>
                                                         <small class="text-muted" x-text="new Date(log.created_at).toLocaleString()"></small>
@@ -886,7 +930,7 @@
                                                             <i class="bi bi-person me-1"></i>by <span class="fw-medium" x-text="log.user.name"></span>
                                                         </div>
                                                     </template>
-                                                    <p class="text-muted mt-2 mb-0 small" x-show="log.notes" x-text="log.notes"></p>
+                                                    <p class="text-muted mt-2 mb-0 small" x-show.important="log.notes" x-text="log.notes"></p>
                                                 </div>
                                             </div>
                                         </template>
@@ -899,7 +943,9 @@
                     <h6 class="fw-bold mb-3 ps-2">Shipment Tracking History</h6>
                     <div class="card shadow-sm border-start border-4 border-danger rounded-4">
                         <div class="card-body p-4">
-                            <template x-if="trackingEvents.length === 0">
+                            <div x-show.important="trackingLoading" class="text-center py-4 text-body-secondary" role="status"><span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>Loading tracking history…</div>
+                            <div x-show.important="trackingError" class="alert alert-danger" role="alert"><span x-text="trackingError"></span> <button type="button" class="btn btn-sm btn-outline-danger" @click="openTrackingModal(selectedShipment)">Retry</button></div>
+                            <template x-if="!trackingLoading && !trackingError && trackingEvents.length === 0">
                                 <div class="text-center py-4 text-muted">
                                     <i class="bi bi-journal-x fs-2 d-block mb-2"></i>
                                     No tracking events logged yet.
@@ -911,8 +957,8 @@
                                 <div class="timeline-badge bg-primary text-white d-flex align-items-center justify-content-center rounded-circle me-3" style="width: 32px; height: 32px; flex-shrink: 0;">
                                     <i class="bi bi-record-circle"></i>
                                 </div>
-                                <div class="timeline-panel border-bottom pb-2 w-100">
-                                    <div class="d-flex justify-content-between align-items-center">
+                                <div class="timeline-panel border-bottom pb-2 w-100 text-break">
+                                    <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center">
                                         <h6 class="fw-bold mb-0 text-body" x-text="event.event_name"></h6>
                                         <small class="text-muted" x-text="new Date(event.occurred_at).toLocaleString()"></small>
                                     </div>
@@ -1048,7 +1094,7 @@
                                                 No scan events available from India Post yet.
                                             </div>
                                         </template>
-                                        <div class="timeline" x-show="liveTrackingData.tracking_details && liveTrackingData.tracking_details.length > 0">
+                                        <div class="timeline" x-show.important="liveTrackingData.tracking_details && liveTrackingData.tracking_details.length > 0">
                                             <template x-for="(evt, idx) in liveTrackingData.tracking_details" :key="idx">
                                                 <div class="d-flex mb-3">
                                                     <div class="timeline-badge d-flex align-items-center justify-content-center rounded-circle me-3 flex-shrink-0"
@@ -1063,12 +1109,12 @@
                                                             <small class="text-muted font-monospace" style="font-size:0.72rem;"
                                                                    x-text="[evt.event_date, evt.event_time].filter(Boolean).join(' ')"></small>
                                                         </div>
-                                                        <div class="text-muted small mt-1" x-show="evt.office || evt.location">
+                                                        <div class="text-muted small mt-1" x-show.important="evt.office || evt.location">
                                                             <i class="bi bi-geo-alt me-1 text-danger opacity-75"></i>
                                                             <span x-text="evt.office || evt.location || ''"></span>
                                                         </div>
                                                         <div class="text-muted small mt-1 fst-italic"
-                                                             x-show="evt.description && evt.description !== evt.event"
+                                                             x-show.important="evt.description && evt.description !== evt.event"
                                                              x-text="evt.description || ''"></div>
                                                     </div>
                                                 </div>
@@ -1088,11 +1134,11 @@
                     {{-- Refresh from India Post button — only for India Post shipments with a tracking number --}}
                     <button type="button"
                             class="btn btn-outline-success d-inline-flex align-items-center gap-2"
-                            x-show="selectedShipment && selectedShipment.carrier_name === 'India Post' && selectedShipment.tracking_no"
+                            x-show.important="selectedShipment && selectedShipment.carrier_name === 'India Post' && selectedShipment.tracking_no"
                             @click="fetchLiveTracking()"
                             :disabled="liveTrackingLoading">
-                        <span x-show="liveTrackingLoading" class="spinner-border spinner-border-sm" role="status"></span>
-                        <i class="bi bi-arrow-clockwise" x-show="!liveTrackingLoading"></i>
+                        <span x-show.important="liveTrackingLoading" class="spinner-border spinner-border-sm" role="status"></span>
+                        <i class="bi bi-arrow-clockwise" x-show.important="!liveTrackingLoading"></i>
                         <span x-text="liveTrackingLoading ? 'Fetching…' : 'Refresh from India Post'"></span>
                     </button>
                 </div>
@@ -1101,31 +1147,31 @@
     </div>
 
     <!-- Add Custom Event Modal -->
-    <div class="modal fade" id="addEventModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
+    <div class="modal fade" id="addEventModal" tabindex="-1" aria-labelledby="addEventModalTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
             <div class="modal-content">
                 <div class="modal-header border-bottom-0 pb-0">
-                    <h5 class="modal-title fw-bold">Add Tracking Event</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <h5 id="addEventModalTitle" class="modal-title fw-bold">Add Tracking Event</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" :disabled="saving"></button>
                 </div>
                 <div class="modal-body pt-3">
                     <form @submit.prevent="saveTrackingEvent">
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Event Name <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" x-model="eventForm.event_name" required placeholder="e.g. Package Sorted at Hub">
+                            <input id="shipments-eventForm-event_name" type="text" class="form-control" x-model="eventForm.event_name" required placeholder="e.g. Package Sorted at Hub">
                         </div>
                         <div class="mb-3">
-                            <label class="form-label fw-semibold">Location</label>
-                            <input type="text" class="form-control" x-model="eventForm.location" placeholder="e.g. New Delhi Hub">
+                            <label class="form-label fw-semibold" for="shipments-eventForm-location">Location</label>
+                            <input id="shipments-eventForm-location" type="text" class="form-control" x-model="eventForm.location" placeholder="e.g. New Delhi Hub">
                         </div>
                         <div class="mb-3">
-                            <label class="form-label fw-semibold">Description</label>
-                            <textarea class="form-control" rows="3" x-model="eventForm.description" placeholder="Detailed logs or update note..."></textarea>
+                            <label class="form-label fw-semibold" for="shipments-eventForm-description">Description</label>
+                            <textarea id="shipments-eventForm-description" class="form-control" rows="3" x-model="eventForm.description" placeholder="Detailed logs or update note..."></textarea>
                         </div>
                         <div class="modal-footer border-top-0 pt-0 px-0">
                             <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
                             <button type="submit" class="btn btn-success" :disabled="saving">
-                                <span x-show="saving" class="spinner-border spinner-border-sm me-1" role="status"></span>
+                                <span x-show.important="saving" class="spinner-border spinner-border-sm me-1" role="status"></span>
                                 Add Event
                             </button>
                         </div>
@@ -1135,15 +1181,15 @@
         </div>
     </div>
     <!-- Return Order Modal -->
-    <div class="modal fade" id="returnOrderModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal fade" id="returnOrderModal" tabindex="-1" aria-labelledby="returnOrderModalTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
             <div class="modal-content border-0 shadow-lg rounded-4">
                 <div class="modal-header border-bottom-0 pt-4 pb-2 px-4">
-                    <h5 class="modal-title fw-bolder d-flex align-items-center gap-2">
+                    <h5 id="returnOrderModalTitle" class="modal-title fw-bolder d-flex align-items-center gap-2">
                         <i class="bi bi-arrow-return-left text-warning fs-4"></i>
                         Initiate Shipment Return
                     </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" :disabled="saving"></button>
                 </div>
                 <div class="modal-body px-4 pb-2">
                     <div class="alert alert-warning border-0 bg-warning bg-opacity-10 d-flex align-items-center mb-4 rounded-3">
@@ -1152,8 +1198,8 @@
                     </div>
                     <form @submit.prevent="submitReturn">
                         <div class="mb-4">
-                            <label class="form-label fw-semibold text-body-secondary small text-uppercase">Reason for Return <span class="text-danger">*</span></label>
-                            <select class="form-select form-select-lg shadow-sm border-secondary border-opacity-25 rounded-3" x-model="returnForm.reason" required>
+                            <label class="form-label fw-semibold text-body-secondary small text-uppercase" for="shipments-return-modal-reason">Reason for Return <span class="text-danger">*</span></label>
+                            <select id="shipments-return-modal-reason" class="form-select form-select-lg shadow-sm border-secondary border-opacity-25 rounded-3" x-model="returnForm.reason" required>
                                 <option value="" disabled selected>Select a reason...</option>
                                 @foreach($returnReasons as $reason)
                                     <option value="{{ $reason->reason }}">{{ $reason->reason }}</option>
@@ -1161,7 +1207,7 @@
                             </select>
                         </div>
                         <div class="mb-4">
-                            <label class="form-label fw-semibold text-body-secondary small text-uppercase">Select Items to Return</label>
+                            <label class="form-label fw-semibold text-body-secondary small text-uppercase" for="shipments-returnForm-notes">Select Items to Return</label>
                             <div class="table-responsive rounded-3 border border-secondary border-opacity-25 shadow-sm">
                                 <table class="table table-bordered table-sm align-middle mb-0">
                                     <thead class="table-secondary">
@@ -1175,7 +1221,7 @@
                                             <tr>
                                                 <td class="px-3" x-text="item.name"></td>
                                                 <td class="px-3">
-                                                    <input type="number" class="form-control form-control-sm bg-body-tertiary text-body-secondary" style="cursor: not-allowed;" x-model.number="item.requested_qty" min="0" :max="item.max_qty" readonly>
+                                                    <input type="number" class="form-control form-control-sm bg-body-tertiary text-body-secondary" style="cursor: not-allowed;" x-model.number="item.requested_qty" min="0" :max="item.max_qty" readonly aria-label="Quantity to return">
                                                     <div class="form-text mt-1 text-muted" style="font-size: 0.75rem;">Max available: <span x-text="item.max_qty"></span></div>
                                                 </td>
                                             </tr>
@@ -1186,13 +1232,13 @@
                         </div>
                         <div class="mb-4">
                             <label class="form-label fw-semibold text-body-secondary small text-uppercase">Additional Notes</label>
-                            <textarea class="form-control shadow-sm border-secondary border-opacity-25 rounded-3" rows="3" x-model="returnForm.notes" placeholder="Please provide any relevant details..."></textarea>
+                            <textarea id="shipments-returnForm-notes" class="form-control shadow-sm border-secondary border-opacity-25 rounded-3" rows="3" x-model="returnForm.notes" placeholder="Please provide any relevant details..."></textarea>
                         </div>
                         <div class="modal-footer border-top-0 px-0 pb-0 mt-2">
                             <button type="button" class="btn btn-outline-secondary border-secondary border-opacity-25 rounded-pill px-4 fw-semibold shadow-sm" data-bs-dismiss="modal">Cancel</button>
                             <button type="submit" class="btn btn-warning rounded-pill px-4 fw-semibold shadow-sm text-body-emphasis d-flex align-items-center gap-2" :disabled="saving">
-                                <span x-show="saving" class="spinner-border spinner-border-sm" role="status"></span>
-                                <i class="bi bi-arrow-return-left" x-show="!saving"></i> Process Return
+                                <span x-show.important="saving" class="spinner-border spinner-border-sm" role="status"></span>
+                                <i class="bi bi-arrow-return-left" x-show.important="!saving"></i> Process Return
                             </button>
                         </div>
                     </form>

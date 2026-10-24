@@ -18,7 +18,6 @@ use App\Modules\Orders\Models\Coupon;
 use App\Modules\Orders\Models\Order;
 use App\Modules\Orders\Models\OrderReturn;
 use App\Modules\Orders\Models\Shipment;
-use App\Modules\Users\Models\User;
 use App\Notifications\LowStockNotification;
 use App\Services\Shipping\ShippingManager;
 use Illuminate\Support\Facades\DB;
@@ -415,9 +414,9 @@ class InventoryService
             // Dispatch Low Stock Notification if quantity is below threshold (fail-safe)
             if ($newQty <= 5) {
                 try {
-                    $admins = User::role(['Admin', 'Super Admin', 'Inventory Manager'])->get();
+                    $admins = app(NotificationRecipients::class)->forRoles(['Admin', 'Super Admin', 'Inventory Manager']);
                     $productName = $stock->product->name ?? 'Unknown Product';
-                    $warehouseName = clone $stock->warehouse ? clone $stock->warehouse->name : 'Unknown Warehouse';
+                    $warehouseName = $stock->warehouse?->name ?? 'Unknown Warehouse';
                     Notification::send($admins, new LowStockNotification($productName, (int) $newQty, $warehouseName));
                 } catch (\Throwable) {
                     // Silently fail — notification delivery is non-critical

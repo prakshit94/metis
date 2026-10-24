@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Catalog\Models;
 
+use App\Concerns\LogsActivity;
 use App\Modules\Core\Models\Village;
 use App\Modules\Core\Models\VillageServiceMapping;
 use App\Modules\Users\Models\User;
@@ -14,7 +15,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use OwenIt\Auditing\Auditable as AuditableTrait;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Activitylog\LogOptions;
-use Spatie\Activitylog\Traits\LogsActivity;
 
 class Service extends Model implements Auditable
 {

@@ -31,7 +31,7 @@ class OrderReturnController extends Controller implements HasMiddleware
 
     public function index(Request $request)
     {
-        $query = OrderReturn::with(['order.party', 'order.payments', 'order.shipments', 'items.product', 'refunds', 'creditNote']);
+        $query = OrderReturn::with(['order.party', 'order.payments', 'order.shipments', 'order.orderReturns', 'items.product', 'refunds', 'creditNote']);
 
         $user = auth()->user();
         $isGlobalView = $user && ($user->hasRole(['Super Admin', 'Admin']) || $user->can('view-all-data'));
@@ -112,6 +112,7 @@ class OrderReturnController extends Controller implements HasMiddleware
 
         $limit = min(max($request->integer('limit', 15), 1), 200);
         $returns = $query->paginate($limit);
+        $returns->getCollection()->each(fn ($return) => $return->order?->makeHidden('orderReturns'));
 
         if ($request->wantsJson() || $request->ajax()) {
             // Keep the same filtered/paginated query and response types as the

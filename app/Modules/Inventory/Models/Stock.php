@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Inventory\Models;
 
+use App\Concerns\LogsActivity;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\Warehouse;
 use App\Modules\Orders\Models\OrderItem;
@@ -15,7 +16,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Auditable as AuditableTrait;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Activitylog\LogOptions;
-use Spatie\Activitylog\Traits\LogsActivity;
 
 class Stock extends Model implements Auditable
 {

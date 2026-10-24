@@ -2,6 +2,7 @@
 
 namespace App\Modules\Orders\Models;
 
+use App\Concerns\LogsActivity;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Users\Models\User;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -10,7 +11,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use OwenIt\Auditing\Auditable as AuditableTrait;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Activitylog\LogOptions;
-use Spatie\Activitylog\Traits\LogsActivity;
 
 class Offer extends Model implements Auditable
 {

@@ -3,11 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Modules\Core\Controllers\Controller;
+use App\Services\ActivityFeedService;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use OwenIt\Auditing\Models\Audit;
-use Spatie\Activitylog\Models\Activity;
 
 class AuditLogController extends Controller implements HasMiddleware
 {
@@ -50,6 +50,7 @@ class AuditLogController extends Controller implements HasMiddleware
 
             $perPage = $request->input('per_page', 15);
             $audits = $query->paginate($perPage);
+            app(ActivityFeedService::class)->prepareAudits($audits->getCollection());
 
             // Collect all user IDs from old/new values to prevent N+1 queries
             $userIdsToFetch = [];
@@ -204,10 +205,10 @@ class AuditLogController extends Controller implements HasMiddleware
         $user = $request->user();
         $this->authorizeActivityAccess($user);
 
-        $activityQuery = $this->activityQueryFor($user)->with(['causer', 'subject'])->latest();
-        $activities = $activityQuery->limit(50)->get();
-        $readIds = $user->readActivities()->whereIn('activity_id', $activities->pluck('id'))->pluck('activity_id')->all();
-        $unreadCount = $this->unreadActivityCount($user);
+        $snapshot = app(ActivityFeedService::class)->snapshot($user);
+        $activities = $snapshot['activities'];
+        $readIds = $snapshot['readIds'];
+        $unreadCount = $snapshot['count'];
 
         return response()->json([
             'count' => $unreadCount,
@@ -240,13 +241,13 @@ class AuditLogController extends Controller implements HasMiddleware
 
         if ($id === 'all') {
             $this->activityQueryFor($user)->select('id')->chunkById(1000, function ($activities) use ($user) {
-                $user->readActivities()->syncWithoutDetaching($activities->pluck('id'));
+                app(ActivityFeedService::class)->markRead($user, $activities->modelKeys());
             });
         } else {
             abort_unless(ctype_digit((string) $id), 422, 'Invalid activity ID.');
 
             $activity = $this->activityQueryFor($user)->findOrFail((int) $id);
-            $user->readActivities()->syncWithoutDetaching([$activity->id]);
+            app(ActivityFeedService::class)->markRead($user, [$activity->id]);
         }
 
         return response()->json([
@@ -266,34 +267,12 @@ class AuditLogController extends Controller implements HasMiddleware
 
     private function activityQueryFor($user)
     {
-        $query = Activity::query();
-
-        // Preserve the existing visibility rule: only Super Admins see the
-        // system-wide feed; other authorised users see their own actions.
-        if (! $user->hasRole('Super Admin')) {
-            $query->where(function ($q) use ($user) {
-                $q->where('causer_id', $user->id)
-                  ->orWhere(function ($subQ) use ($user) {
-                      $subQ->where('subject_type', \App\Modules\Orders\Models\Order::class)
-                           ->whereIn('subject_id', \App\Modules\Orders\Models\Order::where('created_by', $user->id)->select('id'));
-                  });
-            });
-        }
-
-        return $query;
+        return app(ActivityFeedService::class)->visibleQuery($user);
     }
 
     private function unreadActivityCount($user): int
     {
-        $recentIds = $this->activityQueryFor($user)->latest('id')->limit(500)->pluck('id');
-
-        if ($recentIds->isEmpty()) {
-            return 0;
-        }
-
-        return $recentIds->diff(
-            $user->readActivities()->whereIn('activity_id', $recentIds)->pluck('activity_id')
-        )->count();
+        return app(ActivityFeedService::class)->unreadCount($user);
     }
 
     public static function plainActivityDescription(string $formattedDescription): string
@@ -339,7 +318,9 @@ class AuditLogController extends Controller implements HasMiddleware
             if (!$customerName) {
                 $partyId = $attrs['party_id'] ?? $old['party_id'] ?? null;
                 if ($partyId) {
-                    $customerName = \App\Modules\Customers\Models\Party::find($partyId)?->name;
+                    $customerName = $audit->relationLoaded('feedAddressParty')
+                        ? $audit->getRelation('feedAddressParty')?->name
+                        : \App\Modules\Customers\Models\Party::find($partyId)?->name;
                 }
             }
             $customerName = $customerName ?? 'Customer';
@@ -454,7 +435,9 @@ class AuditLogController extends Controller implements HasMiddleware
                 $productName = $subject?->product?->name ?? 'Product';
                 $detail = ' for ' . $productName;
                 
-                $relatedOrderActivity = \Spatie\Activitylog\Models\Activity::with('subject')
+                $relatedOrderActivity = $a->relationLoaded('feedRelatedOrderActivity')
+                    ? $a->getRelation('feedRelatedOrderActivity')
+                    : \Spatie\Activitylog\Models\Activity::with('subject')
                     ->where('subject_type', 'App\Modules\Orders\Models\Order')
                     ->where('causer_id', $a->causer_id)
                     ->whereBetween('created_at', [$a->created_at->copy()->subSeconds(2), $a->created_at->copy()->addSeconds(2)])
@@ -481,7 +464,9 @@ class AuditLogController extends Controller implements HasMiddleware
                 if (!$customerName) {
                     $partyId = $attrs['party_id'] ?? $old['party_id'] ?? null;
                     if ($partyId) {
-                        $customerName = \App\Modules\Customers\Models\Party::find($partyId)?->name;
+                        $customerName = $a->relationLoaded('feedAddressParty')
+                            ? $a->getRelation('feedAddressParty')?->name
+                            : \App\Modules\Customers\Models\Party::find($partyId)?->name;
                     }
                 }
                 $customerName = $customerName ?? 'Customer';

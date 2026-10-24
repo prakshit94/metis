@@ -98,11 +98,17 @@ class TargetController extends Controller implements HasMiddleware
         $targets = $query->orderByDesc('start_date')->orderByDesc('id')->paginate($perPage);
         $this->addPaceMetrics($targets->getCollection());
 
+        $counts = $baseStatsQuery->reorder()->toBase()->selectRaw("
+            COUNT(*) as total,
+            COUNT(CASE WHEN status = 'active' THEN 1 END) as active,
+            COUNT(CASE WHEN status = 'achieved' THEN 1 END) as achieved,
+            COUNT(CASE WHEN status = 'failed' THEN 1 END) as failed
+        ")->first();
         $stats = [
-            'total' => (clone $baseStatsQuery)->count(),
-            'active' => (clone $baseStatsQuery)->where('status', 'active')->count(),
-            'achieved' => (clone $baseStatsQuery)->where('status', 'achieved')->count(),
-            'failed' => (clone $baseStatsQuery)->where('status', 'failed')->count(),
+            'total' => (int) $counts->total,
+            'active' => (int) $counts->active,
+            'achieved' => (int) $counts->achieved,
+            'failed' => (int) $counts->failed,
         ];
 
         $isGlobalViewer = $user && ($user->hasAnyRole(['Super Admin', 'Admin']) || $user->can('target-view-all'));

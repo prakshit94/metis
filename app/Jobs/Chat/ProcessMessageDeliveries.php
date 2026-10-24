@@ -47,6 +47,12 @@ class ProcessMessageDeliveries implements ShouldQueue
         $deliveries = [];
         $notifications = [];
 
+        $notificationPayload = json_encode([
+            'sender_id' => $this->senderId,
+            'sender_name' => $this->senderName,
+            'preview' => $this->preview,
+        ]);
+
         foreach ($userIds as $userId) {
             $deliveries[] = [
                 'message_id' => $this->messageId,
@@ -61,11 +67,7 @@ class ProcessMessageDeliveries implements ShouldQueue
                 'conversation_id' => $this->conversationId,
                 'message_id' => $this->messageId,
                 'type' => 'new_message',
-                'payload' => json_encode([
-                    'sender_id' => $this->senderId,
-                    'sender_name' => $this->senderName,
-                    'preview' => $this->preview,
-                ]),
+                'payload' => $notificationPayload,
                 'created_at' => $now,
                 'updated_at' => $now,
             ];

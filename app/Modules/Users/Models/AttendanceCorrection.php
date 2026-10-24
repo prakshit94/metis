@@ -2,9 +2,9 @@
 
 namespace App\Modules\Users\Models;
 
+use App\Concerns\LogsActivity;
 use Illuminate\Database\Eloquent\Model;
 use Spatie\Activitylog\LogOptions;
-use Spatie\Activitylog\Traits\LogsActivity;
 
 class AttendanceCorrection extends Model
 {

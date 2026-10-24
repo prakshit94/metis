@@ -23,7 +23,7 @@ class ShippingController extends Controller implements HasMiddleware
         return [
             new Middleware('permission:shipping-view', only: ['shipmentsIndex', 'trackingEvents', 'fetchLiveTracking', 'servicesIndex', 'providerOptions']),
             new Middleware('permission:shipping-create', only: ['addTrackingEvent', 'storeService']),
-            new Middleware('permission:shipping-edit', only: ['updateShipmentStatus', 'updateShipment', 'updateService', 'toggleService', 'shipmentsBulk', 'servicesBulk']),
+            new Middleware('permission:shipping-edit', only: ['returnShipment', 'updateShipmentStatus', 'updateShipment', 'updateService', 'toggleService', 'shipmentsBulk', 'servicesBulk']),
             new Middleware('permission:shipping-delete', only: ['destroyService']),
         ];
     }
@@ -33,59 +33,111 @@ class ShippingController extends Controller implements HasMiddleware
      */
     public function shipmentsIndex(Request $request): JsonResponse
     {
+        // Accept orders-style URL names while retaining existing API clients.
+        $request->merge([
+            'per_page' => $request->query('per_page', $request->query('limit', 25)),
+            'sort_by' => $request->query('sort_by', $request->query('sort_field', 'id')),
+            'sort_dir' => $request->query('sort_dir', $request->query('sort_direction', 'desc')),
+        ]);
+        $request->validate([
+            'search' => 'nullable|string|max:255',
+            'status' => ['bail', 'nullable', 'string', function ($attribute, $value, $fail) {
+                $statuses = array_map('trim', explode(',', $value));
+                if (array_diff($statuses, ['pending', 'in_transit', 'delivered', 'failed', 'returned', 'all', '__no_status_selected__'])) {
+                    $fail('Select valid shipment statuses.');
+                }
+            }],
+            'carrier' => 'nullable|string|max:255',
+            'date' => 'nullable|in:today,yesterday,7d,30d,this_month,prev_month,this_year,custom,all',
+            'date_type' => 'nullable|in:created_at,shipped_at,delivered_at',
+            'from_date' => 'nullable|date_format:Y-m-d',
+            'to_date' => ['nullable', 'date_format:Y-m-d', ...($request->filled('from_date') ? ['after_or_equal:from_date'] : [])],
+            'sort_by' => 'required|in:id,shipment_no,status,shipped_at,delivered_at',
+            'sort_dir' => 'required|in:asc,desc',
+            'page' => 'nullable|integer|min:1',
+            'per_page' => 'required|integer|min:1|max:100',
+            'overview' => 'nullable|boolean',
+            'include_summary' => 'nullable|boolean',
+        ]);
 
-        $query = Shipment::with(['order.orderReturns', 'order.shipments', 'order.items.product', 'order.party', 'order.shippingAddress', 'order.warehouse', 'service.providers:id,name,email,phone,department_id,is_active']);
-
-        if ($search = $request->query('search')) {
+        $query = Shipment::query();
+        if ($request->filled('search')) {
+            $search = $request->query('search');
             $query->where(function ($q) use ($search) {
                 $q->where('shipment_no', 'like', "%{$search}%")
                     ->orWhere('tracking_no', 'like', "%{$search}%")
                     ->orWhere('carrier_name', 'like', "%{$search}%")
-                    ->orWhereHas('order', function ($oq) use ($search) {
-                        $oq->where('order_no', 'like', "%{$search}%");
-                    });
+                    ->orWhereHas('order', fn ($order) => $order->where('order_no', 'like', "%{$search}%"));
             });
         }
-
-        if ($status = $request->query('status')) {
-            if ($status === 'in_transit') {
-                $query->whereIn('status', ['in_transit']);
-            } else {
-                $query->where('status', $status);
-            }
+        $statuses = array_values(array_unique(array_filter(array_map('trim', explode(',', $request->query('status', ''))))));
+        if (in_array('__no_status_selected__', $statuses, true)) {
+            $query->whereRaw('1 = 0');
+        } elseif ($statuses && ! in_array('all', $statuses, true)) {
+            $query->whereIn('status', $statuses);
         }
-
-        if ($carrier = $request->query('carrier')) {
+        if ($request->filled('carrier')) {
+            $carrier = $request->query('carrier');
             $query->where('carrier_name', $carrier);
         }
-        
-        $dateField = $request->query('date_type', 'created_at');
-        if (!in_array($dateField, ['created_at', 'shipped_at', 'delivered_at'])) {
-            $dateField = 'created_at';
-        }
 
-        if ($fromDate = $request->query('from_date')) {
+        $fromDate = $request->query('from_date');
+        $toDate = $request->query('to_date');
+        if (! $fromDate && ! $toDate) {
+            $today = now()->startOfDay();
+            [$from, $to] = match ($request->query('date')) {
+                'today' => [$today->copy(), $today->copy()],
+                'yesterday' => [$today->copy()->subDay(), $today->copy()->subDay()],
+                '7d' => [$today->copy()->subDays(7), $today->copy()],
+                '30d' => [$today->copy()->subDays(30), $today->copy()],
+                'this_month' => [$today->copy()->startOfMonth(), $today->copy()],
+                'prev_month' => [$today->copy()->subMonthNoOverflow()->startOfMonth(), $today->copy()->subMonthNoOverflow()->endOfMonth()],
+                'this_year' => [$today->copy()->startOfYear(), $today->copy()],
+                default => [null, null],
+            };
+            $fromDate = $from?->toDateString();
+            $toDate = $to?->toDateString();
+        }
+        $dateField = $request->query('date_type') ?: 'created_at';
+        if ($fromDate) {
             $query->where($dateField, '>=', \Illuminate\Support\Carbon::parse($fromDate)->startOfDay());
         }
-
-        if ($toDate = $request->query('to_date')) {
+        if ($toDate) {
             $query->where($dateField, '<', \Illuminate\Support\Carbon::parse($toDate)->startOfDay()->addDay());
         }
 
-        $sortBy = $request->query('sort_by', 'id');
-        $sortDir = $request->query('sort_dir', 'desc');
-
-        if (in_array($sortBy, ['id', 'shipment_no', 'status', 'shipped_at', 'delivered_at'])) {
-            $query->orderBy($sortBy, $sortDir);
+        $summary = [];
+        if ($request->boolean('include_summary') || $request->boolean('overview')) {
+            // One row per carrier/status/assignee, never one row per shipment.
+            $providers = (clone $query)
+                ->select(['carrier_name', 'status', 'service_provider_id'])
+                ->selectRaw('COUNT(*) as total')
+                ->groupBy('carrier_name', 'status', 'service_provider_id')
+                ->with('service.providers:id,name,email,phone,department_id,is_active')
+                ->get();
+            $stats = ['total' => (int) $providers->sum('total')];
+            foreach (['pending', 'in_transit', 'delivered', 'failed', 'returned'] as $status) {
+                $stats[$status] = (int) $providers->where('status', $status)->sum('total');
+            }
+            $summary = ['stats' => $stats, 'providers' => $providers];
+        }
+        if ($request->boolean('overview')) {
+            return response()->json($summary);
         }
 
-        $perPage = (int) $request->query('per_page', 10);
-        $perPage = min(max($perPage, 1), 100);
-
-        $shipments = $query->paginate($perPage);
+        $sortBy = $request->input('sort_by');
+        $query->orderBy($sortBy, $request->input('sort_dir'));
+        if ($sortBy !== 'id') {
+            $query->orderBy('id', $request->input('sort_dir'));
+        }
+        $shipments = $query->with([
+            'order.orderReturns', 'order.shipments', 'order.items.product', 'order.party',
+            'order.shippingAddress', 'order.warehouse',
+            'service.providers:id,name,email,phone,department_id,is_active',
+        ])->paginate((int) $request->input('per_page'), ['*'], 'page', (int) $request->query('page', 1));
         $shipments->getCollection()->each(fn ($shipment) => $shipment->order?->makeHidden(['orderReturns', 'shipments']));
 
-        return response()->json($shipments);
+        return response()->json(array_merge($shipments->toArray(), $summary));
     }
 
     /**
@@ -112,33 +164,37 @@ class ShippingController extends Controller implements HasMiddleware
             'tracking_no' => 'nullable|string|max:255',
         ]);
 
-        $oldCarrier = $shipment->carrier_name;
-        $oldTracking = $shipment->tracking_no;
-        $oldProviderId = $shipment->service_provider_id;
+        DB::transaction(function () use ($shipment, $validated) {
+            $shipment = Shipment::lockForUpdate()->findOrFail($shipment->id);
+            $oldCarrier = $shipment->carrier_name;
+            $oldTracking = $shipment->tracking_no;
+            $oldProviderId = $shipment->service_provider_id;
 
-        $shipment->update([
-            'carrier_name' => $validated['carrier_name'],
-            'service_provider_id' => $validated['service_provider_id'] ?? null,
-            'tracking_no' => $validated['tracking_no'] ?? null,
-        ]);
-
-        if ($oldCarrier !== $shipment->carrier_name || $oldTracking !== $shipment->tracking_no || $oldProviderId !== $shipment->service_provider_id) {
-            ShipmentTrackingEvent::create([
-                'shipment_id' => $shipment->id,
-                'event_name' => 'Shipment Details Updated',
-                'location' => 'System',
-                'description' => "Shipment details updated. Carrier: {$oldCarrier} -> {$shipment->carrier_name}. Tracking: {$oldTracking} -> ".($shipment->tracking_no ?? 'None').". Provider ID: {$oldProviderId} -> ".($shipment->service_provider_id ?? 'None'),
-                'occurred_at' => now(),
+            $shipment->update([
+                'carrier_name' => $validated['carrier_name'],
+                'service_provider_id' => $validated['service_provider_id'] ?? null,
+                'tracking_no' => $validated['tracking_no'] ?? null,
             ]);
-            
-            if ($shipment->order) {
-                $shipment->order->statusLogs()->create([
-                    'status' => $shipment->order->status,
-                    'notes' => "Shipment details updated. Carrier: {$shipment->carrier_name}. Tracking: ".($shipment->tracking_no ?? 'None').". Provider ID: ".($shipment->service_provider_id ?? 'None'),
-                    'changed_by' => auth()->id(),
+
+            if ($oldCarrier !== $shipment->carrier_name || $oldTracking !== $shipment->tracking_no || $oldProviderId !== $shipment->service_provider_id) {
+                ShipmentTrackingEvent::create([
+                    'shipment_id' => $shipment->id,
+                    'event_name' => 'Shipment Details Updated',
+                    'location' => 'System',
+                    'description' => "Shipment details updated. Carrier: {$oldCarrier} -> {$shipment->carrier_name}. Tracking: {$oldTracking} -> ".($shipment->tracking_no ?? 'None').". Provider ID: {$oldProviderId} -> ".($shipment->service_provider_id ?? 'None'),
+                    'occurred_at' => now(),
                 ]);
+
+                if ($shipment->order) {
+                    $shipment->order->statusLogs()->create([
+                        'status' => $shipment->order->status,
+                        'notes' => "Shipment details updated. Carrier: {$shipment->carrier_name}. Tracking: ".($shipment->tracking_no ?? 'None').". Provider ID: ".($shipment->service_provider_id ?? 'None'),
+                        'changed_by' => auth()->id(),
+                    ]);
+                }
             }
-        }
+        });
+        $shipment->refresh();
 
         return response()->json([
             'message' => 'Shipment details updated successfully.',
@@ -162,7 +218,9 @@ class ShippingController extends Controller implements HasMiddleware
             'delivered_by' => 'nullable|string|max:255',
         ]);
 
-        DB::transaction(function () use ($shipment, $validated) {
+        $skipOrderSync = $request->boolean('skip_order_sync');
+        DB::transaction(function () use ($shipment, $validated, $skipOrderSync) {
+            $shipment = Shipment::lockForUpdate()->findOrFail($shipment->id);
             $oldStatus = $shipment->status;
             $newStatus = $validated['status'];
 
@@ -179,13 +237,13 @@ class ShippingController extends Controller implements HasMiddleware
             if (isset($validated['delivery_attempts'])) {
                 $updateData['delivery_attempts'] = $validated['delivery_attempts'];
             }
-            if (isset($validated['next_followup_date'])) {
+            if (array_key_exists('next_followup_date', $validated)) {
                 $updateData['next_followup_date'] = $validated['next_followup_date'];
             }
-            if (isset($validated['reschedule_reason'])) {
+            if (array_key_exists('reschedule_reason', $validated)) {
                 $updateData['reschedule_reason'] = $validated['reschedule_reason'];
             }
-            if (isset($validated['delivered_by'])) {
+            if (array_key_exists('delivered_by', $validated)) {
                 $updateData['delivered_by'] = $validated['delivered_by'];
             } elseif ($newStatus === 'delivered') {
                 $updateData['delivered_by'] = auth()->user()->name;
@@ -216,7 +274,7 @@ class ShippingController extends Controller implements HasMiddleware
                         'notes' => 'Shipment delivered.',
                         'changed_by' => auth()->id(),
                     ]);
-                } elseif ($newStatus === 'returned' && ! in_array($order->status, ['returned', 'cancelled'], true) && ! request()->boolean('skip_order_sync')) {
+                } elseif ($newStatus === 'returned' && ! in_array($order->status, ['returned', 'cancelled'], true) && ! $skipOrderSync) {
                     $inventoryService->returnOrder($order);
                 }
 
@@ -234,8 +292,32 @@ class ShippingController extends Controller implements HasMiddleware
 
         return response()->json([
             'message' => 'Shipment status updated successfully.',
-            'shipment' => $shipment->load('order'),
+            'shipment' => $shipment->refresh()->load('order'),
         ]);
+    }
+
+    /**
+     * Keep the existing order-return workflow and shipment update atomic.
+     */
+    public function returnShipment(Request $request, Shipment $shipment): JsonResponse
+    {
+        abort_unless($request->user()?->can('orders.return'), 403);
+
+        return DB::transaction(function () use ($request, $shipment) {
+            $shipment = Shipment::lockForUpdate()->findOrFail($shipment->id);
+            $order = $shipment->order()->lockForUpdate()->firstOrFail();
+
+            // Delegate quantity, stock, return record and order status handling to
+            // the existing return controller; do not duplicate its business rules.
+            $returnRequest = clone $request;
+            $returnRequest->headers->set('Accept', 'application/json');
+            app(\App\Modules\Orders\Controllers\OrderReturnController::class)->store($returnRequest, $order);
+
+            $statusRequest = clone $request;
+            $statusRequest->merge(['status' => 'returned', 'skip_order_sync' => true]);
+
+            return $this->updateShipmentStatus($statusRequest, $shipment);
+        });
     }
 
     /**
@@ -328,8 +410,8 @@ class ShippingController extends Controller implements HasMiddleware
             $event = ShipmentTrackingEvent::create([
                 'shipment_id' => $shipment->id,
                 'event_name' => $validated['event_name'],
-                'location' => $validated['location'],
-                'description' => $validated['description'],
+                'location' => $validated['location'] ?? null,
+                'description' => $validated['description'] ?? null,
                 'occurred_at' => now(),
             ]);
 
@@ -354,14 +436,14 @@ class ShippingController extends Controller implements HasMiddleware
         $validated = $request->validate([
             'action' => 'required|in:mark_in_transit,mark_delivered,mark_returned',
             'ids' => 'required|array|min:1',
-            'ids.*' => 'integer|exists:shipments,id',
+            'ids.*' => 'integer|distinct|exists:shipments,id',
         ]);
 
         $action = $validated['action'];
         $ids = $validated['ids'];
 
         DB::transaction(function () use ($action, $ids) {
-            $shipments = Shipment::whereIn('id', $ids)->get();
+            $shipments = Shipment::whereIn('id', $ids)->orderBy('id')->lockForUpdate()->get();
 
             foreach ($shipments as $shipment) {
                 $statusMap = [
@@ -372,7 +454,13 @@ class ShippingController extends Controller implements HasMiddleware
 
                 $newStatus = $statusMap[$action] ?? $shipment->status;
 
-                if ($shipment->status === $newStatus) {
+                // Enforce the same eligibility rules as the shipments UI.
+                $eligible = match ($action) {
+                    'mark_in_transit' => in_array($shipment->status, ['pending', 'failed'], true),
+                    'mark_delivered' => $shipment->status === 'in_transit',
+                    'mark_returned' => ! in_array($shipment->status, ['delivered', 'returned'], true),
+                };
+                if (! $eligible) {
                     continue;
                 }
 
@@ -474,11 +562,11 @@ class ShippingController extends Controller implements HasMiddleware
         ]);
 
         $service = Service::create(collect($validated)->except(['provider_user_ids', 'provider_priorities'])->all());
-        
+
         $syncData = [];
         $priorities = $validated['provider_priorities'] ?? [];
         $assignedPriorities = [];
-        
+
         foreach ($validated['provider_user_ids'] ?? [] as $providerId) {
             $pri = $priorities[$providerId] ?? 1;
             if (in_array($pri, $assignedPriorities, true)) {
@@ -489,9 +577,9 @@ class ShippingController extends Controller implements HasMiddleware
             $assignedPriorities[] = $pri;
             $syncData[$providerId] = ['priority' => $pri];
         }
-        
+
         $service->providers()->sync($syncData);
-        
+
         $service->load('providers:id,name,email,phone,department_id,is_active');
 
         return response()->json([
@@ -518,11 +606,11 @@ class ShippingController extends Controller implements HasMiddleware
         ]);
 
         $service->update(collect($validated)->except(['provider_user_ids', 'provider_priorities'])->all());
-        
+
         $syncData = [];
         $priorities = $validated['provider_priorities'] ?? [];
         $assignedPriorities = [];
-        
+
         foreach ($validated['provider_user_ids'] ?? [] as $providerId) {
             $pri = $priorities[$providerId] ?? 1;
             if (in_array($pri, $assignedPriorities, true)) {
@@ -533,9 +621,9 @@ class ShippingController extends Controller implements HasMiddleware
             $assignedPriorities[] = $pri;
             $syncData[$providerId] = ['priority' => $pri];
         }
-        
+
         $service->providers()->sync($syncData);
-        
+
         $service->load('providers:id,name,email,phone,department_id,is_active');
 
         return response()->json([
@@ -600,7 +688,7 @@ class ShippingController extends Controller implements HasMiddleware
             $priorities = $validated['provider_priorities'] ?? [];
             $syncData = [];
             $assignedPriorities = [];
-            
+
             foreach ($providerIds as $providerId) {
                 $pri = $priorities[$providerId] ?? 1;
                 if (in_array($pri, $assignedPriorities, true)) {

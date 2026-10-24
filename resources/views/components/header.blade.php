@@ -514,21 +514,10 @@
     $initialActivities = collect();
     $initialUnreadCount = 0;
     if ($canViewActivities) {
-        $activityQuery = \Spatie\Activitylog\Models\Activity::with(['causer', 'subject'])->latest();
-        if (! $notificationUser->hasRole('Super Admin')) {
-            $activityQuery->where(function ($q) use ($notificationUser) {
-                $q->where('causer_id', $notificationUser->id)
-                  ->orWhere(function ($subQ) use ($notificationUser) {
-                      $subQ->where('subject_type', \App\Modules\Orders\Models\Order::class)
-                           ->whereIn('subject_id', \App\Modules\Orders\Models\Order::where('created_by', $notificationUser->id)->select('id'));
-                  });
-            });
-        }
-        $activityRecords = $activityQuery->limit(50)->get();
-        $initialReadIds = $notificationUser->readActivities()
-            ->whereIn('activity_id', $activityRecords->pluck('id'))
-            ->pluck('activity_id')
-            ->all();
+        $activitySnapshot = app(\App\Services\ActivityFeedService::class)->snapshot($notificationUser);
+        $activityRecords = $activitySnapshot['activities'];
+        $initialReadIds = $activitySnapshot['readIds'];
+        $initialUnreadCount = $activitySnapshot['count'];
         $initialActivities = $activityRecords->map(function ($a) use ($initialReadIds) {
             $causer = $a->causer;
             $formattedDescription = \App\Http\Controllers\AuditLogController::formatActivityDescription($a);
@@ -542,35 +531,21 @@
                 'is_read' => in_array($a->id, $initialReadIds, true),
             ];
         });
-        $recentQuery = \Spatie\Activitylog\Models\Activity::latest('id');
-        if (! $notificationUser->hasRole('Super Admin')) {
-            $recentQuery->where(function ($q) use ($notificationUser) {
-                $q->where('causer_id', $notificationUser->id)
-                  ->orWhere(function ($subQ) use ($notificationUser) {
-                      $subQ->where('subject_type', \App\Modules\Orders\Models\Order::class)
-                           ->whereIn('subject_id', \App\Modules\Orders\Models\Order::where('created_by', $notificationUser->id)->select('id'));
-                  });
-            });
-        }
-        $recentIds = $recentQuery->limit(500)->pluck('id');
-        $readIdsForCount = $notificationUser->readActivities()->whereIn('activity_id', $recentIds)->pluck('activity_id');
-        $initialUnreadCount = $recentIds->diff($readIdsForCount)->count();
+
     }
 
     // -- Alerts Logic --
     $systemAlerts = collect();
 
     // 1. Low Stock Products
-    if (\Illuminate\Support\Facades\Schema::hasTable('products') && \Illuminate\Support\Facades\Schema::hasTable('stocks') && auth()->check() && auth()->user()->can('stockmanagement-view')) {
+    if (auth()->check() && auth()->user()->can('stockmanagement-view') && \Illuminate\Support\Facades\Schema::hasTable('products') && \Illuminate\Support\Facades\Schema::hasTable('stocks')) {
         try {
             $lowStocks = \App\Modules\Catalog\Models\Product::where('manage_stock', true)
                 ->where('min_stock_level', '>', 0)
                 ->withSum('stocks', 'quantity')
-                ->get()
-                ->filter(function($product) {
-                    return (float)($product->stocks_sum_quantity ?? 0) <= $product->min_stock_level;
-                })
-                ->take(5);
+                ->havingRaw('COALESCE(stocks_sum_quantity, 0) <= min_stock_level')
+                ->limit(5)
+                ->get();
             foreach ($lowStocks as $product) {
                 $qty = floatval($product->stocks_sum_quantity ?? 0);
                 $systemAlerts->push((object)[
@@ -587,7 +562,7 @@
     }
 
     // 2. Open Complaints
-    if (\Illuminate\Support\Facades\Schema::hasTable('order_complaints') && auth()->check() && auth()->user()->can('complaints.view')) {
+    if (auth()->check() && auth()->user()->can('complaints.view') && \Illuminate\Support\Facades\Schema::hasTable('order_complaints')) {
         try {
             $openComplaints = \App\Modules\Orders\Models\OrderComplaint::where('status', 'open')
                 ->latest()
@@ -608,7 +583,7 @@
     }
 
     // 3. Pending Leaves
-    if (\Illuminate\Support\Facades\Schema::hasTable('leaves') && auth()->check() && auth()->user()->can('leave-view')) {
+    if (auth()->check() && auth()->user()->can('leave-view') && \Illuminate\Support\Facades\Schema::hasTable('leaves')) {
         try {
             $pendingLeaves = \App\Modules\Users\Models\Leave::with('user')->where('status', 'Pending')
                 ->latest()
@@ -650,7 +625,7 @@
     }
 
     // 5. Overdue Invoices
-    if (\Illuminate\Support\Facades\Schema::hasTable('invoices') && auth()->check() && auth()->user()->can('invoices.view')) {
+    if (auth()->check() && auth()->user()->can('invoices.view') && \Illuminate\Support\Facades\Schema::hasColumn('invoices', 'due_date')) {
         try {
             $overdueInvoices = \App\Modules\Orders\Models\Invoice::where('status', 'unpaid')
                 ->whereNotNull('due_date')
@@ -673,7 +648,7 @@
     }
 
     // 6. Pending Order Returns
-    if (\Illuminate\Support\Facades\Schema::hasTable('order_returns') && auth()->check() && auth()->user()->can('returns.view')) {
+    if (auth()->check() && auth()->user()->can('returns.view') && \Illuminate\Support\Facades\Schema::hasTable('order_returns')) {
         try {
             $pendingReturns = \App\Modules\Orders\Models\OrderReturn::where('status', 'pending')
                 ->latest()
@@ -694,7 +669,7 @@
     }
 
     // 7. Pending Refunds
-    if (\Illuminate\Support\Facades\Schema::hasTable('refunds') && auth()->check() && auth()->user()->can('refunds.view')) {
+    if (auth()->check() && auth()->user()->can('refunds.view') && \Illuminate\Support\Facades\Schema::hasTable('refunds')) {
         try {
             $pendingRefunds = \App\Modules\Orders\Models\Refund::where('status', 'pending')
                 ->latest()
@@ -715,7 +690,7 @@
     }
 
     // 8. Failed Shipments
-    if (\Illuminate\Support\Facades\Schema::hasTable('shipments') && auth()->check() && auth()->user()->can('shipping-view')) {
+    if (auth()->check() && auth()->user()->can('shipping-view') && \Illuminate\Support\Facades\Schema::hasTable('shipments')) {
         try {
             $failedShipments = \App\Modules\Orders\Models\Shipment::where('status', 'failed')
                 ->latest()
@@ -736,7 +711,7 @@
     }
 
     // 9. Pending Stock Adjustments
-    if (\Illuminate\Support\Facades\Schema::hasTable('inventory_adjustments') && auth()->check() && auth()->user()->can('inventoryadjustment-view')) {
+    if (auth()->check() && auth()->user()->can('inventoryadjustment-view') && \Illuminate\Support\Facades\Schema::hasTable('inventory_adjustments')) {
         try {
             $pendingAdjustments = \App\Modules\Inventory\Models\InventoryAdjustment::where('status', 'pending')
                 ->latest()
@@ -757,7 +732,7 @@
     }
 
     // 10. Recently Added Products (Last 24 hours)
-    if (\Illuminate\Support\Facades\Schema::hasTable('products') && auth()->check() && auth()->user()->can('product-view')) {
+    if (auth()->check() && auth()->user()->can('product-view') && \Illuminate\Support\Facades\Schema::hasTable('products')) {
         try {
             $newProducts = \App\Modules\Catalog\Models\Product::where('created_at', '>=', now()->subDay())
                 ->latest()
@@ -1302,6 +1277,8 @@ document.addEventListener('alpine:init', () => {
             count: initialCount || 0,
             otherCount: otherAlertsCount || 0,
             canFetchActivities: Boolean(canFetchActivities),
+            activityTimer: null,
+            fetchingActivities: false,
 
             // Restore persisted dismissed state from localStorage on init
             alertsRead:   localStorage.getItem(alertsKey)   === '1',
@@ -1317,14 +1294,20 @@ document.addEventListener('alpine:init', () => {
             },
 
             init() {
-                // Periodically fetch updates every 3 seconds for instant-like feel
+                // Preserve the existing 30-second refresh without overlapping requests.
                 if (this.canFetchActivities) {
-                    setInterval(() => this.fetchActivities(), 30000);
+                    this.activityTimer = setInterval(() => this.fetchActivities(), 30000);
                 }
             },
 
+            destroy() {
+                clearInterval(this.activityTimer);
+                this.activityTimer = null;
+            },
+
             fetchActivities() {
-                if (!this.canFetchActivities) return;
+                if (!this.canFetchActivities || this.fetchingActivities) return;
+                this.fetchingActivities = true;
                 fetch('/api/activities/recent', {
                     headers: { 
                         'Accept': 'application/json',
@@ -1340,7 +1323,8 @@ document.addEventListener('alpine:init', () => {
                         this.count = data.count;
                     }
                 })
-                .catch(err => console.error('Failed to fetch activities', err));
+                .catch(err => console.error('Failed to fetch activities', err))
+                .finally(() => { this.fetchingActivities = false; });
             },
 
             markAsRead(id) {

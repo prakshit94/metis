@@ -371,6 +371,7 @@ document.addEventListener('alpine:init', () => {
     growthPeriod: 7,
     realActivities: [],
     _activityInterval: null,
+    _activityLoading: false,
 
     // Server-side pagination meta
     currentPage: 1,
@@ -1128,6 +1129,8 @@ document.addEventListener('alpine:init', () => {
     },
 
     async fetchRealActivities() {
+      if (this._activityLoading) return;
+      this._activityLoading = true;
       try {
         const res = await apiFetch('/api/activities/recent');
         if (res && res.activities) {
@@ -1135,6 +1138,8 @@ document.addEventListener('alpine:init', () => {
         }
       } catch (err) {
         console.error('Failed to fetch activities', err);
+      } finally {
+        this._activityLoading = false;
       }
     },
 

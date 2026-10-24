@@ -2,6 +2,7 @@
 
 namespace App\Modules\Users\Models;
 
+use App\Concerns\LogsActivity;
 use App\Modules\Users\Services\AutomaticCoRequest;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
@@ -10,7 +11,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Auditable as AuditableTrait;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Activitylog\LogOptions;
-use Spatie\Activitylog\Traits\LogsActivity;
 
 class Attendance extends Model implements Auditable
 {
