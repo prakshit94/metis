@@ -1,0 +1,38 @@
+[
+  {
+    "test": "bulk payment rejection commits earlier row",
+    "http": 422,
+    "first_row_after": "completed"
+  },
+  {
+    "test": "return exceeds purchased quantity",
+    "http": 302,
+    "ordered": 1,
+    "return_requested": "100.0000"
+  },
+  {
+    "test": "duplicate QC item creates stock twice",
+    "http": 200,
+    "stock": "200.0000"
+  },
+  {
+    "test": "transfer consumes reserved stock",
+    "physical_after": "5.0000",
+    "reserved": "9.0000"
+  },
+  {
+    "test": "payment edit overpays invoice",
+    "http": 200,
+    "invoice_net": 100,
+    "paid": "1000.00"
+  },
+  {
+    "test": "system preference change without explicit preference",
+    "actual": "light",
+    "expected": "dark"
+  },
+  {
+    "test": "blocked browser storage",
+    "actual": "initialization exception"
+  }
+]

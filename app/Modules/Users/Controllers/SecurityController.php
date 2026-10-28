@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace App\Modules\Users\Controllers;
 
 use App\Modules\Core\Controllers\Controller;
-use App\Modules\Users\Models\User;
 use App\Modules\Users\Models\Role;
+use App\Modules\Users\Models\User;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
 
 class SecurityController extends Controller
 {
@@ -22,10 +22,10 @@ class SecurityController extends Controller
     public function sessions(Request $request): JsonResponse
     {
         $user = $request->user();
-        
+
         $tokens = $user->tokens()->orderByDesc('last_used_at')->get()->map(function ($token) use ($request) {
             return [
-                'id' => 'token_' . $token->id,
+                'id' => 'token_'.$token->id,
                 'device' => $token->name,
                 'deviceIcon' => str_contains(strtolower($token->name), 'mobile') ? 'bi-phone' : 'bi-laptop',
                 'location' => 'Unknown Location', // Normally requires a GeoIP service
@@ -49,13 +49,13 @@ class SecurityController extends Controller
                 $icon = $isMobile ? 'bi-phone' : 'bi-laptop';
 
                 return [
-                    'id' => 'session_' . $session->id,
+                    'id' => 'session_'.$session->id,
                     'device' => $deviceType,
                     'deviceIcon' => $icon,
                     'location' => 'Unknown Location',
                     'ip' => $session->ip_address,
-                    'lastActive' => \Carbon\Carbon::createFromTimestamp($session->last_activity)->diffForHumans(),
-                    'current' => $session->id === $request->session()->getId(),
+                    'lastActive' => Carbon::createFromTimestamp($session->last_activity)->diffForHumans(),
+                    'current' => $request->hasSession() && $session->id === $request->session()->getId(),
                 ];
             });
         }
@@ -63,7 +63,7 @@ class SecurityController extends Controller
         $allSessions = $tokens->concat($sessions)->sortByDesc('lastActive')->values();
 
         return response()->json([
-            'data' => $allSessions
+            'data' => $allSessions,
         ]);
     }
 
@@ -84,11 +84,20 @@ class SecurityController extends Controller
                     'timestamp' => $log->attempted_at,
                     'severity' => $log->status === 'success' ? 'success' : 'danger',
                     'icon' => $log->status === 'success' ? 'bi-check-circle' : 'bi-exclamation-triangle',
-                    'details' => $log->user_agent . ' from ' . $log->ip_address,
+                    'details' => $log->user_agent.' from '.$log->ip_address,
                 ];
             });
 
-        return response()->json(['data' => $history]);
+        $events = DB::table('two_factor_security_events')->where('user_id', $request->user()->id)
+            ->orderByDesc('created_at')->limit(50)->get()->map(fn ($event) => [
+                'id' => 'two_factor_'.$event->id, 'type' => 'two_factor_'.$event->event,
+                'message' => 'Two-factor: '.str_replace('_', ' ', $event->event),
+                'timestamp' => Carbon::parse($event->created_at),
+                'severity' => str_contains($event->event, 'failed') ? 'danger' : 'info',
+                'icon' => 'bi-shield-lock', 'details' => 'IP: '.$event->ip_address,
+            ]);
+
+        return response()->json(['data' => $history->concat($events)->sortByDesc('timestamp')->take(50)->values()]);
     }
 
     /**
@@ -129,7 +138,7 @@ class SecurityController extends Controller
         if (config('session.driver') === 'database') {
             DB::table(config('session.table', 'sessions'))
                 ->where('user_id', $user->id)
-                ->where('id', '!=', $request->session()->getId())
+                ->when($request->hasSession(), fn ($query) => $query->where('id', '!=', $request->session()->getId()))
                 ->delete();
         }
 
@@ -145,32 +154,38 @@ class SecurityController extends Controller
 
         if ($user->hasRole('Super Admin')) {
             // System-wide emergency lockdown
-            \Illuminate\Support\Facades\DB::table('personal_access_tokens')->delete();
+            DB::table('two_factor_login_challenges')->delete();
+            DB::table('personal_access_tokens')->delete();
 
             if (config('session.driver') === 'database') {
-                \Illuminate\Support\Facades\DB::table(config('session.table', 'sessions'))->delete();
+                DB::table(config('session.table', 'sessions'))->delete();
             }
 
-            Auth::guard('web')->logout();
-            $request->session()->invalidate();
-            $request->session()->regenerateToken();
+            if ($request->hasSession()) {
+                Auth::guard('web')->logout();
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+            }
 
             return response()->json(['message' => 'System-wide emergency lockdown initiated. All users have been logged out.']);
         }
 
         // Personal account lockdown
+        DB::table('two_factor_login_challenges')->where('user_id', $user->id)->delete();
         $user->update(['password_changed_at' => now()]);
         $user->tokens()->delete();
 
         if (config('session.driver') === 'database') {
-            \Illuminate\Support\Facades\DB::table(config('session.table', 'sessions'))
+            DB::table(config('session.table', 'sessions'))
                 ->where('user_id', $user->id)
                 ->delete();
         }
-        
-        Auth::guard('web')->logout();
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
+
+        if ($request->hasSession()) {
+            Auth::guard('web')->logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+        }
 
         return response()->json(['message' => 'Emergency lockdown initiated. You have been logged out.']);
     }
@@ -256,8 +271,8 @@ class SecurityController extends Controller
     {
         abort_unless($request->user()->can('role-create'), 403);
 
-        $newRoleName = $request->input('new_name', $role->name . ' (Copy)');
-        
+        $newRoleName = $request->input('new_name', $role->name.' (Copy)');
+
         if (Role::where('name', $newRoleName)->exists()) {
             return response()->json(['message' => 'A role with this name already exists.'], 422);
         }

@@ -261,6 +261,8 @@ class RolesAndPermissionsSeeder extends Seeder
         'bulkuser-restore',
         'bulkuser-permanent-delete',
 
+        'office-view', 'office-create', 'office-edit', 'office-delete',
+
         // Teams (LOB / State)
         'team-view',
         'team-create',
@@ -288,8 +290,6 @@ class RolesAndPermissionsSeeder extends Seeder
         'leave-create',
         'leave-edit',
         'leave-delete',
-        'bulkuser-restore',
-        'bulkuser-permanent-delete',
 
         // Audit Logs
         'audit-log-view',
@@ -592,7 +592,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'orders.receipt',
             'orders.bulk_status',
             'orders.bulk_cancel',
-        'orders.bulk_return',
+            'orders.bulk_return',
             'orders.bulk_print',
             'orders.export',
             'orders.revert_status',
@@ -654,7 +654,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'orders.deliver',
             'orders.bulk_status',
             'orders.bulk_cancel',
-        'orders.bulk_return',
+            'orders.bulk_return',
             'orders.bulk_print',
             'orders.export',
             'chat-view',
@@ -842,20 +842,25 @@ class RolesAndPermissionsSeeder extends Seeder
         ],
     ];
 
+    public static function permissions(): array
+    {
+        return array_values(array_unique(array_merge(\App\Services\FeaturePermissions::expand(self::PERMISSIONS), array_keys(\App\Services\FeaturePermissions::legacy()))));
+    }
+
     public function run(): void
     {
         // Reset the cached roles and permissions
         app(PermissionRegistrar::class)->forgetCachedPermissions();
 
         // ── Create permissions ───────────────────────────────────────────────
-        foreach (\App\Support\HrPermissions::expand(self::PERMISSIONS) as $permissionName) {
+        foreach (self::permissions() as $permissionName) {
             Permission::firstOrCreate([
                 'name' => $permissionName,
                 'guard_name' => 'web',
             ]);
         }
 
-        $this->command->info('✔ Permissions created: '.implode(', ', self::PERMISSIONS));
+        $this->command?->info('✔ Permissions created: '.count(self::permissions()));
 
         // ── Create roles and sync permissions ────────────────────────────────
         foreach (self::ROLE_PERMISSIONS as $roleName => $permissions) {
@@ -868,7 +873,11 @@ class RolesAndPermissionsSeeder extends Seeder
                 $permissions = array_values(array_diff($permissions, ['chat-create-group']));
             }
 
-            $role->syncPermissions(\App\Support\HrPermissions::expand($permissions));
+            $permissions = \App\Services\FeaturePermissions::expand($permissions);
+            if ($roleName !== 'Super Admin') {
+                $permissions = array_values(array_diff($permissions, ['security-mail-view', 'security-mail-edit', 'security-mail-test']));
+            }
+            $role->syncPermissions($permissions);
 
             $this->command->info("✔ Role [{$roleName}] seeded".(! empty($permissions) ? ' with: '.implode(', ', $permissions) : '.'));
         }

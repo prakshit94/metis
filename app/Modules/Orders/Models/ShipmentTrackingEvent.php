@@ -12,6 +12,7 @@ class ShipmentTrackingEvent extends Model implements Auditable
 
     protected $fillable = [
         'shipment_id',
+        'provider_event_key',
         'event_name',
         'location',
         'description',

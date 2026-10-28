@@ -15,7 +15,13 @@ class CallTagAdminController extends Controller implements HasMiddleware
 {
     public static function middleware(): array
     {
-        return [new Middleware('permission:settings-view')];
+        return [
+            new Middleware('permission:calltag-view', only: ['index']),
+            new Middleware('permission:calltag-create', only: ['store']),
+            new Middleware('permission:calltag-edit', only: ['update']),
+            new Middleware('permission:calltag-delete', only: ['destroy']),
+            new Middleware('permission:calltag-edit|calltag-delete', only: ['bulkAction']),
+        ];
     }
 
     private function validateFields(array $data): void
@@ -77,6 +83,10 @@ class CallTagAdminController extends Controller implements HasMiddleware
                     $tagRows[] = ['id' => $l3->id, 'name' => $l3->name, 'active' => (bool) $l3->is_active, 'ancestors' => [$l1->id, $l2->id], 'path' => $l1->name.' '.$l2->name.' '.$l3->name];
                 }
             }
+        }
+
+        if (request()->is('api/*')) {
+            return response()->json(compact('tags', 'stats', 'tagRows'));
         }
 
         return view('call-tags.index', compact('tags', 'stats', 'tagRows'));
@@ -229,6 +239,7 @@ class CallTagAdminController extends Controller implements HasMiddleware
             'ids' => 'required|array|min:1',
             'ids.*' => 'integer|exists:call_tags,id',
         ]);
+        abort_unless($request->user()?->can($request->input('action') === 'delete' ? 'calltag-delete' : 'calltag-edit'), 403);
 
         $ids = $data['ids'];
         $action = $data['action'];

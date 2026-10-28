@@ -3,27 +3,54 @@
 namespace App\Modules\Orders\Controllers;
 
 use App\Modules\Core\Controllers\Controller;
+use App\Modules\Orders\Models\Invoice;
 use App\Modules\Orders\Models\Payment;
+use App\Services\EnsureRecordVisibility;
 use App\Services\FinancialService;
+use App\Services\RecordVisibility;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Response;
+use Illuminate\Validation\ValidationException;
 
 class PaymentController extends Controller implements HasMiddleware
 {
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:orders.view', only: ['index', 'show', 'exportSelected']),
-            new Middleware('permission:orders.receipt', only: ['store', 'update', 'bulkStatus']),
+            new Middleware(EnsureRecordVisibility::class),
+            new Middleware('permission:payments.view', only: ['index', 'show']),
+            new Middleware('permission:payments.export', only: ['exportSelected']),
+            new Middleware('permission:payments.create', only: ['store']),
+            new Middleware('permission:payments.edit', only: ['update', 'bulkStatus']),
+            new Middleware('permission:payments.delete', only: ['destroy']),
         ];
+    }
+
+    public function store(Request $request, FinancialService $financialService)
+    {
+        $validated = $request->validate([
+            'invoice_id' => 'required_without:order_id|nullable|integer|exists:invoices,id',
+            'order_id' => 'required_without:invoice_id|nullable|integer|exists:orders,id',
+            'amount' => 'required|numeric|gt:0', 'payment_method' => 'required|string|max:255',
+            'transaction_id' => 'nullable|string|max:255', 'payment_date' => 'nullable|date',
+        ]);
+        $invoice = isset($validated['invoice_id']) ? Invoice::findOrFail($validated['invoice_id'])
+            : Invoice::where('order_id', $validated['order_id'])->latest('id')->firstOrFail();
+        if (isset($validated['order_id']) && (int) $invoice->order_id !== (int) $validated['order_id']) {
+            throw ValidationException::withMessages(['invoice_id' => 'The invoice does not belong to this order.']);
+        }
+        $payment = $financialService->processPayment($invoice, (float) $validated['amount'], $validated['payment_method'], $validated['transaction_id'] ?? null, $validated['payment_date'] ?? null);
+
+        return response()->json(['success' => true, 'payment' => $payment], 201);
     }
 
     public function index(Request $request)
     {
         $query = Payment::withTrashed()->with(['order.party', 'order.orderReturns', 'order.shipments', 'invoice.payments', 'invoice.refunds', 'recorder']);
+        app(RecordVisibility::class)->financial($query);
 
         if ($request->filled('search')) {
             $s = trim($request->search);
@@ -65,7 +92,7 @@ class PaymentController extends Controller implements HasMiddleware
             $query->orderBy('id', 'desc');
         }
 
-        $payments = $query->paginate($request->integer('limit', 10));
+        $payments = $query->paginate(min(max($request->integer('limit', 10), 1), 200));
 
         $payments->getCollection()->each(fn ($payment) => $payment->order?->makeHidden(['orderReturns', 'shipments']));
 
@@ -121,34 +148,12 @@ class PaymentController extends Controller implements HasMiddleware
             'status' => 'required|in:pending,authorized,completed,failed,refunded',
         ]);
 
-        DB::transaction(function () use ($validated, &$errorResponse) {
-            $payments = Payment::whereIn('id', $validated['ids'])->get();
+        DB::transaction(function () use ($validated) {
+            $payments = Payment::whereIn('id', $validated['ids'])->orderBy('invoice_id')->orderBy('id')->get();
             foreach ($payments as $payment) {
-                if ($payment->status === 'refunded' && $validated['status'] !== 'refunded') {
-                    $errorResponse = response()->json([
-                        'success' => false,
-                        'message' => "Payment #{$payment->payment_no} has already been refunded and cannot be modified.",
-                    ], 422);
-
-                    return false; // Break transaction
-                }
-                if ($validated['status'] === 'refunded' && $payment->status !== 'completed') {
-                    $errorResponse = response()->json([
-                        'success' => false,
-                        'message' => "Payment #{$payment->payment_no} cannot be refunded because it is not completed.",
-                    ], 422);
-
-                    return false; // Break transaction
-                }
-
-                // Updating model instance ensures boot / saved events trigger accounting & invoice updates
-                $payment->update(['status' => $validated['status']]);
+                app(FinancialService::class)->amendPayment($payment, ['status' => $validated['status']]);
             }
-        });
-
-        if (isset($errorResponse)) {
-            return $errorResponse;
-        }
+        }, 3);
 
         return response()->json([
             'success' => true,
@@ -166,7 +171,7 @@ class PaymentController extends Controller implements HasMiddleware
             'payment_date' => 'required|date',
         ]);
 
-        $payment->update($validated);
+        $payment = app(FinancialService::class)->amendPayment($payment, $validated);
 
         return response()->json([
             'success' => true,

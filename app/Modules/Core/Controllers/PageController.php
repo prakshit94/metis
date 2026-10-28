@@ -5,22 +5,51 @@ namespace App\Modules\Core\Controllers;
 use App\Models\CallLog;
 use App\Modules\Catalog\Models\Service;
 use App\Modules\Customers\Models\Party;
+use App\Modules\Inventory\Controllers\WarehouseDashboardController;
 use App\Modules\Inventory\Models\Stock;
 use App\Modules\Orders\Models\Order;
 use App\Modules\Orders\Models\OrderItem;
+use App\Modules\Orders\Models\ReturnReason;
+use App\Modules\Users\Models\Team;
 use App\Modules\Users\Models\User;
 use Carbon\Carbon;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
-class PageController extends Controller
+class PageController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:dashboard-view|warehouse-dashboard-view', only: ['dashboard']),
+            new Middleware('permission:analytics-view', only: ['analytics', 'analyticsData']),
+            new Middleware('permission:reports-view', only: ['reports']),
+            new Middleware('permission:reports-export', only: ['exportReports']),
+            new Middleware('permission:user-view', only: ['users']),
+            new Middleware('permission:team-view', only: ['teams']),
+            new Middleware('permission:customer-view', only: ['customers']),
+            new Middleware('permission:role-view|permission-view', only: ['rolesPermissions']),
+            new Middleware('permission:messages-view', only: ['messages']),
+            new Middleware('permission:calendar-view', only: ['calendar']),
+            new Middleware('permission:files-view', only: ['files']),
+            new Middleware('permission:forms-view', only: ['forms']),
+            new Middleware('permission:help-view', only: ['help']),
+            new Middleware('permission:settings-view', only: ['elementsOverview', 'elementsAlerts', 'elementsBadges', 'elementsButtons', 'elementsCards', 'elementsForms', 'elementsModals', 'elementsTables']),
+        ];
+    }
+
     public function dashboard(Request $request)
     {
         $user = auth()->user();
 
         // Redirect warehouse personnel directly to their command center
         if ($user && $user->can('warehouse-dashboard-view') && ! $user->can('dashboard-view')) {
+            if ($request->is('api/*')) {
+                return app(WarehouseDashboardController::class)->index($request);
+            }
+
             return redirect()->route('inventory.dashboard');
         }
 
@@ -38,19 +67,37 @@ class PageController extends Controller
 
             $allowedStatuses = [];
             if ($user) {
-                if ($user->can('orders.view.future_order')) $allowedStatuses[] = 'future_order';
+                if ($user->can('orders.view.future_order')) {
+                    $allowedStatuses[] = 'future_order';
+                }
                 if ($user->can('orders.view.pending')) {
                     $allowedStatuses[] = 'pending';
                     $allowedStatuses[] = 'pending_confirmation';
                 }
-                if ($user->can('orders.view.confirmed')) $allowedStatuses[] = 'confirmed';
-                if ($user->can('orders.view.processing')) $allowedStatuses[] = 'processing';
-                if ($user->can('orders.view.ready_to_ship')) $allowedStatuses[] = 'ready_to_ship';
-                if ($user->can('orders.view.dispatched')) $allowedStatuses[] = 'dispatched';
-                if ($user->can('orders.view.delivered')) $allowedStatuses[] = 'delivered';
-                if ($user->can('orders.view.return_requested')) $allowedStatuses[] = 'return_requested';
-                if ($user->can('orders.view.returned')) $allowedStatuses[] = 'returned';
-                if ($user->can('orders.view.cancelled')) $allowedStatuses[] = 'cancelled';
+                if ($user->can('orders.view.confirmed')) {
+                    $allowedStatuses[] = 'confirmed';
+                }
+                if ($user->can('orders.view.processing')) {
+                    $allowedStatuses[] = 'processing';
+                }
+                if ($user->can('orders.view.ready_to_ship')) {
+                    $allowedStatuses[] = 'ready_to_ship';
+                }
+                if ($user->can('orders.view.dispatched')) {
+                    $allowedStatuses[] = 'dispatched';
+                }
+                if ($user->can('orders.view.delivered')) {
+                    $allowedStatuses[] = 'delivered';
+                }
+                if ($user->can('orders.view.return_requested')) {
+                    $allowedStatuses[] = 'return_requested';
+                }
+                if ($user->can('orders.view.returned')) {
+                    $allowedStatuses[] = 'returned';
+                }
+                if ($user->can('orders.view.cancelled')) {
+                    $allowedStatuses[] = 'cancelled';
+                }
             }
 
             if (empty($allowedStatuses)) {
@@ -77,7 +124,7 @@ class PageController extends Controller
         if ($lobStateName = $user?->lob_state_name) {
             $orderQuery->where(function ($q) use ($lobStateName, $user) {
                 $q->where('shipping_state', $lobStateName)
-                  ->orWhere('created_by', $user->id);
+                    ->orWhere('created_by', $user->id);
             });
             // Customers: scope by address state (via default address relationship)
             $customerQuery->where(function ($q) use ($lobStateName, $user) {
@@ -88,7 +135,7 @@ class PageController extends Controller
         }
 
         $baseOrderQuery = clone $orderQuery;
-        
+
         $filter = $request->input('filter', 'today');
         if ($filter === 'today') {
             $filterStart = Carbon::today();
@@ -317,37 +364,60 @@ class PageController extends Controller
                 if ($item->product_variant_id) {
                     $variantName = $item->dashboard_variant_name;
                     if ($variantName) {
-                        $variantStr = ' (' . $variantName . ')';
+                        $variantStr = ' ('.$variantName.')';
                     }
                 }
+
                 return [
-                    'name' => $name . $variantStr,
-                    'qty'  => (float)$item->quantity,
+                    'name' => $name.$variantStr,
+                    'qty' => (float) $item->quantity,
                 ];
             })->toArray();
 
-                        $statusTooltip = null;
+            $statusTooltip = null;
             if (in_array($order->status, ['cancelled', 'confirmed', 'processing', 'ready_to_ship', 'delivered', 'returned'])) {
                 $log = $order->statusLogs->where('status', $order->status)->whereNotNull('notes')->first();
-                if ($log) $statusTooltip = $log->notes;
+                if ($log) {
+                    $statusTooltip = $log->notes;
+                }
             } elseif ($order->status === 'pending_confirmation') {
                 $tooltip = [];
-                if ($order->scheduled_confirmation_date) $tooltip[] = 'Scheduled: ' . \Carbon\Carbon::parse($order->scheduled_confirmation_date)->format('d M, h:i A');
-                if ($order->confirmation_attempts > 0) $tooltip[] = 'Attempts: ' . $order->confirmation_attempts;
-                if ($tooltip) $statusTooltip = implode("\n", $tooltip);
+                if ($order->scheduled_confirmation_date) {
+                    $tooltip[] = 'Scheduled: '.Carbon::parse($order->scheduled_confirmation_date)->format('d M, h:i A');
+                }
+                if ($order->confirmation_attempts > 0) {
+                    $tooltip[] = 'Attempts: '.$order->confirmation_attempts;
+                }
+                if ($tooltip) {
+                    $statusTooltip = implode("\n", $tooltip);
+                }
             } elseif (in_array($order->status, ['dispatched', 'delivery_attempted']) && $order->shipments->isNotEmpty()) {
                 $lastShipment = $order->shipments->last();
                 $tooltip = [];
-                if ($lastShipment->next_followup_date) $tooltip[] = 'Scheduled: ' . \Carbon\Carbon::parse($lastShipment->next_followup_date)->format('d M, h:i A');
-                if ($lastShipment->reschedule_reason) $tooltip[] = 'Reason: ' . $lastShipment->reschedule_reason;
-                if ($lastShipment->delivery_attempts > 0) $tooltip[] = 'Attempts: ' . $lastShipment->delivery_attempts;
-                if ($tooltip) $statusTooltip = implode("\n", $tooltip);
+                if ($lastShipment->next_followup_date) {
+                    $tooltip[] = 'Scheduled: '.Carbon::parse($lastShipment->next_followup_date)->format('d M, h:i A');
+                }
+                if ($lastShipment->reschedule_reason) {
+                    $tooltip[] = 'Reason: '.$lastShipment->reschedule_reason;
+                }
+                if ($lastShipment->delivery_attempts > 0) {
+                    $tooltip[] = 'Attempts: '.$lastShipment->delivery_attempts;
+                }
+                if ($tooltip) {
+                    $statusTooltip = implode("\n", $tooltip);
+                }
             } elseif ($order->status === 'return_requested' && $order->orderReturns->isNotEmpty()) {
                 $lastReturn = $order->orderReturns->last();
                 $tooltip = [];
-                if ($lastReturn->reason) $tooltip[] = 'Reason: ' . $lastReturn->reason;
-                if ($lastReturn->notes) $tooltip[] = 'Notes: ' . $lastReturn->notes;
-                if ($tooltip) $statusTooltip = implode("\n", $tooltip);
+                if ($lastReturn->reason) {
+                    $tooltip[] = 'Reason: '.$lastReturn->reason;
+                }
+                if ($lastReturn->notes) {
+                    $tooltip[] = 'Notes: '.$lastReturn->notes;
+                }
+                if ($tooltip) {
+                    $statusTooltip = implode("\n", $tooltip);
+                }
             }
 
             $paymentStatusText = 'Unpaid';
@@ -361,23 +431,23 @@ class PageController extends Controller
             }
 
             return [
-                'id'       => $order->id,
+                'id' => $order->id,
                 'order_no' => $order->order_no,
                 'customer' => $order->party ? $order->party->name : 'Unknown',
-                'phone'    => $order->party ? $order->party->phone : null,
-                'items'    => $itemsList,
-                'amount'   => 'Rs '.number_format($order->net_amount, 2),
-                'creator'  => $order->creator ? $order->creator->name : 'System',
-                'payment'  => [
-                    'text'  => $paymentStatusText,
+                'phone' => $order->party ? $order->party->phone : null,
+                'items' => $itemsList,
+                'amount' => 'Rs '.number_format($order->net_amount, 2),
+                'creator' => $order->creator ? $order->creator->name : 'System',
+                'payment' => [
+                    'text' => $paymentStatusText,
                     'class' => $paymentStatusClass,
                 ],
-                'status'   => [
-                    'text'  => $order->statusLabel(),
+                'status' => [
+                    'text' => $order->statusLabel(),
                     'class' => $statusClass,
                     'tooltip' => $statusTooltip,
                 ],
-                'date'     => $order->order_date ? $order->order_date->format('M d, Y h:i A') : 'N/A',
+                'date' => $order->order_date ? $order->order_date->format('M d, Y h:i A') : 'N/A',
             ];
         })->toArray();
 
@@ -397,37 +467,60 @@ class PageController extends Controller
                 if ($item->product_variant_id) {
                     $variantName = $item->dashboard_variant_name;
                     if ($variantName) {
-                        $variantStr = ' (' . $variantName . ')';
+                        $variantStr = ' ('.$variantName.')';
                     }
                 }
+
                 return [
-                    'name' => $name . $variantStr,
-                    'qty'  => (float)$item->quantity,
+                    'name' => $name.$variantStr,
+                    'qty' => (float) $item->quantity,
                 ];
             })->toArray();
 
-                        $statusTooltip = null;
+            $statusTooltip = null;
             if (in_array($order->status, ['cancelled', 'confirmed', 'processing', 'ready_to_ship', 'delivered', 'returned'])) {
                 $log = $order->statusLogs->where('status', $order->status)->whereNotNull('notes')->first();
-                if ($log) $statusTooltip = $log->notes;
+                if ($log) {
+                    $statusTooltip = $log->notes;
+                }
             } elseif ($order->status === 'pending_confirmation') {
                 $tooltip = [];
-                if ($order->scheduled_confirmation_date) $tooltip[] = 'Scheduled: ' . \Carbon\Carbon::parse($order->scheduled_confirmation_date)->format('d M, h:i A');
-                if ($order->confirmation_attempts > 0) $tooltip[] = 'Attempts: ' . $order->confirmation_attempts;
-                if ($tooltip) $statusTooltip = implode("\n", $tooltip);
+                if ($order->scheduled_confirmation_date) {
+                    $tooltip[] = 'Scheduled: '.Carbon::parse($order->scheduled_confirmation_date)->format('d M, h:i A');
+                }
+                if ($order->confirmation_attempts > 0) {
+                    $tooltip[] = 'Attempts: '.$order->confirmation_attempts;
+                }
+                if ($tooltip) {
+                    $statusTooltip = implode("\n", $tooltip);
+                }
             } elseif (in_array($order->status, ['dispatched', 'delivery_attempted']) && $order->shipments->isNotEmpty()) {
                 $lastShipment = $order->shipments->last();
                 $tooltip = [];
-                if ($lastShipment->next_followup_date) $tooltip[] = 'Scheduled: ' . \Carbon\Carbon::parse($lastShipment->next_followup_date)->format('d M, h:i A');
-                if ($lastShipment->reschedule_reason) $tooltip[] = 'Reason: ' . $lastShipment->reschedule_reason;
-                if ($lastShipment->delivery_attempts > 0) $tooltip[] = 'Attempts: ' . $lastShipment->delivery_attempts;
-                if ($tooltip) $statusTooltip = implode("\n", $tooltip);
+                if ($lastShipment->next_followup_date) {
+                    $tooltip[] = 'Scheduled: '.Carbon::parse($lastShipment->next_followup_date)->format('d M, h:i A');
+                }
+                if ($lastShipment->reschedule_reason) {
+                    $tooltip[] = 'Reason: '.$lastShipment->reschedule_reason;
+                }
+                if ($lastShipment->delivery_attempts > 0) {
+                    $tooltip[] = 'Attempts: '.$lastShipment->delivery_attempts;
+                }
+                if ($tooltip) {
+                    $statusTooltip = implode("\n", $tooltip);
+                }
             } elseif ($order->status === 'return_requested' && $order->orderReturns->isNotEmpty()) {
                 $lastReturn = $order->orderReturns->last();
                 $tooltip = [];
-                if ($lastReturn->reason) $tooltip[] = 'Reason: ' . $lastReturn->reason;
-                if ($lastReturn->notes) $tooltip[] = 'Notes: ' . $lastReturn->notes;
-                if ($tooltip) $statusTooltip = implode("\n", $tooltip);
+                if ($lastReturn->reason) {
+                    $tooltip[] = 'Reason: '.$lastReturn->reason;
+                }
+                if ($lastReturn->notes) {
+                    $tooltip[] = 'Notes: '.$lastReturn->notes;
+                }
+                if ($tooltip) {
+                    $statusTooltip = implode("\n", $tooltip);
+                }
             }
 
             $paymentStatusText = 'Unpaid';
@@ -441,22 +534,22 @@ class PageController extends Controller
             }
 
             return [
-                'id'            => $order->id,
-                'order_no'      => $order->order_no,
-                'customer'      => $order->party ? $order->party->name : 'Unknown',
-                'phone'         => $order->party ? $order->party->phone : null,
-                'items'         => $itemsList,
-                'amount'        => 'Rs '.number_format($order->net_amount, 2),
-                'creator'       => $order->creator ? $order->creator->name : 'System',
-                'payment'       => [
-                    'text'  => $paymentStatusText,
+                'id' => $order->id,
+                'order_no' => $order->order_no,
+                'customer' => $order->party ? $order->party->name : 'Unknown',
+                'phone' => $order->party ? $order->party->phone : null,
+                'items' => $itemsList,
+                'amount' => 'Rs '.number_format($order->net_amount, 2),
+                'creator' => $order->creator ? $order->creator->name : 'System',
+                'payment' => [
+                    'text' => $paymentStatusText,
                     'class' => $paymentStatusClass,
                 ],
-                'status'        => [
-                    'text'  => 'Future Order',
+                'status' => [
+                    'text' => 'Future Order',
                     'class' => $statusClass,
                 ],
-                'placed_date'   => $order->order_date ? $order->order_date->format('M d, Y') : 'N/A',
+                'placed_date' => $order->order_date ? $order->order_date->format('M d, Y') : 'N/A',
                 'scheduled_for' => $order->future_order_date ? Carbon::parse($order->future_order_date)->format('M d, Y') : 'N/A',
             ];
         })->toArray();
@@ -586,12 +679,12 @@ class PageController extends Controller
 
             // ── KPI: Inward Payments & Outward Payments ───────────────────────
             $inwardPayments = $inwardTotals->where('status', 'completed')->sum('amount');
-            
+
             $legacyOutward = $outwardTotals->where('status', 'completed')->sum('amount');
             $newOutward = DB::table('purchase_order_payments')
                 ->whereBetween('payment_date', [$startStr, $endStr])
                 ->sum('amount');
-                
+
             $outwardPayments = $legacyOutward + $newOutward;
 
             // ── KPI: Sales Outstanding (unpaid/partial invoices on sale orders) ─
@@ -612,16 +705,16 @@ class PageController extends Controller
                     )) as total_paid
                 ')
                 ->first();
-            
+
             $salesOutstanding = max(0, ($salesOutstandingData->total_amount ?? 0) - ($salesOutstandingData->total_paid ?? 0));
             $salesOutstandingCount = $salesOutstandingData->count ?? 0;
 
             // ── KPI: Purchase Outstanding ─────────────────────────────────────
             $purchaseOutstanding = DB::table('purchase_orders')
                 ->whereNotIn('status', ['rejected'])
-                ->where(function($q) {
+                ->where(function ($q) {
                     $q->whereNull('payment_status')
-                      ->orWhere('payment_status', '!=', 'paid');
+                        ->orWhere('payment_status', '!=', 'paid');
                 })
                 ->whereNull('deleted_at')
                 ->selectRaw('SUM(net_amount - COALESCE(paid_amount, 0)) as amount')
@@ -806,9 +899,9 @@ class PageController extends Controller
             $purchaseDue = DB::table('purchase_orders')
                 ->join('suppliers', 'purchase_orders.supplier_id', '=', 'suppliers.id')
                 ->whereNotIn('purchase_orders.status', ['rejected', 'cancelled'])
-                ->where(function($q) {
+                ->where(function ($q) {
                     $q->whereNull('purchase_orders.payment_status')
-                      ->orWhere('purchase_orders.payment_status', '!=', 'paid');
+                        ->orWhere('purchase_orders.payment_status', '!=', 'paid');
                 })
                 ->whereNull('purchase_orders.deleted_at')
                 ->select(
@@ -985,7 +1078,10 @@ class PageController extends Controller
 
     public function users()
     {
-        $teams = \App\Modules\Users\Models\Team::where('is_active', true)->get();
+        abort_unless(auth()->user()?->can('user-view'), 403);
+        $teamId = auth()->user()->lob_team_id;
+        $teams = Team::where('is_active', true)->when($teamId, fn ($query) => $query->whereKey($teamId))->get();
+
         return view('users.index', compact('teams'));
     }
 
@@ -1051,12 +1147,18 @@ class PageController extends Controller
 
     public function reports(Request $request)
     {
+        if ($request->is('api/*')) {
+            return response()->json(['data' => array_map(fn ($type) => ['type' => $type, 'download_url' => url('/api/reports/export').'?type='.$type, 'format' => 'csv'], ['sales_overview', 'india_post', 'product_sales', 'sales_region', 'payment_reconciliation', 'stock_valuation', 'stock_ledger', 'low_stock', 'po_fulfillment', 'grn_discrepancy', 'call_performance', 'call_tagging', 'customer_retention', 'return_analysis', 'audit_trail', 'suppliers_report', 'attendance_report'])]);
+        }
+
         return view('reports');
     }
 
     public function exportReports(Request $request)
     {
         $type = $request->get('type', 'sales_overview');
+        abort_unless(is_string($type) && in_array($type, \App\Services\FeaturePermissions::REPORTS, true), 404);
+        abort_unless($request->user()?->can('reports.export.'.$type), 403);
         $dateFrom = $request->get('from');
         $dateTo = $request->get('to');
 
@@ -1167,9 +1269,9 @@ class PageController extends Controller
 
         $callback = function () use ($query, $indiaPost) {
             $file = fopen('php://output', 'w');
-            
+
             // Output BOM to fix UTF-8 in Excel
-            fputs($file, $bom = (chr(0xEF) . chr(0xBB) . chr(0xBF)));
+            fwrite($file, $bom = (chr(0xEF).chr(0xBB).chr(0xBF)));
 
             $columns = [
                 'Order ID', 'Order No', 'Order Date', 'Status', 'Order Type',
@@ -1271,6 +1373,7 @@ class PageController extends Controller
                         $village = $order->shippingVillage ?? $order->shippingAddress?->village;
                         $villageFields = ['village_name' => 'village_name', 'post_office' => 'post_so_name',
                             'taluka' => 'taluka_name', 'district' => 'district_name', 'state' => 'state_name', 'pincode' => 'pincode'];
+
                         return isset($villageFields[$field]) ? ($village?->getAttribute($villageFields[$field]) ?? '') : '';
                     };
 
@@ -1307,7 +1410,7 @@ class PageController extends Controller
                     $statusLogNotes = $statusLogs->pluck('notes')->map(fn ($value) => $value ?? '')->implode(' | ');
                     $statusLogChangedByNames = $statusLogs->map(fn ($log) => $log->user?->name ?? '')->implode(' | ');
                     $statusLogCreatedAt = $statusLogs->pluck('created_at')->map(fn ($value) => $value?->toDateTimeString() ?? '')->implode(' | ');
-                    
+
                     $commonOrderData = [
                         $order->id, $order->order_no, $order->order_date, $order->status, $order->type,
                         $order->total_amount, $order->tax_amount, $order->discount_amount, $order->net_amount,
@@ -1403,10 +1506,10 @@ class PageController extends Controller
                     'products.id'
                 )
                 ->select(
-                    'products.id', 'products.name', 'products.sku', 
+                    'products.id', 'products.name', 'products.sku',
                     'categories.name as category_name', 'brands.name as brand_name',
-                    DB::raw('SUM(order_items.quantity) as total_qty'), 
-                    DB::raw('AVG(order_items.unit_price) as avg_price'), 
+                    DB::raw('SUM(order_items.quantity) as total_qty'),
+                    DB::raw('AVG(order_items.unit_price) as avg_price'),
                     DB::raw('SUM(order_items.total_amount) as total_revenue'),
                     DB::raw('COALESCE(MAX(product_stock.total_stock), 0) as total_stock')
                 )
@@ -1415,10 +1518,10 @@ class PageController extends Controller
                 ->orderByDesc('total_qty');
 
             if ($dateFrom) {
-                $query->where('orders.order_date', '>=', \Carbon\Carbon::parse($dateFrom)->startOfDay());
+                $query->where('orders.order_date', '>=', Carbon::parse($dateFrom)->startOfDay());
             }
             if ($dateTo) {
-                $query->where('orders.order_date', '<=', \Carbon\Carbon::parse($dateTo)->endOfDay());
+                $query->where('orders.order_date', '<=', Carbon::parse($dateTo)->endOfDay());
             }
 
             $cursor = $query->cursor();
@@ -1472,21 +1575,21 @@ class PageController extends Controller
                 ->leftJoin('parties', 'orders.party_id', '=', 'parties.id')
                 ->select(
                     'payments.id', 'orders.order_no', 'parties.firstname', 'parties.lastname', 'parties.phone',
-                    'payments.payment_method as payment_mode', 'payments.amount', 'payments.status', 'payments.transaction_id', 
+                    'payments.payment_method as payment_mode', 'payments.amount', 'payments.status', 'payments.transaction_id',
                     'payments.payment_no as reference_number', 'payments.created_at'
                 )
                 ->orderBy('payments.id');
 
             if ($dateFrom) {
-                $query->where('payments.created_at', '>=', \Carbon\Carbon::parse($dateFrom)->startOfDay());
+                $query->where('payments.created_at', '>=', Carbon::parse($dateFrom)->startOfDay());
             }
             if ($dateTo) {
-                $query->where('payments.created_at', '<=', \Carbon\Carbon::parse($dateTo)->endOfDay());
+                $query->where('payments.created_at', '<=', Carbon::parse($dateTo)->endOfDay());
             }
 
             $query->chunk(100, function ($rows) use ($file) {
                 foreach ($rows as $row) {
-                    $name = trim($row->firstname . ' ' . $row->lastname);
+                    $name = trim($row->firstname.' '.$row->lastname);
                     fputcsv($file, [$row->id, $row->order_no, $name, $row->phone, $row->payment_mode, $row->amount, $row->status, $row->transaction_id, $row->reference_number, $row->created_at]);
                 }
             });
@@ -1538,8 +1641,8 @@ class PageController extends Controller
                 ->leftJoin('products', 'stocks.product_id', '=', 'products.id')
                 ->leftJoin('warehouses', 'stocks.warehouse_id', '=', 'warehouses.id')
                 ->select(
-                    'products.sku', 'products.name', 'warehouses.name as warehouse_name', 
-                    'stocks.quantity', 'stocks.reserved_qty', 
+                    'products.sku', 'products.name', 'warehouses.name as warehouse_name',
+                    'stocks.quantity', 'stocks.reserved_qty',
                     DB::raw('(stocks.quantity - stocks.reserved_qty) as available_quantity')
                 )
                 ->whereRaw('(stocks.quantity - stocks.reserved_qty) < 10')
@@ -1565,20 +1668,20 @@ class PageController extends Controller
             $query = DB::table('purchase_orders')
                 ->leftJoin('parties', 'purchase_orders.supplier_id', '=', 'parties.id')
                 ->select(
-                    'purchase_orders.po_number', 
+                    'purchase_orders.po_number',
                     DB::raw("CONCAT(COALESCE(parties.firstname,''), ' ', COALESCE(parties.lastname,'')) as supplier_name"),
-                    'purchase_orders.created_at', 
-                    'purchase_orders.expected_delivery_date', 
-                    'purchase_orders.net_amount', 
+                    'purchase_orders.created_at',
+                    'purchase_orders.expected_delivery_date',
+                    'purchase_orders.net_amount',
                     'purchase_orders.status'
                 )
                 ->orderBy('purchase_orders.id');
 
             if ($dateFrom) {
-                $query->where('purchase_orders.created_at', '>=', \Carbon\Carbon::parse($dateFrom)->startOfDay());
+                $query->where('purchase_orders.created_at', '>=', Carbon::parse($dateFrom)->startOfDay());
             }
             if ($dateTo) {
-                $query->where('purchase_orders.created_at', '<=', \Carbon\Carbon::parse($dateTo)->endOfDay());
+                $query->where('purchase_orders.created_at', '<=', Carbon::parse($dateTo)->endOfDay());
             }
 
             $query->chunk(100, function ($rows) use ($file) {
@@ -1603,19 +1706,19 @@ class PageController extends Controller
                 ->leftJoin('goods_receipts', 'goods_receipt_items.goods_receipt_id', '=', 'goods_receipts.id')
                 ->leftJoin('products', 'goods_receipt_items.product_id', '=', 'products.id')
                 ->select(
-                    'goods_receipts.grn_number', 
-                    'products.sku', 
-                    'goods_receipt_items.received_qty', 
-                    'goods_receipt_items.accepted_qty', 
+                    'goods_receipts.grn_number',
+                    'products.sku',
+                    'goods_receipt_items.received_qty',
+                    'goods_receipt_items.accepted_qty',
                     'goods_receipt_items.rejected_qty'
                 )
                 ->orderBy('goods_receipt_items.id');
 
             if ($dateFrom) {
-                $query->where('goods_receipt_items.created_at', '>=', \Carbon\Carbon::parse($dateFrom)->startOfDay());
+                $query->where('goods_receipt_items.created_at', '>=', Carbon::parse($dateFrom)->startOfDay());
             }
             if ($dateTo) {
-                $query->where('goods_receipt_items.created_at', '<=', \Carbon\Carbon::parse($dateTo)->endOfDay());
+                $query->where('goods_receipt_items.created_at', '<=', Carbon::parse($dateTo)->endOfDay());
             }
 
             $query->chunk(100, function ($rows) use ($file) {
@@ -1697,8 +1800,8 @@ class PageController extends Controller
             $query = DB::table('parties')
                 ->leftJoin('orders', 'parties.id', '=', 'orders.party_id')
                 ->select(
-                    'parties.id', 'parties.firstname', 'parties.lastname', 'parties.email', 'parties.phone', 
-                    'parties.wallet_balance', 'parties.credit_limit', 'parties.credit_days', 'parties.created_at', 
+                    'parties.id', 'parties.firstname', 'parties.lastname', 'parties.email', 'parties.phone',
+                    'parties.wallet_balance', 'parties.credit_limit', 'parties.credit_days', 'parties.created_at',
                     DB::raw('COUNT(orders.id) as total_orders'), DB::raw('SUM(orders.net_amount) as ltv')
                 )
                 ->where('parties.type', 'customer')
@@ -1706,16 +1809,16 @@ class PageController extends Controller
                 ->orderByDesc('ltv');
 
             if ($dateFrom) {
-                $query->where('parties.created_at', '>=', \Carbon\Carbon::parse($dateFrom)->startOfDay());
+                $query->where('parties.created_at', '>=', Carbon::parse($dateFrom)->startOfDay());
             }
             if ($dateTo) {
-                $query->where('parties.created_at', '<=', \Carbon\Carbon::parse($dateTo)->endOfDay());
+                $query->where('parties.created_at', '<=', Carbon::parse($dateTo)->endOfDay());
             }
 
             $cursor = $query->cursor();
 
             foreach ($cursor as $row) {
-                $name = trim($row->firstname . ' ' . $row->lastname);
+                $name = trim($row->firstname.' '.$row->lastname);
                 fputcsv($file, [$row->id, $name, $row->email, $row->phone, $row->created_at, $row->wallet_balance, $row->credit_limit, $row->credit_days, $row->total_orders, $row->ltv]);
             }
             fclose($file);
@@ -1737,10 +1840,10 @@ class PageController extends Controller
                 ->orderBy('order_returns.id');
 
             if ($dateFrom) {
-                $query->where('order_returns.created_at', '>=', \Carbon\Carbon::parse($dateFrom)->startOfDay());
+                $query->where('order_returns.created_at', '>=', Carbon::parse($dateFrom)->startOfDay());
             }
             if ($dateTo) {
-                $query->where('order_returns.created_at', '<=', \Carbon\Carbon::parse($dateTo)->endOfDay());
+                $query->where('order_returns.created_at', '<=', Carbon::parse($dateTo)->endOfDay());
             }
 
             $query->chunk(100, function ($rows) use ($file) {
@@ -1867,8 +1970,8 @@ class PageController extends Controller
             ->unique()
             ->sort()
             ->values();
-            
-        $returnReasons = \App\Modules\Orders\Models\ReturnReason::where('is_active', true)->orderBy('id')->get();
+
+        $returnReasons = ReturnReason::where('is_active', true)->orderBy('id')->get();
 
         return view('shipping.shipments', compact('carriersList', 'returnReasons'));
     }
@@ -1888,26 +1991,26 @@ class PageController extends Controller
             $query = DB::table('parties')
                 ->leftJoin('party_addresses', 'parties.id', '=', 'party_addresses.party_id')
                 ->select(
-                    'parties.id', 'parties.firstname', 'parties.lastname', 'parties.company_name', 
+                    'parties.id', 'parties.firstname', 'parties.lastname', 'parties.company_name',
                     'parties.email', 'parties.phone', 'parties.gst_no', 'parties.pan_no', 'parties.wallet_balance',
                     'party_addresses.state', 'party_addresses.city'
                 )
                 ->where('parties.type', 'supplier')
-                ->where(function($q) {
+                ->where(function ($q) {
                     $q->where('party_addresses.is_default', true)
-                      ->orWhereNull('party_addresses.id');
+                        ->orWhereNull('party_addresses.id');
                 });
 
             if ($dateFrom) {
-                $query->where('parties.created_at', '>=', \Carbon\Carbon::parse($dateFrom)->startOfDay());
+                $query->where('parties.created_at', '>=', Carbon::parse($dateFrom)->startOfDay());
             }
             if ($dateTo) {
-                $query->where('parties.created_at', '<=', \Carbon\Carbon::parse($dateTo)->endOfDay());
+                $query->where('parties.created_at', '<=', Carbon::parse($dateTo)->endOfDay());
             }
 
             $cursor = $query->cursor();
             foreach ($cursor as $row) {
-                $name = trim($row->firstname . ' ' . $row->lastname);
+                $name = trim($row->firstname.' '.$row->lastname);
                 fputcsv($file, [$row->id, $name, $row->company_name, $row->email, $row->phone, $row->gst_no, $row->pan_no, $row->state, $row->city, $row->wallet_balance]);
             }
             fclose($file);
@@ -1923,24 +2026,24 @@ class PageController extends Controller
         $callback = function () use ($dateFrom, $dateTo, $columns) {
             $file = fopen('php://output', 'w');
             fputcsv($file, $columns);
-            
+
             $query = DB::table('attendances')
                 ->leftJoin('users', 'attendances.user_id', '=', 'users.id')
                 ->select('attendances.*', 'users.name as user_name')
                 ->orderBy('attendances.date', 'desc');
 
             if ($dateFrom) {
-                $query->where('attendances.date', '>=', \Carbon\Carbon::parse($dateFrom)->startOfDay());
+                $query->where('attendances.date', '>=', Carbon::parse($dateFrom)->startOfDay());
             }
             if ($dateTo) {
-                $query->where('attendances.date', '<=', \Carbon\Carbon::parse($dateTo)->endOfDay());
+                $query->where('attendances.date', '<=', Carbon::parse($dateTo)->endOfDay());
             }
 
             $query->chunk(100, function ($rows) use ($file) {
                 foreach ($rows as $row) {
                     fputcsv($file, [
-                        $row->date, $row->user_name, 'Staff', $row->status, 
-                        $row->check_in, $row->check_out, 'N/A', $row->notes
+                        $row->date, $row->user_name, 'Staff', $row->status,
+                        $row->check_in, $row->check_out, 'N/A', $row->notes,
                     ]);
                 }
             });

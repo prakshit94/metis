@@ -4,14 +4,28 @@ namespace App\Modules\Core\Controllers;
 
 use App\Models\SystemFile;
 use App\Models\SystemSetting;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
-class FileManagerController extends Controller
+class FileManagerController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:files-view', only: ['index']),
+            new Middleware('permission:files-create', only: ['upload']),
+            new Middleware('permission:files-edit', only: ['rename']),
+            new Middleware('permission:files-delete', only: ['delete']),
+            new Middleware('permission:files-download', only: ['download', 'downloadZip']),
+            new Middleware('permission:settings-edit', only: ['setLoginBackground', 'setDefaultImage']),
+        ];
+    }
+
     private function getFileUrl($fileRecord)
     {
         $disk = Storage::disk('public');

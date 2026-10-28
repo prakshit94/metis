@@ -1,7 +1,7 @@
 <!-- Header -->
 @php
-    $appLogo = \App\Models\SystemSetting::where('key', 'default_image_logo_png')->value('value');
-    $logoImage = $appLogo ? $appLogo : asset('assets/images/logo.png');
+    $brandLogo = $brandLogo ?? \App\Services\BrandLogo::resolve(\App\Models\SystemSetting::where('key', 'default_image_logo_png')->value('value'));
+    $logoImage = $brandLogo['src'];
     $headerAvatarFallback = ($defaultAvatarUrl ?? '') ?: asset(Auth::user()?->gender === 'Male' ? 'assets/images/default_male.png' : (Auth::user()?->gender === 'Female' ? 'assets/images/default_female.png' : 'assets/images/default_avatar.jpeg'));
     $headerPhoto = Auth::user()?->photo;
     $headerPhotoUrl = $headerPhoto ? (str_starts_with($headerPhoto, 'http') || str_starts_with($headerPhoto, '/') ? $headerPhoto : asset('storage/'.$headerPhoto)) : $headerAvatarFallback;
@@ -28,8 +28,8 @@
 
                 {{-- BRAND --}}
                 <a class="navbar-brand d-flex align-items-center gap-3 m-0 py-2" href="{{ route('dashboard') }}" aria-label="Ecommerce Admin — go to dashboard">
-                    <div class="brand-logo-container rounded-4 d-flex align-items-center justify-content-center flex-shrink-0 transition-all hover-rotate" style="width: 42px; height: 42px;">
-                        <img src="{{ $logoImage }}{{ str_contains($logoImage, '?') ? '&' : '?' }}v={{ file_exists(public_path('assets/images/logo.png')) ? filemtime(public_path('assets/images/logo.png')) : time() }}" alt="Logo" width="36" height="36" aria-hidden="true" class="shadow-sm rounded-circle">
+                    <div class="brand-logo-container rounded-3 bg-white d-flex align-items-center justify-content-center flex-shrink-0 transition-all hover-rotate" style="width: 42px; height: 42px;">
+                        <img src="{{ $logoImage }}" data-header-logo data-fallback-src="{{ $brandLogo['fallback'] }}" onerror="this.onerror=null;this.src=this.dataset.fallbackSrc;" alt="Ecommerce Admin logo" width="36" height="36" class="d-block object-fit-contain rounded-2" style="max-width: 100%; max-height: 100%;">
                     </div>
                     <div class="d-none d-xl-flex flex-column lh-1 text-truncate">
                         <span class="fw-black text-body-emphasis fs-5 tracking-tight mb-1" style="letter-spacing: -0.5px;">Ecommerce</span>
@@ -59,7 +59,9 @@
                         @can('reports-view')
                         { name: 'Reports', path: '{{ route('reports') }}', icon: 'bi bi-file-earmark-bar-graph-fill', group: 'Main' },
                         @endcan
+                        @canany(['target-view', 'target-view-all'])
                         { name: 'Targets & Achv.', path: '{{ route('targets.index') }}', icon: 'bi bi-award-fill', group: 'Main' },
+                        @endcanany
                         
                         @can('orders.view')
                         { name: 'Orders', path: '{{ route('orders') }}', icon: 'bi bi-bag-check-fill', group: 'Sales & Marketing' },
@@ -149,7 +151,7 @@
                         { name: 'Roles & Permissions', path: '{{ route('roles-permissions') }}', icon: 'bi bi-shield-lock-fill', group: 'User & Customer Admin' },
                         @endcan
                         @can('team-view')
-                        { name: 'Teams (State/LOB)', path: '{{ route('teams') }}', icon: 'bi bi-buildings-fill', group: 'User & Customer Admin' },
+                        { name: 'States & Offices', path: '{{ route('teams') }}', icon: 'bi bi-buildings-fill', group: 'User & Customer Admin' },
                         @endcan
                         @role('Super Admin')
                         { name: 'Customers', path: '{{ route('customers') }}', icon: 'bi bi-person-lines-fill', group: 'User & Customer Admin' },
@@ -172,7 +174,7 @@
                         @can('orderreason-view')
                         { name: 'Order Reasons', path: '{{ route('order.reasons') }}', icon: 'bi bi-list-task', group: 'System Settings' },
                         @endcan
-                        @can('settings-view')
+                        @can('calltag-view')
                         { name: 'Call Tags', path: '{{ route('call-tags.index') }}', icon: 'bi bi-tags', group: 'System Settings' },
                         @endcan
                         
@@ -183,7 +185,7 @@
                         { name: 'Messages', path: '{{ route('messages') }}', icon: 'bi bi-chat-dots-fill', group: 'Utilities & Tools' },
                         { name: 'Calendar', path: '{{ route('calendar') }}', icon: 'bi bi-calendar-week-fill', group: 'Utilities & Tools' },
                         @endrole
-                        @can('settings-view')
+                        @can('files-view')
                         { name: 'Files', path: '{{ route('files') }}', icon: 'bi bi-folder2-open', group: 'Utilities & Tools' },
                         @endcan
                         @role('Super Admin')
@@ -337,7 +339,7 @@
     ['route' => 'inventory.dashboard', 'icon' => 'bi-buildings', 'color' => 'success', 'name' => 'Command Center', 'permission' => 'warehouse-dashboard-view'],
     ['route' => 'analytics', 'icon' => 'bi-bar-chart-line-fill', 'color' => 'info', 'name' => 'Analytics', 'permission' => 'analytics-view'],
     ['route' => 'reports', 'icon' => 'bi-file-earmark-bar-graph-fill', 'color' => 'warning', 'name' => 'Reports', 'permission' => 'reports-view'],
-    ['route' => 'targets.index', 'icon' => 'bi-award-fill', 'color' => 'danger', 'name' => 'Targets & Achv.'],
+    ['route' => 'targets.index', 'icon' => 'bi-award-fill', 'color' => 'danger', 'name' => 'Targets & Achv.', 'permissions' => ['target-view', 'target-view-all']],
     ['route' => 'orders', 'icon' => 'bi-bag-check-fill', 'color' => 'secondary', 'name' => 'Orders', 'permission' => 'orders.view'],
     ['route' => 'complaints.index', 'icon' => 'bi-headset', 'color' => 'dark', 'name' => 'Complaints', 'permission' => 'complaints.view'],
     ['route' => 'promotions.coupons', 'icon' => 'bi-ticket-perforated-fill', 'color' => 'primary', 'name' => 'Coupon Codes', 'permission' => 'coupon-view'],
@@ -367,7 +369,7 @@
     ['route' => 'catalog.hsn-codes', 'icon' => 'bi-upc-scan', 'color' => 'warning', 'name' => 'HSN Codes', 'permission' => 'hsncode-view'],
     ['route' => 'users', 'icon' => 'bi-person-fill-gear', 'color' => 'danger', 'name' => 'Users', 'permission' => 'user-view'],
     ['route' => 'roles-permissions', 'icon' => 'bi-shield-lock-fill', 'color' => 'secondary', 'name' => 'Roles & Permissions', 'permission' => 'role-view'],
-    ['route' => 'teams', 'icon' => 'bi-buildings-fill', 'color' => 'dark', 'name' => 'Teams (State/LOB)', 'permission' => 'team-view'],
+    ['route' => 'teams', 'icon' => 'bi-buildings-fill', 'color' => 'dark', 'name' => 'States & Offices', 'permission' => 'team-view'],
     ['route' => 'customers', 'icon' => 'bi-person-lines-fill', 'color' => 'primary', 'name' => 'Customers', 'super_admin_only' => true],
     ['route' => 'customer-settings.index', 'icon' => 'bi-gear-wide-connected', 'color' => 'success', 'name' => 'Customer Settings', 'super_admin_only' => true],
     ['route' => 'departments', 'icon' => 'bi-diagram-3-fill', 'color' => 'info', 'name' => 'Departments', 'permission' => 'department-view'],
@@ -379,7 +381,7 @@
     ['route' => 'chat.index', 'icon' => 'bi-chat-text-fill', 'color' => 'success', 'name' => 'Team Chat', 'permission' => 'chat-view'],
     ['route' => 'messages', 'icon' => 'bi-chat-dots-fill', 'color' => 'info', 'name' => 'Messages', 'super_admin_only' => true],
     ['route' => 'calendar', 'icon' => 'bi-calendar-week-fill', 'color' => 'warning', 'name' => 'Calendar', 'super_admin_only' => true],
-    ['route' => 'files', 'icon' => 'bi-folder2-open', 'color' => 'danger', 'name' => 'Files', 'permission' => 'settings-view'],
+    ['route' => 'files', 'icon' => 'bi-folder2-open', 'color' => 'danger', 'name' => 'Files', 'permission' => 'files-view'],
     ['route' => 'forms', 'icon' => 'bi-ui-checks-grid', 'color' => 'secondary', 'name' => 'Forms', 'super_admin_only' => true],
     ['route' => 'elements', 'icon' => 'bi-puzzle-fill', 'color' => 'dark', 'name' => 'UI Elements', 'permission' => 'settings-view'],
     ['route' => 'security', 'icon' => 'bi-shield-fill-check', 'color' => 'primary', 'name' => 'Security', 'super_admin_only' => true],
@@ -393,7 +395,7 @@
                             $isSuperAdminOnly = $app['super_admin_only'] ?? false;
                             if ($isSuperAdmin) {
                                 $availableWebApps[] = $app;
-                            } elseif (!$isSuperAdminOnly && (!isset($app['permission']) || auth()->user()->can($app['permission']))) {
+                            } elseif (!$isSuperAdminOnly && (isset($app['permissions']) ? auth()->user()->canAny($app['permissions']) : (!isset($app['permission']) || auth()->user()->can($app['permission'])))) {
                                 $availableWebApps[] = $app;
                             }
                         }

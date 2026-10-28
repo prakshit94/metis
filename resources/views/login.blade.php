@@ -17,161 +17,129 @@
     $appLogo = \App\Models\SystemSetting::where('key', 'default_image_logo_png')->value('value');
     $logoImage = $appLogo ? $appLogo : asset('assets/images/logo.png');
 @endphp
-<main class="auth-page position-relative" id="main-content" tabindex="-1" style="--auth-background-image: url('{{ $bgImage }}');">
-    
-    <!-- Overlay for better contrast with the background image -->
-    <div class="position-absolute top-0 start-0 w-100 h-100" style="background: rgba(0, 0, 0, 0.35);"></div>
+<div class="login-page auth-layout auth-layout--login" x-data="loginApp()" :class="{ 'login-panel-collapsed': !panelOpen }" @pageshow.window="isSubmitting = false" style="--auth-background-image: url('{{ $bgImage }}');">
+    <button type="button" x-cloak x-show="!panelOpen" x-ref="restorePanel" class="btn btn-primary auth-restore-panel" @click="togglePanel()" aria-controls="main-content" :aria-expanded="panelOpen.toString()"><i class="bi bi-layout-sidebar-reverse me-2" aria-hidden="true"></i>Show sign in</button>
+    <main class="auth-main" id="main-content" tabindex="-1" x-show="panelOpen" x-transition.opacity.duration.200ms>
+        <div class="auth-topbar">
+            <button type="button" class="btn btn-sm btn-outline-secondary" @click="togglePanel()" aria-label="Hide sign in panel" aria-controls="main-content" :aria-expanded="panelOpen.toString()" x-cloak><span aria-hidden="true">‹</span> Hide sign in</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary login-theme-toggle" data-theme-toggle aria-label="Toggle colour theme">
+                <i class="bi bi-sun-fill theme-icon-light" aria-hidden="true"></i>
+                <i class="bi bi-moon-stars-fill theme-icon-dark d-none" aria-hidden="true"></i>
+            </button>
+        </div>
 
-    <!-- Theme-aware Glassmorphism Card (Now frosted for text legibility) -->
-    <div class="auth-card position-relative z-1 shadow-lg border border-secondary-subtle" x-data="loginApp()" @pageshow.window="isSubmitting = false">
+        <div class="auth-body">
+            <a class="auth-brand auth-form-brand" href="{{ url('/') }}" aria-label="Metis home">
+                <img src="{{ $logoImage }}{{ str_contains($logoImage, '?') ? '&' : '?' }}v={{ file_exists(public_path('assets/images/logo.png')) ? filemtime(public_path('assets/images/logo.png')) : time() }}" alt="Metis logo" onerror="this.onerror=null;this.src='{{ asset('assets/images/logo.png') }}';">
+                <span>Metis</span>
+            </a>
 
-
-
-        {{-- ════════════════════════════════════════════════════════════════ --}}
-        {{-- ── SIGN-IN PANEL ─────────────────────────────────────────────── --}}
-        {{-- ════════════════════════════════════════════════════════════════ --}}
-        <div>
-            {{-- ── Brand Logo Header ─────────────────────────────────────── --}}
-            <div class="text-center mb-4 pb-2">
-                <div class="brand-logo-container rounded-4 d-inline-flex align-items-center justify-content-center transition-all hover-rotate mb-3" style="width: 72px; height: 72px;">
-                    <img src="{{ $logoImage }}{{ str_contains($logoImage, '?') ? '&' : '?' }}v={{ file_exists(public_path('assets/images/logo.png')) ? filemtime(public_path('assets/images/logo.png')) : time() }}" alt="Ecommerce Logo" class="w-100 h-100 object-fit-contain shadow-sm rounded-circle bg-body">
-                </div>
-                <h1 class="auth-title fw-black text-body-emphasis mb-1 tracking-tight">Welcome Back</h1>
-                <p class="text-secondary small fw-medium mb-0">Sign in to your Ecommerce Admin account</p>
+            <div class="auth-heading">
+                <h1>Sign in</h1>
+                <p>Use your work email to access the dashboard.</p>
             </div>
-            {{-- ── Server-side session flash / validation errors ─────────── --}}
+
             @if (session('error'))
-                <div class="alert alert-danger d-flex align-items-center gap-2 mb-4 py-3 px-3 border-0 rounded-3 shadow-sm" role="alert">
-                    <i class="bi bi-exclamation-octagon-fill fs-5"></i>
-                    <span class="fw-semibold text-break">{{ session('error') }}</span>
-                </div>
+                <div class="alert alert-danger py-2 px-3 small" role="alert">{{ session('error') }}</div>
             @endif
 
-
-
-            {{-- ── Login Form (posts to real Laravel route) ─────────────── --}}
-            <form method="POST" action="{{ route('login.submit') }}" id="loginForm" :aria-busy="isSubmitting.toString()" @submit="if (isSubmitting) { $event.preventDefault(); } else { isSubmitting = true; }" autocomplete="on">
+            <form class="auth-form" method="POST" action="{{ route('login.submit') }}" id="loginForm" :aria-busy="isSubmitting.toString()" @submit="if (isSubmitting) { $event.preventDefault(); } else { isSubmitting = true; }" autocomplete="on">
                 @csrf
-
-                {{-- Email ------------------------------------------------- --}}
-                <div class="mb-4">
-                    <label for="loginEmail" class="form-label fw-bold text-body small" style="letter-spacing: 0.3px;">Email Address</label>
-                    <div class="input-group input-group-lg rounded-3 overflow-hidden border border-secondary-subtle focus-within-border-primary transition-all bg-body-tertiary">
-                        <span class="input-group-text bg-transparent border-0 text-secondary px-3"><i class="bi bi-envelope" aria-hidden="true"></i></span>
-                        <input type="email"
-                               class="form-control bg-transparent border-0 shadow-none fs-6 fw-medium text-body @error('email') is-invalid @enderror"
-                               id="loginEmail"
-                               name="email"
-                               value="{{ old('email', request()->cookie('remembered_email')) }}"
-                               placeholder="name@company.com"
-                               autocomplete="username"
-                               inputmode="email"
-                               autocapitalize="none"
-                               spellcheck="false"
-                               @error('email') aria-invalid="true" aria-describedby="loginEmailError" @enderror
-                               autofocus
-                               required>
-                    </div>
+                <div class="mb-3">
+                    <label for="loginEmail" class="form-label">Email address</label>
+                    <input type="email"
+                           class="form-control @error('email') is-invalid @enderror"
+                           id="loginEmail"
+                           name="email"
+                           value="{{ old('email', request()->cookie('remembered_email')) }}"
+                           placeholder="you@company.com"
+                           autocomplete="username"
+                           inputmode="email"
+                           autocapitalize="none"
+                           spellcheck="false"
+                           @error('email') aria-invalid="true" aria-describedby="loginEmailError" @enderror
+                           autofocus
+                           required>
                     @error('email')
-                        <div id="loginEmailError" class="text-danger small mt-2 fw-medium text-break" role="alert"><i class="bi bi-info-circle me-1" aria-hidden="true"></i>{{ $message }}</div>
+                        <div id="loginEmailError" class="invalid-feedback" role="alert">{{ $message }}</div>
                     @enderror
                 </div>
 
-                {{-- Password ----------------------------------------------- --}}
-                <div class="mb-4">
-                    <div class="d-flex justify-content-between align-items-center mb-1">
-                        <label for="loginPassword" class="form-label fw-bold text-body small mb-0" style="letter-spacing: 0.3px;">Password</label>
-                    </div>
-                    <div class="input-group input-group-lg rounded-3 overflow-hidden border border-secondary-subtle focus-within-border-primary transition-all bg-body-tertiary">
-                        <span class="input-group-text bg-transparent border-0 text-secondary px-3"><i class="bi bi-lock" aria-hidden="true"></i></span>
+                <div class="mb-3">
+                    <label for="loginPassword" class="form-label">Password</label>
+                    <div class="auth-password">
                         <input type="password" :type="showPassword ? 'text' : 'password'"
-                               class="form-control bg-transparent border-0 shadow-none fs-6 fw-medium text-body @error('password') is-invalid @enderror"
+                               class="form-control @error('password') is-invalid @enderror"
                                id="loginPassword"
                                name="password"
-                               placeholder="••••••••"
+                               placeholder="Enter your password"
                                autocomplete="current-password"
                                @error('password') aria-invalid="true" aria-describedby="loginPasswordError" @enderror
                                required>
-                        <button class="btn btn-link text-secondary text-decoration-none border-0 px-3 hover-text-primary"
-                                type="button"
+                        <button type="button" class="auth-password-toggle"
                                 @click="showPassword = !showPassword"
                                 aria-label="Show password"
                                 aria-controls="loginPassword"
                                 :aria-pressed="showPassword.toString()"
                                 :aria-label="showPassword ? 'Hide password' : 'Show password'">
-                            <i aria-hidden="true" :class="showPassword ? 'bi bi-eye-slash-fill' : 'bi bi-eye-fill'"></i>
+                            <i class="bi" aria-hidden="true" :class="showPassword ? 'bi-eye-slash' : 'bi-eye'"></i>
                         </button>
                     </div>
                     @error('password')
-                        <div id="loginPasswordError" class="text-danger small mt-2 fw-medium text-break" role="alert"><i class="bi bi-info-circle me-1" aria-hidden="true"></i>{{ $message }}</div>
+                        <div id="loginPasswordError" class="invalid-feedback d-block" role="alert">{{ $message }}</div>
                     @enderror
                 </div>
 
-                {{-- Remember Me -------------------------------------------- --}}
-                <div class="mb-4 pb-2 d-flex align-items-center justify-content-between">
-                    <div class="form-check d-flex align-items-center gap-2">
-                        <input class="form-check-input mt-0 border-secondary"
-                               type="checkbox"
-                               id="rememberMe"
-                               name="remember"
-                               value="1"
-                               {{ old('remember', request()->cookie('remembered_email') ? true : false) ? 'checked' : '' }}
-                               x-model="remember"
-                               style="width: 1.25em; height: 1.25em; cursor: pointer;">
-                        <label class="form-check-label fw-medium text-secondary" for="rememberMe" style="cursor: pointer;">
-                            Keep me logged in
-                        </label>
-                    </div>
+                <div class="form-check mb-4">
+                    <input class="form-check-input" type="checkbox" id="rememberMe" name="remember" value="1"
+                           {{ old('remember', request()->cookie('remembered_email') ? true : false) ? 'checked' : '' }}
+                           x-model="remember">
+                    <label class="form-check-label small" for="rememberMe">Keep me logged in</label>
                 </div>
 
-                {{-- Submit ------------------------------------------------- --}}
-                <button type="submit"
-                        class="btn btn-primary w-100 py-3 rounded-3 shadow-sm fw-bold fs-6 transition-all position-relative overflow-hidden group"
-                        id="loginSubmitBtn"
-                        :disabled="isSubmitting"
-                        style="background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); border: none;">
-                    
-                    <!-- Hover Effect -->
-                    <div class="position-absolute top-0 start-0 w-100 h-100 bg-body opacity-0 transition-all group-hover-opacity-25"></div>
-
-                    <span x-show.important="!isSubmitting" class="d-flex align-items-center justify-content-center gap-2 position-relative z-1">
-                        Sign In to Account
-                        <i class="bi bi-arrow-right fw-bold fs-5 ms-1 transition-all group-hover-translate-x" aria-hidden="true"></i>
-                    </span>
-                    <span x-show.important="isSubmitting" style="display: none;" class="d-flex align-items-center justify-content-center gap-2 position-relative z-1">
-                        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                <button type="submit" class="btn btn-primary auth-submit-btn w-100" id="loginSubmitBtn" :disabled="isSubmitting">
+                    <span x-show.important="!isSubmitting">Sign in</span>
+                    <span x-show.important="isSubmitting" style="display: none;">
+                        <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
                         Authenticating…
                     </span>
                 </button>
             </form>
         </div>
-    </div>{{-- /.auth-card --}}
+        <p class="auth-legal">Metis &mdash; your business workspace.</p>
+    </main>
 
-</main>{{-- /.auth-page --}}
-
-<style>
-/* Utilities for Login */
-.focus-within-border-primary:focus-within {
-    border-color: #6366f1 !important;
-    background-color: var(--bs-body-bg) !important;
-    box-shadow: 0 0 0 0.25rem rgba(99, 102, 241, 0.15);
-}
-.group:hover .group-hover-opacity-25 {
-    opacity: 0.15 !important;
-}
-.group:hover .group-hover-translate-x {
-    transform: translateX(4px);
-}
-.hover-text-primary:hover {
-    color: #6366f1 !important;
-}
-</style>
+    <aside class="auth-aside" aria-label="About your workspace">
+        <div class="auth-aside-inner">
+            <p class="auth-quote">Your business, in one place.</p>
+            <ul class="auth-points">
+                <li><i class="bi bi-check" aria-hidden="true"></i><span>Manage orders and customer relationships from one workspace.</span></li>
+                <li><i class="bi bi-check" aria-hidden="true"></i><span>Keep inventory, payments and daily operations connected.</span></li>
+                <li><i class="bi bi-check" aria-hidden="true"></i><span>Stay informed with reports and insights across your business.</span></li>
+                <li><i class="bi bi-check" aria-hidden="true"></i><span>Work comfortably with light and dark themes.</span></li>
+            </ul>
+            <dl class="auth-stats">
+                <div><dt>Sales</dt><dd>Orders &amp; customers</dd></div>
+                <div><dt>Operations</dt><dd>Stock &amp; payments</dd></div>
+                <div><dt>Insights</dt><dd>Reports &amp; analytics</dd></div>
+            </dl>
+        </div>
+    </aside>
+</div>
 @endsection
 
 @push('scripts')
 <script>
     document.addEventListener('alpine:init', () => {
         Alpine.data('loginApp', () => ({
+            panelOpen: true,
+            togglePanel() {
+                this.panelOpen = !this.panelOpen;
+                this.$nextTick(() => {
+                    if (this.panelOpen) document.getElementById('loginEmail')?.focus();
+                    else this.$refs.restorePanel.focus();
+                });
+            },
             showPassword: false,
             isSubmitting: false,
 

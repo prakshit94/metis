@@ -307,15 +307,19 @@
                                                         </li>
                                                     </template>
                                                     @endcan
-                                                    @can('purchaseorder-create')
+                                                    @canany(['purchaseorder-payment-create', 'purchaseorder-invoice-upload', 'purchaseorder-view'])
                                                     <template x-if="item.status !== 'rejected'">
-                                                        <li><a class="dropdown-item text-success fw-medium" href="#" @click.prevent="openPaymentModal(item)"><i class="bi bi-cash me-2"></i> Log Payment</a></li>
+                                                        <li>@can('purchaseorder-payment-create')
+<a class="dropdown-item text-success fw-medium" href="#" @click.prevent="openPaymentModal(item)"><i class="bi bi-cash me-2"></i> Log Payment</a>
+@endcan</li>
                                                     </template>
                                                     <template x-if="item.paid_amount > 0">
                                                         <li><a class="dropdown-item text-info fw-medium" href="#" @click.prevent="openPaymentHistoryModal(item)"><i class="bi bi-clock-history me-2"></i> Payment History</a></li>
                                                     </template>
-                                                    <li><a class="dropdown-item text-secondary fw-medium" href="#" @click.prevent="openInvoiceModal(item)"><i class="bi bi-file-earmark-arrow-up me-2"></i> Upload Invoice</a></li>
-                                                    @endcan
+                                                    <li>@can('purchaseorder-invoice-upload')
+<a class="dropdown-item text-secondary fw-medium" href="#" @click.prevent="openInvoiceModal(item)"><i class="bi bi-file-earmark-arrow-up me-2"></i> Upload Invoice</a>
+@endcan</li>
+                                                    @endcanany
                                                     @can('goodsreceipt-create')
                                                     <template x-if="item.status === 'approved' || item.status === 'partially_received'">
                                                         <li><hr class="dropdown-divider"></li>

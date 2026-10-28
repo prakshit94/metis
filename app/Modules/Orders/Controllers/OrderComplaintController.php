@@ -8,6 +8,7 @@ use App\Modules\Core\Controllers\Controller;
 use App\Modules\Orders\Models\Order;
 use App\Modules\Orders\Models\OrderComplaint;
 use App\Modules\Users\Models\User;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
@@ -77,10 +78,12 @@ class OrderComplaintController extends Controller implements HasMiddleware
                     $query->latest();
                 }
 
-                $perPage = (int) $request->input('per_page', 15);
+                $perPage = min(max($request->integer('per_page', 15), 1), 100);
                 $complaints = $query->paginate($perPage);
 
-                $totals = OrderComplaint::query()->toBase()->selectRaw("
+                $totals = OrderComplaint::query()
+                    ->when(! auth()->user()->hasPermissionTo('complaints.view-all'), fn ($query) => $query->where('assigned_to', auth()->id()))
+                    ->toBase()->selectRaw("
                     COUNT(*) as total,
                     COALESCE(SUM(CASE WHEN status = 'open' THEN 1 ELSE 0 END), 0) as open_count,
                     COALESCE(SUM(CASE WHEN status = 'in_progress' THEN 1 ELSE 0 END), 0) as in_progress,
@@ -149,7 +152,7 @@ class OrderComplaintController extends Controller implements HasMiddleware
         $order = Order::where('order_no', $validated['order_no'])->firstOrFail();
         $validated['order_id'] = $order->id;
 
-        if (!empty($validated['product_ids'])) {
+        if (! empty($validated['product_ids'])) {
             $existingComplaints = OrderComplaint::where('order_id', $order->id)->whereNotNull('product_ids')->get();
             $existingProductIds = [];
             foreach ($existingComplaints as $c) {
@@ -158,9 +161,9 @@ class OrderComplaintController extends Controller implements HasMiddleware
                 }
             }
             $overlap = array_intersect($validated['product_ids'], $existingProductIds);
-            if (!empty($overlap)) {
+            if (! empty($overlap)) {
                 return response()->json([
-                    'message' => 'A complaint has already been raised for one or more of the selected products.'
+                    'message' => 'A complaint has already been raised for one or more of the selected products.',
                 ], 422);
             }
         } else {
@@ -168,7 +171,7 @@ class OrderComplaintController extends Controller implements HasMiddleware
             foreach ($existingComplaints as $c) {
                 if (empty($c->product_ids)) {
                     return response()->json([
-                        'message' => 'An entire order complaint has already been raised for this order.'
+                        'message' => 'An entire order complaint has already been raised for this order.',
                     ], 422);
                 }
             }
@@ -441,7 +444,7 @@ class OrderComplaintController extends Controller implements HasMiddleware
 
         if ($complaint->status === 'open') {
             $complaint->update(['status' => 'in_progress']);
-            
+
             $complaint->statusLogs()->create([
                 'status' => 'in_progress',
                 'notes' => 'Status automatically changed to in_progress after first reply.',
@@ -478,7 +481,7 @@ class OrderComplaintController extends Controller implements HasMiddleware
 
         // Keep the original cursor's row order and batch only relation loading.
         $complaints = $query->cursor()->chunk(500)->flatMap(
-            fn ($batch) => (new \Illuminate\Database\Eloquent\Collection($batch->all()))
+            fn ($batch) => (new Collection($batch->all()))
                 ->load($query->getEagerLoads())
         );
 
@@ -515,7 +518,7 @@ class OrderComplaintController extends Controller implements HasMiddleware
 
         // Keep the original cursor's row order and batch only relation loading.
         $complaints = $query->cursor()->chunk(500)->flatMap(
-            fn ($batch) => (new \Illuminate\Database\Eloquent\Collection($batch->all()))
+            fn ($batch) => (new Collection($batch->all()))
                 ->load($query->getEagerLoads())
         );
 

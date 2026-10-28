@@ -4,34 +4,44 @@
 
 export class ThemeManager {
   constructor() {
-    this.currentTheme = this.getStoredTheme() || this.getPreferredTheme();
+    this.explicitTheme = this.getStoredTheme();
+    this.currentTheme = this.explicitTheme || this.getPreferredTheme();
     this.themeToggleButtons = [];
     this.init();
   }
 
   init() {
     // Set initial theme
-    this.setTheme(this.currentTheme);
+    this.setTheme(this.currentTheme, false);
 
     // Listen for system theme changes
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
-      if (!this.getStoredTheme()) {
-        this.setTheme(e.matches ? 'dark' : 'light');
+      if (!this.explicitTheme) {
+        this.setTheme(e.matches ? 'dark' : 'light', false);
       }
     });
   }
 
   getStoredTheme() {
-    return localStorage.getItem('theme');
+    try {
+      const theme = localStorage.getItem('theme');
+      return ['light', 'dark'].includes(theme) ? theme : null;
+    } catch (_) {
+      return null;
+    }
   }
 
   getPreferredTheme() {
     return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
   }
 
-  setTheme(theme) {
+  setTheme(theme, persist = true) {
+    theme = ['light', 'dark'].includes(theme) ? theme : this.getPreferredTheme();
     document.documentElement.setAttribute('data-bs-theme', theme);
-    localStorage.setItem('theme', theme);
+    if (persist) {
+      this.explicitTheme = theme;
+      try { localStorage.setItem('theme', theme); } catch (_) {}
+    }
     this.currentTheme = theme;
     this.updateThemeIcons();
 

@@ -34,7 +34,7 @@ class UnitOfMeasureController extends Controller implements HasMiddleware
         }
 
         $sortBy = $request->query('sort_by', 'id');
-        $sortDir = $request->query('sort_dir', 'desc');
+        $sortDir = strtolower((string) $request->query('sort_dir', 'desc')) === 'asc' ? 'asc' : 'desc';
 
         if (in_array($sortBy, ['id', 'name', 'status'])) {
             $query->orderBy($sortBy, $sortDir);
@@ -67,10 +67,10 @@ class UnitOfMeasureController extends Controller implements HasMiddleware
         ], 201);
     }
 
-    public function show(UnitOfMeasure $model): JsonResponse
+    public function show(UnitOfMeasure $uom): JsonResponse
     {
 
-        return response()->json(['data' => $model]);
+        return response()->json(['data' => $uom]);
     }
 
     public function update(Request $request, $id): JsonResponse

@@ -121,9 +121,11 @@
                     </div>
                     <div class="d-flex flex-wrap gap-2">
 
-                        <button class="btn btn-sm btn-outline-danger" @click="bulkUpdateStatus('failed')" :disabled="isSubmitting" title="Mark as failed">
+                        @can('refunds.edit')
+<button class="btn btn-sm btn-outline-danger" @click="bulkUpdateStatus('failed')" :disabled="isSubmitting" title="Mark as failed">
                             <i class="bi bi-x-circle me-1"></i>Mark Failed
                         </button>
+@endcan
                         <button class="btn btn-sm btn-outline-secondary" @click="selectedRefunds = []" title="Clear selection">
                             <i class="bi bi-x-lg"></i>
                         </button>

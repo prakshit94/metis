@@ -6,12 +6,23 @@ use App\Models\Chat\Conversation;
 use App\Models\Chat\Member;
 use App\Modules\Core\Controllers\Controller;
 use App\Services\Chat\ChatService;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
-class GroupController extends Controller
+class GroupController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:chat-view'),
+            new Middleware('permission:chat-group-manage', only: ['update', 'addMember', 'removeMember', 'updateRole', 'transferOwner']),
+            new Middleware('permission:chat-delete', only: ['destroy']),
+        ];
+    }
+
     public function update(Request $request, Conversation $conversation, ChatService $chat)
     {
         abort_unless(config('chat.enabled'), 404);

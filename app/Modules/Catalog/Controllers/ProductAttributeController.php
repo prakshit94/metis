@@ -33,7 +33,7 @@ class ProductAttributeController extends Controller implements HasMiddleware
         }
 
         $sortBy = $request->query('sort_by', 'id');
-        $sortDir = $request->query('sort_dir', 'desc');
+        $sortDir = strtolower((string) $request->query('sort_dir', 'desc')) === 'asc' ? 'asc' : 'desc';
 
         if (in_array($sortBy, ['id', 'name', 'status', 'type', 'is_filterable'])) {
             $query->orderBy($sortBy, $sortDir);

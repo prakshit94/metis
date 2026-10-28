@@ -1,0 +1,392 @@
+[
+  {
+    "id": "F01",
+    "severity": "Critical",
+    "title": "Public India Post webhook can change order delivery state",
+    "file": "routes/api.php",
+    "line": 77,
+    "evidence": "The route is outside auth:sanctum and the handler verifies no shared secret or signature. Supplying a known tracking number and DELIVERED event can change shipment and order state. Rate limiting does not authenticate a carrier.",
+    "fix": "Authenticate the carrier using its supported signature/secret contract before logging or mutating anything; reject unauthenticated payloads and replayed events.",
+    "kind": "Source confirmed"
+  },
+  {
+    "id": "F02",
+    "severity": "High",
+    "title": "Payment reversal lacks an action permission",
+    "file": "app/Modules/Orders/Controllers/PaymentController.php",
+    "line": 235,
+    "evidence": "DELETE /payments/{payment} has session authentication but no permission middleware. The controller and revertPayment service perform no permission check. Any authenticated account reaching this route can soft-delete a payment and change invoice totals.",
+    "fix": "Require the established payment reversal/receipt permission and apply record visibility checks before calling FinancialService.",
+    "kind": "Source confirmed"
+  },
+  {
+    "id": "F03",
+    "severity": "High",
+    "title": "Stock transfer actions bypass action permissions",
+    "file": "app/Modules/Inventory/Controllers/StockTransferController.php",
+    "line": 21,
+    "evidence": "send, receive and cancel are absent from the middleware map and have no internal authorization. Their API routes require authentication alone. bulkAction requires edit permission but also accepts delete, bypassing the separate delete permission.",
+    "fix": "Protect each action with the existing appropriate inventory permission and check the specific bulk action permission.",
+    "kind": "Source confirmed"
+  },
+  {
+    "id": "F04",
+    "severity": "High",
+    "title": "Record detail and mutation endpoints bypass list visibility rules",
+    "file": "app/Modules/Orders/Controllers/OrderController.php",
+    "line": 1944,
+    "evidence": "Orders are filtered by creator/LOB in their listing, but destroy and multiple direct order actions accept globally bound records without equivalent checks. Returns show/QC/finance, stock transfer show/update/actions, and adjustment show/approve/reject also lack the list warehouse/LOB checks. Payment and refund lists have no corresponding order ownership/LOB filter. Generic action permissions therefore expose records hidden in the directory.",
+    "fix": "Centralize the existing visibility predicates and apply them to direct lookups, financial lists, exports and every bulk-selected ID. Preserve current global-view exceptions.",
+    "kind": "Source confirmed"
+  },
+  {
+    "id": "F05",
+    "severity": "High",
+    "title": "Order create/edit accepts lifecycle states without lifecycle processing",
+    "file": "app/Modules/Orders/Requests/StoreOrderRequest.php",
+    "line": 88,
+    "evidence": "The create request accepts confirmed through returned; createOrder stores that state without reserving/deducting stock or performing delivery side effects. UpdateOrderRequest also accepts terminal states; updateCustomerOrder stores the requested state and only handles reservation for confirmed. An orders.create/orders.edit grant can bypass dedicated confirm/dispatch/deliver permissions and inventory transitions.",
+    "fix": "Constrain ordinary create/edit to their intended states and route authorized transitions through existing lifecycle services. Confirm which initial states are intentionally supported before implementation.",
+    "kind": "Source confirmed"
+  },
+  {
+    "id": "F06",
+    "severity": "High",
+    "title": "Deleting a confirmed order leaves inventory reserved",
+    "file": "app/Modules/Orders/Controllers/OrderController.php",
+    "line": 1944,
+    "evidence": "destroy calls only $order->delete(). Soft deletion does not cascade or release stock_reservations or stocks.reserved_qty. Deleting a confirmed sale leaves stock unavailable; deleting later lifecycle states can hide records still represented by movements and financial documents.",
+    "fix": "Define allowed deletion states, then reject incompatible deletions or use the existing cancellation/reversal workflow before deletion. Do not invent stock compensation for historical orders.",
+    "kind": "Source confirmed"
+  },
+  {
+    "id": "F07",
+    "severity": "High",
+    "title": "Sending a transfer consumes stock reserved for customer orders",
+    "file": "app/Services/InventoryService.php",
+    "line": 733,
+    "evidence": "The transfer compares physical quantity with transfer quantity, ignoring reserved_qty. Reproduction: physical=10, reserved=9, transfer=5 succeeds and leaves physical=5 while reserved=9.",
+    "fix": "Validate against physical minus reserved quantity while holding the stock lock. Preserve the existing transfer movement accounting.",
+    "kind": "Runtime reproduced"
+  },
+  {
+    "id": "F08",
+    "severity": "High",
+    "title": "Return requests can exceed quantities sold",
+    "file": "app/Modules/Orders/Controllers/OrderReturnController.php",
+    "line": 157,
+    "evidence": "Product membership is checked, but requested_qty has no upper bound, no distinct-product rule, no cumulative-return check and no eligible-order-state guard. Reproduction: an order containing one unit accepts a request for 100 units.",
+    "fix": "Lock the order; validate returnable state and remaining quantity per product/order line, aggregate duplicate input or reject it, and account for existing non-rejected returns.",
+    "kind": "Runtime reproduced"
+  },
+  {
+    "id": "F09",
+    "severity": "High",
+    "title": "Duplicate QC item IDs restock the same item repeatedly",
+    "file": "app/Modules/Orders/Controllers/OrderReturnController.php",
+    "line": 624,
+    "evidence": "items.*.id has no distinct rule. Each submitted occurrence calls processReturnItem with the full quantity. Reproduction: submitting the same return item twice with restocked_qty=100 adds 200 stock units; the saved return item records only 100.",
+    "fix": "Require distinct item IDs, validate each quantity against the remaining authorized return quantity, and apply stock changes exactly once.",
+    "kind": "Runtime reproduced"
+  },
+  {
+    "id": "F10",
+    "severity": "High",
+    "title": "Concurrent QC requests can both restock a return",
+    "file": "app/Modules/Orders/Controllers/OrderReturnController.php",
+    "line": 626,
+    "evidence": "The eligible-status check occurs before the transaction. The transaction never reloads/locks the return or its items, so two requests seeing approved can both apply inventory and refund side effects, then mark the same return completed.",
+    "fix": "Reload and lock the return and items inside the transaction, recheck state there and make completion idempotent. Add a concurrent-request regression test.",
+    "kind": "Source confirmed"
+  },
+  {
+    "id": "F11",
+    "severity": "High",
+    "title": "QC can complete a return without processing its own items",
+    "file": "app/Modules/Orders/Controllers/OrderReturnController.php",
+    "line": 633,
+    "evidence": "The exists rule checks the entire order_return_items table. Foreign IDs are silently skipped; items=[] is also accepted. The return and order are still marked completed/returned even when no matching item was processed. A subset can also complete the whole return while omitting other items.",
+    "fix": "Scope IDs to this return, require a non-empty valid set and verify the required item coverage before completion. Confirm partial-QC semantics instead of silently completing omitted items.",
+    "kind": "Source confirmed"
+  },
+  {
+    "id": "F12",
+    "severity": "Medium",
+    "title": "Optional return notes are accessed as required array keys",
+    "file": "app/Modules/Orders/Controllers/OrderReturnController.php",
+    "line": 194,
+    "evidence": "notes is nullable rather than required, but store and bulkStore read $validated[notes] directly. processQc similarly reads $itemData[qc_notes] after optional validation. Omitted keys trigger PHP warnings that Laravel converts to exceptions, rejecting otherwise valid requests.",
+    "fix": "Use null defaults for omitted nullable fields and test omitted as well as explicit null input.",
+    "kind": "Source confirmed"
+  },
+  {
+    "id": "F13",
+    "severity": "High",
+    "title": "Bulk payment rejection commits preceding updates",
+    "file": "app/Modules/Orders/Controllers/PaymentController.php",
+    "line": 133,
+    "evidence": "Returning false from DB::transaction commits rather than rolls back. Reproduction: select pending payment A followed by refunded payment B, request completed. HTTP 422 is returned for B, but A has already become completed.",
+    "fix": "Validate all locked rows before mutation or throw a validation exception from the transaction so all updates roll back.",
+    "kind": "Runtime reproduced"
+  },
+  {
+    "id": "F14",
+    "severity": "High",
+    "title": "Editing a payment bypasses overpayment and refund-state guards",
+    "file": "app/Modules/Orders/Controllers/PaymentController.php",
+    "line": 159,
+    "evidence": "update writes the amount/status directly and does not lock or verify invoice due. Reproduction: a payment on a 100 invoice is edited to 1000 and succeeds. The single-record edit also lacks the refunded-state guard present in bulkStatus.",
+    "fix": "Use a shared transactional payment amendment service: lock the invoice/payments, subtract the old payment when calculating the allowable replacement and enforce existing state restrictions.",
+    "kind": "Runtime reproduced"
+  },
+  {
+    "id": "F15",
+    "severity": "High",
+    "title": "Payment hooks can revive a cancelled invoice",
+    "file": "app/Modules/Orders/Models/Payment.php",
+    "line": 57,
+    "evidence": "The saved/deleted callback sets paid, partially_paid or unpaid with no cancelled-status exception. Editing or deleting a payment on a cancelled invoice overwrites cancellation. FinancialService also accepts payment on a cancelled invoice if due_amount is positive.",
+    "fix": "Preserve cancelled state in payment synchronization and reject payment creation/amendment on cancelled invoices unless an explicit existing reopening workflow authorizes it.",
+    "kind": "Source confirmed"
+  },
+  {
+    "id": "F16",
+    "severity": "High",
+    "title": "Refund and credit limits do not enforce one shared remaining entitlement",
+    "file": "app/Services/FinancialService.php",
+    "line": 88,
+    "evidence": "processRefund subtracts only this return.refund_amount from order.net_amount; issueCreditNote independently subtracts this return.credit_note_amount. Other returns, QC-created pending/completed refunds, actual completed cash received, wallet refunds and the other compensation method are not included in a shared cap. A refund plus credit note can each consume the full cap.",
+    "fix": "Lock the order/return financial scope and calculate a shared remaining entitlement from authoritative ledger rows, including pending obligations. Agree the existing cash/wallet/credit treatment before implementing any changed compensation policy.",
+    "kind": "Source confirmed"
+  },
+  {
+    "id": "F17",
+    "severity": "Medium",
+    "title": "Refund status changes do not reconcile return financial summaries",
+    "file": "app/Modules/Orders/Controllers/RefundController.php",
+    "line": 102,
+    "evidence": "QC creates pending Refund rows without updating return.refund_amount. bulkStatus later changes them to completed/failed/pending without reconciling return.refund_amount or financial_status. FinancialService alone maintains those columns, so the UI totals and later caps diverge from the refund ledger; its cash path also never chooses fully_refunded.",
+    "fix": "Use one refund transition service and derive/reconcile return summaries from relevant ledger statuses atomically. Preserve the distinction between pending obligations and completed payouts.",
+    "kind": "Source confirmed"
+  },
+  {
+    "id": "F18",
+    "severity": "High",
+    "title": "Manual credit notes permit arbitrary amounts and unrelated references",
+    "file": "app/Modules/Orders/Controllers/CreditNoteController.php",
+    "line": 135,
+    "evidence": "Validation independently checks customer_id, invoice_id and order_return_id existence, but not that they belong together or that amount is owed. The handler credits the requested wallet amount and marks the first matching refund completed regardless of its amount/status. Repeating the request can credit money again.",
+    "fix": "Validate customer/invoice/return ownership together, lock the exact refundable obligation, cap the amount and make settlement idempotent. Keep cash and wallet settlement records consistent.",
+    "kind": "Source confirmed"
+  },
+  {
+    "id": "F19",
+    "severity": "High",
+    "title": "Wallet redemption/credit paths lack a shared wallet lock",
+    "file": "app/Services/OrderService.php",
+    "line": 180,
+    "evidence": "New-order redemption reads the balance without lockForUpdate and later decrements it. Two orders can both observe the same funds and overdraw. CreditNoteController reads then writes an absolute balance without a lock, allowing concurrent credits/debits to overwrite each other. The order edit path already demonstrates the correct locked approach.",
+    "fix": "Lock the customer wallet row before reading or changing it in all wallet mutations, keep ledger creation in the same transaction and use a consistent lock order.",
+    "kind": "Source confirmed"
+  },
+  {
+    "id": "F20",
+    "severity": "High",
+    "title": "India Post AWB allocation races and suppresses duplicate errors",
+    "file": "app/Services/Shipping/Providers/IndiaPostProvider.php",
+    "line": 549,
+    "evidence": "The active range is read and incremented without a row lock. Concurrent orders can select the same current_sequence. The unique tracking-row insert exception is swallowed, allowing the duplicate barcode to be returned despite the schema uniqueness constraint. Range activation/editing can also race.",
+    "fix": "Reserve sequences in a short transaction under an office/range lock; enforce non-overlapping ranges; never continue after allocation persistence fails. Avoid holding that allocation lock during remote HTTP calls.",
+    "kind": "Source confirmed"
+  },
+  {
+    "id": "F21",
+    "severity": "High",
+    "title": "Free-gift quantities are not limited to earned quantities",
+    "file": "app/Services/OrderService.php",
+    "line": 644,
+    "evidence": "expectedGifts contains qty, but gift validation checks only product ID and gift_source. A matching gift line receives a 100% discount for any submitted quantity; repeated matching lines also receive the discount.",
+    "fix": "Track remaining earned quantity per product/source across all lines and discount only that allowance. Reject or charge excess units using the established product price.",
+    "kind": "Source confirmed"
+  },
+  {
+    "id": "F22",
+    "severity": "High",
+    "title": "Carrier tracking updates bypass stock, cashback and referral delivery logic",
+    "file": "app/Modules/Orders/Controllers/IndiaPostWebhookController.php",
+    "line": 75,
+    "evidence": "The webhook and PollIndiaPostTracking directly update order status. InventoryService::deliverOrder performs dispatched-quantity reduction, cashback and referral rewards, but these paths never call it. Later deliverOrder calls immediately return because status is already delivered. Polling can also set dispatched directly without dispatchOrder stock deduction.",
+    "fix": "Send carrier events through the existing authorized, idempotent lifecycle workflow and update shipment/event state atomically. Define safe handling for legacy out-of-order events.",
+    "kind": "Source confirmed"
+  },
+  {
+    "id": "F23",
+    "severity": "High",
+    "title": "Three exposed APIs target nonexistent controller methods",
+    "file": "routes/api.php",
+    "line": 285,
+    "evidence": "Route reflection found POST /api/orders/import -> OrderController::bulkImport, POST /api/payments -> PaymentController::store, and POST /api/returns/{orderReturn}/process -> OrderReturnController::process. None of those methods exists. These calls cannot execute their advertised operation.",
+    "fix": "Connect each endpoint to its supported existing workflow, with matching validation, permissions and response contract; remove/deprecate an endpoint only after checking mobile clients.",
+    "kind": "Route reflection verified"
+  },
+  {
+    "id": "F24",
+    "severity": "High",
+    "title": "API route parameter names prevent model binding",
+    "file": "routes/api.php",
+    "line": 399,
+    "evidence": "Transfer resource routes use {transfer}, but methods request StockTransfer $stockTransfer. Brand, UOM and warehouse show routes request $model instead of the route names. GET /api/returns/{orderReturn} requests OrderReturn $return, and POST /api/returns has no {order} parameter although store requires Order $order. Laravel skips unmatched implicit model binding and controller dependency injection supplies a new model, producing empty responses or failed mutations. Snake-case/camel-case pairs such as tax_rate/taxRate were explicitly excluded because Laravel supports them.",
+    "fix": "Align parameter names/resource parameter maps and supply the intended order on return creation. Add route-level existing-ID/nonexistent-ID checks.",
+    "kind": "Route/framework-source verified"
+  },
+  {
+    "id": "F25",
+    "severity": "Medium",
+    "title": "Rolling back the order target index fails on MySQL",
+    "file": "database/migrations/2026_10_24_120000_add_order_target_lookup_index.php",
+    "line": 19,
+    "evidence": "After all 112 migrations succeeded on MySQL 8, rollback failed with error 1553: orders_creator_date_deleted_idx is needed in a foreign key constraint. MySQL used the new left-prefixed composite index to support created_by and removed/replaced its redundant implicit index.",
+    "fix": "Ensure another suitable created_by index exists before dropping the composite index. Implement an existing-installation-compatible correction and test forward/backward execution.",
+    "kind": "Runtime reproduced"
+  },
+  {
+    "id": "F26",
+    "severity": "Medium",
+    "title": "Two creation migrations leave external foreign keys behind on rollback",
+    "file": "database/migrations/2026_07_07_000005a_create_villages_table.php",
+    "line": 39,
+    "evidence": "Continuing isolated rollback after temporarily supplying the supporting order index failed dropping villages: users_village_id_foreign still references it. After temporarily removing that FK only in the test DB, rollback then failed dropping users: departments_manager_id_foreign remains. Both migrations add a foreign key to an older table in up() without removing it in down().",
+    "fix": "Drop the foreign keys added to users/departments before dropping the referenced tables. Test a full rollback and full re-migration with MySQL foreign-key enforcement enabled.",
+    "kind": "Runtime reproduced"
+  },
+  {
+    "id": "F27",
+    "severity": "Medium",
+    "title": "Declared PHP 8.2 support conflicts with typed class constants",
+    "file": "app/Modules/Users/Controllers/AuthController.php",
+    "line": 35,
+    "evidence": "composer.json allows PHP ^8.2, but AuthController uses typed class constants, introduced in PHP 8.3. An allowed PHP 8.2 installation cannot parse this authentication controller. Current syntax checks passed under PHP 8.3.6 and therefore do not validate the advertised minimum.",
+    "fix": "Remove constant type declarations to preserve the stated minimum, or explicitly raise the platform requirement if deployment policy already requires 8.3. Prefer the compatibility-preserving option.",
+    "kind": "Source confirmed"
+  },
+  {
+    "id": "F28",
+    "severity": "High",
+    "title": "Adding an existing chat member can demote the owner",
+    "file": "app/Services/Chat/ChatService.php",
+    "line": 224,
+    "evidence": "GroupController::addMember permits moderators to add role=member. attachMember uses updateOrCreate and overwrites an existing member role. Adding the current owner as a member therefore demotes the owner without the dedicated ownership-transfer checks; admins can similarly rewrite roles through the add path.",
+    "fix": "Treat already-active members as unchanged or reject duplicates; reserve role changes for updateRole and prevent the add path from modifying owner/admin roles.",
+    "kind": "Source confirmed"
+  },
+  {
+    "id": "F29",
+    "severity": "Medium",
+    "title": "Header theme toggle bypasses chart updates and manager state",
+    "file": "resources/js/main.js",
+    "line": 748,
+    "evidence": "The visible header uses Alpine themeSwitch.toggle(), which changes the HTML attribute/localStorage directly. ThemeManager.setTheme emits themeChanged, but the header never calls it. Existing dashboard/analytics charts keep their old theme and ThemeManager.currentTheme becomes stale.",
+    "fix": "Use one theme manager for the header and every toggle, synchronize Alpine state from its event and update charts through the existing themeChanged handlers.",
+    "kind": "Source confirmed"
+  },
+  {
+    "id": "F30",
+    "severity": "Medium",
+    "title": "Automatic system-theme following stops immediately",
+    "file": "resources/js/utils/theme-manager.js",
+    "line": 14,
+    "evidence": "Initialization stores the OS-derived theme. The system change listener then sees a stored theme and refuses to follow OS changes even though the user never made a choice. Reproduction: start with no saved value/light OS, change OS to dark; actual theme remains light.",
+    "fix": "Separate applying an effective theme from saving an explicit user preference; only persist deliberate choices and validate stored values.",
+    "kind": "Runtime reproduced"
+  },
+  {
+    "id": "F31",
+    "severity": "Medium",
+    "title": "Blocked browser storage aborts application initialization",
+    "file": "resources/js/utils/theme-manager.js",
+    "line": 25,
+    "evidence": "getStoredTheme and setTheme do not catch localStorage failures. Reproduction with storage throwing SecurityError causes ThemeManager construction to fail. AdminApp initializes this before Bootstrap/page components/Alpine inside one try block, so the rest of initialization is skipped.",
+    "fix": "Wrap storage reads/writes, keep a validated in-memory fallback and let the rest of the application initialize. Apply the same safe access in Alpine theme state.",
+    "kind": "Runtime reproduced"
+  },
+  {
+    "id": "F32",
+    "severity": "Medium",
+    "title": "Financial list pagination is unbounded and accepts zero/negative limits",
+    "file": "app/Modules/Orders/Controllers/PaymentController.php",
+    "line": 68,
+    "evidence": "PaymentController, InvoiceController and RefundController pass the requested limit directly into paginate. Very large values load all matching records and nested payment/refund relations; zero/negative values can generate invalid pagination behavior. DepartmentController similarly uses raw per_page.",
+    "fix": "Validate and clamp list page sizes to an agreed existing application maximum; keep full exports on their separate streaming paths.",
+    "kind": "Source-confirmed performance/input issue"
+  },
+  {
+    "id": "F33",
+    "severity": "Medium",
+    "title": "Order numbering work grows with daily order volume and serializes LOBs",
+    "file": "app/Services/OrderService.php",
+    "line": 287,
+    "evidence": "Each auto-number allocation acquires one database/date advisory lock shared by all LOB prefixes, loads every matching daily order number with lockForUpdate, then scans suffixes in PHP. This adds O(daily orders) work per order and accumulates row locks until the outer transaction commits. Total daily suffix scanning grows approximately quadratically. No production throughput measurement was performed.",
+    "fix": "Use a transaction-safe sequence row scoped to database/date/prefix, seeded to the existing maximum suffix, while preserving the exact visible number format and uniqueness. Benchmark before/after.",
+    "kind": "Source-confirmed scaling bottleneck"
+  },
+  {
+    "id": "F34",
+    "severity": "Low",
+    "title": "Inventory lifecycle repeats aggregate queries while holding write locks",
+    "file": "app/Services/InventoryService.php",
+    "line": 810,
+    "evidence": "receiveTransfer calls syncProductStatus twice consecutively for the same product. That helper already aggregates every warehouse, so the second call repeats the same reads/save. confirmOrder also repeats sync after reserveStock already synchronized it. syncProductStatus hydrates all stocks merely to sum quantity-reserved_qty.",
+    "fix": "Remove proven duplicate synchronization and perform equivalent SQL aggregation. Keep the same status formula, drafts and overselling behavior. Measure query counts with multi-item transfers.",
+    "kind": "Source-confirmed redundant work"
+  },
+  {
+    "id": "F35",
+    "severity": "Medium",
+    "title": "Chat polling reloads the entire conversation graph",
+    "file": "app/Services/Chat/ChatService.php",
+    "line": 25,
+    "evidence": "listConversations performs get() with all active members/users, latest senders and unread correlated counts for every conversation. The client refreshes conversation data periodically. Payload/query work grows with total conversation membership rather than the visible page. Production latency was not measured.",
+    "fix": "Use compatible pagination or a delta/since cursor, cap initial list size, and avoid repeatedly fetching unchanged member profiles. Measure client payload and database work before changing the polling contract.",
+    "kind": "Source-confirmed scaling risk"
+  },
+  {
+    "id": "F36",
+    "severity": "High",
+    "title": "Transfer editing can race with sending and change in-transit contents",
+    "file": "app/Modules/Inventory/Controllers/StockTransferController.php",
+    "line": 158,
+    "evidence": "The draft check occurs outside the transaction; update never reloads/locks the transfer. If sendTransfer locks and sends the draft after that check, update can later overwrite warehouses and delete/recreate items on the sent transfer. Receive then credits the edited contents instead of those deducted from the source. destroy and bulk delete also check stale status without a transfer lock.",
+    "fix": "Reload/lock the transfer and verify draft state inside each edit/delete transaction before changing items. Share the same lock convention as send/receive.",
+    "kind": "Source confirmed"
+  },
+  {
+    "id": "F37",
+    "severity": "High",
+    "title": "Shipping view permission also grants configuration mutations",
+    "file": "routes/api.php",
+    "line": 83,
+    "evidence": "Shipping settings and range mutations use permission:settings-edit|shipping-view, an OR rule. A user granted only shipping-view can replace office configuration/credentials and alter, activate or delete barcode ranges. store also validates only the outer array, allowing malformed office entries to break provider configuration.",
+    "fix": "Require the established edit permission for every mutation, keep view-only access read-only and validate office entry structure/IDs/provider URL and credential field types before storage.",
+    "kind": "Source confirmed"
+  },
+  {
+    "id": "F38",
+    "severity": "Medium",
+    "title": "Category and department parent updates can create cycles",
+    "file": "app/Modules/Catalog/Controllers/CategoryController.php",
+    "line": 92,
+    "evidence": "Category parent_id is only nullable; it accepts self-parenting and descendant cycles, and invalid IDs reach database errors. Department validation blocks only direct self-parenting, permitting A->B->A. The organization chart starts at parent_id=NULL, so cyclic departments disappear from the tree.",
+    "fix": "Validate existing parent IDs, reject self/descendant references using a bounded ancestor traversal under appropriate locks, and preserve the intended hierarchy depth.",
+    "kind": "Source confirmed"
+  },
+  {
+    "id": "F39",
+    "severity": "Low",
+    "title": "Catalog/transfer sort direction errors become server failures",
+    "file": "app/Modules/Inventory/Controllers/StockTransferController.php",
+    "line": 61,
+    "evidence": "Several catalog list controllers and StockTransferController whitelist sort columns but pass arbitrary sort_dir to orderBy. Laravel throws InvalidArgumentException for a value other than asc/desc; a malformed query causes a 500 instead of a controlled validation response. InventoryAdjustmentController already normalizes this correctly.",
+    "fix": "Validate sort_dir as asc/desc or normalize it consistently before passing it into the query builder.",
+    "kind": "Source confirmed"
+  }
+]

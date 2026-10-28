@@ -22,6 +22,8 @@ const registerComponent = () => {
     dateTo: getEndOfDay(),
 
     init() {
+      const options = [...document.querySelectorAll('#reportType option')];
+      if (!options.some(option => option.value === this.reportType)) this.reportType = options[0]?.value || '';
       // Initialize tooltip if any
       const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
       const tooltipList = [...tooltipTriggerList].map(

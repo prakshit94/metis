@@ -9,6 +9,7 @@ use App\Modules\Core\Controllers\Controller;
 use App\Modules\Users\Models\Attendance;
 use App\Modules\Users\Models\LoginHistory;
 use App\Modules\Users\Models\User;
+use App\Services\TwoFactorService;
 use Illuminate\Auth\Events\Failed;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Http\JsonResponse;
@@ -23,6 +24,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 /**
  * Handles all authentication flows for both Web (session) and Mobile (Sanctum
@@ -32,15 +34,28 @@ class AuthController extends Controller
 {
     // ─── Constants ────────────────────────────────────────────────────────────
 
-    private const int MAX_ATTEMPTS = 5;
+    private const MAX_ATTEMPTS = 5;
 
-    private const int LOCKOUT_WINDOW_MIN = 5;
+    private const LOCKOUT_WINDOW_MIN = 5;
 
-    private const int SUSPENSION_MIN = 15;
+    private const SUSPENSION_MIN = 15;
 
-    private const int TOKEN_EXPIRY_DAYS = 30;
+    private const TOKEN_EXPIRY_DAYS = 30;
 
-    private const string GENERIC_ERROR = 'Invalid email or password.';
+    private const GENERIC_ERROR = 'Invalid email or password.';
+
+    /** Current identity and effective grants for native navigation after token restoration. */
+    public function me(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        return response()->json([
+            'user' => $user,
+            'roles' => $user->getRoleNames()->values(),
+            'permissions' => $user->getAllPermissions()->pluck('name')->values(),
+            'team_id' => getPermissionsTeamId(),
+        ]);
+    }
 
     // ─── Login ────────────────────────────────────────────────────────────────
 
@@ -101,7 +116,7 @@ class AuthController extends Controller
             $dummyHash = in_array(config('hashing.driver'), ['argon2id', 'argon2i'])
                 ? '$argon2id$v=19$m=65536,t=4,p=1$Z29uOU56Slc0SWRJbFAvYg$ILca1T1tS+yPIT6WNfrXcA6t0S0XqX9wngZa+PXrZj4'
                 : '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi';
-            
+
             try {
                 Hash::check($request->validated('password'), $dummyHash);
             } catch (\RuntimeException $e) {
@@ -150,12 +165,131 @@ class AuthController extends Controller
         RateLimiter::clear($emailKey);
         RateLimiter::clear($ipKey);
 
-        // ── 4. Issue credentials ─────────────────────────────────────────────
-        if ($this->isMobileRequest($request)) {
-            return $this->issueMobileToken($request, $user);
+        // Hold the settings lock through issuance so concurrent enrollment cannot
+        // turn a password-only sign-in into a second-factor bypass.
+        return DB::transaction(function () use ($request, $user) {
+            $user = User::whereKey($user->id)->lockForUpdate()->firstOrFail();
+            if (!Hash::check($request->validated('password'), $user->password) || !$user->isActive() || $user->isSuspended()) {
+                return $this->genericFailure($request);
+            }
+            $twoFactor = app(TwoFactorService::class);
+            $mobile = $this->isMobileRequest($request);
+            $challenge = $twoFactor->begin($user, $request, $mobile ? 'mobile' : 'web');
+            if ($challenge !== null) {
+                $details = $twoFactor->challengeInfo($challenge, $mobile ? 'mobile' : 'web');
+                $deliveryError = null;
+                if (!$details['enrollment_required'] && $details['method'] === 'email') {
+                    try {
+                        $twoFactor->sendLoginEmail($challenge, $mobile ? 'mobile' : 'web', $request);
+                    } catch (HttpException $error) {
+                        $deliveryError = $error->getMessage(); // Keep recovery-code sign-in available during delivery outages.
+                    }
+                }
+                if ($mobile) {
+                    return response()->json(['two_factor_required' => true, 'challenge_token' => $challenge,
+                        'expires_in' => 300, 'enrollment_required' => $details['enrollment_required'],
+                        'email_available' => $details['email_available'] ?? null,
+                        'message' => $details['enrollment_required'] ? 'Your administrator requires two-step login. Enroll and verify your own method to continue.' : 'Enter a verification or recovery code.',
+                        'method' => $details['method'], 'email_hint' => $details['email_hint'], 'email_delivery_error' => $deliveryError], 202)
+                        ->header('Cache-Control', 'no-store');
+                }
+                $request->session()->regenerate();
+                $request->session()->put('two_factor_challenge', $challenge);
+
+                return redirect()->route('login.two-factor')->with('error', $deliveryError);
+            }
+
+            // ── 4. Issue credentials ─────────────────────────────────────────────
+            if ($this->isMobileRequest($request)) {
+                return $this->issueMobileToken($request, $user);
+            }
+
+            return $this->issueWebSession($request, $user);
+        });
+    }
+
+    public function twoFactorForm(Request $request)
+    {
+        if (! $request->session()->has('two_factor_challenge')) {
+            return redirect()->route('login');
         }
 
-        return $this->issueWebSession($request, $user);
+        try {
+            $details = app(TwoFactorService::class)->challengeInfo($request->session()->get('two_factor_challenge'), 'web');
+            return response()->view($details['enrollment_required'] ? 'auth.two-factor-enroll' : 'auth.two-factor-challenge', $details)->header('Cache-Control', 'no-store');
+        } catch (HttpException) {
+            $request->session()->forget('two_factor_challenge');
+            return redirect()->route('login')->with('error', 'Your verification request expired or account security changed. Sign in again.');
+        }
+    }
+
+    public function twoFactorEnroll(Request $request, TwoFactorService $twoFactor): JsonResponse|RedirectResponse
+    {
+        $mobile = $this->isMobileRequest($request);
+        $request->validate(['method' => 'required|in:authenticator,email']);
+        $token = $mobile ? $request->input('challenge_token') : $request->session()->get('two_factor_challenge');
+        abort_unless(is_string($token) && strlen($token) === 64, 422, 'Sign in again to enroll two-step authentication.');
+        try {
+            $data = $twoFactor->setupForLogin($token, $mobile ? 'mobile' : 'web', $request->input('method'), $request);
+            return $mobile ? response()->json($data)->header('Cache-Control', 'no-store')
+                : redirect()->route('login.two-factor');
+        } catch (HttpException $error) {
+            if ($mobile) throw $error;
+            return redirect()->route('login.two-factor')->with('error', $error->getMessage());
+        }
+    }
+
+    public function twoFactorEmail(Request $request, TwoFactorService $twoFactor): JsonResponse|RedirectResponse
+    {
+        $mobile = $this->isMobileRequest($request);
+        $token = $mobile ? $request->input('challenge_token') : $request->session()->get('two_factor_challenge');
+        abort_unless(is_string($token) && strlen($token) === 64, 422, 'Sign in again to request a verification email.');
+        if ($mobile) {
+            $remaining = $twoFactor->sendLoginEmail($token, 'mobile', $request);
+
+            return response()->json(['message' => 'Verification email sent.', 'expires_in' => $remaining])->header('Cache-Control', 'no-store');
+        }
+        try {
+            $twoFactor->sendLoginEmail($token, 'web', $request);
+
+            return redirect()->route('login.two-factor')->with('status', 'Verification email sent.');
+        } catch (HttpException $error) {
+            return redirect()->route('login.two-factor')->with('error', $error->getMessage());
+        }
+    }
+
+    public function twoFactorChallenge(Request $request, TwoFactorService $twoFactor): JsonResponse|RedirectResponse|Response
+    {
+        // Keep factor consumption and credential issuance in the same transaction.
+        return DB::transaction(function () use ($request, $twoFactor) {
+            // Validate manually so Laravel never flashes an OTP or challenge bearer into old input.
+            $mobile = $this->isMobileRequest($request);
+            $token = $mobile ? $request->input('challenge_token') : $request->session()->get('two_factor_challenge');
+            $code = $request->input('code');
+            $result = null;
+            if (is_string($token) && strlen($token) === 64 && is_string($code) && strlen($code) <= 64) {
+                $result = $twoFactor->verifyLogin($token, trim($code), $mobile ? 'mobile' : 'web', $request);
+            }
+            if ($result === null) {
+                $message = 'Invalid, expired or already used verification code. Try a fresh code, or sign in again.';
+
+                return $mobile ? response()->json(['message' => $message], 422)
+                    : redirect()->route('login.two-factor')->with('error', $message);
+            }
+            $request->merge(['remember' => $result['remember']]);
+            if ($mobile) {
+                $response = $this->issueMobileToken($request, $result['user']);
+                if (isset($result['recovery_codes'])) $response->setData($response->getData(true) + ['recovery_codes' => $result['recovery_codes']]);
+                return $response->header('Cache-Control', 'no-store');
+            }
+            $request->session()->forget('two_factor_challenge');
+
+            $login = $this->issueWebSession($request, $result['user']);
+            if (!isset($result['recovery_codes'])) return $login;
+            $response = response()->view('auth.two-factor-recovery', ['codes' => $result['recovery_codes'], 'continue_url' => $login->getTargetUrl()])->header('Cache-Control', 'no-store');
+            foreach ($login->headers->getCookies() as $cookie) $response->withCookie($cookie);
+            return $response;
+        });
     }
 
     private function recordThrottledAttempt(Request $request, string $email, string $ip, ?User $user): void
@@ -177,8 +311,7 @@ class AuthController extends Controller
         string $emailKey,
         string $ipKey,
         ?User $user = null
-    ): JsonResponse|RedirectResponse
-    {
+    ): JsonResponse|RedirectResponse {
         $message = $this->retryNotice($emailKey, $ipKey, $user).' '.$this->attemptSummary($emailKey, $ipKey);
 
         return $this->isMobileRequest($request)
@@ -373,9 +506,11 @@ class AuthController extends Controller
 
         $request->session()->regenerate();
 
-        if ($teamId = $user->lob_team_id) {
-            $request->session()->put('team_id', $teamId);
-        }
+        $teamId = app(\App\Services\TeamContext::class)->teamId($user);
+        setPermissionsTeamId($teamId);
+        $user->unsetRelation('roles')->unsetRelation('permissions');
+        $request->session()->forget('team_id');
+        if ($teamId !== null) $request->session()->put('team_id', $teamId);
 
         $response = redirect()->intended(route('dashboard'));
 

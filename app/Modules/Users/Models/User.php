@@ -6,12 +6,14 @@ namespace App\Modules\Users\Models;
 
 use App\Concerns\LogsActivity;
 use App\Models\Chat\Presence;
+use App\Models\Target;
 use App\Modules\Catalog\Models\Service;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -55,6 +57,8 @@ class User extends Authenticatable implements Auditable
         'joining_date',
         'password',
         'is_active',
+        'two_factor_required',
+        'office_id',
         'email_verified_at',
         'phone',
         'department_id',
@@ -87,6 +91,8 @@ class User extends Authenticatable implements Auditable
      *
      * @var list<string>
      */
+    protected $auditExclude = ['password', 'remember_token'];
+
     protected $hidden = [
         'password',
         'remember_token',
@@ -104,6 +110,7 @@ class User extends Authenticatable implements Auditable
             'joining_date' => 'date',
             'password' => 'hashed',
             'is_active' => 'boolean',
+            'two_factor_required' => 'boolean',
             'password_changed_at' => 'datetime',
             'suspended_until' => 'datetime',
             'deleted_at' => 'datetime',
@@ -111,10 +118,17 @@ class User extends Authenticatable implements Auditable
         ];
     }
 
+    /** The protected master account is user 1; delegated Super Admins are not the master. */
+    public function isMasterAdmin(): bool
+    {
+        return (int) $this->getKey() === 1 && $this->hasRole('Super Admin');
+    }
+
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
             ->logFillable()
+            ->logExcept(['password', 'remember_token'])
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs();
     }
@@ -124,7 +138,7 @@ class User extends Authenticatable implements Auditable
         static::updated(function (User $user) {
             if ($user->wasChanged('is_active') && ! $user->is_active) {
                 $user->tokens()->delete();
-                \Illuminate\Support\Facades\DB::table('sessions')->where('user_id', $user->id)->delete();
+                DB::table('sessions')->where('user_id', $user->id)->delete();
             }
         });
     }
@@ -209,7 +223,9 @@ class User extends Authenticatable implements Auditable
             return null;
         }
 
-        $lobRole = $this->allRoles()->whereNotNull('model_has_roles.team_id')->first();
+        $lobRole = $this->relationLoaded('allRoles')
+            ? $this->allRoles->first(fn ($role) => $role->pivot->team_id !== null)
+            : $this->allRoles()->whereNotNull('model_has_roles.team_id')->first();
         $teamId = $lobRole ? (int) $lobRole->pivot->team_id : null;
 
         $this->lobTeamIdCache = $teamId;
@@ -233,7 +249,9 @@ class User extends Authenticatable implements Auditable
 
         $team = Team::find($teamId);
 
-        return $team?->resolved_state_name;
+        abort_unless($team?->resolved_state_name, 403, 'Your state team has no valid mapping. Contact an administrator.');
+
+        return $team->resolved_state_name;
     }
 
     /**
@@ -259,6 +277,11 @@ class User extends Authenticatable implements Auditable
             ->unique()
             ->values()
             ->toArray();
+    }
+
+    public function office(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Office::class);
     }
 
     public function subordinates(): HasMany
@@ -409,8 +432,8 @@ class User extends Authenticatable implements Auditable
         return 'desktop';
     }
 
-    public function targets(): \Illuminate\Database\Eloquent\Relations\MorphMany
+    public function targets(): MorphMany
     {
-        return $this->morphMany(\App\Models\Target::class, 'targetable');
+        return $this->morphMany(Target::class, 'targetable');
     }
 }

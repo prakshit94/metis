@@ -4,10 +4,20 @@ namespace App\Http\Controllers\Api\Chat;
 
 use App\Modules\Core\Controllers\Controller;
 use App\Services\Chat\ChatService;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Http\Request;
 
-class UserController extends Controller
+class UserController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:chat-view'),
+            new Middleware('permission:chat-export', only: ['export']),
+        ];
+    }
+
     public function index(Request $request, ChatService $chat)
     {
         abort_unless(config('chat.enabled'), 404);

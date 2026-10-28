@@ -5,6 +5,7 @@
 
 @section('content')
 <div class="user-management user-admin-page" x-data="userTable">
+    <div x-show="officeFilter" x-cloak class="alert alert-info d-flex justify-content-between align-items-center gap-2"><span>Showing users assigned to the selected office.</span><button type="button" class="btn btn-sm btn-outline-secondary" @click="officeFilter = ''; currentPage = 1; loadUsers()">Clear office filter</button></div>
     <div>
 <!-- Page Header -->
                     <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-4 pb-3 border-bottom">
@@ -13,6 +14,7 @@
                             <p class="text-muted mb-0">Manage users, roles, and permissions</p>
                         </div>
                         <div class="users-page-actions d-flex flex-wrap align-items-center gap-2">
+                            <a href="{{ url('/security') }}" class="btn btn-outline-primary"><i class="bi bi-shield-lock me-2" aria-hidden="true"></i>My security &amp; 2-step verification</a>
 
                             @can('user-import')
                             <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#importModal">
@@ -40,7 +42,7 @@
                             <div class="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-3">
                                 <div>
                                     <h2 id="usersSummaryHeading" class="h5 mb-1">User overview</h2>
-                                    <p class="small text-body-secondary mb-1">All statuses across your permitted LOB scope, matching the search, role and LOB filters.</p>
+                                    <p class="small text-body-secondary mb-1">All statuses across your permitted LOB scope, matching the search, role, LOB and 2-step filters.</p>
                                     <div class="d-flex flex-wrap align-items-center gap-2 small">
                                         <span class="badge bg-primary-subtle text-primary-emphasis border border-primary-subtle">
                                             <i class="bi bi-diagram-2-fill me-1" aria-hidden="true"></i>
@@ -285,6 +287,14 @@
                                                 <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-3 text-muted"></i>
                                             </div>
                                             
+                                            <select class="form-select form-select-sm shadow-sm border-0 bg-body-tertiary rounded-pill px-3"
+                                                    aria-label="Two-step verification status" x-model="securityFilter" @change="filterUsers()" style="width: 190px;">
+                                                <option value="">All 2-step statuses</option>
+                                                <option value="enabled">2-step enabled</option>
+                                                <option value="disabled">2-step not enabled</option>
+                                                <option value="authenticator">Authenticator app</option>
+                                                <option value="email">Email verification</option>
+                                            </select>
                                             <!-- Status Filter -->
                                                 <select class="form-select form-select-sm shadow-sm border-0 bg-body-tertiary rounded-pill px-3" 
                                                     aria-label="User status" aria-describedby="usersTableScope" x-model="statusFilter"
@@ -353,25 +363,25 @@
                                         </div>
                                         <div class="d-flex gap-2">
                                             @can('user-activate')
-                                            <button class="btn btn-sm btn-success" @click="bulkAction('activate')" x-show="canBulkActivate">
+                                            <button class="btn btn-sm btn-success" :disabled="bulkBusy" @click="bulkAction('activate')" x-show="canBulkActivate">
                                                 <i class="bi bi-check-circle me-1"></i>Activate
                                             </button>
-                                            <button class="btn btn-sm btn-warning" @click="bulkAction('deactivate')" x-show="canBulkDeactivate">
+                                            <button class="btn btn-sm btn-warning" :disabled="bulkBusy" @click="bulkAction('deactivate')" x-show="canBulkDeactivate">
                                                 <i class="bi bi-x-circle me-1"></i>Deactivate
                                             </button>
                                             @endcan
                                             @can('user-delete')
-                                            <button class="btn btn-sm btn-danger" @click="bulkAction('delete')" x-show="hasSelectedActiveUsers">
+                                            <button class="btn btn-sm btn-danger" :disabled="bulkBusy" @click="bulkAction('delete')" x-show="hasSelectedActiveUsers">
                                                 <i class="bi bi-trash me-1"></i>Delete
                                             </button>
                                             @endcan
                                             @can('user-restore')
-                                            <button class="btn btn-sm btn-success" @click="bulkAction('restore')" x-show="hasSelectedDeletedUsers">
+                                            <button class="btn btn-sm btn-success" :disabled="bulkBusy" @click="bulkAction('restore')" x-show="hasSelectedDeletedUsers">
                                                 <i class="bi bi-arrow-counterclockwise me-1"></i>Restore
                                             </button>
                                             @endcan
                                             @can('user-permanent-delete')
-                                            <button class="btn btn-sm btn-danger" @click="bulkAction('force-delete')" x-show="hasSelectedDeletedUsers">
+                                            <button class="btn btn-sm btn-danger" :disabled="bulkBusy" @click="bulkAction('force-delete')" x-show="hasSelectedDeletedUsers">
                                                 <i class="bi bi-trash3 me-1"></i>Permanent Delete
                                             </button>
                                             @endcan
@@ -472,6 +482,7 @@
                                                         <div class="d-flex flex-column gap-1">
                                                             <div class="text-body d-flex align-items-center"><i class="bi bi-envelope text-muted me-2"></i> <span x-text="user.email || '—'"></span></div>
                                                             <div class="text-muted small d-flex align-items-center"><i class="bi bi-telephone text-muted me-2"></i> <span x-text="user.phone || '—'"></span></div>
+                                                            <div x-show="user.office" class="small text-body-secondary"><i class="bi bi-building me-2" aria-hidden="true"></i><span x-text="user.office?.name || ''"></span></div>
                                                         </div>
                                                     </td>
                                                     <td>
@@ -506,6 +517,9 @@
                                                                       'bg-warning-subtle text-warning-emphasis': user.is_suspended && user.status !== 'deleted',
                                                                   }"
                                                                   x-text="user.status === 'deleted' ? 'deleted' : (user.is_suspended ? 'suspended' : user.status)"></span>
+                                                            <span class="badge" :class="user.two_factor_enabled ? 'bg-success-subtle text-success-emphasis' : 'bg-secondary-subtle text-secondary-emphasis'" :title="user.two_factor_enabled ? 'Two-step verification enabled' : 'Two-step verification is not enabled'">
+                                                                <i class="bi bi-shield-lock me-1" aria-hidden="true"></i><span x-text="user.two_factor_enabled ? (user.two_factor_method === 'email' ? '2-step: Email' : '2-step: Authenticator') : (user.two_factor_required ? '2-step: Setup required' : '2-step: Off')"></span>
+                                                            </span>
                                                             <small class="text-warning-emphasis" x-show="user.is_suspended">
                                                                 <i class="bi bi-clock me-1"></i>Suspended until
                                                                 <span x-text="user.suspendedUntilDateTime"></span>
@@ -539,7 +553,7 @@
                                                         </div>
                                                     </td>
                                                     <td>
-                                                        <div class="dropdown">
+                                                        <div class="dropdown" x-data="userActionMenu">
                                                             @canany(['user-activate', 'user-edit'])
                                                             <button class="btn btn-sm btn-outline-success me-1"
                                                                     type="button"
@@ -552,75 +566,83 @@
                                                             @endcanany
                                                             <button class="btn btn-sm btn-outline-secondary dropdown-toggle"
                                                                     type="button"
-                                                                    data-bs-toggle="dropdown"
-                                                                    aria-expanded="false"
+                                                                    x-show="user.isDeleted ? @js(auth()->user()->canAny(['user-restore', 'user-permanent-delete'])) : @js(auth()->user()->canAny(['attendance-view', 'leave-view', 'user-edit', 'user-activate', 'user-delete']))"
+                                                                    x-ref="trigger"
+                                                                    @click="toggle()" @keydown="keydown($event)"
+                                                                    :aria-expanded="open" aria-haspopup="menu" :aria-controls="'user-actions-' + user.id"
                                                                     :aria-label="'Actions for ' + user.name" title="User actions">
                                                                 <i class="bi bi-three-dots"></i>
                                                             </button>
-                                                            <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                                                            <template x-teleport="body">
+                                                            <ul class="dropdown-menu users-action-menu shadow show" x-ref="menu"
+                                                                :id="'user-actions-' + user.id" role="menu" :aria-label="'Actions for ' + user.name"
+                                                                x-show="open" x-cloak @keydown="keydown($event)" @click.outside="outside($event)" @click="close()">
                                                                 @can('attendance-view')
-                                                                <li><a class="dropdown-item" :href="'/attendances?user_id=' + user.id" x-show="!user.isDeleted"><i class="bi bi-calendar-check me-2"></i>View attendance</a></li>
+                                                                <li role="none"><a role="menuitem" class="dropdown-item" :href="'/attendances?user_id=' + user.id" x-show="!user.isDeleted"><i class="bi bi-calendar-check me-2"></i>View attendance</a></li>
                                                                 @endcan
                                                                 @can('leave-view')
-                                                                <li><a class="dropdown-item" :href="'/leaves?user_id=' + user.id" x-show="!user.isDeleted"><i class="bi bi-calendar-minus me-2"></i>View leave requests</a></li>
+                                                                <li role="none"><a role="menuitem" class="dropdown-item" :href="'/leaves?user_id=' + user.id" x-show="!user.isDeleted"><i class="bi bi-calendar-minus me-2"></i>View leave requests</a></li>
                                                                 @endcan
 
                                                                 @can('user-edit')
-                                                                <li>
-                                                                    <a class="dropdown-item" href="#" @click.prevent="editUser(user)" x-show="!user.isDeleted">
+                                                                <li role="none">
+                                                                    <a role="menuitem" class="dropdown-item" href="#" @click.prevent="editUser(user)" x-show="!user.isDeleted">
                                                                         <i class="bi bi-pencil me-2"></i>Edit
                                                                     </a>
                                                                 </li>
                                                                 @if(auth()->user()->hasRole('Super Admin') && !session()->has('impersonated_by'))
-                                                                <li>
-                                                                    <a class="dropdown-item" href="#" @click.prevent="impersonateUser(user)" :class="{ 'disabled': impersonating }" x-show="!user.isDeleted && user.id !== {{ auth()->id() }}">
+                                                                <li role="none">
+                                                                    <a role="menuitem" class="dropdown-item" href="#" @click.prevent="impersonateUser(user)" :class="{ 'disabled': impersonating }" x-show="!user.isDeleted && user.id !== {{ auth()->id() }}">
                                                                         <i class="bi bi-box-arrow-in-right me-2 text-warning"></i> Impersonate
                                                                     </a>
                                                                 </li>
                                                                 @endif
-                                                                <li>
-                                                                    <a class="dropdown-item" href="#" @click.prevent="$dispatch('open-change-password-modal', { userId: user.id })" x-show="!user.isDeleted">
+                                                                <li role="none">
+                                                                    <a role="menuitem" class="dropdown-item" href="#" @click.prevent="$dispatch('open-change-password-modal', { userId: user.id })" x-show="!user.isDeleted">
                                                                         <i class="bi bi-key me-2"></i>Change Password
                                                                     </a>
                                                                 </li>
                                                                 @endcan
                                                                 @can('user-activate')
-                                                                <li>
-                                                                    <a class="dropdown-item" href="#" @click.prevent="toggleActive(user)" x-show="!user.isDeleted">
+                                                                <li role="none">
+                                                                    <a role="menuitem" class="dropdown-item" href="#" @click.prevent="toggleActive(user)" x-show="!user.isDeleted">
                                                                         <i class="bi me-2" :class="user.is_active ? 'bi-x-circle' : 'bi-check-circle'"></i><span x-text="user.is_active ? 'Deactivate' : 'Activate'"></span>
                                                                     </a>
                                                                 </li>
                                                                 @endcan
                                                                 @canany(['user-activate', 'user-edit'])
-                                                                <li x-show="!user.isDeleted && user.is_suspended">
-                                                                    <a class="dropdown-item text-success" href="#" @click.prevent="liftSuspension(user)">
+                                                                <li role="none" x-show="!user.isDeleted && user.is_suspended">
+                                                                    <a role="menuitem" class="dropdown-item text-success" href="#" @click.prevent="liftSuspension(user)">
                                                                         <i class="bi bi-unlock me-2"></i>Lift Suspension
                                                                     </a>
                                                                 </li>
                                                                 @endcanany
-                                                                <li><hr class="dropdown-divider"></li>
                                                                 @can('user-delete')
-                                                                <li>
-                                                                    <a class="dropdown-item text-danger" href="#" @click.prevent="deleteUser(user)" x-show="!user.isDeleted">
+                                                                <li role="none" x-show="!user.isDeleted"><hr class="dropdown-divider"></li>
+                                                                @endcan
+                                                                @can('user-delete')
+                                                                <li role="none">
+                                                                    <a role="menuitem" class="dropdown-item text-danger" href="#" @click.prevent="deleteUser(user)" x-show="!user.isDeleted">
                                                                         <i class="bi bi-trash me-2"></i>Delete
                                                                     </a>
                                                                 </li>
                                                                 @endcan
                                                                 @can('user-restore')
-                                                                <li>
-                                                                    <a class="dropdown-item text-success" href="#" @click.prevent="restoreUser(user)" x-show="user.isDeleted">
+                                                                <li role="none">
+                                                                    <a role="menuitem" class="dropdown-item text-success" href="#" @click.prevent="restoreUser(user)" x-show="user.isDeleted">
                                                                         <i class="bi bi-arrow-counterclockwise me-2"></i>Restore
                                                                     </a>
                                                                 </li>
                                                                 @endcan
                                                                 @can('user-permanent-delete')
-                                                                <li>
-                                                                    <a class="dropdown-item text-danger" href="#" @click.prevent="forceDeleteUser(user)" x-show="user.isDeleted">
+                                                                <li role="none">
+                                                                    <a role="menuitem" class="dropdown-item text-danger" href="#" @click.prevent="forceDeleteUser(user)" x-show="user.isDeleted">
                                                                         <i class="bi bi-trash3 me-2"></i>Permanent Delete
                                                                     </a>
                                                                 </li>
                                                                 @endcan
                                                             </ul>
+                                                            </template>
                                                         </div>
                                                     </td>
                                                 </tr>
@@ -675,7 +697,7 @@
     </div> <!-- End showAnalytics wrapper -->
 
 {{-- ═══════════════════════ Add / Edit User Modal ═══════════════════════════ --}}
-<div class="modal fade" id="userModal" tabindex="-1" aria-labelledby="userModalLabel" aria-hidden="true" :class="{ 'view-mode-active': isViewMode }" x-data="userForm">
+<div class="modal fade" id="userModal" data-can-manage-security="{{ auth()->user()->can('user-security-requirement') ? '1' : '0' }}" data-default-team="{{ auth()->user()->lob_team_id ?? '' }}" data-can-sync-roles="{{ auth()->user()->can('user-sync-roles') ? '1' : '0' }}" data-can-activate="{{ auth()->user()->can('user-activate') ? '1' : '0' }}" tabindex="-1" aria-labelledby="userModalLabel" aria-hidden="true" :class="{ 'view-mode-active': isViewMode }" x-data="userForm">
     <div class="modal-dialog modal-xl modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header border-bottom-0 pb-0" x-show="!isViewMode">
@@ -939,7 +961,7 @@
                                             <label class="form-label fw-medium text-muted small" for="userFormField5">Gender</label>
                                             <select id="userFormField5" class="form-select form-select-sm" x-model="form.gender">
                                                 <option value="Male">Male</option>
-                                                <option value="Female">Female</option>
+                                                <option value="Female">Female</option><option value="Other">Other</option><option value="Prefer not to say">Prefer not to say</option>
                                             </select>
                                         </div>
                                         <div class="col-md-4">
@@ -1186,10 +1208,59 @@
                                         <i class="bi bi-shield-lock-fill text-danger fs-5 me-2"></i>
                                         <h6 class="card-title mb-0 fw-bold">Account Settings</h6>
                                     </div>
+                                    <div class="border rounded p-3 mb-3">
+                                        <div class="d-flex align-items-center justify-content-between gap-2">
+                                            @can('user-security-requirement')
+                                            <div class="form-check form-switch mb-0"><input id="userRequireTwoStep" type="checkbox" role="switch" class="form-check-input" x-model="twoFactorRequired" :disabled="securityStatusLoading || !securityStatusLoaded || saving || securityProofBusy"><label class="form-check-label fw-semibold" for="userRequireTwoStep">Require two-step login</label></div>
+                                            @else
+                                            <span class="fw-semibold">Two-step login <span x-text="twoFactorRequired ? '(Required)' : '(Optional)'"></span></span>
+                                            @endcan
+                                            <div class="position-relative flex-shrink-0" id="userTwoStepInfoTrigger" x-data="{ infoOpen: false, infoCloseTimer: null }" @mouseenter="clearTimeout(infoCloseTimer); infoOpen = true" @mouseleave="if (!document.getElementById('userTwoStepInfo')?.contains($event.relatedTarget)) infoCloseTimer = setTimeout(() => infoOpen = false, 350)" @keydown.escape.window="infoOpen = false" @click.outside="if (!document.getElementById('userTwoStepInfo')?.contains($event.target)) infoCloseTimer = setTimeout(() => infoOpen = false, 350)" @focusout="if (!$el.contains($event.relatedTarget) && !document.getElementById('userTwoStepInfo')?.contains($event.relatedTarget)) infoOpen = false">
+                                                <button type="button" class="btn btn-link p-1 lh-1 text-body-secondary" aria-label="Two-step login information" aria-controls="userTwoStepInfo" :aria-expanded="infoOpen.toString()" @focus="infoOpen = true" @click="infoOpen = true"><i class="bi bi-info-circle" aria-hidden="true"></i></button>
+                                                <template x-teleport="#userModal">
+                                                <div id="userTwoStepInfo" role="region" aria-label="Two-step login details" x-show="infoOpen" x-cloak class="position-fixed rounded border bg-body text-body shadow p-3" style="z-index: 1080; top: 1rem; right: 1rem; width: min(24rem, calc(100vw - 2rem)); max-height: calc(100dvh - 2rem); overflow-y: auto;" @mouseenter="clearTimeout(infoCloseTimer); infoOpen = true" @mouseleave="if (!document.getElementById('userTwoStepInfoTrigger')?.contains($event.relatedTarget)) infoOpen = false" @focusout="if (!$el.contains($event.relatedTarget) && !document.getElementById('userTwoStepInfoTrigger')?.contains($event.relatedTarget)) infoOpen = false">
+                                                    <div class="d-flex justify-content-between align-items-center gap-2 mb-2"><h6 class="fw-semibold mb-0">Two-step verification (2FA)</h6><button type="button" class="btn-close flex-shrink-0" aria-label="Close two-step information" @click="infoOpen = false"></button></div>
+                                                    <p class="small mb-2"><strong>On:</strong> requires enrollment at the next login when no method is verified. Existing verified methods stay active. Enabling the requirement ends existing logins.</p>
+                                                    <p class="small mb-2"><strong>Off:</strong> makes enrollment optional; it does not turn off a user’s existing verified method.</p>
+                                                    <dl class="small mb-2">
+                                                        <dt>Enrollment status</dt>
+                                                        <dd><span class="badge text-wrap" :class="twoFactorEnabled ? 'bg-success-subtle text-success-emphasis' : 'bg-secondary-subtle text-secondary-emphasis'" x-text="enrollmentStatusLabel"></span></dd>
+                                                        <dt>Login requirement <span x-show="securityRequirementChanged">(unsaved)</span></dt>
+                                                        <dd x-text="twoFactorRequired ? 'Required: password + verified second step' : 'Optional: enrolled users still need their second step'"></dd>
+                                                        <dt>Login email</dt>
+                                                        <dd class="text-break mb-0" x-text="form.email || 'Enter the user’s email address'"></dd>
+                                                    </dl>
+                                                    <p class="small text-body-secondary mb-2">The user signs in with this email and their password, then enters their verification code. Selecting a method during setup does not enable it until the user verifies a code.</p>
+                                                    <ul class="small ps-3 mb-2">
+                                                        <li><strong>Authenticator app:</strong> the user scans their own QR code in Security and verifies an app code. No email delivery is needed.</li>
+                                                        <li><strong>Email OTP:</strong> the user verifies their own email code. Login codes expire after 5 minutes and require shared email delivery.</li>
+                                                        <li><strong>Recovery codes:</strong> the user saves these after enrollment and can use each code once if their normal method is unavailable.</li>
+                                                    </ul>
+                                                    <div class="small" aria-live="polite">
+                                                        <span x-show="securityStatusLoading">Checking shared email delivery…</span>
+                                                        <span x-show="securityStatusLoaded" :class="actorEmailAvailable ? 'text-success' : 'text-warning-emphasis'" x-text="actorEmailAvailable ? 'Shared Email OTP delivery is enabled and configured.' : 'Shared Email OTP delivery is unavailable. The master admin must enable or configure Mail Configuration in Security. Authenticator setup remains available.'"></span>
+                                                        <span x-show="securityStatusError" class="text-danger" x-text="securityStatusError"></span>
+                                                        <button type="button" class="btn btn-link btn-sm p-0 d-block mt-1" :disabled="securityStatusLoading" @click="loadActorSecurity()">Refresh security status</button>
+                                                    </div>
+                                                    <p class="small text-body-secondary mt-2 mb-0">Users enroll, switch methods, download their own recovery codes, or turn off optional protection from their own Security page. Administrators set the requirement here; they cannot enroll a method for another user. Mail Configuration is managed only by the master admin for all users.</p>
+                                                </div>
+                                                </template>
+                                            </div>
+                                        </div>
+                                        @can('user-security-requirement')
+                                        <div x-show="securityRequirementChanged" x-cloak class="mt-3">
+                                            <label for="userSecurityPassword" class="form-label small">Your administrator account password</label><input id="userSecurityPassword" type="password" class="form-control form-control-sm" autocomplete="current-password" x-model="securityCurrentPassword" :required="securityRequirementChanged" maxlength="1024">
+                                            <p id="userSecurityProofHelp" class="small text-body-secondary mt-2 mb-0" x-text="adminCodeHelp"></p>
+                                            <div x-show="actorTwoFactorEnabled"><label for="userSecurityCode" class="form-label small mt-2">Your verification or recovery code</label><input id="userSecurityCode" aria-describedby="userSecurityProofHelp" class="form-control form-control-sm" type="text" autocomplete="one-time-code" x-model="securityCode" :required="securityRequirementChanged && actorTwoFactorEnabled" maxlength="64"></div>
+                                            <button type="button" class="btn btn-outline-primary btn-sm mt-2" x-show="actorTwoFactorMethod === 'email'" :disabled="securityProofBusy || !securityCurrentPassword || !actorEmailAvailable" @click="sendSecurityPolicyCode()">Send my verification code</button>
+                                            <p class="small text-muted mt-2 mb-0">These fields verify your administrator account, not the user's new password. Re-enter your password after requesting an email code.</p>
+                                        </div>
+                                        @endcan
+                                    </div>
                                     <div class="row g-3">
                                         <div class="col-12">
                                             <label class="form-label fw-medium text-muted small" for="userFormField23">Primary Role <span class="text-danger">*</span></label>
-                                            <select id="userFormField23" class="form-select form-select-sm" x-model="form.role" :required="!editingUserId" :disabled="roles.length === 0">
+                                            <select id="userFormField23" class="form-select form-select-sm" x-model="form.role" :required="!editingUserId && canSyncRoles" :disabled="roles.length === 0 || !canSyncRoles">
                                                 <option value="" disabled x-text="roles.length === 0 ? 'No roles available' : 'Select a role'"></option>
                                                 <template x-for="r in roles" :key="r.id">
                                                     <option :value="r.name" x-text="r.name"></option>
@@ -1198,14 +1269,25 @@
                                         </div>
                                         <div class="col-12 mt-2">
                                             <label class="form-label fw-medium text-muted small" for="userFormField24">Assigned Team (LOB/State)</label>
-                                            <select id="userFormField24" class="form-select form-select-sm" x-model="form.team_id">
-                                                <option value="">Global / Master Context</option>
+                                            <select id="userFormField24" class="form-select form-select-sm" x-model="form.team_id" @change="form.office_id = ''; loadOfficeOptions()" :disabled="!canSyncRoles">
+                                                @if(!auth()->user()->lob_team_id)<option value="">Global / Master Context</option>@endif
                                                 @if(isset($teams))
                                                     @foreach($teams as $team)
                                                         <option value="{{ $team->id }}">{{ $team->name }}</option>
                                                     @endforeach
                                                 @endif
                                             </select>
+                                        </div>
+                                        <div class="col-12">
+                                            <label for="userOffice" class="form-label fw-medium text-muted small">Office within assigned state</label>
+                                            <select id="userOffice" class="form-select form-select-sm" x-model="form.office_id" :disabled="!canSyncRoles || !form.team_id || officesLoading || Boolean(officesError)">
+                                                <option value="">No office assigned</option>
+                                                <template x-for="office in offices" :key="office.id"><option :value="String(office.id)" :disabled="!office.is_active && String(originalOffice) !== String(office.id)" x-text="office.name + ' (' + office.code + ')' + (office.is_active ? '' : ' — inactive')"></option></template>
+                                                <template x-if="currentOffice && !offices.some(office => String(office.id) === String(currentOffice.id)) && String(form.office_id) === String(currentOffice.id)"><option :value="String(currentOffice.id)" x-text="currentOffice.name + ' (current assignment)'"></option></template>
+                                            </select>
+                                            <p class="form-text mb-0">Office assignment does not change state-wide visibility. New orders retain this office and use the state’s order code.</p>
+                                            <p x-show="officesLoading" class="small text-body-secondary mb-0" role="status">Loading offices…</p>
+                                            <div x-show="officesError" x-cloak class="small text-danger"><span x-text="officesError"></span> <button type="button" class="btn btn-link btn-sm p-0" @click="loadOfficeOptions()">Retry</button></div>
                                         </div>
                                         <div class="col-12 mt-3 border-top pt-3">
                                             <label class="form-label fw-medium text-muted small" for="userFormField25">
@@ -1222,14 +1304,14 @@
                                             <label class="form-label fw-medium text-muted small" for="userFormField26">Confirm Password</label>
                                             <div class="input-group input-group-sm">
                                                 <span class="input-group-text bg-body-secondary"><i class="bi bi-key-fill"></i></span>
-                                                <input id="userFormField26" type="password" class="form-control form-control-sm" x-model="form.password_confirmation" :required="!editingUserId && form.password.length > 0" placeholder="Repeat password">
+                                                <input id="userFormField26" type="password" class="form-control form-control-sm" x-model="form.password_confirmation" :required="form.password.length > 0" placeholder="Repeat password">
                                             </div>
                                         </div>
                                         <div class="col-12 mt-3 border-top pt-3">
                                             <div class="p-2 border rounded bg-body-secondary">
                                                 <div class="form-check form-switch m-0 d-flex align-items-center justify-content-between">
                                                     <label class="form-check-label fw-medium small" for="userActiveSwitch">Active Account</label>
-                                                    <input class="form-check-input m-0" type="checkbox" role="switch" x-model="form.is_active" id="userActiveSwitch">
+                                                    <input class="form-check-input m-0" type="checkbox" role="switch" x-model="form.is_active" :disabled="editingUserId && !canActivate" id="userActiveSwitch">
                                                 </div>
                                             </div>
                                         </div>
@@ -1277,11 +1359,11 @@
                     <i class="bi bi-info-circle me-2"></i>
                     <strong>Expected Columns:</strong>
                     <div x-text="headers.join(', ')" class="small mt-1 text-break"></div>
-                    <small class="d-block mt-2 opacity-75">You can download the template above to ensure your columns match exactly.</small>
+                    <small class="d-block mt-2 opacity-75">Each row requires its own password (at least 8 characters, with uppercase, lowercase and a number). No shared default password is assigned.</small>
                 </div>
                 <div class="mb-3">
                     <label class="form-label fw-semibold">Select CSV File</label>
-                    <input type="file" id="importFileInput" class="form-control" accept=".csv"
+                    <input type="file" :disabled="importing" id="importFileInput" class="form-control" accept=".csv"
                            @change="handleFile($event)">
                 </div>
 

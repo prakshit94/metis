@@ -2,8 +2,14 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Api\Chat\ConversationController;
+use App\Http\Controllers\Api\Chat\GroupController;
+use App\Http\Controllers\Api\Chat\MessageController;
+use App\Http\Controllers\Api\Chat\PresenceController;
+use App\Http\Controllers\Api\Chat\SearchController;
 use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\ReferralProgramController;
+use App\Http\Controllers\TargetController;
 use App\Modules\Catalog\Controllers\BrandController;
 use App\Modules\Catalog\Controllers\CategoryController;
 use App\Modules\Catalog\Controllers\HsnCodeController;
@@ -13,12 +19,14 @@ use App\Modules\Catalog\Controllers\ProductController as CatalogProductControlle
 use App\Modules\Catalog\Controllers\TaxRateController;
 use App\Modules\Catalog\Controllers\UnitOfMeasureController;
 use App\Modules\Catalog\Controllers\WarehouseController;
+use App\Modules\Core\Controllers\FileManagerController;
 use App\Modules\Core\Controllers\PageController;
 use App\Modules\Core\Controllers\ShippingController;
 use App\Modules\Core\Controllers\ShippingSettingsController;
 use App\Modules\Core\Controllers\VillageController;
 use App\Modules\Customers\Controllers\CustomerAddressController;
 use App\Modules\Customers\Controllers\CustomerController;
+use App\Modules\Customers\Controllers\CustomerSettingsController;
 use App\Modules\Customers\Models\Party;
 use App\Modules\Inventory\Controllers\GoodsReceiptController;
 use App\Modules\Inventory\Controllers\InventoryAdjustmentController;
@@ -26,16 +34,19 @@ use App\Modules\Inventory\Controllers\PurchaseOrderController;
 use App\Modules\Inventory\Controllers\StockManagementController;
 use App\Modules\Inventory\Controllers\StockTransferController;
 use App\Modules\Inventory\Controllers\SupplierController;
+use App\Modules\Inventory\Controllers\WarehouseDashboardController;
 use App\Modules\Orders\Controllers\CallTagAdminController;
 use App\Modules\Orders\Controllers\CallTaggingController;
 use App\Modules\Orders\Controllers\CouponController;
 use App\Modules\Orders\Controllers\CreditNoteController;
+use App\Modules\Orders\Controllers\IndiaPostWebhookController;
 use App\Modules\Orders\Controllers\InvoiceController;
 use App\Modules\Orders\Controllers\OrderComplaintController;
 use App\Modules\Orders\Controllers\OrderController;
 use App\Modules\Orders\Controllers\OrderReasonController;
 use App\Modules\Orders\Controllers\OrderReturnController;
 use App\Modules\Orders\Controllers\PaymentController;
+use App\Modules\Orders\Controllers\PaymentImportController;
 use App\Modules\Orders\Controllers\PromotionsController;
 use App\Modules\Orders\Controllers\RefundController;
 use App\Modules\Users\Controllers\AttendanceController;
@@ -43,7 +54,6 @@ use App\Modules\Users\Controllers\AttendanceCorrectionController;
 use App\Modules\Users\Controllers\AuthController;
 use App\Modules\Users\Controllers\BulkUserController;
 use App\Modules\Users\Controllers\DepartmentController;
-use App\Modules\Users\Controllers\SecurityController;
 use App\Modules\Users\Controllers\HolidayController;
 use App\Modules\Users\Controllers\HrSettingController;
 use App\Modules\Users\Controllers\LeaveBalanceController;
@@ -51,16 +61,23 @@ use App\Modules\Users\Controllers\LeaveController;
 use App\Modules\Users\Controllers\OrgChartController;
 use App\Modules\Users\Controllers\PermissionController;
 use App\Modules\Users\Controllers\RoleController;
+use App\Modules\Users\Controllers\RosterController;
+use App\Modules\Users\Controllers\SecurityController;
+use App\Modules\Users\Controllers\SecurityMailController;
+use App\Modules\Users\Controllers\TeamController;
+use App\Modules\Users\Controllers\TwoFactorController;
 use App\Modules\Users\Controllers\UserController;
+use Illuminate\Routing\Middleware\ThrottleRequests;
 use Illuminate\Support\Facades\Route;
+use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
 
 /*
 |--------------------------------------------------------------------------
 | API Routes
 |--------------------------------------------------------------------------
 |
-| All routes here are stateless and protected by Sanctum token auth
-| (except the login endpoint which is public).
+| Authenticated routes accept Sanctum bearer tokens and first-party sessions.
+| Login is public; provider webhooks verify their configured integration credential.
 |
 | Device type is determined per-request by:
 |   1. X-App-Source: mobile header
@@ -73,21 +90,105 @@ use Illuminate\Support\Facades\Route;
 Route::post('/auth/login', [AuthController::class, 'login'])
     ->name('api.auth.login');
 
+Route::post('/auth/two-factor/enroll', [AuthController::class, 'twoFactorEnroll'])->middleware('throttle:10,1,otp-mobile-enroll:');
+Route::post('/auth/two-factor/email', [AuthController::class, 'twoFactorEmail'])->middleware('throttle:10,1,otp-mobile-email:');
+Route::post('/auth/two-factor/challenge', [AuthController::class, 'twoFactorChallenge'])->middleware('throttle:20,1,otp-mobile-verify:');
+
 // ─── Webhooks ─────────────────────────────────────────────────────────────────
-Route::post('/webhooks/indiapost', [\App\Modules\Orders\Controllers\IndiaPostWebhookController::class, 'handle'])
+Route::post('/webhooks/indiapost', [IndiaPostWebhookController::class, 'handle'])
     ->name('api.webhooks.indiapost')
-    ->withoutMiddleware([\Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class]);
+    ->withoutMiddleware([EnsureFrontendRequestsAreStateful::class]);
 
 // ─── Authenticated (Sanctum token required) ───────────────────────────────────
 Route::middleware('auth:sanctum')->group(function (): void {
-    Route::post('/shipping/settings', [ShippingSettingsController::class, 'store'])->name('api.shipping.settings.store')->middleware('permission:settings-edit|shipping-view');
+    // Shared chat endpoints support native tokens and browser sessions.
+    Route::prefix('chat')->middleware('throttle:chat')->group(function () {
+        Route::get('/unread-count', [ConversationController::class, 'unreadCount']);
+        Route::get('/conversations', [ConversationController::class, 'index']);
+        Route::post('/conversations', [ConversationController::class, 'store']);
+        Route::get('/conversations/{conversation}', [ConversationController::class, 'show']);
+        Route::post('/conversations/{conversation}/archive', [ConversationController::class, 'archive']);
+        Route::post('/conversations/{conversation}/pin', [ConversationController::class, 'pin']);
+        Route::get('/conversations/{conversation}/messages', [MessageController::class, 'index']);
+        Route::post('/conversations/{conversation}/messages', [MessageController::class, 'store']);
+        Route::post('/conversations/{conversation}/read', [MessageController::class, 'markRead']);
+        Route::put('/messages/{message}', [MessageController::class, 'update']);
+        Route::delete('/messages/{message}', [MessageController::class, 'destroy']);
+        Route::post('/messages/{message}/edit', [MessageController::class, 'update']);
+        Route::post('/messages/{message}/delete', [MessageController::class, 'destroy']);
+        Route::post('/messages/{message}/forward', [MessageController::class, 'forward']);
+        Route::put('/groups/{conversation}', [GroupController::class, 'update']);
+        Route::delete('/groups/{conversation}', [GroupController::class, 'destroy']);
+        Route::post('/groups/{conversation}/members', [GroupController::class, 'addMember']);
+        Route::delete('/groups/{conversation}/members', [GroupController::class, 'removeMember']);
+        Route::post('/groups/{conversation}/members/remove', [GroupController::class, 'removeMember']);
+        Route::put('/groups/{conversation}/members/role', [GroupController::class, 'updateRole']);
+        Route::post('/groups/{conversation}/members/role', [GroupController::class, 'updateRole']);
+        Route::post('/groups/{conversation}/transfer-owner', [GroupController::class, 'transferOwner']);
+        Route::post('/groups/{conversation}/leave', [GroupController::class, 'leave']);
+        Route::get('/active-status', [PresenceController::class, 'index']);
+        Route::post('/active-status', [PresenceController::class, 'update']);
+        Route::get('/users/export', [App\Http\Controllers\Api\Chat\UserController::class, 'export']);
+        Route::get('/users', [App\Http\Controllers\Api\Chat\UserController::class, 'index']);
+        Route::get('/search', SearchController::class);
+    });
+
+    Route::get('/auth/me', [AuthController::class, 'me'])->name('api.auth.me');
+    Route::get('/orders/create-options', [OrderController::class, 'create'])->middleware('permission:orders.create');
+    Route::get('/orders/{order}/edit-options', [OrderController::class, 'edit']);
+    // Browser workflow parity for bearer-token clients. Static paths precede resources.
+    Route::get('analytics/data', [PageController::class, 'analyticsData']);
+    Route::get('reports/export', [PageController::class, 'exportReports']);
+    Route::get('inventory/dashboard', [WarehouseDashboardController::class, 'index'])->middleware('permission:warehouse-dashboard-view');
+    Route::get('inventory/dashboard/activities', [WarehouseDashboardController::class, 'activities'])->middleware('permission:warehouse-dashboard-view');
+    Route::get('orders/nearby-selling-insights', [OrderController::class, 'nearbySellingInsights'])->middleware('permission:orders.create|orders.edit');
+    Route::post('orders/import-deliver', [OrderController::class, 'importBulkDeliver']);
+    Route::get('orders/import-deliver-template', [OrderController::class, 'importBulkDeliverTemplate']);
+    Route::post('orders/import-return', [OrderController::class, 'importBulkReturn']);
+    Route::get('orders/import-return-template', [OrderController::class, 'importBulkReturnTemplate']);
+    Route::post('orders/{order}/generate-invoice', [OrderController::class, 'generateInvoice']);
+    Route::get('orders/{order}/invoice-pdf', [OrderController::class, 'downloadInvoice']);
+    Route::get('orders/{order}/shipping-label', [OrderController::class, 'downloadShippingLabel']);
+    Route::get('orders/{order}/cod-pdf', [OrderController::class, 'downloadReceipt']);
+    Route::get('orders/{order}/receipt', [OrderController::class, 'receipt']);
+    Route::get('payments/import/sample', [PaymentImportController::class, 'downloadSample']);
+    Route::post('payments/import/preview', [PaymentImportController::class, 'preview']);
+    Route::post('payments/import/process', [PaymentImportController::class, 'process']);
+    Route::get('credit-notes/customers/search', [CreditNoteController::class, 'searchCustomers']);
+    Route::get('customers/search-by-phone', [CustomerController::class, 'searchByPhone']);
+    Route::post('customers/{customer}/orders/place', [CustomerController::class, 'placeOrder']);
+    Route::get('procurement/purchase-orders/bulk-pdf', [PurchaseOrderController::class, 'bulkDownloadPdf']);
+    Route::post('procurement/purchase-orders/{order}/invoice', [PurchaseOrderController::class, 'uploadInvoice']);
+    Route::get('targets', [TargetController::class, 'index']);
+    Route::post('targets', [TargetController::class, 'store']);
+    Route::get('targets/export', [TargetController::class, 'export']);
+    Route::get('targets/import-template', [TargetController::class, 'importTemplate']);
+    Route::post('targets/import', [TargetController::class, 'import']);
+    Route::post('targets/recalculate', [TargetController::class, 'recalculate']);
+    Route::put('targets/{target}', [TargetController::class, 'update']);
+    Route::delete('targets/{target}', [TargetController::class, 'destroy']);
+    Route::get('customer-settings/{type}', [CustomerSettingsController::class, 'list']);
+    Route::post('customer-settings/{type}', [CustomerSettingsController::class, 'store']);
+    Route::put('customer-settings/{type}/{id}', [CustomerSettingsController::class, 'update']);
+    Route::patch('customer-settings/{type}/{id}/toggle', [CustomerSettingsController::class, 'toggle']);
+    Route::delete('customer-settings/{type}/{id}', [CustomerSettingsController::class, 'destroy']);
+    Route::get('files', [FileManagerController::class, 'index'])->middleware('permission:files-view');
+    Route::post('files/upload', [FileManagerController::class, 'upload'])->middleware('permission:files-create');
+    Route::delete('files', [FileManagerController::class, 'delete'])->middleware('permission:files-delete');
+    Route::post('files/rename', [FileManagerController::class, 'rename'])->middleware('permission:files-edit');
+    Route::get('files/download', [FileManagerController::class, 'download'])->middleware('permission:files-download');
+    Route::post('files/download-zip', [FileManagerController::class, 'downloadZip'])->middleware('permission:files-download');
+    Route::post('files/login-background', [FileManagerController::class, 'setLoginBackground'])->middleware('permission:settings-edit');
+    Route::post('files/set-default-image', [FileManagerController::class, 'setDefaultImage'])->middleware('permission:settings-edit');
+
+    Route::get('/shipping/settings', [ShippingSettingsController::class, 'index'])->name('api.shipping.settings.index')->middleware('permission:shipping-view');
+    Route::post('/shipping/settings', [ShippingSettingsController::class, 'store'])->name('api.shipping.settings.store')->middleware('permission:settings-edit');
     Route::get('/shipping/awb-logs/{officeId}', [ShippingSettingsController::class, 'awbLogs'])->name('api.shipping.awb-logs')->middleware('permission:shipping-view');
     Route::get('/shipping/offices/{officeId}/ranges', [ShippingSettingsController::class, 'getRanges'])->name('api.shipping.ranges.index')->middleware('permission:shipping-view');
-    Route::post('/shipping/offices/{officeId}/ranges', [ShippingSettingsController::class, 'storeRange'])->name('api.shipping.ranges.store')->middleware('permission:settings-edit|shipping-view');
-    Route::post('/shipping/ranges/{rangeId}/activate', [ShippingSettingsController::class, 'activateRange'])->name('api.shipping.ranges.activate')->middleware('permission:settings-edit|shipping-view');
-    Route::put('/shipping/ranges/{rangeId}', [ShippingSettingsController::class, 'updateRange'])->name('api.shipping.ranges.update')->middleware('permission:settings-edit|shipping-view');
-    Route::delete('/shipping/ranges/{rangeId}', [ShippingSettingsController::class, 'deleteRange'])->name('api.shipping.ranges.destroy')->middleware('permission:settings-edit|shipping-view');
-
+    Route::post('/shipping/offices/{officeId}/ranges', [ShippingSettingsController::class, 'storeRange'])->name('api.shipping.ranges.store')->middleware('permission:settings-edit');
+    Route::post('/shipping/ranges/{rangeId}/activate', [ShippingSettingsController::class, 'activateRange'])->name('api.shipping.ranges.activate')->middleware('permission:settings-edit');
+    Route::put('/shipping/ranges/{rangeId}', [ShippingSettingsController::class, 'updateRange'])->name('api.shipping.ranges.update')->middleware('permission:settings-edit');
+    Route::delete('/shipping/ranges/{rangeId}', [ShippingSettingsController::class, 'deleteRange'])->name('api.shipping.ranges.destroy')->middleware('permission:settings-edit');
 
     // ── Auth & Token Management ──────────────────────────────────────────────
     Route::prefix('auth')->name('api.auth.')->group(function (): void {
@@ -147,7 +248,12 @@ Route::middleware('auth:sanctum')->group(function (): void {
                 'destroy' => 'api.permissions.destroy',
             ]);
 
-        Route::apiResource('teams', \App\Modules\Users\Controllers\TeamController::class)
+        Route::apiResource('offices', \App\Modules\Users\Controllers\OfficeController::class)->names([
+            'index' => 'api.offices.index', 'store' => 'api.offices.store', 'show' => 'api.offices.show',
+            'update' => 'api.offices.update', 'destroy' => 'api.offices.destroy',
+        ]);
+
+        Route::apiResource('teams', TeamController::class)
             ->names([
                 'index' => 'api.teams.index',
                 'store' => 'api.teams.store',
@@ -164,6 +270,8 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
         Route::delete('users/{user}/force', [UserController::class, 'forceDelete'])
             ->name('api.users.force-delete');
+
+        Route::get('users/options', [UserController::class, 'options'])->name('api.users.options');
 
         Route::apiResource('users', UserController::class)
             ->names([
@@ -200,6 +308,13 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::middleware('permission:department-delete')->delete('/departments/{department}', [DepartmentController::class, 'destroy']);
 
         // Security / Impersonation Routes
+        Route::get('/security/mail', [SecurityMailController::class, 'show'])->middleware('permission:security-mail-view');
+        Route::post('/security/mail', [SecurityMailController::class, 'update'])->middleware('permission:security-mail-edit');
+        Route::post('/security/mail/test', [SecurityMailController::class, 'test'])->middleware('permission:security-mail-test');
+        Route::get('/security/two-factor', [TwoFactorController::class, 'status']);
+        Route::post('/security/two-factor/email', [TwoFactorController::class, 'email']);
+        Route::post('/security/two-factor/setup', [TwoFactorController::class, 'setup']);
+        Route::post('/security/two-factor', [TwoFactorController::class, 'update']);
         Route::get('/security/sessions', [SecurityController::class, 'sessions']);
         Route::get('/security/activity', [SecurityController::class, 'activity']);
         Route::delete('/security/sessions/{id}', [SecurityController::class, 'terminateSession']);
@@ -210,11 +325,11 @@ Route::middleware('auth:sanctum')->group(function (): void {
         // Org Chart
         Route::middleware('permission:department-view')->get('/org-chart', [OrgChartController::class, 'index']);
 
-        Route::middleware('permission:department-view')->get('/hr-settings/{type}', [HrSettingController::class, 'list']);
-        Route::middleware('permission:department-create')->post('/hr-settings/{type}', [HrSettingController::class, 'store']);
-        Route::middleware('permission:department-edit')->put('/hr-settings/{type}/{id}', [HrSettingController::class, 'update']);
-        Route::middleware('permission:department-edit')->patch('/hr-settings/{type}/{id}/toggle', [HrSettingController::class, 'toggleActive']);
-        Route::middleware('permission:department-delete')->delete('/hr-settings/{type}/{id}', [HrSettingController::class, 'destroy']);
+        Route::middleware('permission:hrsetting-view')->get('/hr-settings/{type}', [HrSettingController::class, 'list']);
+        Route::middleware('permission:hrsetting-create')->post('/hr-settings/{type}', [HrSettingController::class, 'store']);
+        Route::middleware('permission:hrsetting-edit')->put('/hr-settings/{type}/{id}', [HrSettingController::class, 'update']);
+        Route::middleware('permission:hrsetting-edit')->patch('/hr-settings/{type}/{id}/toggle', [HrSettingController::class, 'toggleActive']);
+        Route::middleware('permission:hrsetting-delete')->delete('/hr-settings/{type}/{id}', [HrSettingController::class, 'destroy']);
 
         // Attendance corrections use the existing view/edit permissions and reporting hierarchy.
         Route::get('/attendance-corrections', [AttendanceCorrectionController::class, 'index']);
@@ -230,14 +345,14 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::delete('/attendances/{attendance}/force', [AttendanceController::class, 'forceDelete']);
         Route::apiResource('attendances', AttendanceController::class);
 
-        Route::get('/rosters', [\App\Modules\Users\Controllers\RosterController::class, 'index']);
-        Route::post('/rosters/import', [\App\Modules\Users\Controllers\RosterController::class, 'import']);
-        Route::get('/rosters/co', [\App\Modules\Users\Controllers\RosterController::class, 'claims']);
-        Route::post('/rosters/co', [\App\Modules\Users\Controllers\RosterController::class, 'claim']);
-        Route::patch('/rosters/co/{id}/review', [\App\Modules\Users\Controllers\RosterController::class, 'review']);
+        Route::get('/rosters', [RosterController::class, 'index']);
+        Route::post('/rosters/import', [RosterController::class, 'import']);
+        Route::get('/rosters/co', [RosterController::class, 'claims']);
+        Route::post('/rosters/co', [RosterController::class, 'claim']);
+        Route::patch('/rosters/co/{id}/review', [RosterController::class, 'review']);
 
         // Leaves
-        Route::middleware('permission:leave-view')->get('/leaves/export', [LeaveController::class, 'export']);
+        Route::middleware('permission:leave-export')->get('/leaves/export', [LeaveController::class, 'export']);
         Route::post('/leaves/bulk-action', [LeaveController::class, 'bulkAction']);
         Route::middleware('permission:leave-view')->get('/leaves', [LeaveController::class, 'index']);
         Route::middleware('permission:leave-view')->get('/leaves/{leave}', [LeaveController::class, 'show']);
@@ -266,7 +381,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::get('/{order}', [OrderController::class, 'show'])->name('show');
         Route::patch('/{order}', [OrderController::class, 'update'])->name('update');
         Route::delete('/{order}', [OrderController::class, 'destroy'])->name('destroy');
-        
+
         // Order Actions
         Route::post('/{order}/confirm', [OrderController::class, 'confirm'])->name('confirm');
         Route::post('/{order}/ship', [OrderController::class, 'ship'])->name('ship');
@@ -279,7 +394,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
         // Bulk Actions & Helpers
         Route::post('/bulk-status', [OrderController::class, 'bulkStatus'])->name('bulk-status');
-        Route::post('/bulk-return', [\App\Modules\Orders\Controllers\OrderReturnController::class, 'bulkStore'])->name('bulk-return');
+        Route::post('/bulk-return', [OrderReturnController::class, 'bulkStore'])->name('bulk-return');
         Route::post('/bulk-generate-invoices', [OrderController::class, 'generateBulkInvoices'])->name('bulk-generate-invoices');
         Route::post('/export-selected', [OrderController::class, 'exportSelected'])->name('export-selected');
         Route::post('/import', [OrderController::class, 'bulkImport'])->name('import');
@@ -300,8 +415,8 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::post('/export-selected', [OrderComplaintController::class, 'exportSelected'])->name('export-selected');
     });
 
-    Route::get('/products-search-api', [ProductController::class, 'searchApi'])->name('api.products.search.api');
-    Route::post('/coupons/validate', [CouponController::class, 'validateApi'])->name('api.coupons.validate');
+    Route::get('/products-search-api', [ProductController::class, 'searchApi'])->name('api.products.search.api')->middleware('permission:orders.create|orders.edit');
+    Route::post('/coupons/validate', [CouponController::class, 'validateApi'])->name('api.coupons.validate')->middleware('permission:orders.create|orders.edit');
 
     Route::prefix('credit-notes')->name('api.credit-notes.')->group(function (): void {
         Route::get('/', [CreditNoteController::class, 'index'])->name('index');
@@ -314,6 +429,8 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::get('/', [InvoiceController::class, 'index'])->name('index');
         Route::post('/bulk-status', [InvoiceController::class, 'bulkStatus'])->name('bulk-status');
         Route::get('/{invoice}', [InvoiceController::class, 'show'])->name('show');
+        Route::post('/{invoice}/payments', [InvoiceController::class, 'recordPayment'])->name('payments.store');
+        Route::post('/export-selected', [InvoiceController::class, 'exportSelected'])->name('export-selected');
         Route::get('/{invoice}/pdf', [InvoiceController::class, 'downloadPdf'])->name('pdf');
     });
 
@@ -321,7 +438,10 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::get('/', [PaymentController::class, 'index'])->name('index');
         Route::post('/bulk-status', [PaymentController::class, 'bulkStatus'])->name('bulk-status');
         Route::post('/', [PaymentController::class, 'store'])->name('store');
-        Route::get('/{payment}', [PaymentController::class, 'show'])->name('show');
+        Route::get('/{payment}', [PaymentController::class, 'show'])->name('show')->withTrashed();
+        Route::patch('/{payment}', [PaymentController::class, 'update'])->name('update');
+        Route::delete('/{payment}', [PaymentController::class, 'destroy'])->name('destroy');
+        Route::post('/export-selected', [PaymentController::class, 'exportSelected'])->name('export-selected');
     });
 
     Route::prefix('refunds')->name('api.refunds.')->group(function (): void {
@@ -332,9 +452,14 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
     Route::prefix('returns')->name('api.returns.')->group(function (): void {
         Route::get('/', [OrderReturnController::class, 'index'])->name('index');
-        Route::post('/', [OrderReturnController::class, 'store'])->name('store');
-        Route::get('/{orderReturn}', [OrderReturnController::class, 'show'])->name('show');
-        Route::post('/{orderReturn}/process', [OrderReturnController::class, 'process'])->name('process');
+        Route::post('/', [OrderReturnController::class, 'storeApi'])->name('store');
+        Route::get('/{return}', [OrderReturnController::class, 'show'])->name('show');
+        Route::post('/{return}/process', [OrderReturnController::class, 'process'])->name('process');
+        Route::post('/{return}/approve', [OrderReturnController::class, 'approve'])->name('approve');
+        Route::post('/{return}/cancel', [OrderReturnController::class, 'cancel'])->name('cancel');
+        Route::post('/{return}/qc', [OrderReturnController::class, 'processQc'])->name('qc');
+        Route::post('/{return}/finance', [OrderReturnController::class, 'processFinancials'])->name('finance');
+        Route::post('/bulk-qc-import', [OrderReturnController::class, 'importBulkQc'])->name('bulk-qc-import');
     });
 
     // ── Reason Codes API (Returns, Cancellations, Reschedules) ───────────────
@@ -396,14 +521,14 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::post('/transfers/{stockTransfer}/send', [StockTransferController::class, 'send'])->name('transfers.send');
         Route::post('/transfers/{stockTransfer}/receive', [StockTransferController::class, 'receive'])->name('transfers.receive');
         Route::post('/transfers/{stockTransfer}/cancel', [StockTransferController::class, 'cancel'])->name('transfers.cancel');
-        Route::apiResource('/transfers', StockTransferController::class);
+        Route::apiResource('/transfers', StockTransferController::class)->parameters(['transfers' => 'stockTransfer']);
 
         Route::get('/adjustments/options', [InventoryAdjustmentController::class, 'options'])->name('adjustments.options');
         Route::post('/adjustments/bulk-action', [InventoryAdjustmentController::class, 'bulkAction'])->name('adjustments.bulk-action');
         Route::post('/adjustments/{inventoryAdjustment}/approve', [InventoryAdjustmentController::class, 'approve'])->name('adjustments.approve');
         Route::post('/adjustments/{inventoryAdjustment}/reject', [InventoryAdjustmentController::class, 'reject'])->name('adjustments.reject');
         Route::apiResource('/adjustments', InventoryAdjustmentController::class)->parameters([
-            'adjustments' => 'inventoryAdjustment'
+            'adjustments' => 'inventoryAdjustment',
         ]);
     });
 
@@ -427,7 +552,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
     });
 
     // Bulk action must be defined before the resource to avoid route conflict
-    Route::post('/users/bulk-action', BulkUserController::class)->name('api.users.bulk');
+    Route::post('/users/bulk-action', BulkUserController::class)->middleware(\App\Services\UserDirectoryAccess::class)->name('api.users.bulk');
 
     // Customers API Routes
     Route::get('/customers/check-referral/{code}', function ($code) {
@@ -437,7 +562,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
             'valid' => (bool) $party,
             'name' => $party ? trim("{$party->firstname} {$party->lastname}") : null,
         ]);
-    })->name('api.customers.check-referral');
+    })->middleware('permission:customer-create|customer-edit')->name('api.customers.check-referral');
 
     Route::post('/customers/bulk-action', [CustomerController::class, 'bulkAction'])->name('api.customers.bulk');
     Route::patch('/customers/{customer}/restore', [CustomerController::class, 'restore'])->name('api.customers.restore');
@@ -458,7 +583,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
     // Villages API Routes
     Route::post('/villages/sync-indiapost', [VillageController::class, 'syncIndiaPostPincodes'])
-        ->withoutMiddleware([\Illuminate\Routing\Middleware\ThrottleRequests::class.':api', 'throttle:api'])
+        ->withoutMiddleware([ThrottleRequests::class.':api', 'throttle:api'])
         ->name('api.villages.sync-indiapost');
     Route::post('/villages/bulk-action', [VillageController::class, 'bulkAction'])->name('api.villages.bulk');
     Route::post('/villages/service-selection', [VillageController::class, 'serviceSelection'])->name('api.villages.service-selection');
@@ -537,5 +662,3 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::delete('/admin/audit-logs/destroy', [AuditLogController::class, 'destroy'])->name('api.audit-logs.destroy');
 
 });
-
- 

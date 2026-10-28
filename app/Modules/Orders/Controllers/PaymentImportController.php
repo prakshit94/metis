@@ -6,6 +6,7 @@ use App\Modules\Core\Controllers\Controller;
 use App\Modules\Orders\Models\Invoice;
 use App\Modules\Orders\Models\Order;
 use App\Services\FinancialService;
+use App\Services\RecordVisibility;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
@@ -17,7 +18,7 @@ class PaymentImportController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:orders.receipt'),
+            new Middleware('permission:payments.import'),
         ];
     }
 
@@ -53,13 +54,22 @@ class PaymentImportController extends Controller implements HasMiddleware
         ]);
 
         $path = $request->file('file')->getRealPath();
-        $data = array_map('str_getcsv', file($path));
+        $handle = fopen($path, 'r');
+        $data = [];
+        try {
+            while (($row = fgetcsv($handle)) !== false) {
+                $data[] = $row;
+            }
+        } finally {
+            fclose($handle);
+        }
 
         if (count($data) < 2) {
             return response()->json(['success' => false, 'message' => 'The CSV file is empty or missing headers.'], 400);
         }
 
         $headers = array_shift($data);
+        $headers[0] = preg_replace('/^\xEF\xBB\xBF/', '', $headers[0] ?? '');
         $headers = array_map('trim', $headers);
         $headers = array_map('strtolower', $headers);
 
@@ -145,6 +155,8 @@ class PaymentImportController extends Controller implements HasMiddleware
                 continue;
             }
 
+            app(RecordVisibility::class)->assertOrder((int) $orderId);
+
             if ((float) $amount > $dueAmount) {
                 $errors[] = "Row {$rowNum}: Payment amount (".$amount.') exceeds due amount ('.$dueAmount.').';
 
@@ -196,6 +208,7 @@ class PaymentImportController extends Controller implements HasMiddleware
         foreach ($validated['payments'] as $index => $paymentData) {
             try {
                 $invoice = Invoice::findOrFail($paymentData['invoice_id']);
+                app(RecordVisibility::class)->assertOrder($invoice->order_id);
                 $financialService->processPayment(
                     $invoice,
                     (float) $paymentData['amount'],

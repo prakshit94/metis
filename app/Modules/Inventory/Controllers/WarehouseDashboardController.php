@@ -7,8 +7,8 @@ namespace App\Modules\Inventory\Controllers;
 use App\Modules\Catalog\Models\Warehouse;
 use App\Modules\Core\Controllers\Controller;
 use App\Modules\Inventory\Services\WarehouseAnalyticsService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\View\View;
 
 class WarehouseDashboardController extends Controller
@@ -23,7 +23,7 @@ class WarehouseDashboardController extends Controller
     /**
      * Display the warehouse operations dashboard.
      */
-    public function index(Request $request): View
+    public function index(Request $request): View|JsonResponse
     {
         $warehouseId = $request->input('warehouse_id');
         if ($warehouseId) {
@@ -48,6 +48,10 @@ class WarehouseDashboardController extends Controller
             ->get();
 
         $pipeline = $this->analyticsService->getFulfillmentPipeline($warehouseId, $dateRange);
+
+        if ($request->is('api/*')) {
+            return response()->json(compact('warehouses', 'warehouseId', 'dateRange', 'kpis', 'fulfillment', 'recentActivity', 'inventoryValue', 'shrinkageValue', 'lowStockAlerts', 'pipeline'));
+        }
 
         return view('inventory.dashboard.index', compact(
             'warehouses',
@@ -77,6 +81,10 @@ class WarehouseDashboardController extends Controller
 
         $search = $request->input('search');
         $recentActivity = $this->analyticsService->getRecentActivity($warehouseId, 50, $search);
+
+        if ($request->is('api/*')) {
+            return response()->json(['data' => $recentActivity]);
+        }
 
         return view('inventory.dashboard.partials.activity-feed-items', compact('recentActivity'))->render();
     }

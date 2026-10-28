@@ -13,13 +13,14 @@ use Spatie\Activitylog\LogOptions;
 
 class Refund extends Model implements Auditable
 {
-    use LogsActivity;
     use AuditableTrait;
+    use LogsActivity;
 
     protected $fillable = [
         'refund_no',
         'order_id',
         'invoice_id',
+        'credit_note_id',
         'order_return_id',
         'amount',
         'payment_method',

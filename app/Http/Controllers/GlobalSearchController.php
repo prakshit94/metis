@@ -3,11 +3,20 @@
 namespace App\Http\Controllers;
 
 use App\Modules\Core\Controllers\Controller;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 
-class GlobalSearchController extends Controller
+class GlobalSearchController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:search-view', only: ['search']),
+        ];
+    }
+
     public function search(Request $request)
     {
         // Let the dashboard run its existing permission-protected lookup and modal flow.

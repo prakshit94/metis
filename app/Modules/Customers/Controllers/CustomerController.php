@@ -13,15 +13,17 @@ use App\Modules\Catalog\Models\Warehouse;
 use App\Modules\Core\Controllers\Controller;
 use App\Modules\Customers\Models\Customer;
 use App\Modules\Customers\Models\Party;
+use App\Modules\Customers\Models\PartyAddress;
 use App\Modules\Orders\Models\Coupon;
+use App\Modules\Orders\Models\Invoice;
 use App\Modules\Orders\Models\Offer;
 use App\Modules\Orders\Models\Order;
+use App\Modules\Orders\Models\Payment;
 use App\Services\OrderService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -110,21 +112,21 @@ class CustomerController extends Controller implements HasMiddleware
             ->orderBy($sortBy, $sortDir)
             ->paginate($perPage);
 
-        if (class_exists(\App\Modules\Orders\Models\Invoice::class)) {
+        if (class_exists(Invoice::class)) {
             $customerIds = $customers->pluck('id')->toArray();
-            
-            if (!empty($customerIds)) {
-                $paidAmounts = \App\Modules\Orders\Models\Payment::query()
+
+            if (! empty($customerIds)) {
+                $paidAmounts = Payment::query()
                     ->selectRaw('invoice_id, SUM(amount) as paid_amount')
                     ->where('status', 'completed')
-                    ->whereIn('invoice_id', \App\Modules\Orders\Models\Invoice::query()
+                    ->whereIn('invoice_id', Invoice::query()
                         ->select('invoices.id')
                         ->join('orders', 'invoices.order_id', '=', 'orders.id')
                         ->whereIn('orders.party_id', $customerIds)
                         ->whereIn('invoices.status', ['unpaid', 'partially_paid']))
                     ->groupBy('invoice_id');
 
-                $outstanding = \App\Modules\Orders\Models\Invoice::query()
+                $outstanding = Invoice::query()
                     ->join('orders', 'invoices.order_id', '=', 'orders.id')
                     ->leftJoinSub($paidAmounts, 'paid', 'paid.invoice_id', '=', 'invoices.id')
                     ->whereIn('orders.party_id', $customerIds)
@@ -141,7 +143,7 @@ class CustomerController extends Controller implements HasMiddleware
             }
         }
 
-                $baseQuery = Customer::query()
+        $baseQuery = Customer::query()
             ->when(! $isGlobalView, fn ($q) => $q->where('created_by', $user->id))
             ->when($lobStateName, function ($q) use ($lobStateName) {
                 $q->whereHas('addresses', function ($query) use ($lobStateName) {
@@ -164,7 +166,7 @@ class CustomerController extends Controller implements HasMiddleware
 
         return response()->json([
             'data' => $customers,
-            'stats' => $stats
+            'stats' => $stats,
         ]);
     }
 
@@ -219,7 +221,7 @@ class CustomerController extends Controller implements HasMiddleware
         // Convert 'null' strings or empty strings to true null to prevent unique constraint failures
         foreach (['phone', 'alternatemobile', 'relative_name', 'relative_phone'] as $field) {
             $val = $request->input($field);
-            if ($val === '' || strtolower(trim((string)$val)) === 'null') {
+            if ($val === '' || strtolower(trim((string) $val)) === 'null') {
                 $request->merge([$field => null]);
             }
         }
@@ -281,16 +283,16 @@ class CustomerController extends Controller implements HasMiddleware
         $validated['type'] = 'customer';
         $validated['uuid'] = Str::uuid()->toString();
         if (empty($validated['party_code'])) {
-            $lastCustomer = \App\Modules\Customers\Models\Party::where('type', 'customer')
+            $lastCustomer = Party::where('type', 'customer')
                 ->whereRaw("party_code REGEXP '^CUST-[0-9]+$'")
-                ->orderByRaw("CAST(SUBSTRING(party_code, 6) AS UNSIGNED) DESC")
+                ->orderByRaw('CAST(SUBSTRING(party_code, 6) AS UNSIGNED) DESC')
                 ->first();
-            
+
             $nextSeq = 1;
             if ($lastCustomer && preg_match('/^CUST-(\d+)$/', (string) $lastCustomer->party_code, $matches)) {
                 $nextSeq = intval($matches[1]) + 1;
             }
-            $validated['party_code'] = 'CUST-'.str_pad((string)$nextSeq, 4, '0', STR_PAD_LEFT);
+            $validated['party_code'] = 'CUST-'.str_pad((string) $nextSeq, 4, '0', STR_PAD_LEFT);
         }
         $validated['land_unit'] = $validated['land_unit'] ?? 'acre';
         $validated['credit_limit'] = $validated['credit_limit'] ?? 0.00;
@@ -366,7 +368,9 @@ class CustomerController extends Controller implements HasMiddleware
                     ]);
                 },
                 'orders' => function ($q) {
-                    $q->latest()->limit(10)->withCount(['complaints', 'complaints as open_complaints_count' => function ($q) { $q->whereIn('status', ['open', 'in_progress']); }])->with([
+                    $q->latest()->limit(10)->withCount(['complaints', 'complaints as open_complaints_count' => function ($q) {
+                        $q->whereIn('status', ['open', 'in_progress']);
+                    }])->with([
                         'items.product:id,name,sku,image_path,tax_rate_id',
                         'items.product.taxRate',
                         'warehouse:id,name',
@@ -388,12 +392,12 @@ class CustomerController extends Controller implements HasMiddleware
             ])
             ->findOrFail($customer);
 
-        if (class_exists(\App\Modules\Orders\Models\Invoice::class)) {
-            $invoices = \App\Modules\Orders\Models\Invoice::with('payments')->join('orders', 'invoices.order_id', '=', 'orders.id')
+        if (class_exists(Invoice::class)) {
+            $invoices = Invoice::with('payments')->join('orders', 'invoices.order_id', '=', 'orders.id')
                 ->where('orders.party_id', $customer->id)
                 ->whereIn('invoices.status', ['unpaid', 'partially_paid'])
                 ->get();
-            
+
             $due = 0;
             foreach ($invoices as $invoice) {
                 $due += $invoice->due_amount;
@@ -443,7 +447,7 @@ class CustomerController extends Controller implements HasMiddleware
         // when users clear out optional fields like alternatemobile.
         foreach (['phone', 'alternatemobile', 'relative_name', 'relative_phone'] as $field) {
             $val = $request->input($field);
-            if ($val === '' || strtolower(trim((string)$val)) === 'null') {
+            if ($val === '' || strtolower(trim((string) $val)) === 'null') {
                 $request->merge([$field => null]);
             }
         }
@@ -688,7 +692,7 @@ class CustomerController extends Controller implements HasMiddleware
                     'required',
                     Rule::exists('party_addresses', 'id')->where('party_id', $customer->id),
                     function ($attribute, $value, $fail) {
-                        $address = \App\Modules\Customers\Models\PartyAddress::find($value);
+                        $address = PartyAddress::find($value);
                         if ($address && empty($address->village_id)) {
                             $fail('The selected shipping address has an invalid or missing village. Please update the address to link it to our village database before placing the order.');
                         }
@@ -698,7 +702,7 @@ class CustomerController extends Controller implements HasMiddleware
                     'nullable',
                     Rule::exists('party_addresses', 'id')->where('party_id', $customer->id),
                     function ($attribute, $value, $fail) {
-                        $address = \App\Modules\Customers\Models\PartyAddress::find($value);
+                        $address = PartyAddress::find($value);
                         if ($address && empty($address->village_id)) {
                             $fail('The selected billing address has an invalid or missing village. Please update the address to link it to our village database before placing the order.');
                         }
@@ -720,14 +724,25 @@ class CustomerController extends Controller implements HasMiddleware
                 $msg = 'Order placed successfully!';
             }
 
+            if ($request->is('api/*')) {
+                return response()->json(['message' => $msg, 'data' => $order]);
+            }
+
             return redirect()->route('customers.show', $customer)
                 ->with('success', $msg)
                 ->with('active_tab', 'history');
         } catch (ValidationException $e) {
+            if ($request->is('api/*')) {
+                throw $e;
+            }
             $firstError = collect($e->errors())->flatten()->first() ?? $e->getMessage();
 
             return back()->with('error', $firstError);
         } catch (\Exception $e) {
+            if ($request->is('api/*')) {
+                return response()->json(['message' => 'Failed to process order: '.$e->getMessage()], 422);
+            }
+
             return back()->with('error', 'Failed to process order: '.$e->getMessage());
         }
     }

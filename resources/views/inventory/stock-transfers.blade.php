@@ -141,15 +141,21 @@
                             </span>
                         </div>
                         <div class="d-flex gap-2">
-                            <button class="btn btn-sm btn-warning" @click="bulkAction('send')">
+                            @can('stocktransfer-send')
+<button class="btn btn-sm btn-warning" @click="bulkAction('send')">
                                 <i class="bi bi-truck me-1"></i>Dispatch Selected
                             </button>
-                            <button class="btn btn-sm btn-success" @click="bulkAction('receive')">
+@endcan
+                            @can('stocktransfer-receive')
+<button class="btn btn-sm btn-success" @click="bulkAction('receive')">
                                 <i class="bi bi-check-circle me-1"></i>Receive Selected
                             </button>
-                            <button class="btn btn-sm btn-outline-danger" @click="bulkAction('cancel')">
+@endcan
+                            @can('stocktransfer-cancel')
+<button class="btn btn-sm btn-outline-danger" @click="bulkAction('cancel')">
                                 <i class="bi bi-x-circle me-1"></i>Cancel Selected
                             </button>
+@endcan
                             <button class="btn btn-sm btn-danger" @click="bulkAction('delete')">
                                 <i class="bi bi-trash me-1"></i>Delete Selected
                             </button>
@@ -244,16 +250,20 @@
                                                 </template>
                                                 <template x-if="item.status === 'draft'">
                                                     <li>
-                                                        <a class="dropdown-item d-flex align-items-center gap-2" href="#" @click.prevent="sendTransfer(item)">
+                                                        @can('stocktransfer-send')
+<a class="dropdown-item d-flex align-items-center gap-2" href="#" @click.prevent="sendTransfer(item)">
                                                             <i class="bi bi-truck text-warning"></i> Mark Dispatch
                                                         </a>
+@endcan
                                                     </li>
                                                 </template>
                                                 <template x-if="item.status === 'sent'">
                                                     <li>
-                                                        <a class="dropdown-item d-flex align-items-center gap-2" href="#" @click.prevent="receiveTransfer(item)">
+                                                        @can('stocktransfer-receive')
+<a class="dropdown-item d-flex align-items-center gap-2" href="#" @click.prevent="receiveTransfer(item)">
                                                             <i class="bi bi-check-circle text-success"></i> Mark Received
                                                         </a>
+@endcan
                                                     </li>
                                                 </template>
                                                 <template x-if="['draft','sent'].includes(item.status)">
@@ -261,9 +271,11 @@
                                                 </template>
                                                 <template x-if="['draft','sent'].includes(item.status)">
                                                     <li>
-                                                        <a class="dropdown-item text-danger d-flex align-items-center gap-2" href="#" @click.prevent="cancelTransfer(item)">
+                                                        @can('stocktransfer-cancel')
+<a class="dropdown-item text-danger d-flex align-items-center gap-2" href="#" @click.prevent="cancelTransfer(item)">
                                                             <i class="bi bi-x-circle"></i> Cancel Transfer
                                                         </a>
+@endcan
                                                     </li>
                                                 </template>
                                             </ul>

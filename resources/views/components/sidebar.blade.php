@@ -94,12 +94,15 @@
                 </li>
                 @endcan
 
+                @canany(['target-view', 'target-view-all'])
                 <li class="nav-item">
                     <a class="nav-link {{ $current === 'targets.index' ? 'active' : '' }}" href="{{ route('targets.index') }}">
                         <i class="bi bi-award-fill"></i>
                         <span class="text-truncate flex-grow-1" style="min-width: 0;">Targets & Achv.</span>
                     </a>
                 </li>
+
+                @endcanany
 
                 {{-- ── COMMERCE & SALES ─────────────────────────── --}}
                 @canany(['product-view', 'category-view', 'brand-view', 'productattribute-view', 'unitofmeasure-view', 'taxrate-view', 'hsncode-view', 'orders.view', 'invoices.view', 'payments.view', 'returns.view', 'refunds.view', 'credit-notes.view', 'complaints.view', 'coupon-view', 'promotions-view'])
@@ -436,14 +439,14 @@
                 @endcanany
 
                 {{-- ── ADMINISTRATION ─────────────────────────────── --}}
-                @canany(['role-view', 'department-view', 'attendance-view', 'leave-view', 'orderreason-view', 'settings-view'])
+                @canany(['user-view', 'role-view', 'permission-view', 'team-view', 'department-view', 'attendance-view', 'leave-view', 'orderreason-view', 'settings-view'])
                 <li class="nav-item sidebar-section-label mt-3">
                     <small class="text-muted px-3 text-uppercase fw-bold">Administration</small>
                 </li>
                 @endcanany
 
                 {{-- CRM & People Dropdown --}}
-                @canany(['role-view', 'department-view'])
+                @canany(['user-view', 'role-view', 'permission-view', 'team-view', 'customer-view', 'settings-view', 'department-view'])
                 <li class="nav-item">
                     <a class="nav-link {{ in_array($current, ['users', 'roles-permissions', 'teams', 'customers', 'customer-settings.index', 'departments']) ? 'active' : 'collapsed' }}"
                        href="#"
@@ -457,20 +460,22 @@
                     </a>
                     <div class="collapse {{ in_array($current, ['users', 'roles-permissions', 'teams', 'customers', 'customer-settings.index', 'departments']) ? 'show' : '' }}" id="crmSubmenu">
                         <ul class="nav nav-submenu">
-                            @role('Super Admin')
+                            @can('customer-view')
                             <li class="nav-item">
                                 <a class="nav-link {{ $current === 'customers' ? 'active' : '' }}" href="{{ route('customers') }}">
                                     <i class="bi bi-person-lines-fill"></i>
                                     <span class="text-truncate flex-grow-1" style="min-width: 0;">Customers</span>
                                 </a>
                             </li>
+                            @endcan
+                            @can('settings-view')
                             <li class="nav-item">
                                 <a class="nav-link {{ $current === 'customer-settings.index' ? 'active' : '' }}" href="{{ route('customer-settings.index') }}">
                                     <i class="bi bi-gear-wide-connected"></i>
                                     <span class="text-truncate flex-grow-1" style="min-width: 0;">Customer Settings</span>
                                 </a>
                             </li>
-                            @endrole
+                            @endcan
                             @can('user-view')
                             <li class="nav-item">
                                 <a class="nav-link {{ $current === 'users' ? 'active' : '' }}" href="{{ route('users') }}">
@@ -479,14 +484,14 @@
                                 </a>
                             </li>
                             @endcan
-                            @can('role-view')
+                            @canany(['role-view', 'permission-view'])
                             <li class="nav-item">
                                 <a class="nav-link {{ $current === 'roles-permissions' ? 'active' : '' }}" href="{{ route('roles-permissions') }}">
                                     <i class="bi bi-shield-lock-fill"></i>
                                     <span class="text-truncate flex-grow-1" style="min-width: 0;">Roles &amp; Permissions</span>
                                 </a>
                             </li>
-                            @endcan
+                            @endcanany
                             @can('team-view')
                             <li class="nav-item">
                                 <a class="nav-link {{ $current === 'teams' ? 'active' : '' }}" href="{{ route('teams') }}">
@@ -544,8 +549,10 @@
                 </li>
                 @endcanany
 
+                <li class="nav-item"><a class="nav-link {{ $current === 'security' ? 'active' : '' }}" href="{{ route('security') }}"><i class="bi bi-shield-fill-check"></i><span>My Security</span></a></li>
+
                 {{-- System Settings Dropdown --}}
-                @canany(['village-view', 'orderreason-view', 'settings-view'])
+                @canany(['village-view', 'orderreason-view', 'calltag-view', 'files-view', 'audit-log-view', 'security-mail-view'])
                 <li class="nav-item">
                     <a class="nav-link {{ in_array($current, ['villages', 'order.reasons', 'call-tags.index', 'admin.audit-logs.index', 'security', 'files']) ? 'active' : 'collapsed' }}"
                        href="#"
@@ -575,7 +582,7 @@
                                 </a>
                             </li>
                             @endcan
-                            @can('settings-view')
+                            @can('calltag-view')
                             <li class="nav-item">
                                 <a class="nav-link {{ $current === 'call-tags.index' ? 'active' : '' }}" href="{{ route('call-tags.index') }}">
                                     <i class="bi bi-tags"></i>
@@ -583,21 +590,15 @@
                                 </a>
                             </li>
                             @endcan
-                            @role('Super Admin')
+                            @can('audit-log-view')
                             <li class="nav-item">
                                 <a class="nav-link {{ $current === 'admin.audit-logs.index' ? 'active' : '' }}" href="{{ route('admin.audit-logs.index') }}">
                                     <i class="bi bi-journal-medical"></i>
                                     <span class="text-truncate flex-grow-1" style="min-width: 0;">Audit Logs</span>
                                 </a>
                             </li>
-                            <li class="nav-item">
-                                <a class="nav-link {{ $current === 'security' ? 'active' : '' }}" href="{{ route('security') }}">
-                                    <i class="bi bi-shield-fill-check"></i>
-                                    <span class="text-truncate flex-grow-1" style="min-width: 0;">Security</span>
-                                </a>
-                            </li>
-                            @endrole
-                            @can('settings-view')
+                            @endcan
+                            @can('files-view')
                             <li class="nav-item">
                                 <a class="nav-link {{ $current === 'files' ? 'active' : '' }}" href="{{ route('files') }}">
                                     <i class="bi bi-folder2-open"></i>
@@ -610,7 +611,7 @@
                 </li>
                 @endcanany
 
-                @role('Super Admin')
+                @canany(['messages-view', 'calendar-view', 'forms-view', 'settings-view', 'help-view'])
                 {{-- ── WORKSPACE ─────────────────────────────── --}}
                 <li class="nav-item sidebar-section-label mt-3">
                     <small class="text-muted px-3 text-uppercase fw-bold">Workspace</small>
@@ -630,6 +631,7 @@
                     </a>
                     <div class="collapse {{ in_array($current, ['messages', 'calendar', 'forms', 'settings', 'help']) || Str::startsWith($current, 'elements') ? 'show' : '' }}" id="toolsSubmenu">
                         <ul class="nav nav-submenu">
+                            @can('messages-view')
                             <li class="nav-item">
                                 <a class="nav-link {{ $current === 'messages' ? 'active' : '' }}" href="{{ route('messages') }}">
                                     <i class="bi bi-chat-dots-fill"></i>
@@ -637,18 +639,23 @@
                                     <span class="badge bg-danger rounded-pill ms-auto">3</span>
                                 </a>
                             </li>
+                            @endcan
+                            @can('calendar-view')
                             <li class="nav-item">
                                 <a class="nav-link {{ $current === 'calendar' ? 'active' : '' }}" href="{{ route('calendar') }}">
                                     <i class="bi bi-calendar-week-fill"></i>
                                     <span class="text-truncate flex-grow-1" style="min-width: 0;">Calendar</span>
                                 </a>
                             </li>
+                            @endcan
+                            @can('forms-view')
                             <li class="nav-item">
                                 <a class="nav-link {{ $current === 'forms' ? 'active' : '' }}" href="{{ route('forms') }}">
                                     <i class="bi bi-ui-checks-grid"></i>
                                     <span class="text-truncate flex-grow-1" style="min-width: 0;">Forms</span>
                                 </a>
                             </li>
+                            @endcan
                             @can('settings-view')
                             <li class="nav-item">
                                 <a class="nav-link {{ Str::startsWith($current, 'elements') ? 'active' : '' }}" href="{{ route('elements') }}">
@@ -663,16 +670,18 @@
                                     <span class="text-truncate flex-grow-1" style="min-width: 0;">API Documentation</span>
                                 </a>
                             </li>
+                            @can('help-view')
                             <li class="nav-item">
                                 <a class="nav-link {{ $current === 'help' ? 'active' : '' }}" href="{{ route('help') }}">
                                     <i class="bi bi-question-circle-fill"></i>
                                     <span class="text-truncate flex-grow-1" style="min-width: 0;">Help &amp; Support</span>
                                 </a>
                             </li>
+                            @endcan
                         </ul>
                     </div>
                 </li>
-                @endrole
+                @endcanany
 
             </ul>
         </nav>

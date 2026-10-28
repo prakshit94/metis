@@ -71,3 +71,7 @@ test_dropdown.js
 !/tests/performance/results/*-isolated/*-resources.csv
 !/tests/performance/results/*-isolated-stress/*-resources.csv
 !/tests/performance/results/*-isolated-*/*-resources.csv
+
+# Preserved read-only source backup from local audit work
+/app/Services/.shipping-original/
+/app/.imports-original/

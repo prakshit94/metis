@@ -2,12 +2,6 @@
 
 declare(strict_types=1);
 
-use App\Http\Controllers\Api\Chat\ConversationController;
-use App\Http\Controllers\Api\Chat\GroupController;
-use App\Http\Controllers\Api\Chat\MessageController;
-use App\Http\Controllers\Api\Chat\PresenceController;
-use App\Http\Controllers\Api\Chat\SearchController;
-use App\Http\Controllers\Api\Chat\UserController;
 use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\ReferralProgramController;
 use App\Http\Controllers\Web\Chat\ChatController;
@@ -21,13 +15,16 @@ use App\Modules\Customers\Controllers\CustomerSettingsController;
 use App\Modules\Inventory\Controllers\GoodsReceiptController;
 use App\Modules\Inventory\Controllers\PurchaseOrderController;
 use App\Modules\Inventory\Controllers\SupplierController;
-use Illuminate\Support\Facades\Artisan;
 use App\Modules\Inventory\Controllers\WarehouseDashboardController;
+use Illuminate\Support\Facades\Artisan;
 
-Route::get('/clear-views', function() {
+Route::get('/clear-views', function () {
     Artisan::call('view:clear');
+
     return 'View cache cleared';
-});
+})->middleware(['auth', 'permission:settings-edit', 'throttle:10,1']);
+use App\Http\Controllers\GlobalSearchController;
+use App\Http\Controllers\TargetController;
 use App\Modules\Orders\Controllers\CallTagAdminController;
 use App\Modules\Orders\Controllers\CallTaggingController;
 use App\Modules\Orders\Controllers\CouponController;
@@ -49,6 +46,10 @@ use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->group(function (): void {
     Route::get('/login', [PageController::class, 'login'])->name('login');
+    Route::get('/login/two-factor', [AuthController::class, 'twoFactorForm'])->name('login.two-factor');
+    Route::post('/login/two-factor/enroll', [AuthController::class, 'twoFactorEnroll'])->middleware('throttle:10,1,otp-web-enroll:')->name('login.two-factor.enroll');
+    Route::post('/login/two-factor/email', [AuthController::class, 'twoFactorEmail'])->middleware('throttle:10,1,otp-web-email:')->name('login.two-factor.email');
+    Route::post('/login/two-factor', [AuthController::class, 'twoFactorChallenge'])->middleware('throttle:20,1,otp-web-verify:')->name('login.two-factor.verify');
     Route::post('/login', [AuthController::class, 'login'])->name('login.submit');
 });
 
@@ -68,7 +69,7 @@ Route::middleware('auth')->group(function (): void {
 
 Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('/', [PageController::class, 'dashboard'])->name('dashboard');
-    Route::get('/search', [\App\Http\Controllers\GlobalSearchController::class, 'search'])->name('global.search');
+    Route::get('/search', [GlobalSearchController::class, 'search'])->name('global.search');
     Route::get('/analytics', [PageController::class, 'analytics'])->name('analytics');
     Route::get('/analytics/data', [PageController::class, 'analyticsData'])->name('analytics.data');
     Route::get('/users', [PageController::class, 'users'])->name('users');
@@ -83,11 +84,11 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     // Call Tags Admin CRUD
     // NOTE: bulk-action must be registered BEFORE {callTag} wildcard routes
     // so Laravel does not attempt to bind "bulk-action" as a CallTag model ID.
-    Route::get('/call-tags-admin', [CallTagAdminController::class, 'index'])->name('call-tags.index')->middleware('permission:settings-view');
-    Route::post('/call-tags-admin', [CallTagAdminController::class, 'store'])->middleware('permission:settings-view');
-    Route::post('/call-tags-admin/bulk-action', [CallTagAdminController::class, 'bulkAction'])->middleware('permission:settings-view');
-    Route::put('/call-tags-admin/{callTag}', [CallTagAdminController::class, 'update'])->middleware('permission:settings-view');
-    Route::delete('/call-tags-admin/{callTag}', [CallTagAdminController::class, 'destroy'])->middleware('permission:settings-view');
+    Route::get('/call-tags-admin', [CallTagAdminController::class, 'index'])->name('call-tags.index')->middleware('permission:calltag-view');
+    Route::post('/call-tags-admin', [CallTagAdminController::class, 'store'])->middleware('permission:calltag-create');
+    Route::post('/call-tags-admin/bulk-action', [CallTagAdminController::class, 'bulkAction'])->middleware('permission:calltag-edit|calltag-delete');
+    Route::put('/call-tags-admin/{callTag}', [CallTagAdminController::class, 'update'])->middleware('permission:calltag-edit');
+    Route::delete('/call-tags-admin/{callTag}', [CallTagAdminController::class, 'destroy'])->middleware('permission:calltag-delete');
 
     Route::prefix('catalog')->name('catalog.')->group(function (): void {
         Route::get('/products', [CatalogController::class, 'products'])->name('products');
@@ -131,18 +132,17 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         Route::resource('/suppliers', SupplierController::class)->except(['create', 'show', 'edit']);
     });
     Route::post('orders/bulk-status', [OrderController::class, 'bulkStatus'])->name('orders.bulk-status');
-    Route::post('orders/bulk-return', [\App\Modules\Orders\Controllers\OrderReturnController::class, 'bulkStore'])->name('orders.bulk-return');
+    Route::post('orders/bulk-return', [OrderReturnController::class, 'bulkStore'])->name('orders.bulk-return');
     Route::post('orders/bulk-generate-invoices', [OrderController::class, 'generateBulkInvoices'])->name('orders.bulk-generate-invoices');
     Route::get('orders/bulk-print', [OrderController::class, 'bulkPrint'])->name('orders.bulk-print');
     Route::get('orders/export', [OrderController::class, 'bulkExport'])->name('orders.export');
     Route::post('orders/export-selected', [OrderController::class, 'exportSelected'])->name('orders.export-selected');
     // Route::post('orders/import', [OrderController::class, 'bulkImport'])->name('orders.import');
-    // Route::get('orders/import-template', [OrderController::class, 'bulkImportTemplate'])->name('orders.import-template');    
-
+    // Route::get('orders/import-template', [OrderController::class, 'bulkImportTemplate'])->name('orders.import-template');
 
     Route::post('orders/import-deliver', [OrderController::class, 'importBulkDeliver'])->name('orders.import-deliver');
     Route::get('orders/import-deliver-template', [OrderController::class, 'importBulkDeliverTemplate'])->name('orders.import-deliver-template');
-    
+
     Route::post('orders/import-return', [OrderController::class, 'importBulkReturn'])->name('orders.import-return');
     Route::get('orders/import-return-template', [OrderController::class, 'importBulkReturnTemplate'])->name('orders.import-return-template');
     Route::get('orders/{order}/invoice-pdf', [OrderController::class, 'downloadInvoice'])->name('orders.invoice-pdf');
@@ -208,11 +208,6 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
 
     // Customer Settings Routes
     Route::get('/customer-settings', [CustomerSettingsController::class, 'index'])->name('customer-settings.index');
-    Route::get('/api/customer-settings/{type}', [CustomerSettingsController::class, 'list']);
-    Route::post('/api/customer-settings/{type}', [CustomerSettingsController::class, 'store']);
-    Route::put('/api/customer-settings/{type}/{id}', [CustomerSettingsController::class, 'update']);
-    Route::patch('/api/customer-settings/{type}/{id}/toggle', [CustomerSettingsController::class, 'toggle']);
-    Route::delete('/api/customer-settings/{type}/{id}', [CustomerSettingsController::class, 'destroy']);
 
     Route::get('/customers/search-by-phone', [CustomerController::class, 'searchByPhone'])->name('customers.search-by-phone');
     Route::get('/customers/{customer}', [CustomerController::class, 'show'])->name('customers.show');
@@ -226,54 +221,13 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('/reports/export', [PageController::class, 'exportReports'])->name('reports.export');
     Route::get('/messages', [PageController::class, 'messages'])->name('messages');
     Route::get('/calendar', [PageController::class, 'calendar'])->name('calendar');
-    Route::get('/files', [PageController::class, 'files'])->name('files')->middleware('permission:settings-view');
-    Route::prefix('api/files')->middleware('permission:settings-view')->group(function () {
-        Route::get('/', [FileManagerController::class, 'index']);
-        Route::post('/upload', [FileManagerController::class, 'upload']);
-        Route::delete('/', [FileManagerController::class, 'delete']);
-        Route::post('/rename', [FileManagerController::class, 'rename']);
-        Route::get('/download', [FileManagerController::class, 'download']);
-        Route::post('/download-zip', [FileManagerController::class, 'downloadZip']);
-        Route::post('/login-background', [FileManagerController::class, 'setLoginBackground']);
-        Route::post('/set-default-image', [FileManagerController::class, 'setDefaultImage']);
-    });
+    Route::get('/files', [PageController::class, 'files'])->name('files')->middleware('permission:files-view');
     Route::get('/forms', [PageController::class, 'forms'])->name('forms');
     Route::get('/security', [PageController::class, 'security'])->name('security');
     Route::get('/help', [PageController::class, 'help'])->name('help');
 
     // ─── Chat ────────────────────────────────────────────────────────────────
     Route::get('/chat', ChatController::class)->name('chat.index');
-
-    Route::prefix('api/chat')->middleware('throttle:chat')->group(function () {
-        Route::get('/unread-count', [ConversationController::class, 'unreadCount']);
-        Route::get('/conversations', [ConversationController::class, 'index']);
-        Route::post('/conversations', [ConversationController::class, 'store']);
-        Route::get('/conversations/{conversation}', [ConversationController::class, 'show']);
-        Route::post('/conversations/{conversation}/archive', [ConversationController::class, 'archive']);
-        Route::post('/conversations/{conversation}/pin', [ConversationController::class, 'pin']);
-        Route::get('/conversations/{conversation}/messages', [MessageController::class, 'index']);
-        Route::post('/conversations/{conversation}/messages', [MessageController::class, 'store']);
-        Route::post('/conversations/{conversation}/read', [MessageController::class, 'markRead']);
-        Route::put('/messages/{message}', [MessageController::class, 'update']);
-        Route::delete('/messages/{message}', [MessageController::class, 'destroy']);
-        Route::post('/messages/{message}/edit', [MessageController::class, 'update']);
-        Route::post('/messages/{message}/delete', [MessageController::class, 'destroy']);
-        Route::post('/messages/{message}/forward', [MessageController::class, 'forward']);
-        Route::put('/groups/{conversation}', [GroupController::class, 'update']);
-        Route::delete('/groups/{conversation}', [GroupController::class, 'destroy']);
-        Route::post('/groups/{conversation}/members', [GroupController::class, 'addMember']);
-        Route::delete('/groups/{conversation}/members', [GroupController::class, 'removeMember']);
-        Route::post('/groups/{conversation}/members/remove', [GroupController::class, 'removeMember']);
-        Route::put('/groups/{conversation}/members/role', [GroupController::class, 'updateRole']);
-        Route::post('/groups/{conversation}/members/role', [GroupController::class, 'updateRole']);
-        Route::post('/groups/{conversation}/transfer-owner', [GroupController::class, 'transferOwner']);
-        Route::post('/groups/{conversation}/leave', [GroupController::class, 'leave']);
-        Route::get('/active-status', [PresenceController::class, 'index']);
-        Route::post('/active-status', [PresenceController::class, 'update']);
-        Route::get('/users/export', [UserController::class, 'export']);
-        Route::get('/users', [UserController::class, 'index']);
-        Route::get('/search', SearchController::class);
-    });
 
     // ─── Promotions ──────────────────────────────────────────────────────────
     Route::get('/promotions/coupons', [PromotionsController::class, 'coupons'])->name('promotions.coupons');
@@ -318,26 +272,29 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::delete('/admin/audit-logs/destroy', [AuditLogController::class, 'destroy'])->name('admin.audit-logs.destroy')->middleware('role:Super Admin');
 
     // Targets & Achievements
-    Route::get('/targets', [\App\Http\Controllers\TargetController::class, 'index'])->name('targets.index');
-    Route::get('/targets/create', [\App\Http\Controllers\TargetController::class, 'create'])->name('targets.create');
-    Route::post('/targets', [\App\Http\Controllers\TargetController::class, 'store'])->name('targets.store');
+    Route::get('/targets', [TargetController::class, 'index'])->name('targets.index');
+    Route::get('/targets/create', [TargetController::class, 'create'])->name('targets.create');
+    Route::post('/targets', [TargetController::class, 'store'])->name('targets.store');
     // Static routes MUST be declared before parameterized {target} routes to avoid wildcard capture
-    Route::get('/targets/import', [\App\Http\Controllers\TargetController::class, 'importForm'])->name('targets.import');
-    Route::get('/targets/import-template', [\App\Http\Controllers\TargetController::class, 'importTemplate'])->name('targets.import.template');
-    Route::post('/targets/import', [\App\Http\Controllers\TargetController::class, 'import'])->name('targets.import.process');
-    Route::get('/targets/export', [\App\Http\Controllers\TargetController::class, 'export'])->name('targets.export');
-    Route::post('/targets/recalculate', [\App\Http\Controllers\TargetController::class, 'recalculate'])->name('targets.recalculate');
-    Route::get('/targets/{target}/edit', [\App\Http\Controllers\TargetController::class, 'edit'])->name('targets.edit');
-    Route::put('/targets/{target}', [\App\Http\Controllers\TargetController::class, 'update'])->name('targets.update');
-    Route::delete('/targets/{target}', [\App\Http\Controllers\TargetController::class, 'destroy'])->name('targets.destroy');
+    Route::get('/targets/import', [TargetController::class, 'importForm'])->name('targets.import');
+    Route::get('/targets/import-template', [TargetController::class, 'importTemplate'])->name('targets.import.template');
+    Route::post('/targets/import', [TargetController::class, 'import'])->name('targets.import.process');
+    Route::get('/targets/export', [TargetController::class, 'export'])->name('targets.export');
+    Route::post('/targets/recalculate', [TargetController::class, 'recalculate'])->name('targets.recalculate');
+    Route::get('/targets/{target}/edit', [TargetController::class, 'edit'])->name('targets.edit');
+    Route::put('/targets/{target}', [TargetController::class, 'update'])->name('targets.update');
+    Route::delete('/targets/{target}', [TargetController::class, 'destroy'])->name('targets.destroy');
 });
 
-Route::get('/api/files/preview', [\App\Modules\Core\Controllers\FileManagerController::class, 'preview'])->name('files.preview');
+Route::get('/api/files/preview', [FileManagerController::class, 'preview'])->name('files.preview');
 
 Route::get('/images/{path}', function ($path) {
-    $absolutePath = storage_path('app/public/' . $path);
-    if (!file_exists($absolutePath)) abort(404);
+    $absolutePath = storage_path('app/public/'.$path);
+    if (! file_exists($absolutePath)) {
+        abort(404);
+    }
+
     return response()->file($absolutePath, [
-        'Access-Control-Allow-Origin' => '*'
+        'Access-Control-Allow-Origin' => '*',
     ]);
 })->where('path', '.*');

@@ -62,6 +62,9 @@ class Order extends Model implements Auditable
         });
     }
 
+    public function office(): BelongsTo { return $this->belongsTo(\App\Modules\Users\Models\Office::class); }
+    public function stateTeam(): BelongsTo { return $this->belongsTo(\App\Modules\Users\Models\Team::class, 'state_team_id'); }
+
     /** Canonical order lifecycle (warehouse → customer). */
     public const LIFECYCLE_STATUSES = [
         'future_order',
@@ -149,6 +152,7 @@ class Order extends Model implements Auditable
     }
 
     protected $fillable = [
+        'office_id', 'state_team_id',
         'order_no', 'type', 'party_id', 'order_date', 'total_amount',
         'tax_amount', 'discount_amount', 'coupon_code', 'applied_offer_id', 'selected_offer_id', 'net_amount', 'status', 'warehouse_id',
         'shipping_address_id', 'shipping_address_line_1', 'shipping_address_line_2',

@@ -11,14 +11,18 @@
             <h1 class="h3 mb-1 fw-bold"><i class="bi bi-arrow-return-left text-primary me-2"></i>Returns &amp; QC</h1>
         </div>
         <div class="d-flex gap-2">
-            <button class="btn btn-outline-secondary shadow-sm" @click="downloadBulkQcTemplate()" title="CSV template with one order_id column; accepts database ID or order number">
+            @can('returns.qc')
+<button class="btn btn-outline-secondary shadow-sm" @click="downloadBulkQcTemplate()" title="CSV template with one order_id column; accepts database ID or order number">
                 <i class="bi bi-file-earmark-spreadsheet me-1"></i>Template
             </button>
-            <button class="btn btn-primary shadow-sm" @click="$refs.importQcFile.click()" :disabled="importingQc">
+@endcan
+            @can('returns.qc')
+<button class="btn btn-primary shadow-sm" @click="$refs.importQcFile.click()" :disabled="importingQc">
                 <i class="bi bi-upload me-1"></i>
                 <span x-show="!importingQc">Import QC CSV</span>
                 <span x-show="importingQc">Importing...</span>
             </button>
+@endcan
             <input type="file" x-ref="importQcFile" class="d-none" accept=".csv" @change="uploadBulkQc($event)">
         </div>
     </div>
@@ -186,19 +190,25 @@
                     </span>
                     <div class="d-flex gap-2 flex-wrap">
                         <template x-if="bulkAvailableActions && bulkAvailableActions.approve">
-                            <button class="btn btn-sm btn-success" @click="bulkApprove()" :disabled="isSubmitting">
+                            @can('returns.approve')
+<button class="btn btn-sm btn-success" @click="bulkApprove()" :disabled="isSubmitting">
                                 <i class="bi bi-check-circle me-1"></i>Approve
                             </button>
+@endcan
                         </template>
                         <template x-if="bulkAvailableActions && bulkAvailableActions.cancel">
-                            <button class="btn btn-sm btn-danger" @click="bulkCancel()" :disabled="isSubmitting">
+                            @can('returns.cancel')
+<button class="btn btn-sm btn-danger" @click="bulkCancel()" :disabled="isSubmitting">
                                 <i class="bi bi-x-circle me-1"></i>Cancel
                             </button>
+@endcan
                         </template>
                         <template x-if="bulkAvailableActions && bulkAvailableActions.qc">
-                            <button class="btn btn-sm btn-primary" @click="openBulkQcModal()" :disabled="isSubmitting">
+                            @can('returns.qc')
+<button class="btn btn-sm btn-primary" @click="openBulkQcModal()" :disabled="isSubmitting">
                                 <i class="bi bi-clipboard2-check me-1"></i>Process Bulk QC
                             </button>
+@endcan
                         </template>
                         <button class="btn btn-sm btn-outline-secondary" @click="selectedReturns = []"><i class="bi bi-x-lg"></i></button>
                     </div>
@@ -271,16 +281,20 @@
                                         <ul class="dropdown-menu dropdown-menu-end shadow-sm">
                                             <template x-if="ret.status === 'pending'">
                                                 <li>
-                                                    <a class="dropdown-item" href="#" @click.prevent="approveReturn(ret)">
+                                                    @can('returns.approve')
+<a class="dropdown-item" href="#" @click.prevent="approveReturn(ret)">
                                                         <i class="bi bi-check-circle me-2 text-success"></i>Approve Return
                                                     </a>
+@endcan
                                                 </li>
                                             </template>
                                             <template x-if="ret.status === 'pending'">
                                                 <li>
-                                                    <a class="dropdown-item text-danger" href="#" @click.prevent="cancelReturn(ret)">
+                                                    @can('returns.cancel')
+<a class="dropdown-item text-danger" href="#" @click.prevent="cancelReturn(ret)">
                                                         <i class="bi bi-x-circle me-2"></i>Cancel Return
                                                     </a>
+@endcan
                                                 </li>
                                             </template>
                                             <template x-if="['approved', 'qc_in_progress', 'received'].includes(ret.status)">
@@ -567,7 +581,8 @@
                             <i class="bi bi-x-lg me-1"></i>Close
                         </button>
                         <template x-if="selectedReturn && ['approved', 'qc_in_progress', 'received'].includes(selectedReturn.status)">
-                            <button type="button"
+                            @can('returns.qc')
+<button type="button"
                                     class="btn btn-primary"
                                     @click="processQc()"
                                     :disabled="!qcFormValid || isSubmitting">
@@ -575,6 +590,7 @@
                                 <i class="bi bi-send-check me-1" x-show="!isSubmitting"></i>
                                 Submit QC &amp; Update Inventory
                             </button>
+@endcan
                         </template>
                     </div>
 
@@ -732,7 +748,8 @@
                         <button type="button" class="btn btn-outline-secondary" @click="closeBulkQcModal()">
                             <i class="bi bi-x-lg me-1"></i>Close
                         </button>
-                        <button type="button"
+                        @can('returns.qc')
+<button type="button"
                                 class="btn btn-primary"
                                 @click="submitBulkQc()"
                                 :disabled="!bulkQcFormValid || isSubmitting">
@@ -740,6 +757,7 @@
                             <i class="bi bi-send-check me-1" x-show="!isSubmitting"></i>
                             Submit Bulk QC &amp; Update Inventory
                         </button>
+@endcan
                     </div>
 
                 </div>

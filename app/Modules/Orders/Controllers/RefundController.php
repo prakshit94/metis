@@ -4,23 +4,29 @@ namespace App\Modules\Orders\Controllers;
 
 use App\Modules\Core\Controllers\Controller;
 use App\Modules\Orders\Models\Refund;
+use App\Services\EnsureRecordVisibility;
+use App\Services\FinancialService;
+use App\Services\RecordVisibility;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Support\Facades\DB;
 
 class RefundController extends Controller implements HasMiddleware
 {
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:orders.view', only: ['index', 'show']),
-            new Middleware('permission:orders.edit', only: ['bulkStatus']),
+            new Middleware(EnsureRecordVisibility::class),
+            new Middleware('permission:refunds.view', only: ['index', 'show']),
+            new Middleware('permission:refunds.edit', only: ['bulkStatus']),
         ];
     }
 
     public function index(Request $request)
     {
         $query = Refund::with(['order.party', 'order.orderReturns', 'order.shipments', 'invoice.payments', 'invoice.refunds', 'orderReturn', 'processedBy']);
+        app(RecordVisibility::class)->financial($query);
 
         if ($request->filled('search')) {
             $s = trim($request->search);
@@ -55,7 +61,7 @@ class RefundController extends Controller implements HasMiddleware
             $query->orderBy('id', 'desc');
         }
 
-        $refunds = $query->paginate($request->integer('limit', 10));
+        $refunds = $query->paginate(min(max($request->integer('limit', 10), 1), 200));
 
         $refunds->getCollection()->each(fn ($refund) => $refund->order?->makeHidden(['orderReturns', 'shipments']));
 
@@ -69,7 +75,7 @@ class RefundController extends Controller implements HasMiddleware
         });
 
         if ($request->wantsJson() || $request->ajax()) {
-            $counts = Refund::query()->selectRaw("
+            $counts = app(RecordVisibility::class)->financial(Refund::query())->selectRaw("
                 COALESCE(SUM(CASE WHEN status = 'completed' THEN amount ELSE 0 END), 0) as total_refunded,
                 COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending,
                 COUNT(CASE WHEN status = 'failed' THEN 1 END) as failed,
@@ -112,13 +118,11 @@ class RefundController extends Controller implements HasMiddleware
             $status = 'completed';
         }
 
-        $updateData = ['status' => $status];
-        if ($status === 'completed') {
-            $updateData['processed_by'] = auth()->id();
-            $updateData['processed_at'] = now();
-        }
-
-        Refund::whereIn('id', $validated['ids'])->get()->each->update($updateData);
+        DB::transaction(function () use ($validated, $status) {
+            foreach (Refund::whereIn('id', $validated['ids'])->orderBy('order_id')->orderBy('id')->get() as $refund) {
+                app(FinancialService::class)->changeRefundStatus($refund, $status);
+            }
+        }, 3);
 
         return response()->json([
             'success' => true,

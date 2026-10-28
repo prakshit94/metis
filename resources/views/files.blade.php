@@ -14,10 +14,12 @@
             <button type="button" class="btn btn-outline-secondary" @click="refreshFiles()" :disabled="loading" aria-label="Refresh files">
                 <i class="bi bi-arrow-clockwise me-2" aria-hidden="true"></i>Refresh
             </button>
-            <button type="button" class="btn btn-primary" @click="uploadFile()" :disabled="uploading">
+            @can('files-create')
+<button type="button" class="btn btn-primary" @click="uploadFile()" :disabled="uploading">
                 <span x-show="uploading" class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
                 <i x-show="!uploading" class="bi bi-cloud-arrow-up me-2" aria-hidden="true"></i><span x-text="uploading ? 'Uploading…' : 'Upload Files'"></span>
             </button>
+@endcan
         </div>
     </div>
 
@@ -113,8 +115,12 @@
                 <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
                     <span class="fw-semibold text-primary small"><i class="bi bi-check-circle-fill me-2" aria-hidden="true"></i><strong x-text="selectedFiles.length"></strong> file(s) selected</span>
                     <div class="d-flex flex-wrap gap-2">
-                        <button type="button" class="btn btn-sm btn-primary" @click="downloadSelected()" :disabled="downloading"><i class="bi bi-download me-1" aria-hidden="true"></i>Download ZIP</button>
-                        <button type="button" class="btn btn-sm btn-outline-danger" @click="deleteSelected()" :disabled="bulkDeleting"><i class="bi bi-trash me-1" aria-hidden="true"></i>Delete</button>
+                        @can('files-download')
+<button type="button" class="btn btn-sm btn-primary" @click="downloadSelected()" :disabled="downloading"><i class="bi bi-download me-1" aria-hidden="true"></i>Download ZIP</button>
+@endcan
+                        @can('files-delete')
+<button type="button" class="btn btn-sm btn-outline-danger" @click="deleteSelected()" :disabled="bulkDeleting"><i class="bi bi-trash me-1" aria-hidden="true"></i>Delete</button>
+@endcan
                         <button type="button" class="btn btn-sm btn-outline-secondary" @click="selectedFiles = []" aria-label="Clear file selection"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
                     </div>
                 </div>
@@ -126,7 +132,9 @@
                 <div class="files-empty-icon mx-auto mb-3"><i class="bi bi-folder2-open" aria-hidden="true"></i></div>
                 <h3 class="h5 fw-semibold mb-2">No files found</h3>
                 <p class="text-body-secondary small mb-4">Upload a file or adjust your search to find what you need.</p>
-                <button type="button" class="btn btn-primary" @click="uploadFile()" :disabled="uploading"><i class="bi bi-cloud-arrow-up me-2" aria-hidden="true"></i>Upload Files</button>
+                @can('files-create')
+<button type="button" class="btn btn-primary" @click="uploadFile()" :disabled="uploading"><i class="bi bi-cloud-arrow-up me-2" aria-hidden="true"></i>Upload Files</button>
+@endcan
             </div>
 
             <div class="table-responsive files-table-scroll" x-show="viewMode === 'list' && currentFiles.length > 0">
@@ -167,24 +175,38 @@
                                     <div class="dropdown">
                                         <button type="button" class="btn btn-sm btn-outline-secondary files-action-button" data-bs-toggle="dropdown" :aria-label="'Actions for ' + file.name" :disabled="!!busyFiles[file.id]"><i class="bi bi-three-dots" aria-hidden="true"></i></button>
                                         <ul class="dropdown-menu dropdown-menu-end shadow-sm">
-                                        <li><a class="dropdown-item" href="#" @click.prevent="downloadFile(file)">
+                                        <li>@can('files-download')
+<a class="dropdown-item" href="#" @click.prevent="downloadFile(file)">
                                         <i class="bi bi-download me-2 text-primary"></i>Download
-                                        </a></li>
-                                        <li x-show="file.type === 'image'"><a class="dropdown-item" href="#" @click.prevent="setLoginBackground(file)">
+                                        </a>
+@endcan</li>
+                                        <li x-show="file.type === 'image'">@can('settings-edit')
+<a class="dropdown-item" href="#" @click.prevent="setLoginBackground(file)">
                                         <i class="bi bi-card-image me-2 text-success"></i>Set Login Background
-                                        </a></li>
+                                        </a>
+@endcan</li>
                                         <li x-show="file.type === 'image'"><hr class="dropdown-divider"></li>
                                         <li x-show="file.type === 'image'"><h6 class="dropdown-header">Use image as</h6></li>
-                                        <li x-show="file.type === 'image'"><a class="dropdown-item" href="#" @click.prevent="setDefaultImage(file, 'logo.png')"><i class="bi bi-star me-2 text-primary"></i>App Logo</a></li>
-                                        <li x-show="file.type === 'image'"><a class="dropdown-item" href="#" @click.prevent="setDefaultImage(file, 'default_avatar.jpeg')"><i class="bi bi-person me-2 text-primary"></i>Default Avatar</a></li>
-                                        <li x-show="file.type === 'image'"><a class="dropdown-item" href="#" @click.prevent="setDefaultImage(file, 'product-placeholder.svg')"><i class="bi bi-box me-2 text-primary"></i>Product Placeholder</a></li>
+                                        <li x-show="file.type === 'image'">@can('settings-edit')
+<a class="dropdown-item" href="#" @click.prevent="setDefaultImage(file, 'logo.png')"><i class="bi bi-star me-2 text-primary"></i>App Logo</a>
+@endcan</li>
+                                        <li x-show="file.type === 'image'">@can('settings-edit')
+<a class="dropdown-item" href="#" @click.prevent="setDefaultImage(file, 'default_avatar.jpeg')"><i class="bi bi-person me-2 text-primary"></i>Default Avatar</a>
+@endcan</li>
+                                        <li x-show="file.type === 'image'">@can('settings-edit')
+<a class="dropdown-item" href="#" @click.prevent="setDefaultImage(file, 'product-placeholder.svg')"><i class="bi bi-box me-2 text-primary"></i>Product Placeholder</a>
+@endcan</li>
                                         <li x-show="!file.isAsset"><hr class="dropdown-divider"></li>
-                                        <li x-show="!file.isAsset"><a class="dropdown-item" href="#" @click.prevent="renameFile(file)">
+                                        <li x-show="!file.isAsset">@can('files-edit')
+<a class="dropdown-item" href="#" @click.prevent="renameFile(file)">
                                         <i class="bi bi-pencil me-2 text-warning"></i>Rename
-                                        </a></li>
-                                        <li x-show="!file.isAsset"><a class="dropdown-item text-danger" href="#" @click.prevent="deleteFile(file)">
+                                        </a>
+@endcan</li>
+                                        <li x-show="!file.isAsset">@can('files-delete')
+<a class="dropdown-item text-danger" href="#" @click.prevent="deleteFile(file)">
                                         <i class="bi bi-trash me-2"></i>Delete
-                                        </a></li>
+                                        </a>
+@endcan</li>
                                         </ul>
                                     </div>
                                 </td>
@@ -202,24 +224,38 @@
                             <div class="dropdown" @click.stop @dblclick.stop>
                                 <button type="button" class="btn btn-sm btn-outline-secondary files-action-button" data-bs-toggle="dropdown" :aria-label="'Actions for ' + file.name" :disabled="!!busyFiles[file.id]"><i class="bi bi-three-dots" aria-hidden="true"></i></button>
                                         <ul class="dropdown-menu dropdown-menu-end shadow-sm">
-                                        <li><a class="dropdown-item" href="#" @click.prevent="downloadFile(file)">
+                                        <li>@can('files-download')
+<a class="dropdown-item" href="#" @click.prevent="downloadFile(file)">
                                         <i class="bi bi-download me-2 text-primary"></i>Download
-                                        </a></li>
-                                        <li x-show="file.type === 'image'"><a class="dropdown-item" href="#" @click.prevent="setLoginBackground(file)">
+                                        </a>
+@endcan</li>
+                                        <li x-show="file.type === 'image'">@can('settings-edit')
+<a class="dropdown-item" href="#" @click.prevent="setLoginBackground(file)">
                                         <i class="bi bi-card-image me-2 text-success"></i>Set Login Background
-                                        </a></li>
+                                        </a>
+@endcan</li>
                                         <li x-show="file.type === 'image'"><hr class="dropdown-divider"></li>
                                         <li x-show="file.type === 'image'"><h6 class="dropdown-header">Use image as</h6></li>
-                                        <li x-show="file.type === 'image'"><a class="dropdown-item" href="#" @click.prevent="setDefaultImage(file, 'logo.png')"><i class="bi bi-star me-2 text-primary"></i>App Logo</a></li>
-                                        <li x-show="file.type === 'image'"><a class="dropdown-item" href="#" @click.prevent="setDefaultImage(file, 'default_avatar.jpeg')"><i class="bi bi-person me-2 text-primary"></i>Default Avatar</a></li>
-                                        <li x-show="file.type === 'image'"><a class="dropdown-item" href="#" @click.prevent="setDefaultImage(file, 'product-placeholder.svg')"><i class="bi bi-box me-2 text-primary"></i>Product Placeholder</a></li>
+                                        <li x-show="file.type === 'image'">@can('settings-edit')
+<a class="dropdown-item" href="#" @click.prevent="setDefaultImage(file, 'logo.png')"><i class="bi bi-star me-2 text-primary"></i>App Logo</a>
+@endcan</li>
+                                        <li x-show="file.type === 'image'">@can('settings-edit')
+<a class="dropdown-item" href="#" @click.prevent="setDefaultImage(file, 'default_avatar.jpeg')"><i class="bi bi-person me-2 text-primary"></i>Default Avatar</a>
+@endcan</li>
+                                        <li x-show="file.type === 'image'">@can('settings-edit')
+<a class="dropdown-item" href="#" @click.prevent="setDefaultImage(file, 'product-placeholder.svg')"><i class="bi bi-box me-2 text-primary"></i>Product Placeholder</a>
+@endcan</li>
                                         <li x-show="!file.isAsset"><hr class="dropdown-divider"></li>
-                                        <li x-show="!file.isAsset"><a class="dropdown-item" href="#" @click.prevent="renameFile(file)">
+                                        <li x-show="!file.isAsset">@can('files-edit')
+<a class="dropdown-item" href="#" @click.prevent="renameFile(file)">
                                         <i class="bi bi-pencil me-2 text-warning"></i>Rename
-                                        </a></li>
-                                        <li x-show="!file.isAsset"><a class="dropdown-item text-danger" href="#" @click.prevent="deleteFile(file)">
+                                        </a>
+@endcan</li>
+                                        <li x-show="!file.isAsset">@can('files-delete')
+<a class="dropdown-item text-danger" href="#" @click.prevent="deleteFile(file)">
                                         <i class="bi bi-trash me-2"></i>Delete
-                                        </a></li>
+                                        </a>
+@endcan</li>
                                         </ul>
                             </div>
                         </div>
@@ -235,7 +271,9 @@
                         </div>
                         <div class="card-footer px-3 py-2 d-flex justify-content-between align-items-center gap-2">
                             <small class="text-body-secondary files-grid-date" x-text="file.modifiedDate"></small>
-                            <button type="button" class="btn btn-sm btn-outline-secondary flex-shrink-0" @click.stop="downloadFile(file)" @dblclick.stop :disabled="!!busyFiles[file.id]" :aria-label="'Download ' + file.name"><i class="bi bi-download" aria-hidden="true"></i></button>
+                            @can('files-download')
+<button type="button" class="btn btn-sm btn-outline-secondary flex-shrink-0" @click.stop="downloadFile(file)" @dblclick.stop :disabled="!!busyFiles[file.id]" :aria-label="'Download ' + file.name"><i class="bi bi-download" aria-hidden="true"></i></button>
+@endcan
                         </div>
                     </article>
                 </template>

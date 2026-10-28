@@ -24,9 +24,11 @@
                 <p class="mb-0 text-muted small" style="font-size: 13px;">Manage call outcome categories and dynamic form fields.</p>
             </div>
         </div>
-        <button type="button" class="btn btn-primary rounded-pill px-4 shadow-sm hover-shadow transition-all fw-bold" @click="openModal()">
+        @can('calltag-create')
+<button type="button" class="btn btn-primary rounded-pill px-4 shadow-sm hover-shadow transition-all fw-bold" @click="openModal()">
             <i class="bi bi-plus-circle-fill me-2"></i>Add Category
         </button>
+@endcan
     </div>
 
     <!-- Stats Row -->
@@ -130,9 +132,15 @@
                         </span>
                     </div>
                     <div class="d-flex gap-2">
-                        <button class="btn btn-sm btn-success rounded-pill px-3 shadow-sm fw-bold" @click="bulkAction('activate')"><i class="bi bi-check-circle me-1"></i>Activate</button>
-                        <button class="btn btn-sm btn-warning rounded-pill px-3 shadow-sm fw-bold" @click="bulkAction('deactivate')"><i class="bi bi-pause-circle me-1"></i>Deactivate</button>
-                        <button class="btn btn-sm btn-danger rounded-pill px-3 shadow-sm fw-bold" @click="bulkAction('delete')"><i class="bi bi-trash me-1"></i>Delete</button>
+                        @can('calltag-edit')
+<button class="btn btn-sm btn-success rounded-pill px-3 shadow-sm fw-bold" @click="bulkAction('activate')"><i class="bi bi-check-circle me-1"></i>Activate</button>
+@endcan
+                        @can('calltag-edit')
+<button class="btn btn-sm btn-warning rounded-pill px-3 shadow-sm fw-bold" @click="bulkAction('deactivate')"><i class="bi bi-pause-circle me-1"></i>Deactivate</button>
+@endcan
+                        @can('calltag-delete')
+<button class="btn btn-sm btn-danger rounded-pill px-3 shadow-sm fw-bold" @click="bulkAction('delete')"><i class="bi bi-trash me-1"></i>Delete</button>
+@endcan
                         <button class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center justify-content-center px-2 rounded-circle shadow-sm" @click="selected = []" title="Clear selection">
                             <i class="bi bi-x-lg"></i>
                         </button>

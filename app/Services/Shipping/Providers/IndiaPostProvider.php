@@ -3,11 +3,16 @@
 namespace App\Services\Shipping\Providers;
 
 use App\Contracts\Shipping\ShippingProviderInterface;
+use App\Models\IndiaPostAwbTracking;
+use App\Models\IndiaPostBarcodeRange;
 use App\Models\SystemSetting;
 use App\Modules\Orders\Models\Order;
+use App\Modules\Orders\Models\Shipment;
+use App\Services\BusinessSequence;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class IndiaPostProvider implements ShippingProviderInterface
 {
@@ -24,7 +29,7 @@ class IndiaPostProvider implements ShippingProviderInterface
         $settings = SystemSetting::where('key', 'india_post_offices')->pluck('value', 'key');
 
         $offices = isset($settings['india_post_offices']) ? json_decode($settings['india_post_offices'], true) : [];
-        if (!is_array($offices)) {
+        if (! is_array($offices)) {
             $offices = [];
         }
 
@@ -36,7 +41,7 @@ class IndiaPostProvider implements ShippingProviderInterface
                 break;
             }
         }
-        if (!$activeOffice) {
+        if (! $activeOffice) {
             foreach ($offices as $office) {
                 if (isset($office['status']) && $office['status'] === 'active') {
                     $activeOffice = $office;
@@ -49,7 +54,7 @@ class IndiaPostProvider implements ShippingProviderInterface
             $this->activeOfficeId = $activeOffice['id'] ?? null;
             $this->baseUrl = $activeOffice['api_base_url'] ?? config('shipping.providers.india_post.base_url');
             $this->username = $activeOffice['api_username'] ?? config('shipping.providers.india_post.username');
-            $this->password = !empty($activeOffice['api_password']) ? decrypt($activeOffice['api_password'], false) : config('shipping.providers.india_post.password');
+            $this->password = ! empty($activeOffice['api_password']) ? decrypt($activeOffice['api_password'], false) : config('shipping.providers.india_post.password');
 
             config(['shipping.providers.india_post.bulk_customer_id' => $activeOffice['bulk_customer_id'] ?? config('shipping.providers.india_post.bulk_customer_id')]);
             config(['shipping.providers.india_post.contracts.SP_INLAND_DOC' => $activeOffice['contract_sp_doc'] ?? config('shipping.providers.india_post.contracts.SP_INLAND_DOC')]);
@@ -63,7 +68,7 @@ class IndiaPostProvider implements ShippingProviderInterface
             config(['shipping.providers.india_post.drop_off_pincode' => $activeOffice['drop_off_pincode'] ?? config('shipping.providers.india_post.drop_off_pincode')]);
             config(['shipping.providers.india_post.booking_office_name' => $activeOffice['booking_office_name'] ?? config('shipping.providers.india_post.booking_office_name')]);
             config(['shipping.providers.india_post.booking_office_pin' => $activeOffice['booking_office_pin'] ?? config('shipping.providers.india_post.booking_office_pin')]);
-            
+
             config(['shipping.providers.india_post.barcode_prefix' => $activeOffice['barcode_prefix'] ?? 'EA']);
             config(['shipping.providers.india_post.barcode_start' => $activeOffice['barcode_start'] ?? '10000000']);
             config(['shipping.providers.india_post.barcode_end' => $activeOffice['barcode_end'] ?? '19999999']);
@@ -79,20 +84,22 @@ class IndiaPostProvider implements ShippingProviderInterface
             config(['shipping.providers.india_post.booking_office_pin' => config('shipping.providers.india_post.booking_office_pin')]);
         }
     }
+
     protected function httpClient()
     {
         $client = Http::withOptions(['curl' => [CURLOPT_SSLVERSION => CURL_SSLVERSION_TLSv1_2]])->timeout(30);
-        
+
         if (app()->environment('local', 'staging', 'testing')) {
             $client = $client->withoutVerifying();
         }
-        
+
         return $client;
     }
 
     protected function tokenCacheKeys(): array
     {
         $scope = sha1($this->baseUrl.'|'.$this->username);
+
         return ['india_post_access_token_'.$scope, 'india_post_refresh_token_'.$scope];
     }
 
@@ -118,6 +125,7 @@ class IndiaPostProvider implements ShippingProviderInterface
                     ->post("{$this->baseUrl}/v1/access/TokenWithRtoken");
                 if ($response->successful() && $response->json('success') && $response->json('data.access_token')) {
                     $this->cacheTokens($response->json('data'), $accessCacheKey, $refreshCacheKey);
+
                     return $response->json('data.access_token');
                 }
                 Log::warning('India Post refresh token rejected; falling back to login', ['status' => $response->status()]);
@@ -133,6 +141,7 @@ class IndiaPostProvider implements ShippingProviderInterface
             ]);
             if ($response->successful() && $response->json('success') && $response->json('data.access_token')) {
                 $this->cacheTokens($response->json('data'), $accessCacheKey, $refreshCacheKey);
+
                 return $response->json('data.access_token');
             }
             throw new \Exception('Failed to authenticate with India Post: '.$response->body());
@@ -154,6 +163,7 @@ class IndiaPostProvider implements ShippingProviderInterface
             Cache::put($refreshCacheKey, $tokens['refresh_token'], now()->addSeconds(max(60, (int) ($tokens['refresh_expires_in'] ?? 86400))));
         }
     }
+
     protected function apiRequest(string $method, string $url, array $data = [], array $options = [])
     {
         $token = $this->authenticate();
@@ -171,11 +181,11 @@ class IndiaPostProvider implements ShippingProviderInterface
             Cache::forget($accessCacheKey);
             $token = $this->authenticate(true);
             $client = $this->httpClient()->withToken($token);
-            
+
             if (isset($options['file_path'])) {
                 $client->attach('file', file_get_contents($options['file_path']), basename($options['file_path']));
             }
-            
+
             $response = $method === 'get' ? $client->get($url, $data) : $client->post($url, $data);
         }
 
@@ -191,7 +201,6 @@ class IndiaPostProvider implements ShippingProviderInterface
 
         return $response;
     }
-
 
     public function getPincodeDetails(string $pincode, string $officeType = 'post'): array
     {
@@ -297,25 +306,31 @@ class IndiaPostProvider implements ShippingProviderInterface
         $senderCompany = $warehouse ? ($warehouse->company_name ?: $senderName) : config('app.name');
         $senderPhoneRaw = $warehouse->phone ?? '';
         $senderPhoneNum = preg_replace('/[^0-9]/', '', $senderPhoneRaw);
-        if (strlen($senderPhoneNum) > 10) $senderPhoneNum = substr($senderPhoneNum, -10);
+        if (strlen($senderPhoneNum) > 10) {
+            $senderPhoneNum = substr($senderPhoneNum, -10);
+        }
         $senderPhone = $senderPhoneNum;
-        
+
         $senderAddr = $warehouse->address_line_1 ?? '';
         $senderCity = $warehouse->city ?? '';
         $senderPin = (string) ($warehouse->pincode ?? '');
 
         // Dynamic Receiver info
-        $receiverName = trim(($order->party->firstname ?? '') . ' ' . ($order->party->lastname ?? ''));
+        $receiverName = trim(($order->party->firstname ?? '').' '.($order->party->lastname ?? ''));
         $receiverName = trim($receiverName);
-        
+
         $receiverCompany = trim($order->party->company_name ?? '');
-        if (!$receiverCompany) $receiverCompany = $receiverName;
-        
+        if (! $receiverCompany) {
+            $receiverCompany = $receiverName;
+        }
+
         $receiverPhoneRaw = $order->party->phone ?? '';
         $receiverPhoneNum = preg_replace('/[^0-9]/', '', $receiverPhoneRaw);
-        if (strlen($receiverPhoneNum) > 10) $receiverPhoneNum = substr($receiverPhoneNum, -10);
+        if (strlen($receiverPhoneNum) > 10) {
+            $receiverPhoneNum = substr($receiverPhoneNum, -10);
+        }
         $receiverPhone = $receiverPhoneNum;
-        
+
         $receiverAddr = $order->shipping_address_line_1 ?? '';
         $receiverCity = $order->shipping_city ?? '';
         $receiverPin = (string) ($order->shipping_pincode ?? '');
@@ -367,7 +382,7 @@ class IndiaPostProvider implements ShippingProviderInterface
             'length' => $maxLength,
             'breadth_diameter' => $maxWidth,
             'height' => $maxHeight,
-            
+
             'sender_name' => substr($senderName, 0, 80),
             'sender_company' => substr($senderCompany, 0, 80),
             'sender_add_line_1' => substr($senderAddr, 0, 80),
@@ -376,7 +391,7 @@ class IndiaPostProvider implements ShippingProviderInterface
             'sender_state' => substr($warehouse->state ?? '', 0, 80),
             'sender_pincode' => $senderPin,
             'sender_mobile_no' => $senderPhone,
-            
+
             'receiver_name' => substr($receiverName, 0, 80),
             'receiver_company' => substr($receiverCompany, 0, 80),
             'receiver_add_line_1' => substr($receiverAddr, 0, 80),
@@ -385,7 +400,7 @@ class IndiaPostProvider implements ShippingProviderInterface
             'receiver_state' => substr($order->shipping_state ?? '', 0, 80),
             'receiver_pincode' => $receiverPin,
             'receiver_mobile_no' => $receiverPhone,
-            
+
             'alt_address_flag' => 'FALSE',
             'pickup_address_flag' => 'FALSE',
             'drop_off_pincode' => (int) config('shipping.providers.india_post.drop_off_pincode'),
@@ -400,7 +415,7 @@ class IndiaPostProvider implements ShippingProviderInterface
         }
 
         $payload = [
-            'articles' => [ $article ],
+            'articles' => [$article],
         ];
 
         $response = $this->apiRequest('post', "{$this->baseUrl}/process-articles/{$customId}", $payload);
@@ -444,14 +459,16 @@ class IndiaPostProvider implements ShippingProviderInterface
     public function generateLabel(Order $order, string $trackingNumber): string
     {
         $order->loadMissing(['items.product', 'warehouse', 'party']);
-        $shipment = \App\Modules\Orders\Models\Shipment::where('tracking_no', $trackingNumber)->first();
+        $shipment = Shipment::where('tracking_no', $trackingNumber)->first();
 
         $warehouse = $order->warehouse;
         $senderName = $warehouse ? $warehouse->name : config('app.name');
-        
-        $receiverName = trim(($order->party->firstname ?? '') . ' ' . ($order->party->lastname ?? ''));
-        if (!$receiverName) $receiverName = 'Customer';
-        
+
+        $receiverName = trim(($order->party->firstname ?? '').' '.($order->party->lastname ?? ''));
+        if (! $receiverName) {
+            $receiverName = 'Customer';
+        }
+
         $receiverAddr = $order->shipping_address_line_1 ?? 'Receiver Addr';
         $weight = $shipment->actual_weight_g ?? 0;
         $length = $shipment->length_cm ?? 0;
@@ -503,18 +520,19 @@ class IndiaPostProvider implements ShippingProviderInterface
             'booking_office_pin' => config('shipping.providers.india_post.booking_office_pin'),
             'size' => 'A6',
             'payment_status' => 'PC',
-            'identifier' => 'Domestic'
+            'identifier' => 'Domestic',
         ]];
 
         $response = $this->apiRequest('post', "{$this->baseUrl}/v1/label/create/domestic", $payload);
 
         if ($response->successful()) {
             // Ideally we'd store the PDF somewhere and return the URL
-            // Since this API returns a PDF directly (based on the document: "Sample Output: PDF file"), 
+            // Since this API returns a PDF directly (based on the document: "Sample Output: PDF file"),
             // we should save it and return a local url.
-            $filename = 'label_' . $trackingNumber . '.pdf';
-            \Illuminate\Support\Facades\Storage::put('public/labels/' . $filename, $response->body());
-            return url('storage/labels/' . $filename);
+            $filename = 'label_'.$trackingNumber.'.pdf';
+            Storage::put('public/labels/'.$filename, $response->body());
+
+            return url('storage/labels/'.$filename);
         }
 
         throw new \Exception('Failed to generate label: '.$response->body());
@@ -548,13 +566,21 @@ class IndiaPostProvider implements ShippingProviderInterface
 
     private function generateBarcode(?int $orderId = null): string
     {
+        return app(BusinessSequence::class)->reserveCommitted('awb:allocation', function () use ($orderId) {
+            return $this->allocateBarcode($orderId);
+        });
+    }
+
+    private function allocateBarcode(?int $orderId): string
+    {
         $officeId = $this->activeOfficeId ?: 'default';
-        $range = \App\Models\IndiaPostBarcodeRange::where('office_id', $officeId)
+        $range = IndiaPostBarcodeRange::where('office_id', $officeId)
             ->where('status', 'active')
             ->orderBy('id', 'asc')
+            ->lockForUpdate()
             ->first();
 
-        if (!$range) {
+        if (! $range) {
             if (app()->environment('production')) {
                 throw new \RuntimeException('No India Post barcode range is configured for the active office.');
             }
@@ -572,7 +598,7 @@ class IndiaPostProvider implements ShippingProviderInterface
             $rangeId = $range->id;
         }
 
-        if (!$current) {
+        if (! $current) {
             $current = $start;
         }
 
@@ -596,18 +622,18 @@ class IndiaPostProvider implements ShippingProviderInterface
             $checkDigit = (string) $mod;
         }
 
-        $barcode = $prefix . $sequence . $checkDigit . 'IN';
+        $barcode = $prefix.$sequence.$checkDigit.'IN';
 
         $nextSequence = (int) $current + 1;
-        
+
         if ($range) {
             if ($nextSequence > $end) {
                 $range->status = 'exhausted';
                 $range->current_sequence = $end; // Max it out
                 $range->save();
-                
+
                 // Activate next queued range if available
-                $nextRange = \App\Models\IndiaPostBarcodeRange::where('office_id', $officeId)
+                $nextRange = IndiaPostBarcodeRange::where('office_id', $officeId)
                     ->where('status', 'queued')
                     ->orderBy('id', 'asc')
                     ->first();
@@ -628,24 +654,22 @@ class IndiaPostProvider implements ShippingProviderInterface
             config(['shipping.providers.india_post.barcode_current' => (string) $nextSequence]);
         }
 
-        try {
-            \App\Models\IndiaPostAwbTracking::create([
-                'range_id' => $rangeId,
-                'office_id' => $officeId,
-                'barcode' => $barcode,
-                'order_id' => $orderId,
-                'status' => 'used',
-            ]);
-        } catch (\Exception $e) {
-            // Silently fail if DB is unavailable so we don't break shipment flow
-        }
+        IndiaPostAwbTracking::create([
+            'range_id' => $rangeId,
+            'office_id' => $officeId,
+            'barcode' => $barcode,
+            'order_id' => $orderId,
+            'status' => 'used',
+        ]);
 
         return $barcode;
     }
 
     private function updateBarcodeSequence(string $nextSequence): void
     {
-        if (!$this->activeOfficeId) return;
+        if (! $this->activeOfficeId) {
+            return;
+        }
 
         $setting = SystemSetting::where('key', 'india_post_offices')->first();
         if ($setting) {
@@ -663,5 +687,3 @@ class IndiaPostProvider implements ShippingProviderInterface
         }
     }
 }
-
-

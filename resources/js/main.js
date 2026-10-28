@@ -144,6 +144,9 @@ class AdminApp {
     const currentPage = document.body.dataset.page;
 
     switch (currentPage) {
+      case 'two-factor-enrollment':
+        await import('./components/login-enrollment.js');
+        break;
       case 'dashboard': {
         const { DashboardManager } = await import('./components/dashboard.js');
         this.components.set('dashboard', new DashboardManager());
@@ -746,16 +749,16 @@ class AdminApp {
     }));
 
     Alpine.data('themeSwitch', () => ({
-      currentTheme: 'light',
-
+      currentTheme: document.documentElement.getAttribute('data-bs-theme') || 'light',
       init() {
-        this.currentTheme = localStorage.getItem('theme') || 'light';
+        this._themeHandler = (event) => { this.currentTheme = event.detail.theme; };
+        window.addEventListener('themeChanged', this._themeHandler);
       },
-
+      destroy() {
+        window.removeEventListener('themeChanged', this._themeHandler);
+      },
       toggle() {
-        this.currentTheme = this.currentTheme === 'light' ? 'dark' : 'light';
-        document.documentElement.setAttribute('data-bs-theme', this.currentTheme);
-        localStorage.setItem('theme', this.currentTheme);
+        app.themeManager.toggleTheme();
       },
     }));
 

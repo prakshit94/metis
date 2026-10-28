@@ -14,10 +14,10 @@ class HolidayController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:leave-view', only: ['index', 'show']),
-            new Middleware('permission:leave-create', only: ['store']),
-            new Middleware('permission:leave-edit', only: ['update']),
-            new Middleware('permission:leave-delete', only: ['destroy', 'bulkAction']),
+            new Middleware('permission:holiday-view', only: ['index', 'show']),
+            new Middleware('permission:holiday-create', only: ['store']),
+            new Middleware('permission:holiday-edit', only: ['update']),
+            new Middleware('permission:holiday-delete', only: ['destroy', 'bulkAction']),
         ];
     }
 

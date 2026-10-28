@@ -1058,6 +1058,8 @@ document.addEventListener('alpine:init', () => {
         shippingAddressId: o.shipping_address_id || null,
         billingAddressId: o.billing_address_id || null,
         orderNumber: o.order_no,
+        officeName: o.office?.name || '',
+        officeCode: o.office?.code || '',
         type: o.type || 'sale',
         orderDate: o.order_date,
         paymentStatus: invoice ? (invoice.payment_status ?? invoice.status) : 'no_invoice',

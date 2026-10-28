@@ -11,9 +11,11 @@
             <p class="text-muted mb-0">Generate, track, and send customer invoices</p>
         </div>
         <div class="d-flex gap-2">
-            <button type="button" class="btn btn-outline-secondary" @click.prevent="openImportModal">
+            @can('payments.import')
+<button type="button" class="btn btn-outline-secondary" @click.prevent="openImportModal">
                 <i class="bi bi-upload me-2"></i>Import Payments
             </button>
+@endcan
             <button class="btn btn-primary" style="background: rgba(99,102,241,0.8); border: none;">
                 <i class="bi bi-plus-lg me-2"></i>Generate Invoice
             </button>
@@ -138,12 +140,16 @@
                         </span>
                     </div>
                     <div class="d-flex flex-wrap gap-2">
-                        <button class="btn btn-sm btn-outline-info" @click="exportSelectedInvoices()" :disabled="isSubmitting" title="Export Selected to CSV">
+                        @can('invoices.export')
+<button class="btn btn-sm btn-outline-info" @click="exportSelectedInvoices()" :disabled="isSubmitting" title="Export Selected to CSV">
                             <i class="bi bi-download me-1"></i>Export CSV
                         </button>
-                        <button class="btn btn-sm btn-primary" @click="bulkUpdateStatus('paid')" :disabled="isSubmitting" title="Mark as Paid">
+@endcan
+                        @can('invoices.edit')
+<button class="btn btn-sm btn-primary" @click="bulkUpdateStatus('paid')" :disabled="isSubmitting" title="Mark as Paid">
                             <i class="bi bi-check2-all me-1"></i>Mark Paid
                         </button>
+@endcan
                         <button class="btn btn-sm btn-outline-secondary" @click="selectedInvoices = []" title="Clear selection">
                             <i class="bi bi-x-lg"></i>
                         </button>
@@ -242,9 +248,11 @@
                                                 <i class="bi bi-eye me-2"></i>View Details
                                             </a></li>
                                             <template x-if="invoice.due_amount > 0 && invoice.status !== 'cancelled'">
-                                                <li><a class="dropdown-item" href="#" @click.prevent="recordPayment(invoice)">
+                                                <li>@can('invoices.record-payment')
+<a class="dropdown-item" href="#" @click.prevent="recordPayment(invoice)">
                                                     <i class="bi bi-cash-coin me-2"></i>Record Payment
-                                                </a></li>
+                                                </a>
+@endcan</li>
                                             </template>
                                         </ul>
                                     </div>

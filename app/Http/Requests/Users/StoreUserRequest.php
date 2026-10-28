@@ -27,6 +27,9 @@ class StoreUserRequest extends FormRequest
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'confirmed', Password::min(8)->mixedCase()->numbers()],
             'is_active' => ['sometimes', 'boolean'],
+            'two_factor_required' => ['sometimes', 'boolean'],
+            'security_current_password' => ['sometimes', 'nullable', 'string', 'max:1024'],
+            'security_code' => ['sometimes', 'nullable', 'string', 'max:64'],
             'phone' => ['sometimes', 'nullable', 'string', 'regex:/^\d{10}$/'],
             'department_id' => ['sometimes', 'nullable', 'exists:departments,id'],
             'manager_id' => ['sometimes', 'nullable', 'exists:users,id'],
@@ -55,6 +58,7 @@ class StoreUserRequest extends FormRequest
             'designation' => ['sometimes', 'nullable', 'string', 'max:100'],
             'emergency_contact_name' => ['sometimes', 'nullable', 'string', 'max:100'],
             'emergency_contact_phone' => ['sometimes', 'nullable', 'string', 'regex:/^\d{10}$/'],
+            'office_id' => ['sometimes', 'nullable', 'integer', 'exists:offices,id'],
             'team_id' => ['sometimes', 'nullable', 'integer', 'exists:teams,id'],
         ];
     }

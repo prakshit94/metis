@@ -219,3 +219,17 @@
   @media (max-width: 1199.98px) { .users-summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   @media (max-width: 575.98px) { .users-summary-grid { grid-template-columns: minmax(0, 1fr); } }
 }
+
+// Portaled actions retain Bootstrap theme colors without table/card clipping.
+.users-action-menu {
+  position: fixed;
+  visibility: hidden;
+  &[data-popper-placement] { visibility: visible; }
+  z-index: 1050;
+  min-width: min(13rem, calc(100vw - 1rem));
+  max-width: calc(100vw - 1rem);
+  max-height: calc(100dvh - 1rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  .dropdown-item { white-space: normal; overflow-wrap: anywhere; padding-block: 0.625rem; }
+}

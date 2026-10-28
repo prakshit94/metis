@@ -6,10 +6,26 @@ namespace App\Modules\Catalog\Controllers;
 
 use App\Modules\Core\Controllers\Controller;
 use App\Modules\Catalog\Models\Warehouse;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Http\Request;
 
-class CatalogController extends Controller
+class CatalogController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:product-view', only: ['products']),
+            new Middleware('permission:brand-view', only: ['brands']),
+            new Middleware('permission:category-view', only: ['categories']),
+            new Middleware('permission:unitofmeasure-view', only: ['uom']),
+            new Middleware('permission:taxrate-view', only: ['taxRates']),
+            new Middleware('permission:hsncode-view', only: ['hsnCodes']),
+            new Middleware('permission:warehouse-view', only: ['warehouses']),
+            new Middleware('permission:productattribute-view', only: ['attributes']),
+        ];
+    }
+
     public function products(Request $request)
     {
         $user = $request->user();

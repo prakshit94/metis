@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Users;
 
+use App\Modules\Users\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
@@ -48,6 +49,9 @@ class UpdateUserRequest extends FormRequest
             ],
             'password' => ['sometimes', 'confirmed', Password::min(8)->mixedCase()->numbers()],
             'is_active' => ['sometimes', 'boolean'],
+            'two_factor_required' => ['sometimes', 'boolean'],
+            'security_current_password' => ['sometimes', 'nullable', 'string', 'max:1024'],
+            'security_code' => ['sometimes', 'nullable', 'string', 'max:64'],
             'phone' => ['sometimes', 'nullable', 'string', 'regex:/^\d{10}$/'],
             'department_id' => ['sometimes', 'nullable', 'exists:departments,id'],
             'manager_id' => ['sometimes', 'nullable', 'exists:users,id'],
@@ -82,17 +86,42 @@ class UpdateUserRequest extends FormRequest
             'designation' => ['sometimes', 'nullable', 'string', 'max:100'],
             'emergency_contact_name' => ['sometimes', 'nullable', 'string', 'max:100'],
             'emergency_contact_phone' => ['sometimes', 'nullable', 'string', 'regex:/^\d{10}$/'],
+            'office_id' => ['sometimes', 'nullable', 'integer', 'exists:offices,id'],
             'team_id' => ['sometimes', 'nullable', 'integer', 'exists:teams,id'],
         ];
     }
 
+    public function after(): array
+    {
+        return [function ($validator): void {
+            if ($validator->errors()->has('manager_id') || ! $this->filled('manager_id')) {
+                return;
+            }
+            $target = $this->route('user');
+            $id = is_object($target) ? $target->id : (int) $target;
+            $manager = (int) $this->input('manager_id');
+            $seen = [];
+            while ($manager) {
+                if ($manager === $id || isset($seen[$manager])) {
+                    $validator->errors()->add('manager_id', 'The selected manager would create a reporting cycle.');
+
+                    return;
+                }
+                $seen[$manager] = true;
+                $manager = (int) User::find($manager)?->manager_id;
+            }
+        }];
+    }
+
     protected function prepareForValidation(): void
     {
+        $existing = $this->route('user');
+        $existing = $existing instanceof User ? $existing : User::find($existing);
         if ($this->hasAny(['first_name', 'middle_name', 'last_name'])) {
             $name = trim(implode(' ', array_filter([
-                trim((string) $this->input('first_name', '')),
-                trim((string) $this->input('middle_name', '')),
-                trim((string) $this->input('last_name', '')),
+                trim((string) $this->input('first_name', $existing?->first_name ?? '')),
+                trim((string) $this->input('middle_name', $existing?->middle_name ?? '')),
+                trim((string) $this->input('last_name', $existing?->last_name ?? '')),
             ])));
 
             if ($name !== '') {

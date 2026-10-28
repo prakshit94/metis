@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection as SupportCollection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -22,7 +23,7 @@ class ChatService
 {
     private const ONLINE_WINDOW_MINUTES = 5;
 
-    public function listConversations(User $user): Collection
+    public function listConversations(User $user, ?int $perPage = null, int $page = 1): Collection
     {
         return Conversation::query()
             ->visibleTo($user)
@@ -43,11 +44,14 @@ class ChatService
                     ->limit(1)
             )
             ->latest('updated_at')
+            ->orderByDesc('id')
+            ->when($perPage !== null, fn ($query) => $query->skip((max(1, $page) - 1) * min(max($perPage, 1), 100))->take(min(max($perPage, 1), 100)))
             ->get()
             ->map(function ($conversation) use ($user) {
                 $member = $conversation->activeMembers->firstWhere('user_id', $user->id);
-                $conversation->is_pinned = $member ? !is_null($member->pinned_at) : false;
-                $conversation->is_archived = $member ? !is_null($member->archived_at) : false;
+                $conversation->is_pinned = $member ? ! is_null($member->pinned_at) : false;
+                $conversation->is_archived = $member ? ! is_null($member->archived_at) : false;
+
                 return $conversation;
             });
     }
@@ -223,6 +227,11 @@ class ChatService
 
     public function attachMember(Conversation $conversation, int $userId, string $role = 'member'): Member
     {
+        $existing = Member::where('conversation_id', $conversation->id)->where('user_id', $userId)->first();
+        if ($existing && $existing->status === 'active') {
+            return $existing;
+        }
+
         return Member::updateOrCreate([
             'conversation_id' => $conversation->id,
             'user_id' => $userId,
@@ -333,7 +342,7 @@ class ChatService
             ->get()
             ->keyBy('user_id');
 
-        $todayOrders = \Illuminate\Support\Facades\Cache::remember('chat_today_orders_' . now()->toDateString(), 60, function () {
+        $todayOrders = Cache::remember('chat_today_orders_'.now()->toDateString(), 60, function () {
             return DB::table('orders')
                 ->selectRaw('created_by, count(*) as today_orders, sum(net_amount) as today_revenue')
                 ->whereNotIn('status', ['cancelled', 'future_order'])

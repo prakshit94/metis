@@ -6,6 +6,7 @@ namespace App\Modules\Users\Controllers;
 
 use App\Modules\Core\Controllers\Controller;
 use App\Modules\Users\Models\User;
+use App\Services\UserDirectoryAccess;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -22,8 +23,8 @@ class BulkUserController extends Controller
     {
         $validated = $request->validate([
             'action' => ['required', 'string', 'in:activate,deactivate,delete,restore,force-delete'],
-            'ids' => ['required', 'array', 'min:1'],
-            'ids.*' => ['integer', 'exists:users,id'],
+            'ids' => ['required', 'array', 'min:1', 'max:100'],
+            'ids.*' => ['integer', 'distinct', 'exists:users,id'],
         ]);
 
         $ids = $validated['ids'];
@@ -37,114 +38,135 @@ class BulkUserController extends Controller
 
         abort_unless($request->user()?->can($ability), 403);
 
-        // Gracefully skip the Master Admin (ID 1) from any bulk action
-        $ids = array_values(array_filter($ids, fn ($id) => (int) $id !== 1));
+        return DB::transaction(function () use ($request, $ids, $action) {
+            // Serialize administrator safeguards with other directory mutations.
+            app(UserDirectoryAccess::class)->lockAdministrators();
 
-        if (empty($ids)) {
-            return response()->json(['message' => 'No valid users selected (Master Admin is protected).'], 422);
-        }
+            // Gracefully skip the Master Admin (ID 1) from any bulk action
+            $ids = array_values(array_filter($ids, fn ($id) => (int) $id !== 1));
 
-        // Prevent unauthorized modification of Super Admins
-        $superAdminIds = User::whereHas('allRoles', fn ($query) => $query->where('name', 'Super Admin'))
-            ->pluck('id')
-            ->toArray();
-        $overlapping = array_intersect($ids, $superAdminIds);
-
-        if (! empty($overlapping)) {
-            if (! $request->user()?->hasRole('Super Admin')) {
-                return response()->json(['message' => 'You cannot modify Super Admin users.'], 403);
+            if (empty($ids)) {
+                return response()->json(['message' => 'No valid users selected (Master Admin is protected).'], 422);
             }
 
-            if (($action === 'delete' || $action === 'force-delete') && count($superAdminIds) <= count($overlapping)) {
+            // Prevent unauthorized modification of Super Admins
+            $superAdminIds = User::withTrashed()->whereHas('allRoles', fn ($query) => $query->where('name', 'Super Admin'))
+                ->pluck('id')
+                ->toArray();
+            $overlapping = array_intersect($ids, $superAdminIds);
+
+            if (! empty($overlapping)) {
+                if (! $request->user()?->hasRole('Super Admin')) {
+                    return response()->json(['message' => 'You cannot modify Super Admin users.'], 403);
+                }
+
+                $liveAdmins = User::whereHas('allRoles', fn ($query) => $query->where('name', 'Super Admin'))->pluck('id')->all();
+                $activeAdmins = User::where('is_active', true)->whereHas('allRoles', fn ($query) => $query->where('name', 'Super Admin'))->pluck('id')->all();
+                if (in_array($action, ['delete', 'force-delete'], true) &&
+                    ((count($liveAdmins) > 0 && ! array_diff($liveAdmins, $ids)) ||
+                     (count($activeAdmins) > 0 && ! array_diff($activeAdmins, $ids)))) {
+                    return response()->json([
+                        'message' => $action === 'force-delete'
+                            ? 'Cannot permanently delete the last Super Admin user.'
+                            : 'Cannot delete the last Super Admin user.',
+                    ], 403);
+                }
+            }
+
+            // Report only rows this action can actually affect.
+            $targets = User::withTrashed()->whereIn('id', $ids)->lockForUpdate()->get();
+            $targets = $targets->filter(fn ($user) => match ($action) {
+                'restore' => $user->trashed(),
+                'force-delete' => true,
+                default => ! $user->trashed(),
+            });
+            $ids = $targets->pluck('id')->all();
+
+            if ($action === 'restore') {
+                User::withTrashed()->whereIn('id', $ids)->restore();
+
                 return response()->json([
-                    'message' => $action === 'force-delete'
-                        ? 'Cannot permanently delete the last Super Admin user.'
-                        : 'Cannot delete the last Super Admin user.',
-                ], 403);
+                    'message' => count($ids).' user(s) restored successfully.',
+                    'ids' => $ids,
+                ]);
             }
-        }
 
-        if ($action === 'restore') {
-            User::withTrashed()->whereIn('id', $ids)->restore();
+            if ($action === 'delete') {
+                DB::table('personal_access_tokens')
+                    ->where('tokenable_type', User::class)
+                    ->whereIn('tokenable_id', $ids)
+                    ->delete();
+
+                DB::table('sessions')
+                    ->whereIn('user_id', $ids)
+                    ->delete();
+
+                User::whereIn('id', $ids)->delete();
+
+                return response()->json([
+                    'message' => count($ids).' user(s) deleted successfully.',
+                    'deleted' => $ids,
+                ]);
+            }
+
+            if ($action === 'force-delete') {
+                DB::table('personal_access_tokens')
+                    ->where('tokenable_type', User::class)
+                    ->whereIn('tokenable_id', $ids)
+                    ->delete();
+
+                DB::table('sessions')
+                    ->whereIn('user_id', $ids)
+                    ->delete();
+
+                // Eloquent hooks remove Spatie pivots; a mass forceDelete bypasses them.
+                foreach ($targets as $target) {
+                    $target->forceDelete();
+                }
+
+                return response()->json([
+                    'message' => count($ids).' user(s) permanently deleted successfully.',
+                    'deleted' => $ids,
+                ]);
+            }
+
+            $isActive = $action === 'activate';
+
+            if (! $isActive) {
+                $activeSuperAdminCount = User::where('is_active', true)
+                    ->whereHas('allRoles', fn ($query) => $query->where('name', 'Super Admin'))
+                    ->count();
+                $activeSelectedSuperAdminCount = User::whereIn('id', $ids)
+                    ->where('is_active', true)
+                    ->whereHas('allRoles', fn ($query) => $query->where('name', 'Super Admin'))
+                    ->count();
+
+                if ($activeSelectedSuperAdminCount >= $activeSuperAdminCount && $activeSuperAdminCount > 0) {
+                    return response()->json(['message' => 'Cannot deactivate the last active Super Admin user.'], 403);
+                }
+            }
+
+            User::whereIn('id', $ids)->update(['is_active' => $isActive]);
+
+            if (! $isActive) {
+                DB::table('personal_access_tokens')
+                    ->where('tokenable_type', User::class)
+                    ->whereIn('tokenable_id', $ids)
+                    ->delete();
+
+                DB::table('sessions')
+                    ->whereIn('user_id', $ids)
+                    ->delete();
+            }
+
+            $status = $isActive ? 'activated' : 'deactivated';
 
             return response()->json([
-                'message' => count($ids).' user(s) restored successfully.',
+                'message' => count($ids).' user(s) '.$status.' successfully.',
+                'is_active' => $isActive,
+                'status' => $status,
                 'ids' => $ids,
             ]);
-        }
-
-        if ($action === 'delete') {
-            DB::table('personal_access_tokens')
-                ->where('tokenable_type', User::class)
-                ->whereIn('tokenable_id', $ids)
-                ->delete();
-
-            DB::table('sessions')
-                ->whereIn('user_id', $ids)
-                ->delete();
-
-            User::whereIn('id', $ids)->delete();
-
-            return response()->json([
-                'message' => count($ids).' user(s) deleted successfully.',
-                'deleted' => $ids,
-            ]);
-        }
-
-        if ($action === 'force-delete') {
-            DB::table('personal_access_tokens')
-                ->where('tokenable_type', User::class)
-                ->whereIn('tokenable_id', $ids)
-                ->delete();
-
-            DB::table('sessions')
-                ->whereIn('user_id', $ids)
-                ->delete();
-
-            User::withTrashed()->whereIn('id', $ids)->forceDelete();
-
-            return response()->json([
-                'message' => count($ids).' user(s) permanently deleted successfully.',
-                'deleted' => $ids,
-            ]);
-        }
-
-        $isActive = $action === 'activate';
-
-        if (! $isActive) {
-            $activeSuperAdminCount = User::where('is_active', true)
-                ->whereHas('allRoles', fn ($query) => $query->where('name', 'Super Admin'))
-                ->count();
-            $activeSelectedSuperAdminCount = User::whereIn('id', $ids)
-                ->where('is_active', true)
-                ->whereHas('allRoles', fn ($query) => $query->where('name', 'Super Admin'))
-                ->count();
-
-            if ($activeSelectedSuperAdminCount >= $activeSuperAdminCount && $activeSuperAdminCount > 0) {
-                return response()->json(['message' => 'Cannot deactivate the last active Super Admin user.'], 403);
-            }
-        }
-
-        User::whereIn('id', $ids)->update(['is_active' => $isActive]);
-
-        if (! $isActive) {
-            DB::table('personal_access_tokens')
-                ->where('tokenable_type', User::class)
-                ->whereIn('tokenable_id', $ids)
-                ->delete();
-
-            DB::table('sessions')
-                ->whereIn('user_id', $ids)
-                ->delete();
-        }
-
-        $status = $isActive ? 'activated' : 'deactivated';
-
-        return response()->json([
-            'message'   => count($ids).' user(s) '.$status.' successfully.',
-            'is_active' => $isActive,
-            'status'    => $status,
-            'ids'       => $ids,
-        ]);
+        });
     }
 }

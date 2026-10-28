@@ -986,42 +986,52 @@
                 <div class="d-flex flex-wrap gap-2">
                     @can('orders.bulk_status')
                     {{-- Next-step lifecycle buttons - only shown when relevant --}}
-                    <button class="btn btn-sm btn-primary"
+                    @can('orders.bulk_status.confirmed')
+<button class="btn btn-sm btn-primary"
                             x-show="bulkAvailableActions.canConfirm"
                             x-transition
                             @click="bulkUpdateStatus('confirmed')"
                             title="Move pending orders → Confirmed">
                         <i class="bi bi-check-circle me-1"></i>Confirm
                     </button>
-                    <button class="btn btn-sm btn-secondary"
+@endcan
+                    @can('orders.bulk_status.processing')
+<button class="btn btn-sm btn-secondary"
                             x-show="bulkAvailableActions.canProcess"
                             x-transition
                             @click="bulkUpdateStatus('processing')"
                             title="Move confirmed orders → Processing">
                         <i class="bi bi-arrow-clockwise me-1"></i>Process
                     </button>
-                    <button class="btn btn-sm btn-info"
+@endcan
+                    @can('orders.bulk_status.ready_to_ship')
+<button class="btn btn-sm btn-info"
                             x-show="bulkAvailableActions.canReadyToShip"
                             x-transition
                             @click="bulkUpdateStatus('ready_to_ship')"
                             title="Move processing orders → Ready to Ship">
                         <i class="bi bi-truck me-1"></i>Ready to Ship
                     </button>
-                    <button class="btn btn-sm btn-warning"
+@endcan
+                    @can('orders.bulk_status.dispatched')
+<button class="btn btn-sm btn-warning"
                             x-show="bulkAvailableActions.canDispatch"
                             x-transition
                             @click="bulkUpdateStatus('dispatched')"
                             title="Move ready-to-ship orders → Dispatched">
                         <i class="bi bi-box-arrow-right me-1"></i>Dispatch
                     </button>
+@endcan
                     @can('orders.deliver')
-                    <button class="btn btn-sm btn-success"
+                    @can('orders.bulk_status.delivered')
+<button class="btn btn-sm btn-success"
                             x-show="bulkAvailableActions.canDeliver"
                             x-transition
                             @click="bulkUpdateStatus('delivered')"
                             title="Move dispatched orders → Delivered">
                         <i class="bi bi-check2-all me-1"></i>Deliver
                     </button>
+@endcan
                     @endcan
                     @can('orders.bulk_return')
                     <button class="btn btn-sm btn-outline-warning"
@@ -1047,13 +1057,15 @@
 
                     @can('orders.bulk_cancel')
                     {{-- Cancel (always shown if any selected order is cancellable) --}}
-                    <button class="btn btn-sm btn-outline-danger"
+                    @can('orders.bulk_status.cancelled')
+<button class="btn btn-sm btn-outline-danger"
                             x-show="bulkAvailableActions.canCancel"
                             x-transition
                             @click="bulkUpdateStatus('cancelled')"
                             title="Cancel selected orders">
                         <i class="bi bi-x-circle me-1"></i>Cancel
                     </button>
+@endcan
                     @endcan
 
 
@@ -1172,6 +1184,7 @@
                                          :alt="order.createdBy.name">
                                     <div>
                                         <div class="fw-medium small" x-text="order.createdBy.name"></div>
+                                        <div x-show="order.officeName" class="small text-body-secondary"><i class="bi bi-building me-1" aria-hidden="true"></i><span x-text="order.officeName"></span></div>
                                     </div>
                                 </div>
                             </td>

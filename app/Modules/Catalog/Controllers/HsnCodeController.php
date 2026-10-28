@@ -37,7 +37,7 @@ class HsnCodeController extends Controller implements HasMiddleware
         }
 
         $sortBy = $request->query('sort_by', 'id');
-        $sortDir = $request->query('sort_dir', 'desc');
+        $sortDir = strtolower((string) $request->query('sort_dir', 'desc')) === 'asc' ? 'asc' : 'desc';
 
         if (in_array($sortBy, ['id', 'code', 'description', 'rate', 'status'], true)) {
             $query->orderBy($sortBy, $sortDir);

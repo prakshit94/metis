@@ -17,7 +17,6 @@ use App\Modules\Users\Models\User;
 use App\Notifications\OrderCreatedNotification;
 use App\Notifications\OrderStatusChangedNotification;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Validation\ValidationException;
@@ -94,6 +93,12 @@ class OrderService
     public function createOrder(array $data): Order
     {
         return DB::transaction(function () use ($data) {
+            if (! in_array($data['status'] ?? 'pending', ['pending', 'pending_confirmation', 'future_order'], true)) {
+                throw ValidationException::withMessages(['status' => 'Use the dedicated order lifecycle action for this status.']);
+            }
+            if (auth()->check() && ! empty($data['warehouse_id'])) {
+                app(RecordVisibility::class)->assertWarehouse((int) $data['warehouse_id']);
+            }
             $orderNo = $data['order_no'] ?? null;
             $generateOrderNo = ! $orderNo;
 
@@ -134,17 +139,17 @@ class OrderService
             OrderItem::withoutEvents(function () use ($order, $data) {
                 foreach ($data['items'] as $item) {
                     $order->items()->create([
-                        'product_id'         => $item['product_id'],
+                        'product_id' => $item['product_id'],
                         'product_variant_id' => $item['product_variant_id'] ?? null,
-                        'batch_number'       => $item['batch_number'] ?? null,
-                        'quantity'           => $item['quantity'],
-                        'unit_price'         => $item['unit_price'],
-                        'tax_rate'           => $item['tax_rate'] ?? 0,
-                        'discount_amount'    => $item['discount_amount'] ?? 0,
-                        'tax_amount'         => $item['tax_amount'] ?? 0,
-                        'is_gift'            => $item['is_gift'] ?? null,
-                        'gift_source'        => $item['gift_source'] ?? null,
-                        'total_amount'       => $item['total_amount']
+                        'batch_number' => $item['batch_number'] ?? null,
+                        'quantity' => $item['quantity'],
+                        'unit_price' => $item['unit_price'],
+                        'tax_rate' => $item['tax_rate'] ?? 0,
+                        'discount_amount' => $item['discount_amount'] ?? 0,
+                        'tax_amount' => $item['tax_amount'] ?? 0,
+                        'is_gift' => $item['is_gift'] ?? null,
+                        'gift_source' => $item['gift_source'] ?? null,
+                        'total_amount' => $item['total_amount']
                             ?? (($item['quantity'] * $item['unit_price']) - ($item['discount_amount'] ?? 0)),
                     ]);
                 }
@@ -152,16 +157,16 @@ class OrderService
 
             $order->load('items.product');
             $itemsTotal = (float) $order->items->sum('total_amount');
-            $taxAmount  = (float) ($data['tax_amount'] ?? 0);
-            $discount   = (float) ($data['discount_amount'] ?? 0);
+            $taxAmount = (float) ($data['tax_amount'] ?? 0);
+            $discount = (float) ($data['discount_amount'] ?? 0);
 
             // Use updateQuietly to suppress the redundant Order "updated" activity log
             // for the totals recalculation — it's part of the same creation flow.
             $order->updateQuietly([
-                'total_amount'    => $data['total_amount'] ?? $itemsTotal,
-                'tax_amount'      => $taxAmount,
+                'total_amount' => $data['total_amount'] ?? $itemsTotal,
+                'tax_amount' => $taxAmount,
                 'discount_amount' => $discount,
-                'net_amount'      => $data['net_amount'] ?? max(0, $itemsTotal - $discount + $taxAmount),
+                'net_amount' => $data['net_amount'] ?? max(0, $itemsTotal - $discount + $taxAmount),
             ]);
 
             if ($order->coupon_code) {
@@ -177,7 +182,7 @@ class OrderService
             }
 
             if (! empty($data['use_wallet_balance'])) {
-                $party = Party::find($data['party_id']);
+                $party = Party::whereKey($data['party_id'])->lockForUpdate()->first();
                 if ($party && (float) $party->wallet_balance > 0.0) {
                     $usedAmount = 0;
                     $netPayable = $order->net_amount - (float) $party->wallet_balance;
@@ -241,6 +246,7 @@ class OrderService
                     $itemsSummary = $order->items->map(function ($item) {
                         $productName = $item->product?->name ?? "Product #{$item->product_id}";
                         $qty = rtrim(rtrim(number_format((float) $item->quantity, 2), '0'), '.');
+
                         return "{$productName} (x{$qty})";
                     })->join(', ');
 
@@ -249,11 +255,11 @@ class OrderService
                         ->performedOn($order)
                         ->withProperties([
                             'attributes' => [
-                                'order_no'    => $order->order_no,
-                                'customer'    => $customerName,
-                                'net_amount'  => $order->net_amount,
+                                'order_no' => $order->order_no,
+                                'customer' => $customerName,
+                                'net_amount' => $order->net_amount,
                                 'items_count' => $order->items->count(),
-                                'items'       => $itemsSummary,
+                                'items' => $itemsSummary,
                             ],
                         ])
                         ->log('created');
@@ -273,72 +279,47 @@ class OrderService
      */
     private function persistOrderWithUniqueNumber(array $payload, bool $generateOrderNo): Order
     {
-        $lockName = null;
-        $datePart = null;
-        $cacheLock = null;
-        $prefix = null;
-
+        // Snapshot the creator's organization; client-supplied office IDs never select attribution.
+        $actor = auth()->user();
+        $teamId = $actor?->lob_team_id;
+        $office = $actor?->office_id ? \App\Modules\Users\Models\Office::find($actor->office_id) : null;
+        if ($office && $teamId !== null && (int)$office->team_id !== (int)$teamId) {
+            throw ValidationException::withMessages(['office_id' => 'Your office does not belong to your assigned state. Contact an administrator.']);
+        }
+        if ($actor?->office_id && !$office) {
+            throw ValidationException::withMessages(['office_id' => 'Your office assignment is invalid. Contact an administrator.']);
+        }
+        if ($teamId !== null && !Team::find($teamId)?->resolved_state_name) {
+            throw ValidationException::withMessages(['team_id' => 'Your state mapping is invalid. Contact an administrator.']);
+        }
+        $payload['office_id'] = $office?->id;
+        $payload['state_team_id'] = $office?->team_id ?? $teamId;
         if ($generateOrderNo) {
-            $datePart = now()->format('dmY');
-            $teamId = auth()->user()?->lob_team_id;
+            $teamId = $payload['state_team_id'];
             $lobCode = $teamId === null ? null : Team::find($teamId)?->code;
-            $prefix = (strtoupper(trim((string) $lobCode)) ?: 'ORD').$datePart;
-            $databaseKey = substr(hash('sha256', (string) DB::connection()->getDatabaseName()), 0, 12);
-            $lockName = 'metis_order_no_'.$databaseKey.'_'.$datePart;
-
-            if (DB::connection()->getDriverName() === 'mysql') {
-                $lock = DB::selectOne('SELECT GET_LOCK(?, 10) AS acquired', [$lockName]);
-                if ((int) ($lock?->acquired ?? 0) !== 1) {
-                    throw new \RuntimeException('Could not reserve a unique order number. Please retry the order.');
+            $prefix = (strtoupper(trim((string) $lobCode)) ?: 'ORD').now()->format('dmY');
+            $sequence = app(BusinessSequence::class)->next('order:'.$prefix, function () use ($prefix) {
+                $maximum = 0;
+                foreach (DB::table('orders')->where('order_no', 'like', $prefix.'%')->orderBy('id')->cursor() as $row) {
+                    if (! str_starts_with($row->order_no, $prefix)) {
+                        continue;
+                    }
+                    $suffix = substr($row->order_no, strlen($prefix));
+                    if (ctype_digit($suffix)) {
+                        $maximum = max($maximum, (int) $suffix);
+                    }
                 }
-            } else {
-                $cacheLock = Cache::lock('order_seq_'.$datePart, 30);
-                $cacheLock->block(10);
-            }
+
+                return $maximum;
+            });
+            $payload['order_no'] = $prefix.$sequence;
         }
+        $order = new Order($payload);
+        $order->disableLogging();
+        $order->save();
 
-        try {
-            if ($generateOrderNo) {
-                $existingNumbers = DB::table('orders')
-                    ->where('order_no', 'like', $prefix.'%')
-                    ->lockForUpdate()
-                    ->pluck('order_no');
-
-                $sequence = $existingNumbers->reduce(function (int $highest, string $existing) use ($prefix): int {
-                    $suffix = substr($existing, strlen($prefix));
-
-                    return ctype_digit($suffix) ? max($highest, (int) $suffix) : $highest;
-                }, 0) + 1;
-
-                do {
-                    $payload['order_no'] = $prefix.$sequence;
-                    $alreadyUsed = DB::table('orders')
-                        ->where('order_no', $payload['order_no'])
-                        ->lockForUpdate()
-                        ->exists();
-                    $sequence++;
-                } while ($alreadyUsed);
-            }
-
-            // Keep model events and status timestamps, while suppressing the
-            // duplicate per-model activity entry as before.
-            $order = new Order($payload);
-            $order->disableLogging();
-            $order->save();
-
-            return $order;
-        } finally {
-            if ($lockName !== null && DB::connection()->getDriverName() === 'mysql') {
-                DB::select('SELECT RELEASE_LOCK(?) AS released', [$lockName]);
-            } elseif ($cacheLock !== null) {
-                $cacheLock->release();
-            }
-        }
+        return $order;
     }
-
-    // ─────────────────────────────────────────────────────────────────────────
-    //  Customer "Place Order" (cart-based)
-    // ─────────────────────────────────────────────────────────────────────────
 
     /**
      * Recalculate order totals and validate coupon code.
@@ -384,7 +365,7 @@ class OrderService
         $productIds = array_filter(array_column($cart, 'id'));
         $warehouseId = $data['warehouse_id'] ?? null;
         $products = Product::whereIn('id', $productIds)
-            ->with(['taxRate', 'stocks' => function($q) use ($warehouseId) {
+            ->with(['taxRate', 'stocks' => function ($q) use ($warehouseId) {
                 if ($warehouseId) {
                     $q->where('warehouse_id', $warehouseId);
                 }
@@ -434,15 +415,21 @@ class OrderService
         $freeProductOffers = $activeOffers->where('type', 'free_product')->whereNotNull('product_id');
 
         $eligibleOrderOffers = $orderOffers->filter(function ($offer) use ($cart, $products, $regularSubtotal, $isPurchase) {
-            if ($regularSubtotal < (float) $offer->min_spend) return false;
+            if ($regularSubtotal < (float) $offer->min_spend) {
+                return false;
+            }
             $apps = is_string($offer->applicable_products) ? json_decode($offer->applicable_products, true) : $offer->applicable_products;
             $cats = is_string($offer->applicable_categories) ? json_decode($offer->applicable_categories, true) : $offer->applicable_categories;
             $eligibleSubtotal = 0.0;
             foreach ($cart as $item) {
-                if (! empty($item['is_gift'])) continue;
+                if (! empty($item['is_gift'])) {
+                    continue;
+                }
                 $productId = $item['product_id'] ?? $item['id'] ?? null;
                 $product = $products->get($productId);
-                if (! $product) continue;
+                if (! $product) {
+                    continue;
+                }
                 $matches = true;
                 if ($offer->type === 'category_discount' && ! empty($cats)) {
                     $matches = in_array($product->category_id, $cats) || in_array((string) $product->category_id, $cats);
@@ -451,7 +438,9 @@ class OrderService
                 } elseif (! empty($apps)) {
                     $matches = in_array($productId, $apps) || in_array((string) $productId, $apps);
                 }
-                if (! $matches) continue;
+                if (! $matches) {
+                    continue;
+                }
                 $unitPrice = $isPurchase ? (float) $product->purchase_price : (float) $product->selling_price;
                 $itemBase = $unitPrice * (float) $item['quantity'];
                 $lineDiscount = $this->calculateLineDiscount($unitPrice, (float) $item['quantity'], (float) ($product->default_discount ?? 0), $product->default_discount_type ?? 'percent');
@@ -460,39 +449,47 @@ class OrderService
             $discount = $this->calculateOfferDiscount($eligibleSubtotal, $regularSubtotal, $offer);
             $cashback = $eligibleSubtotal >= (float) $offer->min_spend
                 && ((float) $offer->cashback_percent > 0 || (float) $offer->cashback_fixed > 0);
+
             return $discount > 0 || $cashback;
         })->values();
 
         $eligibleBogoOffers = $bogoOffers->filter(function ($offer) use ($cart, $products, $regularSubtotal) {
-                if ($regularSubtotal < (float) $offer->min_spend) {
-                    return false;
-                }
-                $apps = is_string($offer->applicable_products) ? json_decode($offer->applicable_products, true) : $offer->applicable_products;
-                $cats = is_string($offer->applicable_categories) ? json_decode($offer->applicable_categories, true) : $offer->applicable_categories;
-                $cycle = max(1, (int) $offer->buy_qty + (int) $offer->get_qty);
-                foreach ($cart as $item) {
-                    if (! empty($item['is_gift']) || (float) ($item['quantity'] ?? 0) < $cycle) {
-                        continue;
-                    }
-                    $productId = $item['product_id'] ?? $item['id'] ?? null;
-                    $categoryId = $products->get($productId)?->category_id;
-                    $matchesProduct = empty($apps) || in_array($productId, $apps) || in_array((string) $productId, $apps);
-                    $matchesCategory = empty($cats) || ($categoryId && (in_array($categoryId, $cats) || in_array((string) $categoryId, $cats)));
-                    if ((empty($apps) && empty($cats)) || (! empty($apps) && $matchesProduct) || (! empty($cats) && $matchesCategory)) {
-                        return true;
-                    }
-                }
+            if ($regularSubtotal < (float) $offer->min_spend) {
                 return false;
-            })->values();
-
-        $eligibleFreeProductOffers = $freeProductOffers->filter(function ($offer) use ($cart, $products, $regularSubtotal) {
-            if ($regularSubtotal < (float) $offer->min_spend) return false;
+            }
             $apps = is_string($offer->applicable_products) ? json_decode($offer->applicable_products, true) : $offer->applicable_products;
             $cats = is_string($offer->applicable_categories) ? json_decode($offer->applicable_categories, true) : $offer->applicable_categories;
-            if (empty($apps) && empty($cats)) return true;
+            $cycle = max(1, (int) $offer->buy_qty + (int) $offer->get_qty);
+            foreach ($cart as $item) {
+                if (! empty($item['is_gift']) || (float) ($item['quantity'] ?? 0) < $cycle) {
+                    continue;
+                }
+                $productId = $item['product_id'] ?? $item['id'] ?? null;
+                $categoryId = $products->get($productId)?->category_id;
+                $matchesProduct = empty($apps) || in_array($productId, $apps) || in_array((string) $productId, $apps);
+                $matchesCategory = empty($cats) || ($categoryId && (in_array($categoryId, $cats) || in_array((string) $categoryId, $cats)));
+                if ((empty($apps) && empty($cats)) || (! empty($apps) && $matchesProduct) || (! empty($cats) && $matchesCategory)) {
+                    return true;
+                }
+            }
+
+            return false;
+        })->values();
+
+        $eligibleFreeProductOffers = $freeProductOffers->filter(function ($offer) use ($cart, $products, $regularSubtotal) {
+            if ($regularSubtotal < (float) $offer->min_spend) {
+                return false;
+            }
+            $apps = is_string($offer->applicable_products) ? json_decode($offer->applicable_products, true) : $offer->applicable_products;
+            $cats = is_string($offer->applicable_categories) ? json_decode($offer->applicable_categories, true) : $offer->applicable_categories;
+            if (empty($apps) && empty($cats)) {
+                return true;
+            }
             $triggerQty = 0;
             foreach ($cart as $item) {
-                if (! empty($item['is_gift'])) continue;
+                if (! empty($item['is_gift'])) {
+                    continue;
+                }
                 $productId = $item['product_id'] ?? $item['id'] ?? null;
                 $categoryId = $products->get($productId)?->category_id;
                 if ((! empty($apps) && (in_array($productId, $apps) || in_array((string) $productId, $apps)))
@@ -500,6 +497,7 @@ class OrderService
                     $triggerQty += (int) ($item['quantity'] ?? 0);
                 }
             }
+
             return $triggerQty >= ((int) $offer->buy_qty ?: 1);
         })->values();
 
@@ -594,6 +592,11 @@ class OrderService
             $couponCode = $coupon->code;
         }
 
+        $giftAllowances = [];
+        foreach ($expectedGifts as $gift) {
+            $key = $gift['product_id'].'|'.$gift['source'];
+            $giftAllowances[$key] = ($giftAllowances[$key] ?? 0) + (float) $gift['qty'];
+        }
         $items = [];
         $subtotal = 0.0;
         $taxAmount = 0.0;
@@ -643,17 +646,17 @@ class OrderService
 
             // Handle free product gifts
             if (! empty($item['is_gift'])) {
-                $validGift = false;
-                foreach ($expectedGifts as $eg) {
-                    if ($eg['product_id'] == $product->id && $eg['source'] === ($item['gift_source'] ?? null)) {
-                        $validGift = true;
-                        break;
+                $key = $product->id.'|'.($item['gift_source'] ?? '');
+                $remaining = $giftAllowances[$key] ?? 0;
+                if ($remaining > 0) {
+                    if ($qty > $remaining + 0.00001) {
+                        throw ValidationException::withMessages(['items' => 'Gift quantity exceeds the earned allowance.']);
                     }
-                }
-                if ($validGift) {
-                    $itemDisc = $itemBase; // 100% discount
+                    $giftAllowances[$key] -= $qty;
+                    $itemDisc = $itemBase;
                 } else {
-                    $itemDisc = 0.0; // Unvalidated gift, charge full price
+                    // Unvalidated gifts retain the existing full-price behavior.
+                    $itemDisc = 0.0;
                 }
             }
 
@@ -808,7 +811,7 @@ class OrderService
                             $eligibleSubtotal += max(0, $item['total_amount'] - $item['bogo_discount']);
                         }
                     }
-                } elseif (!empty($bestOrderOffer->applicable_products)) {
+                } elseif (! empty($bestOrderOffer->applicable_products)) {
                     $apps = is_string($bestOrderOffer->applicable_products) ? json_decode($bestOrderOffer->applicable_products, true) : $bestOrderOffer->applicable_products;
                     $eligibleSubtotal = 0.0;
                     foreach ($items as $item) {
@@ -852,7 +855,7 @@ class OrderService
                         if ($item['product_id'] != $bestOrderOffer->product_id) {
                             $isEligible = false;
                         }
-                    } elseif (!empty($bestOrderOffer->applicable_products)) {
+                    } elseif (! empty($bestOrderOffer->applicable_products)) {
                         $apps = is_string($bestOrderOffer->applicable_products) ? json_decode($bestOrderOffer->applicable_products, true) : $bestOrderOffer->applicable_products;
                         $pid = $item['product_id'];
                         if (! in_array($pid, $apps) && ! in_array((string) $pid, $apps)) {
@@ -1071,6 +1074,12 @@ class OrderService
 
             $oldStatus = $order->status;
             $newStatus = $data['status'] ?? $oldStatus;
+            if ($newStatus !== $oldStatus && ! in_array($newStatus, ['pending', 'pending_confirmation', 'future_order'], true)) {
+                throw ValidationException::withMessages(['status' => 'Use the dedicated order lifecycle action for this status.']);
+            }
+            if ($newStatus !== $oldStatus && $oldStatus === 'confirmed' && ! auth()->user()?->can('orders.revert_status')) {
+                abort(403, 'You do not have permission to revert a confirmed order.');
+            }
 
             $orderPayload = array_merge([
                 'warehouse_id' => $data['warehouse_id'] ?? $order->warehouse_id,
@@ -1133,8 +1142,8 @@ class OrderService
                 }
 
                 $order->statusLogs()->create([
-                    'status'     => $newStatus,
-                    'notes'      => $notes,
+                    'status' => $newStatus,
+                    'notes' => $notes,
                     'changed_by' => auth()->id(),
                 ]);
             }
@@ -1158,11 +1167,12 @@ class OrderService
                     $itemsSummary = $order->items->map(function ($item) {
                         $productName = $item->product?->name ?? "Product #{$item->product_id}";
                         $qty = rtrim(rtrim(number_format((float) $item->quantity, 2), '0'), '.');
+
                         return "{$productName} (x{$qty})";
                     })->join(', ');
 
                     $statusNote = ($oldStatus !== $newStatus)
-                        ? ' · Status: ' . ucfirst(str_replace('_', ' ', $oldStatus)) . ' → ' . ucfirst(str_replace('_', ' ', $newStatus))
+                        ? ' · Status: '.ucfirst(str_replace('_', ' ', $oldStatus)).' → '.ucfirst(str_replace('_', ' ', $newStatus))
                         : '';
 
                     activity()
@@ -1170,11 +1180,11 @@ class OrderService
                         ->performedOn($order)
                         ->withProperties([
                             'attributes' => [
-                                'order_no'    => $order->order_no,
-                                'customer'    => $customerName,
-                                'net_amount'  => $order->net_amount,
+                                'order_no' => $order->order_no,
+                                'customer' => $customerName,
+                                'net_amount' => $order->net_amount,
                                 'items_count' => $order->items->count(),
-                                'items'       => $itemsSummary,
+                                'items' => $itemsSummary,
                                 'status_note' => $statusNote,
                             ],
                         ])
@@ -1246,7 +1256,7 @@ class OrderService
                 $q->whereIn('name', ['Admin', 'Super Admin', 'Support']);
             })->get();
             $order->loadMissing('creator');
-            if ($order->creator && !$usersToNotify->contains('id', $order->creator->id)) {
+            if ($order->creator && ! $usersToNotify->contains('id', $order->creator->id)) {
                 $usersToNotify->push($order->creator);
             }
             Notification::send($usersToNotify, new OrderStatusChangedNotification($order->order_no, $status));

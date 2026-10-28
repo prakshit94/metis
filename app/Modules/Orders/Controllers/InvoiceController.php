@@ -5,8 +5,10 @@ namespace App\Modules\Orders\Controllers;
 use App\Modules\Core\Controllers\Controller;
 use App\Modules\Orders\Models\Invoice;
 use App\Modules\Orders\Models\Payment;
-use Barryvdh\DomPDF\Facade\Pdf;
+use App\Services\EnsureRecordVisibility;
 use App\Services\FinancialService;
+use App\Services\RecordVisibility;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
@@ -19,8 +21,12 @@ class InvoiceController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:orders.view', only: ['index', 'show', 'exportSelected', 'downloadPdf']),
-            new Middleware('permission:orders.receipt', only: ['bulkStatus', 'recordPayment']),
+            new Middleware(EnsureRecordVisibility::class),
+            new Middleware('permission:invoices.view', only: ['index', 'show']),
+            new Middleware('permission:invoices.export', only: ['exportSelected']),
+            new Middleware('permission:invoices.pdf', only: ['downloadPdf']),
+            new Middleware('permission:invoices.edit', only: ['bulkStatus']),
+            new Middleware('permission:invoices.record-payment', only: ['recordPayment']),
         ];
     }
 
@@ -38,6 +44,7 @@ class InvoiceController extends Controller implements HasMiddleware
             },
         ]), 'order.party', 'order.orderReturns', 'order.shipments', 'payments.recorder'])
             ->withSum(['refunds as refunded_amount_total' => fn ($query) => $query->where('status', 'completed')], 'amount');
+        app(RecordVisibility::class)->financial($query);
 
         if ($request->filled('search')) {
             $s = trim($request->search);
@@ -81,15 +88,15 @@ class InvoiceController extends Controller implements HasMiddleware
                     $method = $first ? 'where' : 'orWhere';
                     $q->$method(function ($sq) {
                         $sq->where('status', 'pending')
-                           ->whereDoesntHave('items', function ($itemQuery) {
-                               $itemQuery->leftJoin('stocks', function ($join) {
-                                   $join->on('order_items.product_id', '=', 'stocks.product_id')
+                            ->whereDoesntHave('items', function ($itemQuery) {
+                                $itemQuery->leftJoin('stocks', function ($join) {
+                                    $join->on('order_items.product_id', '=', 'stocks.product_id')
                                         ->whereColumn('stocks.warehouse_id', 'orders.warehouse_id');
-                               })->where(function ($sub) {
-                                   $sub->whereNull('stocks.id')
-                                       ->orWhereRaw('order_items.quantity > (stocks.quantity - stocks.reserved_qty)');
-                               });
-                           });
+                                })->where(function ($sub) {
+                                    $sub->whereNull('stocks.id')
+                                        ->orWhereRaw('order_items.quantity > (stocks.quantity - stocks.reserved_qty)');
+                                });
+                            });
                     });
                     $first = false;
                 }
@@ -98,15 +105,15 @@ class InvoiceController extends Controller implements HasMiddleware
                     $method = $first ? 'where' : 'orWhere';
                     $q->$method(function ($sq) {
                         $sq->where('status', 'pending')
-                           ->whereHas('items', function ($itemQuery) {
-                               $itemQuery->leftJoin('stocks', function ($join) {
-                                   $join->on('order_items.product_id', '=', 'stocks.product_id')
+                            ->whereHas('items', function ($itemQuery) {
+                                $itemQuery->leftJoin('stocks', function ($join) {
+                                    $join->on('order_items.product_id', '=', 'stocks.product_id')
                                         ->whereColumn('stocks.warehouse_id', 'orders.warehouse_id');
-                               })->where(function ($sub) {
-                                   $sub->whereNull('stocks.id')
-                                       ->orWhereRaw('order_items.quantity > (stocks.quantity - stocks.reserved_qty)');
-                               });
-                           });
+                                })->where(function ($sub) {
+                                    $sub->whereNull('stocks.id')
+                                        ->orWhereRaw('order_items.quantity > (stocks.quantity - stocks.reserved_qty)');
+                                });
+                            });
                     });
                     $first = false;
                 }
@@ -115,9 +122,9 @@ class InvoiceController extends Controller implements HasMiddleware
                     $method = $first ? 'where' : 'orWhere';
                     $q->$method(function ($sq) {
                         $sq->whereIn('status', ['dispatched'])
-                           ->whereDoesntHave('shipments', function ($ssq) {
-                               $ssq->where('delivery_attempts', '>', 0);
-                           });
+                            ->whereDoesntHave('shipments', function ($ssq) {
+                                $ssq->where('delivery_attempts', '>', 0);
+                            });
                     });
                     $first = false;
                 }
@@ -126,9 +133,9 @@ class InvoiceController extends Controller implements HasMiddleware
                     $method = $first ? 'where' : 'orWhere';
                     $q->$method(function ($sq) {
                         $sq->whereIn('status', ['dispatched'])
-                           ->whereHas('shipments', function ($ssq) {
-                               $ssq->where('delivery_attempts', '>', 0);
-                           });
+                            ->whereHas('shipments', function ($ssq) {
+                                $ssq->where('delivery_attempts', '>', 0);
+                            });
                     });
                     $first = false;
                 }
@@ -204,7 +211,7 @@ class InvoiceController extends Controller implements HasMiddleware
             $query->orderBy('id', 'desc');
         }
 
-        $invoices = $query->paginate($request->integer('limit', 10));
+        $invoices = $query->paginate(min(max($request->integer('limit', 10), 1), 200));
 
         // Preload lifecycle data without adding relationships to the API payload.
         $invoices->getCollection()->each(function ($invoice) {
@@ -299,10 +306,16 @@ class InvoiceController extends Controller implements HasMiddleware
         }
 
         DB::transaction(function () use ($invoices, $validated) {
-            foreach ($invoices as $invoice) {
+            $locked = Invoice::whereIn('id', $invoices->modelKeys())->orderBy('id')->lockForUpdate()->get();
+            foreach ($locked as $invoice) {
+                if ($invoice->paid_amount > 0) {
+                    throw ValidationException::withMessages(['status' => 'Cannot cancel an invoice with completed payments.']);
+                }
+            }
+            foreach ($locked as $invoice) {
                 $invoice->update(['status' => $validated['status']]);
             }
-        });
+        }, 3);
 
         return response()->json([
             'success' => true,

@@ -70,6 +70,7 @@
                 <p class="text-body-secondary mb-0">Download a CSV for accounting, auditing, or further analysis.</p>
             </div>
         </div>
+        @can('reports-export')
         <form @submit.prevent="downloadAdvancedReport()" aria-labelledby="reportExportHeading">
             <div class="card-body p-4">
                 <div class="row g-4">
@@ -77,33 +78,33 @@
                         <label for="reportType" class="form-label fw-semibold">Report type</label>
                         <select id="reportType" name="type" class="form-select report-control" x-model="reportType" aria-describedby="reportTypeHelp" required>
                         <optgroup label="Sales & Revenue">
-                            <option value="sales_overview">Sales Performance Overview</option>
-                            <option value="india_post">India Post</option>
-                            <option value="product_sales">Product Sales (Bestsellers)</option>
-                            <option value="sales_region">Sales by Region</option>
-                            <option value="payment_reconciliation">Payment Reconciliation</option>
+                            @can('reports.export.sales_overview')<option value="sales_overview">Sales Performance Overview</option>@endcan
+                            @can('reports.export.india_post')<option value="india_post">India Post</option>@endcan
+                            @can('reports.export.product_sales')<option value="product_sales">Product Sales (Bestsellers)</option>@endcan
+                            @can('reports.export.sales_region')<option value="sales_region">Sales by Region</option>@endcan
+                            @can('reports.export.payment_reconciliation')<option value="payment_reconciliation">Payment Reconciliation</option>@endcan
                         </optgroup>
                         <optgroup label="Inventory & Warehouse">
-                            <option value="stock_valuation">Current Stock Valuation</option>
-                            <option value="stock_ledger">Stock Movement Ledger</option>
-                            <option value="low_stock">Low Stock Alerts</option>
+                            @can('reports.export.stock_valuation')<option value="stock_valuation">Current Stock Valuation</option>@endcan
+                            @can('reports.export.stock_ledger')<option value="stock_ledger">Stock Movement Ledger</option>@endcan
+                            @can('reports.export.low_stock')<option value="low_stock">Low Stock Alerts</option>@endcan
                         </optgroup>
                         <optgroup label="Procurement">
-                            <option value="po_fulfillment">Purchase Order Fulfillment</option>
-                            <option value="grn_discrepancy">GRN Discrepancy</option>
+                            @can('reports.export.po_fulfillment')<option value="po_fulfillment">Purchase Order Fulfillment</option>@endcan
+                            @can('reports.export.grn_discrepancy')<option value="grn_discrepancy">GRN Discrepancy</option>@endcan
                         </optgroup>
                         <optgroup label="CRM & Support">
-                            <option value="suppliers_report">Suppliers Directory</option>
-                            <option value="call_performance">Call Center Performance</option>
-                            <option value="call_tagging">Call Tagging Analysis</option>
-                            <option value="customer_retention">Customer Retention</option>
-                            <option value="return_analysis">Return & Cancellation Analysis</option>
+                            @can('reports.export.suppliers_report')<option value="suppliers_report">Suppliers Directory</option>@endcan
+                            @can('reports.export.call_performance')<option value="call_performance">Call Center Performance</option>@endcan
+                            @can('reports.export.call_tagging')<option value="call_tagging">Call Tagging Analysis</option>@endcan
+                            @can('reports.export.customer_retention')<option value="customer_retention">Customer Retention</option>@endcan
+                            @can('reports.export.return_analysis')<option value="return_analysis">Return & Cancellation Analysis</option>@endcan
                         </optgroup>
                         <optgroup label="HR & Team">
-                            <option value="attendance_report">Employee Attendance</option>
+                            @can('reports.export.attendance_report')<option value="attendance_report">Employee Attendance</option>@endcan
                         </optgroup>
                         <optgroup label="System Auditing">
-                            <option value="audit_trail">System Audit Trail</option>
+                            @can('reports.export.audit_trail')<option value="audit_trail">System Audit Trail</option>@endcan
                         </optgroup>
                         </select>
                         <div id="reportTypeHelp" class="form-text">Browse reports grouped by business area.</div>
@@ -129,6 +130,7 @@
                 </button>
             </div>
         </form>
+        @endcan
     </section>
 </div>
 @endsection

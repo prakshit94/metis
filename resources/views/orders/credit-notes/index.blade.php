@@ -12,9 +12,11 @@
             <p class="text-muted mb-0">Manage customer credit notes and balances</p>
         </div>
         <div class="d-flex gap-2">
-            <button type="button" class="btn btn-primary" @click.prevent="openCreateModal()">
+            @can('credit-notes.create')
+<button type="button" class="btn btn-primary" @click.prevent="openCreateModal()">
                 <i class="bi bi-plus-lg me-2"></i>Issue Credit Note
             </button>
+@endcan
         </div>
     </div>
 
@@ -118,7 +120,9 @@
                     <div class="d-flex gap-2">
                         <button class="btn btn-sm btn-success" @click="bulkAction('activate')"><i class="bi bi-check-circle me-1"></i>Mark Active</button>
                         <button class="btn btn-sm btn-warning" @click="bulkAction('cancel')"><i class="bi bi-pause-circle me-1"></i>Cancel</button>
-                        <button class="btn btn-sm btn-danger" @click="bulkAction('delete')"><i class="bi bi-trash me-1"></i>Delete</button>
+                        @can('credit-notes.delete')
+<button class="btn btn-sm btn-danger" @click="bulkAction('delete')"><i class="bi bi-trash me-1"></i>Delete</button>
+@endcan
                         <button class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center justify-content-center px-2" @click="selected = []" title="Clear selection">
                             <i class="bi bi-x-lg" style="margin-left: 7px"></i>
                         </button>
@@ -210,15 +214,19 @@
                                         </button>
                                         <ul class="dropdown-menu dropdown-menu-end">
                                             <li>
-                                                <a class="dropdown-item" href="#" @click.prevent="editItem(item)">
+                                                @can('credit-notes.edit')
+<a class="dropdown-item" href="#" @click.prevent="editItem(item)">
                                                     <i class="bi bi-pencil me-2"></i>Edit Balance/Status
                                                 </a>
+@endcan
                                             </li>
                                             <li><hr class="dropdown-divider"></li>
                                             <li>
-                                                <a class="dropdown-item text-danger" href="#" @click.prevent="deleteItem(item)">
+                                                @can('credit-notes.delete')
+<a class="dropdown-item text-danger" href="#" @click.prevent="deleteItem(item)">
                                                     <i class="bi bi-trash me-2"></i>Delete
                                                 </a>
+@endcan
                                             </li>
                                         </ul>
                                     </div>

@@ -6,6 +6,8 @@ namespace App\Modules\Catalog\Controllers;
 
 use App\Modules\Catalog\Models\Category;
 use App\Modules\Core\Controllers\Controller;
+use App\Services\BusinessSequence;
+use App\Services\HierarchyGuard;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
@@ -35,7 +37,7 @@ class CategoryController extends Controller implements HasMiddleware
         }
 
         $sortBy = $request->query('sort_by', 'id');
-        $sortDir = $request->query('sort_dir', 'desc');
+        $sortDir = strtolower((string) $request->query('sort_dir', 'desc')) === 'asc' ? 'asc' : 'desc';
 
         if (in_array($sortBy, ['id', 'name', 'status', 'parent_id', 'is_active'])) {
             $query->orderBy($sortBy, $sortDir);
@@ -51,37 +53,43 @@ class CategoryController extends Controller implements HasMiddleware
 
     public function store(Request $request): JsonResponse
     {
+        return app(BusinessSequence::class)->run('hierarchy:Category', function () use ($request) {
+            if (in_array($request->input('parent_id'), ['', 'null'], true)) {
+                $request->merge(['parent_id' => null]);
+            }
 
-        $validated = $request->validate([
-            'name' => 'required|string|max:255|unique:categories,name',
-            'parent_id' => 'nullable',
-            'status' => 'required|in:active,inactive',
-            'is_active' => 'nullable',
-            'image' => 'nullable|image|max:2048',
-        ]);
+            $validated = $request->validate([
+                'name' => 'required|string|max:255|unique:categories,name',
+                'parent_id' => 'nullable|integer|exists:categories,id',
+                'status' => 'required|in:active,inactive',
+                'is_active' => 'nullable',
+                'image' => 'nullable|image|max:2048',
+            ]);
+            HierarchyGuard::validate(Category::class, null, isset($validated['parent_id']) ? (int) $validated['parent_id'] : (array_key_exists('parent_id', $validated) ? null : $validated['parent_id'] ?? null));
 
-        $validated['slug'] = Str::slug($validated['name']);
+            $validated['slug'] = Str::slug($validated['name']);
 
-        $validated['is_active'] = $request->has('is_active')
-            ? filter_var($request->input('is_active'), FILTER_VALIDATE_BOOLEAN)
-            : true;
+            $validated['is_active'] = $request->has('is_active')
+                ? filter_var($request->input('is_active'), FILTER_VALIDATE_BOOLEAN)
+                : true;
 
-        if ($request->has('parent_id') && ($request->input('parent_id') === '' || $request->input('parent_id') === 'null' || $request->input('parent_id') === null)) {
-            $validated['parent_id'] = null;
-        } elseif ($request->has('parent_id')) {
-            $validated['parent_id'] = (int) $request->input('parent_id');
-        }
+            if ($request->has('parent_id') && ($request->input('parent_id') === '' || $request->input('parent_id') === 'null' || $request->input('parent_id') === null)) {
+                $validated['parent_id'] = null;
+            } elseif ($request->has('parent_id')) {
+                $validated['parent_id'] = (int) $request->input('parent_id');
+            }
 
-        if ($request->hasFile('image')) {
-            $validated['image'] = $request->file('image')->store('categories', 'public');
-        }
+            if ($request->hasFile('image')) {
+                $validated['image'] = $request->file('image')->store('categories', 'public');
+            }
 
-        $model = Category::create($validated);
+            $model = Category::create($validated);
 
-        return response()->json([
-            'message' => 'Category created successfully.',
-            'data' => $model->load('parent')->loadCount('products'),
-        ], 201);
+            return response()->json([
+                'message' => 'Category created successfully.',
+                'data' => $model->load('parent')->loadCount('products'),
+            ], 201);
+        });
     }
 
     public function show(Category $category): JsonResponse
@@ -91,55 +99,61 @@ class CategoryController extends Controller implements HasMiddleware
 
     public function update(Request $request, $id): JsonResponse
     {
-
-        $model = Category::findOrFail($id);
-
-        $validated = $request->validate([
-            'name' => 'sometimes|required|string|max:255|unique:categories,name,'.$model->id,
-            'parent_id' => 'nullable',
-            'status' => 'sometimes|required|in:active,inactive',
-            'is_active' => 'nullable',
-            'image' => 'nullable|image|max:2048',
-        ]);
-
-        if (isset($validated['name'])) {
-            $validated['slug'] = Str::slug($validated['name']);
-        }
-
-        // Auto-sync is_active with status when status is explicitly set
-        if ($request->has('status') && ! $request->has('is_active')) {
-            $validated['is_active'] = $validated['status'] === 'active';
-        } elseif ($request->has('is_active')) {
-            $validated['is_active'] = filter_var($request->input('is_active'), FILTER_VALIDATE_BOOLEAN);
-        }
-
-        if ($request->has('parent_id')) {
-            if ($request->input('parent_id') === '' || $request->input('parent_id') === 'null' || $request->input('parent_id') === null) {
-                $validated['parent_id'] = null;
-            } else {
-                $validated['parent_id'] = (int) $request->input('parent_id');
+        return app(BusinessSequence::class)->run('hierarchy:Category', function () use ($request, $id) {
+            if (in_array($request->input('parent_id'), ['', 'null'], true)) {
+                $request->merge(['parent_id' => null]);
             }
-        }
 
-        if ($request->hasFile('image')) {
-            // Delete old image if exists
-            if ($model->image) {
-                Storage::disk('public')->delete($model->image);
+            $model = Category::findOrFail($id);
+
+            $validated = $request->validate([
+                'name' => 'sometimes|required|string|max:255|unique:categories,name,'.$model->id,
+                'parent_id' => 'nullable|integer|exists:categories,id',
+                'status' => 'sometimes|required|in:active,inactive',
+                'is_active' => 'nullable',
+                'image' => 'nullable|image|max:2048',
+            ]);
+            HierarchyGuard::validate(Category::class, $model->id, isset($validated['parent_id']) ? (int) $validated['parent_id'] : (array_key_exists('parent_id', $validated) ? null : $validated['parent_id'] ?? $model->parent_id));
+
+            if (isset($validated['name'])) {
+                $validated['slug'] = Str::slug($validated['name']);
             }
-            $validated['image'] = $request->file('image')->store('categories', 'public');
-        } elseif ($request->input('clear_image') === '1') {
-            if ($model->image) {
-                Storage::disk('public')->delete($model->image);
+
+            // Auto-sync is_active with status when status is explicitly set
+            if ($request->has('status') && ! $request->has('is_active')) {
+                $validated['is_active'] = $validated['status'] === 'active';
+            } elseif ($request->has('is_active')) {
+                $validated['is_active'] = filter_var($request->input('is_active'), FILTER_VALIDATE_BOOLEAN);
             }
-            $validated['image'] = null;
-        }
 
-        $model->update($validated);
+            if ($request->has('parent_id')) {
+                if ($request->input('parent_id') === '' || $request->input('parent_id') === 'null' || $request->input('parent_id') === null) {
+                    $validated['parent_id'] = null;
+                } else {
+                    $validated['parent_id'] = (int) $request->input('parent_id');
+                }
+            }
 
-        return response()->json([
-            'message' => 'Category updated successfully.',
-            'data' => $model->load('parent')->loadCount('products'),
-        ]);
+            if ($request->hasFile('image')) {
+                // Delete old image if exists
+                if ($model->image) {
+                    Storage::disk('public')->delete($model->image);
+                }
+                $validated['image'] = $request->file('image')->store('categories', 'public');
+            } elseif ($request->input('clear_image') === '1') {
+                if ($model->image) {
+                    Storage::disk('public')->delete($model->image);
+                }
+                $validated['image'] = null;
+            }
+
+            $model->update($validated);
+
+            return response()->json([
+                'message' => 'Category updated successfully.',
+                'data' => $model->load('parent')->loadCount('products'),
+            ]);
+        });
     }
 
     public function destroy($id): JsonResponse

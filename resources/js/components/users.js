@@ -2,7 +2,7 @@ import Alpine from 'alpinejs';
 import ApexCharts from 'apexcharts';
 import { Modal } from 'bootstrap';
 import Swal from 'sweetalert2';
-import { createSearchComponent } from '../utils/search-component.js';
+import { createUserActionMenu } from '../utils/user-action-menu.js';
 
 // ─── CSRF helper ─────────────────────────────────────────────────────────────
 function getCsrfToken() {
@@ -24,12 +24,15 @@ async function apiFetch(url, options = {}) {
 
   const res = await fetch(url, {
     credentials: 'same-origin',
+    cache: 'no-store',
     headers: fetchHeaders,
     ...otherOptions,
   });
 
   const text = await res.text();
-  const data = text ? JSON.parse(text) : {};
+  let data;
+  try { data = text ? JSON.parse(text) : {}; }
+  catch { throw new Error(res.status === 419 ? 'Your session has expired. Refresh the page and try again.' : 'Unable to read the server response. Please try again.'); }
 
   if (!res.ok) {
     const validation = data?.errors ? Object.values(data.errors).flat().join(' ') : '';
@@ -52,33 +55,30 @@ function downloadBlob(filename, content, type) {
 }
 
 function csvEscape(value) {
-  return `"${String(value ?? '').replace(/"/g, '""')}"`;
+  return `"${String(value ?? '').replace(/^[\t\r ]*([=+@-])/, "'$1").replace(/"/g, '""')}"`;
 }
 
-function parseCsvLine(line) {
-  const values = [];
-  let current = '';
-  let inQuotes = false;
-
-  for (let i = 0; i < line.length; i++) {
-    const char = line[i];
-    const next = line[i + 1];
-
-    if (char === '"' && inQuotes && next === '"') {
-      current += '"';
-      i++;
-    } else if (char === '"') {
-      inQuotes = !inQuotes;
-    } else if (char === ',' && !inQuotes) {
-      values.push(current.trim());
-      current = '';
-    } else {
-      current += char;
-    }
+function parseCsv(text) {
+  const rows = [];
+  let row = [], value = '', quoted = false;
+  for (let i = 0; i < text.length; i++) {
+    const char = text[i];
+    if (char === '"') {
+      if (quoted && text[i + 1] === '"') { value += '"'; i++; }
+      else quoted = !quoted;
+    } else if (char === ',' && !quoted) {
+      row.push(value.trim()); value = '';
+    } else if ((char === '\n' || char === '\r') && !quoted) {
+      if (char === '\r' && text[i + 1] === '\n') i++;
+      row.push(value.trim());
+      if (row.some(cell => cell !== '')) rows.push(row);
+      row = []; value = '';
+    } else value += char;
   }
-
-  values.push(current.trim());
-  return values;
+  if (quoted) throw new Error('CSV contains an unclosed quoted field.');
+  row.push(value.trim());
+  if (row.some(cell => cell !== '')) rows.push(row);
+  return rows;
 }
 
 function formatRoleName(role) {
@@ -354,6 +354,7 @@ function groupPermissions(permissions) {
 }
 
 document.addEventListener('alpine:init', () => {
+  Alpine.data('userActionMenu', createUserActionMenu);
   // ─── userTable ──────────────────────────────────────────────────────────────
   Alpine.data('userTable', () => ({
     photoUrl(user) { return window.ProfileImages.userPhotoUrl(user); },
@@ -362,6 +363,8 @@ document.addEventListener('alpine:init', () => {
     selectedUsers: [],
     searchQuery: '',
     statusFilter: 'active',
+    securityFilter: '',
+    officeFilter: new URLSearchParams(window.location.search || '').get('office_id') || '',
     roleFilter: '',
     teamFilter: '',
     sortField: 'name',
@@ -397,8 +400,8 @@ document.addEventListener('alpine:init', () => {
       });
       this.fetchRealActivities();
       this._activityInterval = setInterval(() => {
-        this.fetchRealActivities();
-      }, 3000);
+        if (!document.hidden) this.fetchRealActivities();
+      }, 15000);
       window.addEventListener('pagehide', () => this.destroy(), { once: true });
 
       this._themeObserver = new MutationObserver(() => {
@@ -434,6 +437,7 @@ document.addEventListener('alpine:init', () => {
         if (chart && typeof chart.destroy === 'function') chart.destroy();
       });
       this.charts = {};
+      document.querySelectorAll('[data-chart-initialized]').forEach(el => el.removeAttribute('data-chart-initialized'));
     },
 
     async loadRoles() {
@@ -474,13 +478,24 @@ document.addEventListener('alpine:init', () => {
         if (this.statusFilter === 'deleted') params.set('deleted', 'only');
         if (this.roleFilter) params.set('role', this.roleFilter);
         if (this.teamFilter) params.set('team_id', this.teamFilter);
+        if (this.securityFilter) params.set('two_factor', this.securityFilter);
+        if (this.officeFilter) params.set('office_id', this.officeFilter);
 
         const data = await apiFetch(`/api/users?${params}`);
 
         if (requestId !== this._usersRequestId) return;
 
+        if ((data.current_page ?? 1) > (data.last_page ?? 1)) {
+          this.currentPage = data.last_page || 1;
+          await this.loadUsers();
+          return;
+        }
+
         // Map API response to the shape the template expects
         this.users = (data.data ?? []).map((u) => this._mapUser(u));
+        // Selections belong to the visible page; never act on hidden stale IDs.
+        const visibleIds = new Set(this.users.map(user => String(user.id)));
+        this.selectedUsers = this.selectedUsers.filter(id => visibleIds.has(String(id)));
         this.summary = data.summary ?? null;
         this.summaryUnavailable = !this.summary;
         this.summaryUpdatedAt = this.summary ? new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
@@ -495,6 +510,8 @@ document.addEventListener('alpine:init', () => {
         });
       } catch (err) {
         if (requestId !== this._usersRequestId) return;
+        this.users = []; this.selectedUsers = [];
+        this.totalUsers = 0; this.totalPages = 1;
         this.summary = null;
         this.summaryUnavailable = true;
         this.summaryUpdatedAt = '';
@@ -538,6 +555,8 @@ document.addEventListener('alpine:init', () => {
         phone: u.phone ?? '',
         department: u.department ? u.department.name : '',
         department_id: u.department_id ?? '',
+        office_id: u.office_id ?? '',
+        office: u.office ?? null,
         manager_id: u.manager_id ?? '',
         manager: u.manager ? u.manager.name : '',
         employment_type: u.employment_type ?? 'Full-time',
@@ -548,6 +567,10 @@ document.addEventListener('alpine:init', () => {
         roleLabel,
         roleClass: this.roleBadgeClass(roleName),
         roles: u.roles ?? [],
+        permissions: u.permissions ?? [],
+        two_factor_required: Boolean(u.two_factor_required),
+        two_factor_enabled: Boolean(u.two_factor_enabled),
+        two_factor_method: u.two_factor_method ?? null,
         status: u.deleted_at ? 'deleted' : u.is_active ? 'active' : 'inactive',
         is_active: u.is_active,
         is_suspended: Boolean(u.is_suspended),
@@ -699,7 +722,7 @@ document.addEventListener('alpine:init', () => {
 
     // ── CRUD Operations ───────────────────────────────────────────────────────
     editUser(user, isView = false) {
-      if (user.isDeleted) {
+      if (user.isDeleted && !isView) {
         showToast('Restore this user before editing.', 'warning');
         return;
       }
@@ -707,6 +730,7 @@ document.addEventListener('alpine:init', () => {
       const formEl = document.querySelector('[x-data="userForm"]');
       const form = formEl ? Alpine.$data(formEl) : null;
       if (!form) return;
+      form.loadActorSecurity();
       form.isViewMode = isView;
       form.editingUserId = user.id;
       form.villageSearchQuery = user.village_name ?? '';
@@ -732,7 +756,19 @@ document.addEventListener('alpine:init', () => {
         lobRole && lobRole.pivot && lobRole.pivot.team_id != null
           ? String(lobRole.pivot.team_id)
           : '';
+      form.form.office_id = user.office_id ?? '';
+      form.originalOffice = form.form.office_id;
+      form.currentOffice = user.office ?? null;
+      form.loadOfficeOptions();
       form.form.permissions = (user.permissions ?? []).map((p) => p.name);
+      form.originalRole = form.form.role;
+      form.originalTeam = form.form.team_id;
+      form.originalRoles = (user.roles ?? []).map(role => role.name);
+      form.originalActive = user.is_active ?? true;
+      form.twoFactorRequired = Boolean(user.two_factor_required);
+      form.originalTwoFactorRequired = form.twoFactorRequired;
+      form.twoFactorEnabled = Boolean(user.two_factor_enabled);
+      form.twoFactorMethod = user.two_factor_method ?? null;
       form.form.is_active = user.is_active ?? true;
       form.form.address_line_1 = user.address_line_1 ?? '';
       form.form.address_line_2 = user.address_line_2 ?? '';
@@ -760,7 +796,7 @@ document.addEventListener('alpine:init', () => {
     openCreateUser() {
       const formEl = document.querySelector('[x-data="userForm"]');
       const form = formEl ? Alpine.$data(formEl) : null;
-      if (form) form.resetForm();
+      if (form) { form.resetForm(); form.loadActorSecurity(); form.loadOfficeOptions(); }
       getModal('#userModal')?.show();
     },
 
@@ -911,7 +947,9 @@ document.addEventListener('alpine:init', () => {
     },
 
     // ── Bulk Operations ───────────────────────────────────────────────────────
+    bulkBusy: false,
     async bulkAction(action) {
+      if (this.bulkBusy) return;
       if (this.selectedUsers.length === 0) {
         showToast('Please select users first.', 'warning');
         return;
@@ -933,6 +971,7 @@ document.addEventListener('alpine:init', () => {
         if (!confirmed) return;
       }
 
+      this.bulkBusy = true;
       try {
         const res = await apiFetch('/api/users/bulk-action', {
           method: 'POST',
@@ -945,7 +984,7 @@ document.addEventListener('alpine:init', () => {
         await this.loadUsers();
       } catch (err) {
         showToast(`Bulk action failed: ${err.message}`, 'danger');
-      }
+      } finally { this.bulkBusy = false; }
     },
 
     _queryParams(overrides = {}) {
@@ -960,19 +999,23 @@ document.addEventListener('alpine:init', () => {
       if (this.statusFilter === 'inactive') params.set('is_active', '0');
       if (this.statusFilter === 'deleted') params.set('deleted', 'only');
       if (this.roleFilter) params.set('role', this.roleFilter);
+      if (this.teamFilter) params.set('team_id', this.teamFilter);
+      if (this.securityFilter) params.set('two_factor', this.securityFilter);
+        if (this.officeFilter) params.set('office_id', this.officeFilter);
       return params;
     },
 
     async fetchAllFilteredUsers() {
-      const first = await apiFetch(`/api/users?${this._queryParams({ page: 1, per_page: 100 })}`);
+      // Freeze filters for the entire export even if the directory changes while fetching.
+      const params = this._queryParams({ page: 1, per_page: 100 });
+      const first = await apiFetch(`/api/users?${params}`);
       const mapped = (first.data ?? []).map((u) => this._mapUser(u));
       const lastPage = first.last_page ?? 1;
-
       for (let page = 2; page <= lastPage; page++) {
-        const data = await apiFetch(`/api/users?${this._queryParams({ page, per_page: 100 })}`);
+        params.set('page', page);
+        const data = await apiFetch(`/api/users?${params}`);
         mapped.push(...(data.data ?? []).map((u) => this._mapUser(u)));
       }
-
       return mapped;
     },
 
@@ -1051,7 +1094,7 @@ document.addEventListener('alpine:init', () => {
         showToast('Please select users to send invites to.', 'warning');
         return;
       }
-      const selected = this.users.filter((user) => this.selectedUsers.includes(user.id));
+      const selected = this.users.filter((user) => this.selectedUsers.includes(String(user.id)));
       const emails = selected.map((user) => user.email).filter(Boolean);
       if (emails.length === 0) {
         showToast('Selected users do not have email addresses.', 'warning');
@@ -1073,6 +1116,8 @@ document.addEventListener('alpine:init', () => {
             search: this.searchQuery,
             status: this.statusFilter || 'all',
             role: this.roleFilter || 'all',
+            team: this.teamFilter || 'all',
+            two_factor: this.securityFilter || 'all',
           },
           totalUsers: users.length,
           stats: this.stats,
@@ -1190,7 +1235,7 @@ document.addEventListener('alpine:init', () => {
 
     _initGrowthChart() {
       const el = document.querySelector('#userGrowthChart');
-      if (!el || el.hasAttribute('data-chart-initialized')) return;
+      if (!el || el.offsetParent === null || el.hasAttribute('data-chart-initialized')) return;
       el.setAttribute('data-chart-initialized', 'true');
 
       const period = Number(this.growthPeriod) || 7;
@@ -1242,7 +1287,7 @@ document.addEventListener('alpine:init', () => {
 
     _initRoleChart() {
       const el = document.querySelector('#roleDistributionChart');
-      if (!el || el.hasAttribute('data-chart-initialized')) return;
+      if (!el || el.offsetParent === null || el.hasAttribute('data-chart-initialized')) return;
       el.setAttribute('data-chart-initialized', 'true');
 
       const roleCounts = this.users.reduce((acc, u) => {
@@ -1309,6 +1354,49 @@ document.addEventListener('alpine:init', () => {
       permissions: [],
       team_id: '',
     },
+    offices: [], officesLoading: false, officesError: '', originalOffice: '', currentOffice: null,
+    async loadOfficeOptions() {
+      const id = this._officeRequestId = (this._officeRequestId || 0) + 1;
+      this.offices = []; this.officesError = '';
+      if (!this.canSyncRoles || !this.form.team_id) { this.officesLoading = false; return; }
+      this.officesLoading = true;
+      try {
+        let page = 1, lastPage = 1, offices = [];
+        do {
+          const data = await apiFetch('/api/offices?' + new URLSearchParams({team_id: this.form.team_id, per_page: 1000, page}));
+          if (id !== this._officeRequestId) return;
+          offices.push(...data.data); lastPage = data.last_page || 1; page++;
+        } while (page <= lastPage);
+        this.offices = offices;
+      } catch { if (id === this._officeRequestId) this.officesError = 'Could not load offices. Retry before changing the office assignment.'; }
+      finally { if (id === this._officeRequestId) this.officesLoading = false; }
+    },
+    originalRole: '',
+    originalTeam: '',
+    originalRoles: [],
+    originalActive: true,
+    twoFactorRequired: false,
+    originalTwoFactorRequired: false,
+    securityCurrentPassword: '', securityCode: '', securityProofBusy: false,
+    actorTwoFactorEnabled: false, actorTwoFactorMethod: null, actorEmailAvailable: false,
+    securityStatusLoaded: false, securityStatusLoading: false, securityStatusError: '',
+    get enrollmentStatusLabel() {
+      if (this.twoFactorEnabled) return this.twoFactorMethod === 'email' ? 'Enabled · Email OTP' : 'Enabled · Authenticator app';
+      return this.twoFactorRequired ? 'Setup required at next login' : 'Not enrolled';
+    },
+    get adminCodeHelp() {
+      if (!this.securityStatusLoaded) return 'Refresh security status before changing the requirement.';
+      if (!this.actorTwoFactorEnabled) return 'Your account does not use two-step login. Only your administrator password is needed.';
+      return this.actorTwoFactorMethod === 'email'
+        ? 'Request a code sent to your own verified email, or use an unused recovery code.'
+        : 'Enter the current code from your own authenticator app, or an unused recovery code.';
+    },
+    get canManageSecurity() { return document.getElementById('userModal')?.dataset.canManageSecurity === '1'; },
+    get securityRequirementChanged() { return this.canManageSecurity && this.twoFactorRequired !== this.originalTwoFactorRequired; },
+    twoFactorEnabled: false,
+    twoFactorMethod: null,
+    get canSyncRoles() { return document.getElementById('userModal')?.dataset.canSyncRoles === '1'; },
+    get canActivate() { return document.getElementById('userModal')?.dataset.canActivate === '1'; },
     availablePermissions: [],
     departments: [],
     managers: [],
@@ -1367,6 +1455,7 @@ document.addEventListener('alpine:init', () => {
 
     async init() {
       this.resetForm();
+      this.loadActorSecurity();
       await this.loadRoles();
 
       // Reset form when modal is hidden
@@ -1377,6 +1466,34 @@ document.addEventListener('alpine:init', () => {
       this.loadHrData();
     },
 
+    async loadActorSecurity() {
+      if (this.securityStatusLoading) return;
+      this.securityStatusLoading = true;
+      this.securityStatusLoaded = false;
+      this.securityStatusError = '';
+      try {
+        const data = await apiFetch('/api/security/two-factor');
+        this.actorTwoFactorEnabled = Boolean(data.enabled);
+        this.actorTwoFactorMethod = data.method;
+        this.actorEmailAvailable = Boolean(data.email_available);
+        this.securityStatusLoaded = true;
+      } catch {
+        this.actorTwoFactorEnabled = true; this.actorTwoFactorMethod = null;
+        this.actorEmailAvailable = false;
+        this.securityStatusError = 'Could not load security status. Retry to check shared email delivery and your verification method.';
+      } finally { this.securityStatusLoading = false; }
+    },
+
+    async sendSecurityPolicyCode() {
+      if (this.securityProofBusy || !this.securityCurrentPassword || !this.securityStatusLoaded || this.actorTwoFactorMethod !== 'email' || !this.actorEmailAvailable) return;
+      this.securityProofBusy = true;
+      try {
+        const data = await apiFetch('/api/security/two-factor/email', {method: 'POST', body: JSON.stringify({action: 'user_security', current_password: this.securityCurrentPassword})});
+        showToast(data.message || 'Verification email sent.', 'success');
+      } catch (error) { showToast(error.message, 'danger'); }
+      finally { this.securityCurrentPassword = ''; this.securityCode = ''; this.securityProofBusy = false; }
+    },
+
     async loadHrData() {
       try {
         const dData = await apiFetch('/api/departments?per_page=1000');
@@ -1385,16 +1502,8 @@ document.addEventListener('alpine:init', () => {
         this.departments = [];
       }
       try {
-        const managers = [];
-        let page = 1;
-        let lastPage = 1;
-        do {
-          const mData = await apiFetch(`/api/users?per_page=100&page=${page}`);
-          managers.push(...(mData.data ?? mData));
-          lastPage = mData.last_page ?? 1;
-          page++;
-        } while (page <= lastPage);
-        this.managers = managers;
+        const data = await apiFetch('/api/users/options');
+        this.managers = data.data ?? [];
       } catch (e) {
         this.managers = [];
       }
@@ -1406,7 +1515,7 @@ document.addEventListener('alpine:init', () => {
       }
       try {
         const empData = await apiFetch('/api/hr-settings/employment_types');
-        this.employmentTypes = empData.data ?? empData;
+        this.employmentTypes = (empData.data ?? empData).filter(type => ['Full-time', 'Part-time', 'Contract', 'Intern'].includes(type.name));
       } catch (e) {
         this.employmentTypes = [];
       }
@@ -1452,6 +1561,7 @@ document.addEventListener('alpine:init', () => {
     resetForm() {
       this.clearPhotoPreview();
       this._villageRequestId = (this._villageRequestId || 0) + 1;
+      const defaultTeam = document.getElementById('userModal')?.dataset.defaultTeam || '';
       this.form = {
         first_name: '',
         middle_name: '',
@@ -1465,6 +1575,8 @@ document.addEventListener('alpine:init', () => {
         photoFile: null,
         joining_date: new Date().toISOString().split('T')[0],
         role: '',
+        permissions: [],
+        photo: '',
         is_active: true,
         address_line_1: '',
         address_line_2: '',
@@ -1484,11 +1596,18 @@ document.addEventListener('alpine:init', () => {
         emergency_contact_phone: '',
         password: '',
         password_confirmation: '',
-        team_id: '',
+        team_id: defaultTeam,
       };
       this.villageSearchQuery = '';
       this.villageResults = [];
       this.editingUserId = null;
+      this.originalRole = ''; this.originalTeam = ''; this.originalRoles = []; this.originalActive = true;
+      this._officeRequestId = (this._officeRequestId || 0) + 1;
+      this.offices = []; this.officesLoading = false; this.officesError = ''; this.originalOffice = ''; this.currentOffice = null;
+      this.form.office_id = '';
+      this.twoFactorEnabled = false; this.twoFactorMethod = null;
+      this.twoFactorRequired = false; this.originalTwoFactorRequired = false;
+      this.securityCurrentPassword = ''; this.securityCode = '';
       this.saving = false;
       this.isViewMode = false;
     },
@@ -1515,12 +1634,16 @@ document.addEventListener('alpine:init', () => {
     },
 
     async saveUser() {
-      if (this.saving) return;
+      if (this.saving || this.securityProofBusy) return;
+      if (this.securityRequirementChanged && !this.securityStatusLoaded) {
+        showToast('Refresh security status before changing the two-step login requirement.', 'warning');
+        return;
+      }
       if (!this.form.first_name || !this.form.email) {
         showToast('First name and email are required.', 'warning');
         return;
       }
-      if (!this.editingUserId && !this.form.role) {
+      if (!this.editingUserId && this.canSyncRoles && !this.form.role) {
         showToast('Please select a role for the new user.', 'warning');
         document.querySelector('#userModal select[x-model="form.role"]')?.focus();
         return;
@@ -1560,14 +1683,27 @@ document.addEventListener('alpine:init', () => {
         formData.append('employment_type', this.form.employment_type ?? '');
         formData.append('employee_id', this.form.employee_id ?? '');
         formData.append('joining_date', this.form.joining_date ?? '');
-        formData.append('is_active', this.form.is_active ? '1' : '0');
-        formData.append('roles[]', this.form.role);
-        // Always send team_id, even if empty, to clear it
-        formData.append('team_id', this.form.team_id || '');
-
-        if (this.form.permissions && this.form.permissions.length > 0) {
-          this.form.permissions.forEach((p) => formData.append('permissions[]', p));
+        if (!this.editingUserId || (this.canActivate && this.form.is_active !== this.originalActive)) {
+          formData.append('is_active', this.form.is_active ? '1' : '0');
         }
+        if (this.canSyncRoles && String(this.form.office_id || '') !== String(this.originalOffice || '')) {
+          formData.append('office_id', this.form.office_id || '');
+        }
+        const assignmentChanged = !this.editingUserId || this.form.role !== this.originalRole || String(this.form.team_id) !== String(this.originalTeam);
+        if (this.canSyncRoles && assignmentChanged && this.form.role) {
+          const roles = this.editingUserId
+            ? this.originalRoles.map(role => role === this.originalRole ? this.form.role : role)
+            : [];
+          if (!roles.includes(this.form.role)) roles.push(this.form.role);
+          [...new Set(roles)].forEach(role => formData.append('roles[]', role));
+          formData.append('team_id', this.form.team_id || '');
+        }
+        if (this.securityRequirementChanged) {
+          formData.append('two_factor_required', this.twoFactorRequired ? '1' : '0');
+          formData.append('security_current_password', this.securityCurrentPassword);
+          formData.append('security_code', this.securityCode);
+        }
+        // Direct permissions are managed separately; profile edits must not replace them.
 
         const addressFields = [
           'address_line_1',
@@ -1614,6 +1750,7 @@ document.addEventListener('alpine:init', () => {
           });
           window.ProfileImages.updateUserPhoto(res.data);
           showToast(res.message || 'User updated successfully.', 'success');
+          if (res.reauthentication_required) { window.location.href = '/login'; return; }
         } else {
           const res = await apiFetch('/api/users', {
             method: 'POST',
@@ -1635,6 +1772,7 @@ document.addEventListener('alpine:init', () => {
           'danger'
         );
       } finally {
+        this.securityCurrentPassword = ''; this.securityCode = '';
         this.saving = false;
       }
     },
@@ -1682,25 +1820,22 @@ document.addEventListener('alpine:init', () => {
 
       if (!this.file) return;
 
-      const text = await this.file.text();
-      const lines = text
-        .trim()
-        .split('\n')
-        .filter((l) => l.trim());
-      if (lines.length < 2) {
-        showToast('CSV file is empty or has no data rows.', 'warning');
-        return;
+      const file = this.file;
+      try {
+        const text = await file.text();
+        if (this.file !== file) return;
+        const rows = parseCsv(text.replace(/^\uFEFF/, ''));
+        if (rows.length < 2) throw new Error('CSV file is empty or has no data rows.');
+        this.parsedHeaders = rows[0];
+        this.parsedRows = rows.slice(1);
+        this.previewRows = this.parsedRows.slice(0, 3);
+      } catch (error) {
+        if (this.file === file) showToast(error.message || 'Unable to read CSV file.', 'warning');
       }
-
-      this.parsedHeaders = parseCsvLine(lines[0]);
-
-      for (let i = 1; i < lines.length; i++) {
-        this.parsedRows.push(parseCsvLine(lines[i]));
-      }
-      this.previewRows = this.parsedRows.slice(0, 3);
     },
 
     async importUsers() {
+      if (this.importing) return;
       if (!this.file || this.parsedRows.length === 0) {
         showToast('Please select a valid CSV file with data.', 'warning');
         return;
@@ -1722,8 +1857,8 @@ document.addEventListener('alpine:init', () => {
 
         let [firstName, middleName, lastName, email, phone, password] = row;
 
-        if (!firstName || !email) {
-          errors.push(`Row ${i + 2}: missing first name or email`);
+        if (!firstName || !email || !password) {
+          errors.push(`Row ${i + 2}: first name, email and an individual password are required`);
           continue;
         }
 
@@ -1739,8 +1874,8 @@ document.addEventListener('alpine:init', () => {
               last_name: lastName || null,
               email,
               phone: phone || null,
-              password: password || 'Default@123',
-              password_confirmation: password || 'Default@123',
+              password,
+              password_confirmation: password,
               is_active: true,
               roles: ['User'],
             }),
@@ -1766,45 +1901,4 @@ document.addEventListener('alpine:init', () => {
     },
   }));
 
-  // ─── searchComponent ─────────────────────────────────────────────────────────
-  Alpine.data(
-    'searchComponent',
-    createSearchComponent({
-      delayMs: 300,
-      getResults(query) {
-        const tableEl = document.querySelector('[x-data="userTable"]');
-        const table = tableEl ? Alpine.$data(tableEl) : null;
-        if (table) {
-          table.searchQuery = query;
-          table.filterUsers();
-        }
-        const q = query.toLowerCase();
-        return [
-          { title: 'Dashboard', url: '/', type: 'page' },
-          { title: 'Users', url: '/users', type: 'page' },
-          { title: 'Settings', url: '/settings', type: 'page' },
-          { title: 'Analytics', url: '/analytics', type: 'page' },
-          { title: 'Security', url: '/security', type: 'page' },
-          { title: 'Help', url: '/help', type: 'page' },
-        ].filter((item) => item.title.toLowerCase().includes(q));
-      },
-    })
-  );
-
-  // ─── themeSwitch ─────────────────────────────────────────────────────────────
-  Alpine.data('themeSwitch', () => ({
-    currentTheme: 'light',
-    init() {
-      this.currentTheme = localStorage.getItem('theme') || 'light';
-      this.applyTheme();
-    },
-    toggle() {
-      this.currentTheme = this.currentTheme === 'light' ? 'dark' : 'light';
-      this.applyTheme();
-      localStorage.setItem('theme', this.currentTheme);
-    },
-    applyTheme() {
-      document.documentElement.setAttribute('data-bs-theme', this.currentTheme);
-    },
-  }));
 });

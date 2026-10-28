@@ -67,7 +67,7 @@ class WarehouseController extends Controller implements HasMiddleware
         }
 
         $sortBy = $request->query('sort_by', 'id');
-        $sortDir = $request->query('sort_dir', 'desc');
+        $sortDir = strtolower((string) $request->query('sort_dir', 'desc')) === 'asc' ? 'asc' : 'desc';
 
         if (in_array($sortBy, ['id', 'name', 'code', 'status', 'city', 'state'])) {
             $query->orderBy($sortBy, $sortDir);
@@ -148,15 +148,15 @@ class WarehouseController extends Controller implements HasMiddleware
         ], 201);
     }
 
-    public function show(Request $request, Warehouse $model): JsonResponse
+    public function show(Request $request, Warehouse $warehouse): JsonResponse
     {
         if ($lobState = $request->user()?->lob_state_name) {
-            if ($model->state !== $lobState) {
+            if ($warehouse->state !== $lobState) {
                 return response()->json(['message' => 'Unauthorized access to this warehouse.'], 403);
             }
         }
 
-        return response()->json(['data' => $model]);
+        return response()->json(['data' => $warehouse]);
     }
 
     public function update(Request $request, $id): JsonResponse

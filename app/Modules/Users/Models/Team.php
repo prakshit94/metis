@@ -4,6 +4,7 @@ namespace App\Modules\Users\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Team extends Model
 {
@@ -14,6 +15,8 @@ class Team extends Model
         'description',
         'is_active',
     ];
+
+    protected $appends = ['resolved_state_name'];
 
     protected $casts = [
         'is_active' => 'boolean',
@@ -45,14 +48,13 @@ class Team extends Model
     /**
      * Users who have a role assigned to this team.
      */
-    public function members(): HasMany
+    public function members(): BelongsToMany
     {
-        return $this->hasMany(
-            User::class,
-            'id',
-            'id' // virtual — resolved via model_has_roles pivot
-        );
+        return $this->belongsToMany(User::class, 'model_has_roles', 'team_id', 'model_id')
+            ->wherePivot('model_type', User::class)->distinct();
     }
+
+    public function offices(): HasMany { return $this->hasMany(Office::class); }
 
     /**
      * Scope to only active teams.

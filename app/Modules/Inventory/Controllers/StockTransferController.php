@@ -8,7 +8,9 @@ use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\Warehouse;
 use App\Modules\Core\Controllers\Controller;
 use App\Modules\Inventory\Models\StockTransfer;
+use App\Services\EnsureRecordVisibility;
 use App\Services\InventoryService;
+use App\Services\RecordVisibility;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
@@ -21,11 +23,16 @@ class StockTransferController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
+            new Middleware(EnsureRecordVisibility::class),
             new Middleware('permission:stocktransfer-view', only: ['index', 'show']),
             new Middleware('permission:stocktransfer-view|stockmanagement-view', only: ['options']),
             new Middleware('permission:stocktransfer-create', only: ['store']),
-            new Middleware('permission:stocktransfer-edit', only: ['update', 'bulkAction']),
+            new Middleware('permission:stocktransfer-edit', only: ['update']),
+            new Middleware('permission:stocktransfer-send', only: ['send']),
+            new Middleware('permission:stocktransfer-receive', only: ['receive']),
+            new Middleware('permission:stocktransfer-cancel', only: ['cancel']),
             new Middleware('permission:stocktransfer-delete', only: ['destroy']),
+            new Middleware('permission:stocktransfer-send|stocktransfer-receive|stocktransfer-cancel|stocktransfer-delete', only: ['bulkAction']),
         ];
     }
 
@@ -46,7 +53,7 @@ class StockTransferController extends Controller implements HasMiddleware
                 });
             });
         }
-        
+
         $statsQuery = clone $query;
 
         if ($search = $request->query('search')) {
@@ -58,7 +65,7 @@ class StockTransferController extends Controller implements HasMiddleware
         }
 
         $sortBy = $request->query('sort_by', 'id');
-        $sortDir = $request->query('sort_dir', 'desc');
+        $sortDir = strtolower((string) $request->query('sort_dir', 'desc')) === 'asc' ? 'asc' : 'desc';
 
         if (in_array($sortBy, ['id', 'transfer_no', 'status', 'created_at'])) {
             $query->orderBy($sortBy, $sortDir);
@@ -99,12 +106,12 @@ class StockTransferController extends Controller implements HasMiddleware
                 'exists:warehouses,id',
                 function ($attribute, $value, $fail) use ($request) {
                     if ($lobState = $request->user()?->lob_state_name) {
-                        $wh = \App\Modules\Catalog\Models\Warehouse::find($value);
+                        $wh = Warehouse::find($value);
                         if ($wh && $wh->state !== $lobState) {
                             $fail('Unauthorized origin warehouse.');
                         }
                     }
-                }
+                },
             ],
             'to_warehouse_id' => [
                 'required',
@@ -112,12 +119,12 @@ class StockTransferController extends Controller implements HasMiddleware
                 'different:from_warehouse_id',
                 function ($attribute, $value, $fail) use ($request) {
                     if ($lobState = $request->user()?->lob_state_name) {
-                        $wh = \App\Modules\Catalog\Models\Warehouse::find($value);
+                        $wh = Warehouse::find($value);
                         if ($wh && $wh->state !== $lobState) {
                             $fail('Unauthorized destination warehouse.');
                         }
                     }
-                }
+                },
             ],
             'items' => 'required|array|min:1',
             'items.*.product_id' => 'required|exists:products,id',
@@ -157,10 +164,6 @@ class StockTransferController extends Controller implements HasMiddleware
 
     public function update(Request $request, StockTransfer $stockTransfer): JsonResponse
     {
-        if ($stockTransfer->status !== 'draft') {
-            return response()->json(['message' => 'Only draft transfers can be edited.'], 422);
-        }
-
         $validated = $request->validate([
             'from_warehouse_id' => 'required|exists:warehouses,id',
             'to_warehouse_id' => 'required|exists:warehouses,id|different:from_warehouse_id',
@@ -170,6 +173,12 @@ class StockTransferController extends Controller implements HasMiddleware
         ]);
 
         \DB::transaction(function () use ($validated, $stockTransfer) {
+            $stockTransfer = StockTransfer::lockForUpdate()->findOrFail($stockTransfer->id);
+            if ($stockTransfer->status !== 'draft') {
+                throw ValidationException::withMessages(['status' => 'Only draft transfers can be edited.']);
+            }
+            app(RecordVisibility::class)->assertWarehouse((int) $validated['from_warehouse_id']);
+            app(RecordVisibility::class)->assertWarehouse((int) $validated['to_warehouse_id']);
             $stockTransfer->update([
                 'from_warehouse_id' => $validated['from_warehouse_id'],
                 'to_warehouse_id' => $validated['to_warehouse_id'],
@@ -193,12 +202,14 @@ class StockTransferController extends Controller implements HasMiddleware
 
     public function destroy(StockTransfer $stockTransfer): JsonResponse
     {
-        if ($stockTransfer->status !== 'draft') {
-            return response()->json(['message' => 'Only draft transfers can be deleted.'], 422);
-        }
-
-        $stockTransfer->items()->delete();
-        $stockTransfer->delete();
+        \DB::transaction(function () use ($stockTransfer) {
+            $stockTransfer = StockTransfer::lockForUpdate()->findOrFail($stockTransfer->id);
+            if ($stockTransfer->status !== 'draft') {
+                throw ValidationException::withMessages(['status' => 'Only draft transfers can be deleted.']);
+            }
+            $stockTransfer->items()->delete();
+            $stockTransfer->delete();
+        }, 3);
 
         return response()->json(['message' => 'Stock transfer deleted successfully.']);
     }
@@ -215,6 +226,7 @@ class StockTransferController extends Controller implements HasMiddleware
         ]);
 
         $action = $validated['action'];
+        abort_unless($request->user()?->can('stocktransfer-'.$action), 403);
         $ids = $validated['ids'];
 
         $transfers = StockTransfer::with('items')->whereIn('id', $ids)->get();
@@ -226,6 +238,7 @@ class StockTransferController extends Controller implements HasMiddleware
         foreach ($transfers as $transfer) {
             try {
                 \DB::transaction(function () use ($transfer, $action) {
+                    $transfer = StockTransfer::lockForUpdate()->findOrFail($transfer->id);
                     if ($action === 'send') {
                         $this->inventoryService->sendTransfer($transfer);
                     } elseif ($action === 'receive') {
@@ -325,13 +338,13 @@ class StockTransferController extends Controller implements HasMiddleware
     public function options(): JsonResponse
     {
         return response()->json([
-            'warehouses' => \App\Modules\Catalog\Models\Warehouse::where('status', 'active')
+            'warehouses' => Warehouse::where('status', 'active')
                 ->when(request()?->user()?->lob_state_name, function ($query, $state) {
                     $query->where('state', $state);
                 })
                 ->orderBy('name')
                 ->get(['id', 'name', 'code', 'is_default']),
-            'products' => \App\Modules\Catalog\Models\Product::where('status', '!=', 'draft')->orderBy('name')->get(['id', 'name', 'sku']),
+            'products' => Product::where('status', '!=', 'draft')->orderBy('name')->get(['id', 'name', 'sku']),
         ]);
     }
 }

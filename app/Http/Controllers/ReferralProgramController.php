@@ -94,6 +94,10 @@ class ReferralProgramController extends Controller implements HasMiddleware
             $program->milestones()->createMany($validated['milestones']);
         });
 
+        if (request()->is('api/*')) {
+            return response()->json(['message' => 'Referral program created successfully.']);
+        }
+
         return back()->with('success', 'Referral program created successfully.');
     }
 
@@ -129,6 +133,10 @@ class ReferralProgramController extends Controller implements HasMiddleware
             $program->milestones()->createMany($validated['milestones']);
         });
 
+        if (request()->is('api/*')) {
+            return response()->json(['message' => 'Referral program updated successfully.']);
+        }
+
         return back()->with('success', 'Referral program updated successfully.');
     }
 
@@ -142,6 +150,10 @@ class ReferralProgramController extends Controller implements HasMiddleware
             }
             $program->update(['is_active' => ! $program->is_active]);
         });
+
+        if (request()->is('api/*')) {
+            return response()->json(['message' => 'Referral program status updated.']);
+        }
 
         return back()->with('success', 'Referral program status updated.');
     }
@@ -178,6 +190,10 @@ class ReferralProgramController extends Controller implements HasMiddleware
     public function destroy($id)
     {
         ReferralProgram::findOrFail($id)->delete();
+
+        if (request()->is('api/*')) {
+            return response()->json(['message' => 'Referral program deleted.']);
+        }
 
         return back()->with('success', 'Referral program deleted.');
     }

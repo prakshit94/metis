@@ -117,8 +117,8 @@ class InventoryService
             'reference_id' => $referenceId,
             'status' => 'active',
             'batch_number' => $batchNumber,
-            // Prefer explicitly passed value; fall back to HTTP auth; fall back to 0 (system)
-            'performed_by' => $performedBy ?? auth()->id() ?? 0,
+            // Prefer explicitly passed value; fall back to HTTP auth; use NULL for system activity
+            'performed_by' => $performedBy ?? auth()->id(),
         ]);
     }
 
@@ -148,9 +148,7 @@ class InventoryService
             return;
         }
 
-        $totalAvailable = Stock::where('product_id', $productId)
-            ->get()
-            ->sum(fn ($s) => (float) $s->quantity - (float) $s->reserved_qty);
+        $totalAvailable = (float) Stock::where('product_id', $productId)->sum(DB::raw('quantity - reserved_qty'));
 
         $newStatus = $product->status;
 
@@ -603,9 +601,6 @@ class InventoryService
 
             $order->update(['status' => 'confirmed', 'updated_by' => auth()->id()]);
 
-            foreach ($order->items as $item) {
-                $this->syncProductStatus((int) $item->product_id);
-            }
         }, 3);
     }
 
@@ -751,7 +746,7 @@ class InventoryService
                 $stock = $this->getStockForUpdate($productId, $warehouseId);
 
                 // Validate sufficient physical stock before sending
-                if ((float) $stock->quantity < $qty) {
+                if ((float) $stock->quantity - (float) $stock->reserved_qty < $qty) {
                     throw ValidationException::withMessages([
                         'quantity' => "Insufficient stock for product ID {$productId} in source warehouse.",
                     ]);
@@ -807,7 +802,6 @@ class InventoryService
 
                 $this->logMovement($productId, $toWh, $qty, 'in', StockTransfer::class, $transfer->id);
                 $this->syncProductStatus($productId);
-                $this->syncProductStatus($productId); // sync for both warehouses
             }
 
             $transfer->update([
@@ -1596,7 +1590,7 @@ class InventoryService
     protected function refundOrderWalletUsage(Order $order): void
     {
         if ($order->wallet_amount_used > 0 && $order->party_id) {
-            $party = Party::find($order->party_id);
+            $party = Party::whereKey($order->party_id)->lockForUpdate()->first();
             if ($party) {
                 $balanceBefore = (float) $party->wallet_balance;
                 $balanceAfter = $balanceBefore + (float) $order->wallet_amount_used;
@@ -1630,12 +1624,12 @@ class InventoryService
                 ->where('reference_id', $order->id)
                 ->where('type', 'credit')
                 ->sum('amount');
-                
+
             $debits = WalletTransaction::where('reference_type', 'cashback_revoked')
                 ->where('reference_id', $order->id)
                 ->where('type', 'debit')
                 ->sum('amount');
-                
+
             $netCredited = $credits - $debits;
             $amountToCredit = $order->cashback_earned - $netCredited;
 
@@ -1673,12 +1667,12 @@ class InventoryService
                 ->where('reference_id', $order->id)
                 ->where('type', 'credit')
                 ->sum('amount');
-                
+
             $debits = WalletTransaction::where('reference_type', 'cashback_revoked')
                 ->where('reference_id', $order->id)
                 ->where('type', 'debit')
                 ->sum('amount');
-                
+
             $netCredited = $credits - $debits;
 
             if ($netCredited > 0) {

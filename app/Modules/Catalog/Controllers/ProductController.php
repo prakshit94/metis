@@ -867,7 +867,7 @@ class ProductController extends Controller
 
     public function export(Request $request): StreamedResponse
     {
-        abort_unless($request->user()?->can('product-export') || $request->user()?->can('product-view'), 403);
+        abort_unless($request->user()?->can('product-export'), 403);
 
         $filename = 'products-'.now()->format('Y-m-d-His').'.csv';
 

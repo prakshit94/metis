@@ -4,7 +4,9 @@ namespace App\Console\Commands;
 
 use App\Modules\Orders\Models\Shipment;
 use App\Modules\Orders\Models\ShipmentTrackingEvent;
+use App\Services\CarrierTrackingService;
 use App\Services\Shipping\ShippingManager;
+use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
@@ -54,11 +56,13 @@ class PollIndiaPostTracking extends Command
                 foreach ($trackingData as $data) {
                     if (! is_array($data)) {
                         Log::warning('India Post tracking response contained a non-object record.');
+
                         continue;
                     }
                     $trackingNumber = $data['booking_details']['article_number'] ?? null;
                     if (! $trackingNumber) {
                         Log::warning('India Post tracking response omitted booking_details.article_number', ['keys' => array_keys($data)]);
+
                         continue;
                     }
                     $deliveryStatus = $data['del_status']['del_status'] ?? null;
@@ -77,13 +81,14 @@ class PollIndiaPostTracking extends Command
                     foreach ($events as $event) {
                         if (! is_array($event)) {
                             Log::warning('India Post tracking response contained a non-object event', ['tracking_number' => $trackingNumber]);
+
                             continue;
                         }
                         $eventDesc = $event['event'] ?? 'Update';
                         try {
-                            $occurredAt = \Carbon\Carbon::parse($event['date'] ?? now());
+                            $occurredAt = Carbon::parse($event['date'] ?? now());
                             if (isset($event['time']) && ! preg_match('/T\d{2}:\d{2}/', (string) ($event['date'] ?? ''))) {
-                                $occurredAt = \Carbon\Carbon::parse(($event['date'] ?? now()->toDateString()).' '.$event['time']);
+                                $occurredAt = Carbon::parse(($event['date'] ?? now()->toDateString()).' '.$event['time']);
                             }
                         } catch (\Throwable $e) {
                             Log::warning('Could not parse India Post tracking event timestamp', ['tracking_number' => $trackingNumber, 'event' => $event]);
@@ -116,11 +121,8 @@ class PollIndiaPostTracking extends Command
                         }
                     }
 
-                    if (! empty($events) && $shipment->status === 'pending' && $deliveryStatus !== 'delivered') {
-                        $shipment->update(['status' => 'in_transit', 'shipped_at' => $shipment->shipped_at ?? now()]);
-                        if ($shipment->order && $shipment->order->status === 'ready_to_ship') {
-                            $shipment->order->update(['status' => 'dispatched']);
-                        }
+                    if (! empty($events) && $deliveryStatus !== 'delivered') {
+                        app(CarrierTrackingService::class)->apply($shipment, 'in_transit');
                     }
 
                     // If delivered, update the status
@@ -128,18 +130,12 @@ class PollIndiaPostTracking extends Command
                         $deliveredAt = now();
                         if (! empty($data['booking_details']['delivery_confirmed_on'])) {
                             try {
-                                $deliveredAt = \Carbon\Carbon::parse($data['booking_details']['delivery_confirmed_on']);
+                                $deliveredAt = Carbon::parse($data['booking_details']['delivery_confirmed_on']);
                             } catch (\Throwable $e) {
                                 Log::warning('Could not parse India Post delivery confirmation timestamp', ['tracking_number' => $trackingNumber]);
                             }
                         }
-                        $shipment->update([
-                            'status' => 'delivered',
-                            'delivered_at' => $deliveredAt,
-                        ]);
-                        if ($shipment->order) {
-                            $shipment->order->update(['status' => 'delivered']);
-                        }
+                        app(CarrierTrackingService::class)->apply($shipment, 'delivered', $deliveredAt);
                         $this->info("Shipment {$trackingNumber} marked as delivered.");
                     }
                 }

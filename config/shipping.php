@@ -5,6 +5,8 @@ return [
 
     'providers' => [
         'india_post' => [
+            // Local integration credential: configure the sender to provide this bearer token.
+            'webhook_token' => env('INDIA_POST_WEBHOOK_TOKEN'),
             'base_url' => env('INDIA_POST_BASE_URL', env('APP_ENV') === 'production'
                 ? 'https://app.indiapost.gov.in/beextcustomer'
                 : 'https://test.cept.gov.in/beextcustomer'),

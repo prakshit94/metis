@@ -6,12 +6,25 @@ use App\Models\Chat\Conversation;
 use App\Models\Chat\Message;
 use App\Modules\Core\Controllers\Controller;
 use App\Services\Chat\ChatService;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 
-class MessageController extends Controller
+class MessageController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:chat-view'),
+            new Middleware('permission:messages-view'),
+            new Middleware('permission:messages-create', only: ['store', 'forward']),
+            new Middleware('permission:messages-edit', only: ['update']),
+            new Middleware('permission:messages-delete', only: ['destroy']),
+        ];
+    }
+
     public function index(Request $request, Conversation $conversation, ChatService $chat)
     {
         abort_unless(config('chat.enabled'), 404);
@@ -33,6 +46,9 @@ class MessageController extends Controller
             'files.*' => ['file', 'max:'.config('chat.uploads.max_size_kb'), 'mimes:'.implode(',', config('chat.uploads.allowed_mimes'))],
             'client_id' => ['nullable', 'string', 'max:120'],
         ]);
+
+        // Reject non-members before any attachment is written to storage.
+        $chat->ensureMember($conversation, $request->user());
 
         $uploadedAttachments = [];
         if ($request->hasFile('files')) {

@@ -203,3 +203,23 @@
     background-color: transparent;
   }
 }
+
+// Shared mobile browser support; desktop layout remains unchanged.
+@media (max-width: 767.98px) {
+  .admin-main { min-width: 0; overflow-wrap: anywhere; }
+  .admin-main .container-fluid { padding-inline: .75rem; }
+  .admin-navbar-inner { padding-inline: .5rem; min-width: 0; }
+  .admin-sidebar { max-width: calc(100vw - 2.5rem); }
+  .modal-dialog { max-width: calc(100vw - 1rem); }
+  .modal-body { overflow-x: auto; }
+  .table-responsive { max-width: 100%; overscroll-behavior-x: contain; }
+  .pagination { flex-wrap: wrap; }
+  .admin-main .form-control,
+  .admin-main .form-select,
+  .modal .form-control,
+  .modal .form-select { font-size: 1rem; } // Avoid iOS input zoom.
+  .admin-main img, .admin-main canvas { max-width: 100%; }
+}
+@supports (padding: env(safe-area-inset-bottom)) {
+  .admin-sidebar { padding-bottom: env(safe-area-inset-bottom); }
+}

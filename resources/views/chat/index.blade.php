@@ -97,6 +97,7 @@
                     </template>
 
                     <div x-show="search && filteredConversations.length === 0 && searchResults.users.length === 0" x-cloak class="text-center p-4 text-muted" role="status">No chats or people found.</div>
+                    <button type="button" class="btn btn-outline-secondary m-2" x-show="hasMoreConversations" :disabled="polling" @click="conversationPages++; poll()">Load more conversations</button>
                     <!-- Empty state -->
                     <div x-show="filteredConversations.length === 0 && !search" class="text-center p-5 text-muted">
                         <i class="bi bi-chat-dots fs-1 d-block mb-2 opacity-50"></i>
@@ -256,10 +257,10 @@
 
                                         <div class="mt-1 d-flex gap-2" :class="message.sender_id == currentUserId ? 'justify-content-end' : 'justify-content-start'">
                                             <button type="button" @click="setReply(message)" class="btn btn-link btn-sm p-0 text-muted text-decoration-none" style="font-size: 10px;">REPLY</button>
-                                            @can('chat-edit')
+                                            @can('messages-edit')
                                             <button type="button" @click="startEdit(message)" x-show="message.sender_id == currentUserId" class="btn btn-link btn-sm p-0 text-muted text-decoration-none" style="font-size: 10px;">EDIT</button>
                                             @endcan
-                                            @can('chat-delete')
+                                            @can('messages-delete')
                                             <button type="button" @click="deleteMessage(message)" x-show="message.sender_id == currentUserId" :disabled="busyMessageId == message.id" class="btn btn-link btn-sm p-0 text-danger text-decoration-none" style="font-size: 10px;">DELETE</button>
                                             @endcan
                                         </div>
@@ -615,7 +616,7 @@
                         <div class="col-md-6 border-end-md">
                             <div class="d-flex justify-content-between align-items-center mb-3">
                                 <h6 class="fw-bold text-muted text-uppercase mb-0" style="font-size:0.75rem; letter-spacing:0.5px;">Group Details</h6>
-                                @can('chat-edit')
+                                @can('messages-edit')
                                 <button type="button" x-show="canManageSettings" @click="updateGroup" :disabled="groupBusy" class="btn btn-primary btn-sm fw-semibold px-3 shadow-sm">Save</button>
                                 @endcan
                             </div>
@@ -653,7 +654,7 @@
                         <div class="col-md-6 d-flex flex-column" style="max-height: 500px;">
                             <div class="d-flex justify-content-between align-items-center mb-3">
                                 <h6 class="fw-bold text-muted text-uppercase mb-0" style="font-size:0.75rem; letter-spacing:0.5px;">Members (<span x-text="activeConversation?.active_members?.length"></span>)</h6>
-                                @can('chat-edit')
+                                @can('messages-edit')
                                 <button type="button" x-show="canManageSettings" @click="showAddMember = !showAddMember" class="btn btn-outline-primary btn-sm fw-semibold px-3 border shadow-sm">
                                     <i class="bi bi-person-plus-fill me-1"></i> Add
                                 </button>
@@ -710,7 +711,7 @@
                                                 </div>
                                             </div>
                                         </div>
-                                        @can('chat-edit')
+                                        @can('messages-edit')
                                         <div x-show="canManageSettings && member.user_id != currentUserId" class="dropdown">
                                             <button class="btn btn-outline-secondary btn-sm px-2 rounded-circle border shadow-sm d-flex align-items-center justify-content-center" style="width:28px;height:28px;" data-bs-toggle="dropdown"><i class="bi bi-three-dots-vertical" style="font-size:12px;"></i></button>
                                             <ul class="dropdown-menu dropdown-menu-end shadow border-0 text-sm py-2">
@@ -799,6 +800,8 @@
 
             pollTimer: null,
             polling: false,
+            conversationPages: 1,
+            hasMoreConversations: false,
             initialized: false,
             selectionVersion: 0,
             messageVersion: 0,
@@ -966,21 +969,30 @@
                 return member?.role === 'owner';
             },
             
+            async fetchConversationPages() {
+                const responses = await Promise.all(Array.from({ length: this.conversationPages }, (_, i) =>
+                    axios.get('/api/chat/conversations', { params: { page: i + 1, per_page: 50 } })));
+                const unique = new Map();
+                responses.forEach(response => (response.data.data || []).forEach(conversation => unique.set(conversation.id, conversation)));
+                return { data: { data: [...unique.values()], meta: responses.at(-1)?.data.meta } };
+            },
+
             async poll() {
                 if (this.polling) return;
                 this.polling = true;
                 try {
                     const [convRes, userRes] = await Promise.all([
-                        axios.get('/api/chat/conversations'),
+                        this.fetchConversationPages(),
                         axios.get('/api/chat/users'),
                     ]);
 
                     this.conversations = convRes.data.data || convRes.data.conversations || convRes.data || [];
+                    this.hasMoreConversations = !!convRes.data.meta?.has_more;
                     const usersRaw = userRes.data.data || userRes.data.users || userRes.data || [];
                     this.users = Array.isArray(usersRaw) ? usersRaw : [];
 
                     // ── Sync unread count to localStorage so the header badge updates live ──
-                    const totalUnread = this.conversations.reduce((sum, c) => sum + (c.unread_count || 0), 0);
+                    const totalUnread = convRes.data.meta?.unread_messages ?? this.conversations.reduce((sum, c) => sum + (c.unread_count || 0), 0);
                     localStorage.setItem('metis_chat_unread_' + this.currentUserId, totalUnread);
                     window.dispatchEvent(new CustomEvent('metis:chat-unread', { detail: { count: totalUnread } }));
 

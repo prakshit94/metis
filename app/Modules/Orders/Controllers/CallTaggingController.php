@@ -7,13 +7,22 @@ use App\Models\CallLogMeta;
 use App\Models\CallTag;
 use App\Modules\Core\Controllers\Controller;
 use App\Services\CallTagFields;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 
-class CallTaggingController extends Controller
+class CallTaggingController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:calllog-create', only: ['getTags', 'getFormFields', 'storeCallLog']),
+        ];
+    }
+
     private function activeTag(int $id): CallTag
     {
         $tag = CallTag::where('is_active', true)->findOrFail($id);

@@ -4,12 +4,15 @@ namespace App\Modules\Orders\Controllers;
 
 use App\Modules\Catalog\Models\Service;
 use App\Modules\Core\Controllers\Controller;
+use App\Modules\Customers\Models\Party;
+use App\Modules\Customers\Models\WalletTransaction;
 use App\Modules\Inventory\Models\Stock;
 use App\Modules\Orders\Models\Order;
 use App\Modules\Orders\Models\OrderItem;
 use App\Modules\Orders\Models\OrderReturn;
 use App\Modules\Orders\Models\OrderReturnItem;
 use App\Modules\Orders\Models\Refund;
+use App\Services\EnsureRecordVisibility;
 use App\Services\FinancialService;
 use App\Services\InventoryService;
 use Illuminate\Http\Request;
@@ -17,14 +20,21 @@ use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class OrderReturnController extends Controller implements HasMiddleware
 {
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:orders.view', only: ['index', 'show']),
-            new Middleware('permission:orders.return', only: ['store', 'process', 'importBulkQc', 'processQc', 'processFinancials']),
+            new Middleware(EnsureRecordVisibility::class),
+            new Middleware('permission:returns.view', only: ['index', 'show']),
+            new Middleware('permission:returns.create', only: ['store', 'storeApi']),
+            new Middleware('permission:returns.process', only: ['process']),
+            new Middleware('permission:returns.qc', only: ['importBulkQc', 'processQc']),
+            new Middleware('permission:returns.finance', only: ['processFinancials']),
+            new Middleware('permission:returns.approve', only: ['approve']),
+            new Middleware('permission:returns.cancel', only: ['cancel']),
             new Middleware('permission:orders.bulk_return', only: ['bulkStore']),
         ];
     }
@@ -35,23 +45,41 @@ class OrderReturnController extends Controller implements HasMiddleware
 
         $user = auth()->user();
         $isGlobalView = $user && ($user->hasRole(['Super Admin', 'Admin']) || $user->can('view-all-data'));
-        
+
         if (! $isGlobalView) {
             $allowedStatuses = [];
             if ($user) {
-                if ($user->can('orders.view.future_order')) $allowedStatuses[] = 'future_order';
+                if ($user->can('orders.view.future_order')) {
+                    $allowedStatuses[] = 'future_order';
+                }
                 if ($user->can('orders.view.pending')) {
                     $allowedStatuses[] = 'pending';
                     $allowedStatuses[] = 'pending_confirmation';
                 }
-                if ($user->can('orders.view.confirmed')) $allowedStatuses[] = 'confirmed';
-                if ($user->can('orders.view.processing')) $allowedStatuses[] = 'processing';
-                if ($user->can('orders.view.ready_to_ship')) $allowedStatuses[] = 'ready_to_ship';
-                if ($user->can('orders.view.dispatched')) $allowedStatuses[] = 'dispatched';
-                if ($user->can('orders.view.delivered')) $allowedStatuses[] = 'delivered';
-                if ($user->can('orders.view.return_requested')) $allowedStatuses[] = 'return_requested';
-                if ($user->can('orders.view.returned')) $allowedStatuses[] = 'returned';
-                if ($user->can('orders.view.cancelled')) $allowedStatuses[] = 'cancelled';
+                if ($user->can('orders.view.confirmed')) {
+                    $allowedStatuses[] = 'confirmed';
+                }
+                if ($user->can('orders.view.processing')) {
+                    $allowedStatuses[] = 'processing';
+                }
+                if ($user->can('orders.view.ready_to_ship')) {
+                    $allowedStatuses[] = 'ready_to_ship';
+                }
+                if ($user->can('orders.view.dispatched')) {
+                    $allowedStatuses[] = 'dispatched';
+                }
+                if ($user->can('orders.view.delivered')) {
+                    $allowedStatuses[] = 'delivered';
+                }
+                if ($user->can('orders.view.return_requested')) {
+                    $allowedStatuses[] = 'return_requested';
+                }
+                if ($user->can('orders.view.returned')) {
+                    $allowedStatuses[] = 'returned';
+                }
+                if ($user->can('orders.view.cancelled')) {
+                    $allowedStatuses[] = 'cancelled';
+                }
             }
 
             $query->whereHas('order', function ($q) use ($user, $allowedStatuses) {
@@ -154,6 +182,18 @@ class OrderReturnController extends Controller implements HasMiddleware
         return view('orders.returns.index', compact('returns'));
     }
 
+    public function storeApi(Request $request)
+    {
+        $data = $request->validate(['order_id' => 'required|integer|exists:orders,id']);
+
+        return $this->store($request, Order::findOrFail($data['order_id']));
+    }
+
+    public function process(Request $request, OrderReturn $return, InventoryService $inventoryService)
+    {
+        return $this->processQc($request, $return, $inventoryService);
+    }
+
     public function store(Request $request, Order $order)
     {
         // Ensure order items are loaded (used in product ownership validation below)
@@ -166,6 +206,7 @@ class OrderReturnController extends Controller implements HasMiddleware
             'items' => 'required|array|min:1',
             'items.*.product_id' => [
                 'required',
+                'distinct',
                 'integer',
                 'exists:products,id',
                 // Ensure the product actually belongs to this order
@@ -179,6 +220,19 @@ class OrderReturnController extends Controller implements HasMiddleware
         ]);
 
         $return = DB::transaction(function () use ($validated, $order) {
+            $order = Order::with('items')->lockForUpdate()->findOrFail($order->id);
+            if (! in_array($order->status, ['dispatched', 'delivered', 'returned'], true)) {
+                throw ValidationException::withMessages(['order' => 'Only dispatched or delivered goods can be returned.']);
+            }
+            $sold = $order->items->groupBy('product_id');
+            foreach ($validated['items'] as $item) {
+                $alreadyRequested = OrderReturnItem::where('product_id', $item['product_id'])
+                    ->whereHas('orderReturn', fn ($q) => $q->where('order_id', $order->id)->where('status', '!=', 'rejected'))->sum('requested_qty');
+                $available = (float) $sold->get($item['product_id'], collect())->sum('quantity') - (float) $alreadyRequested;
+                if ((float) $item['requested_qty'] > $available + 0.00001) {
+                    throw ValidationException::withMessages(['items' => 'Return quantity exceeds the remaining quantity sold.']);
+                }
+            }
             $baseNo = str_replace('ORD-', 'RET-', $order->order_no);
             if ($baseNo === $order->order_no) {
                 $baseNo = 'RET-'.$order->order_no;
@@ -191,7 +245,7 @@ class OrderReturnController extends Controller implements HasMiddleware
                 'return_no' => $returnNo,
                 'status' => 'pending',
                 'reason' => $validated['reason'],
-                'notes' => $validated['notes'],
+                'notes' => $validated['notes'] ?? null,
             ]);
 
             $wasInTransit = in_array($order->status, Order::inTransitStatuses(), true);
@@ -252,11 +306,12 @@ class OrderReturnController extends Controller implements HasMiddleware
         $errors = [];
 
         DB::transaction(function () use ($validated, &$count, &$skipped, &$errors) {
-            $orders = Order::with('items')->whereIn('id', $validated['order_ids'])->get();
-            
+            $orders = Order::with('items')->whereIn('id', $validated['order_ids'])->orderBy('id')->lockForUpdate()->get();
+
             foreach ($orders as $order) {
                 if ($order->status !== 'dispatched') {
                     $skipped++;
+
                     continue;
                 }
 
@@ -273,7 +328,7 @@ class OrderReturnController extends Controller implements HasMiddleware
                         'return_no' => $returnNo,
                         'status' => 'pending',
                         'reason' => $validated['reason'],
-                        'notes' => $validated['notes'],
+                        'notes' => $validated['notes'] ?? null,
                     ]);
 
                     $wasInTransit = in_array($order->status, Order::inTransitStatuses(), true);
@@ -334,7 +389,7 @@ class OrderReturnController extends Controller implements HasMiddleware
 
     public function approve(OrderReturn $return)
     {
-        abort_unless(auth()->user()->can('orders.return'), 403);
+        abort_unless(auth()->user()->can('returns.approve'), 403);
 
         if ($return->status !== 'pending') {
             return response()->json(['message' => 'Only pending returns can be approved.'], 422);
@@ -347,25 +402,29 @@ class OrderReturnController extends Controller implements HasMiddleware
 
     public function cancel(OrderReturn $return)
     {
-        abort_unless(auth()->user()->can('orders.return'), 403);
+        abort_unless(auth()->user()->can('returns.cancel'), 403);
 
         if ($return->status !== 'pending') {
             return response()->json(['message' => 'Only pending returns can be cancelled.'], 422);
         }
 
         \DB::transaction(function () use ($return) {
-            $order = $return->order;
-            
+            $order = Order::lockForUpdate()->findOrFail($return->order_id);
+            $return = OrderReturn::lockForUpdate()->findOrFail($return->id);
+            if ($return->status !== 'pending') {
+                throw ValidationException::withMessages(['status' => 'Only pending returns can be cancelled.']);
+            }
+
             // Find the previous status from status logs
             $logs = $order->statusLogs()->orderBy('id', 'desc')->get();
             $prevLog = $logs->firstWhere('status', '!=', 'return_requested');
             $targetStatus = $prevLog ? $prevLog->status : 'delivered'; // Fallback to delivered
 
-            $wasInTransit = in_array($targetStatus, \App\Modules\Orders\Models\Order::inTransitStatuses(), true);
-            
+            $wasInTransit = in_array($targetStatus, Order::inTransitStatuses(), true);
+
             if ($wasInTransit && $order->warehouse_id) {
                 foreach ($return->items as $item) {
-                    $stock = \App\Modules\Inventory\Models\Stock::where('product_id', $item->product_id)
+                    $stock = Stock::where('product_id', $item->product_id)
                         ->where('warehouse_id', $order->warehouse_id)
                         ->lockForUpdate()
                         ->first();
@@ -383,7 +442,7 @@ class OrderReturnController extends Controller implements HasMiddleware
                 'status' => $targetStatus,
                 'updated_by' => auth()->id(),
             ]);
-            
+
             $order->statusLogs()->create([
                 'status' => $targetStatus,
                 'notes' => 'Return request cancelled. Reverted to previous status.',
@@ -394,11 +453,10 @@ class OrderReturnController extends Controller implements HasMiddleware
         return response()->json(['success' => true, 'message' => 'Return cancelled successfully.']);
     }
 
-    
     public function importBulkQc(Request $request, InventoryService $inventoryService)
     {
         $request->validate([
-            'file' => 'required|max:10240',
+            'file' => 'required|file|max:10240',
             'is_preview' => 'nullable|boolean',
         ]);
 
@@ -412,25 +470,30 @@ class OrderReturnController extends Controller implements HasMiddleware
         }
 
         $firstRow = fgetcsv($handle);
-        if (isset($firstRow[0])) { $firstRow[0] = preg_replace('/^﻿/', '', $firstRow[0]); }
+        if (isset($firstRow[0])) {
+            $firstRow[0] = preg_replace('/^﻿/', '', $firstRow[0]);
+        }
 
         if ($firstRow === false) {
             fclose($handle);
+
             return response()->json(['error' => 'CSV file is empty.'], 400);
         }
 
         $headers = array_map('trim', array_map('strtolower', $firstRow));
         $orderIdMode = in_array('order_id', $headers, true);
-        if (!$orderIdMode) {
+        if (! $orderIdMode) {
             $required = ['order_no', 'sku', 'received_qty', 'restocked_qty', 'damaged_qty'];
             foreach ($required as $req) {
-                if (!in_array($req, $headers, true)) {
+                if (! in_array($req, $headers, true)) {
                     fclose($handle);
+
                     return response()->json(['error' => "Missing required column: {$req}. Use an order_id-only CSV to fetch return items automatically."], 400);
                 }
             }
-        } elseif (!$isPreview) {
+        } elseif (! $isPreview) {
             fclose($handle);
+
             return response()->json(['error' => 'Order ID imports must be previewed and submitted through the QC review form.'], 422);
         }
 
@@ -447,24 +510,31 @@ class OrderReturnController extends Controller implements HasMiddleware
         while (($row = fgetcsv($handle)) !== false) {
             if ($orderIdMode) {
                 $orderIdentifier = trim((string) ($row[$idxOrderId] ?? ''));
-                if ($orderIdentifier === '') continue;
+                if ($orderIdentifier === '') {
+                    continue;
+                }
                 // Accept both the numeric orders.id and the visible order_no (for example ORD-20260922-0011).
                 $lookupKey = ctype_digit($orderIdentifier) && (int) $orderIdentifier > 0
-                    ? 'id:' . (int) $orderIdentifier
-                    : 'number:' . $orderIdentifier;
+                    ? 'id:'.(int) $orderIdentifier
+                    : 'number:'.$orderIdentifier;
                 $rowsByReturn[$lookupKey] = [['order_identifier' => $orderIdentifier]];
+
                 continue;
             }
 
-            if (!isset($row[$idxReturnNo]) || !isset($row[$idxSku])) continue;
+            if (! isset($row[$idxReturnNo]) || ! isset($row[$idxSku])) {
+                continue;
+            }
 
             $returnNo = trim($row[$idxReturnNo]);
             $sku = trim($row[$idxSku]);
-            if ($returnNo === '' || $sku === '') continue;
+            if ($returnNo === '' || $sku === '') {
+                continue;
+            }
 
-            $received = $idxReceived !== false ? (float)($row[$idxReceived] ?? 0) : 0;
-            $restocked = $idxRestocked !== false ? (float)($row[$idxRestocked] ?? 0) : 0;
-            $damaged = $idxDamaged !== false ? (float)($row[$idxDamaged] ?? 0) : 0;
+            $received = $idxReceived !== false ? (float) ($row[$idxReceived] ?? 0) : 0;
+            $restocked = $idxRestocked !== false ? (float) ($row[$idxRestocked] ?? 0) : 0;
+            $damaged = $idxDamaged !== false ? (float) ($row[$idxDamaged] ?? 0) : 0;
             $notes = $idxNotes !== false ? trim($row[$idxNotes] ?? '') : '';
 
             $rowsByReturn[$returnNo][] = [
@@ -492,14 +562,23 @@ class OrderReturnController extends Controller implements HasMiddleware
                     $returnQuery = OrderReturn::with(['items.product', 'order'])->whereIn('status', ['approved', 'received', 'qc_in_progress']);
                     $return = $isDatabaseId
                         ? $returnQuery->where('order_id', (int) $identifier)->latest('id')->first()
-                        : $returnQuery->whereHas('order', function($q) use ($identifier) { $q->where('order_no', $identifier); })->latest('id')->first();
+                        : $returnQuery->whereHas('order', function ($q) use ($identifier) {
+                            $q->where('order_no', $identifier);
+                        })->latest('id')->first();
                 } else {
-                    $return = OrderReturn::with(['items.product', 'order'])->whereHas('order', function($q) use ($returnNo) { $q->where('order_no', $returnNo); })->whereIn('status', ['approved', 'received', 'qc_in_progress'])->first();
+                    $return = OrderReturn::with(['items.product', 'order'])->whereHas('order', function ($q) use ($returnNo) {
+                        $q->where('order_no', $returnNo);
+                    })->whereIn('status', ['approved', 'received', 'qc_in_progress'])->first();
+                }
+
+                if ($return) {
+                    app(EnsureRecordVisibility::class)->assertVisible($return);
                 }
 
                 if ($orderIdMode && $return) {
                     $itemsData = $return->items->map(function ($item) {
                         return [
+
                             'return_item_id' => $item->id,
                             'sku' => $item->product->sku ?? '',
                             // Match the existing QC modal defaults; the operator can adjust each quantity before submission.
@@ -513,17 +592,21 @@ class OrderReturnController extends Controller implements HasMiddleware
 
                 $isValidReturn = $return && in_array($return->status, ['approved', 'received', 'qc_in_progress'], true);
                 $returnError = null;
-                if (!$return) $returnError = $orderIdMode ? 'No QC-eligible return found for this order ID' : 'Return not found';
-                elseif (!$isValidReturn) $returnError = 'Invalid status: ' . $return->status;
+                if (! $return) {
+                    $returnError = $orderIdMode ? 'No QC-eligible return found for this order ID' : 'Return not found';
+                } elseif (! $isValidReturn) {
+                    $returnError = 'Invalid status: '.$return->status;
+                }
 
                 $returnItemsPayload = [];
                 $allPassed = true;
-                
+
                 if ($orderIdMode && $return && count($itemsData) === 0) {
                     $previewData[] = ['order_id' => (int) $returnNo, 'order_no' => $return->order->order_no ?? '', 'sku' => '', 'error' => 'The return has no items to inspect', 'is_valid' => false];
+
                     continue;
                 }
-                if ($orderIdMode && !$return) {
+                if ($orderIdMode && ! $return) {
                     $itemsData = [['sku' => '', 'received_qty' => 0, 'restocked_qty' => 0, 'damaged_qty' => 0, 'qc_notes' => '']];
                 }
 
@@ -531,22 +614,25 @@ class OrderReturnController extends Controller implements HasMiddleware
                     $itemError = $returnError;
                     $matchedItem = null;
 
-                    if ($return && !isset($previewReturns[$return->id])) { $previewReturns[$return->id] = $return; }
+                    if ($return && ! isset($previewReturns[$return->id])) {
+                        $previewReturns[$return->id] = $return;
+                    }
                     if ($return) {
-                        $matchedItem = $return->items->first(function($i) use ($csvItem, $orderIdMode) {
+                        $matchedItem = $return->items->first(function ($i) use ($csvItem, $orderIdMode) {
                             if ($orderIdMode && isset($csvItem['return_item_id'])) {
                                 return (int) $i->id === (int) $csvItem['return_item_id'];
                             }
+
                             return $i->product && $i->product->sku === $csvItem['sku'];
                         });
 
-                        if (!$matchedItem) {
-                            $itemError = "SKU not found in return request";
+                        if (! $matchedItem) {
+                            $itemError = 'SKU not found in return request';
                             $allPassed = false;
                         } else {
                             $totalProcessed = $csvItem['restocked_qty'] + $csvItem['damaged_qty'];
                             if ($totalProcessed > $csvItem['received_qty']) {
-                                $itemError = "Restocked + Damaged cannot exceed Received";
+                                $itemError = 'Restocked + Damaged cannot exceed Received';
                                 $allPassed = false;
                             } else {
                                 $returnItemsPayload[] = [
@@ -572,52 +658,54 @@ class OrderReturnController extends Controller implements HasMiddleware
                             'restocked_qty' => $csvItem['restocked_qty'],
                             'damaged_qty' => $csvItem['damaged_qty'],
                             'error' => $itemError,
-                            'is_valid' => empty($itemError)
+                            'is_valid' => empty($itemError),
                         ];
                     }
                 } // End foreach CSV item
 
-                if (!$isPreview && $allPassed && $return) {
+                if (! $isPreview && $allPassed && $return) {
                     // Simulate Request and invoke processQc core logic
-                    $simulatedRequest = new Request();
+                    $simulatedRequest = new Request;
                     $simulatedRequest->merge(['items' => $returnItemsPayload]);
-                    
+
                     try {
                         $qcResponse = $this->processQc($simulatedRequest, $return, $inventoryService);
                         if ($qcResponse->getStatusCode() === 200) {
                             $updated++;
                         } else {
-                            $skipped[] = $returnNo . ' (' . (json_decode($qcResponse->getContent())->message ?? 'Validation failed') . ')';
+                            $skipped[] = $returnNo.' ('.(json_decode($qcResponse->getContent())->message ?? 'Validation failed').')';
                         }
-                    } catch (\Illuminate\Validation\ValidationException $e) {
-                        $skipped[] = $returnNo . ' (Validation Error: ' . collect($e->errors())->flatten()->first() . ')';
+                    } catch (ValidationException $e) {
+                        $skipped[] = $returnNo.' (Validation Error: '.collect($e->errors())->flatten()->first().')';
                     } catch (\Exception $e) {
-                        $skipped[] = $returnNo . ' (Error: ' . $e->getMessage() . ')';
+                        $skipped[] = $returnNo.' (Error: '.$e->getMessage().')';
                     }
                 }
             } // End foreach Return
 
             if ($isPreview) {
                 DB::rollBack();
+
                 return response()->json(['preview' => $previewData, 'returns' => array_values($previewReturns)]);
             }
 
             DB::commit();
         } catch (\Exception $e) {
             DB::rollBack();
+
             return response()->json(['error' => 'Error processing CSV: '.$e->getMessage()], 400);
         }
 
         $message = "Bulk QC completed successfully. Updated {$updated} return(s).";
         if (count($skipped) > 0) {
-            $message .= "
+            $message .= '
 
-Skipped " . count($skipped) . " return(s):
-- " . implode("
-- ", array_slice($skipped, 0, 5)) . (count($skipped) > 5 ? "
-...and more" : "");
+Skipped '.count($skipped).' return(s):
+- '.implode('
+- ', array_slice($skipped, 0, 5)).(count($skipped) > 5 ? '
+...and more' : '');
         }
-        
+
         return response()->json(['success' => true, 'message' => $message]);
     }
 
@@ -629,8 +717,8 @@ Skipped " . count($skipped) . " return(s):
         }
 
         $validated = $request->validate([
-            'items' => 'required|array',
-            'items.*.id' => 'required|exists:order_return_items,id',
+            'items' => 'required|array|min:1',
+            'items.*.id' => ['required', 'integer', 'distinct', Rule::exists('order_return_items', 'id')->where('order_return_id', $return->id)],
             'items.*.received_qty' => 'required|numeric|min:0',
             'items.*.restocked_qty' => 'required|numeric|min:0',
             'items.*.damaged_qty' => 'required|numeric|min:0',
@@ -648,17 +736,33 @@ Skipped " . count($skipped) . " return(s):
         }
 
         DB::transaction(function () use ($validated, $return, $inventoryService) {
+            $order = Order::lockForUpdate()->findOrFail($return->order_id);
+            $return = OrderReturn::lockForUpdate()->findOrFail($return->id);
+            if (! in_array($return->status, ['approved', 'received', 'qc_in_progress'], true)) {
+                throw ValidationException::withMessages(['status' => 'This return has already been processed or is not approved.']);
+            }
+            $return->setRelation('order', $order);
             $refundAmount = 0;
 
             $returnItemIds = collect($validated['items'])->pluck('id');
             $returnItems = OrderReturnItem::where('order_return_id', $return->id)
-                ->whereIn('id', $returnItemIds)
+                ->lockForUpdate()
                 ->get()
                 ->keyBy('id');
 
+            if ($returnItems->count() !== $returnItemIds->count()) {
+                throw ValidationException::withMessages(['items' => 'Submit each item belonging to this return exactly once.']);
+            }
+            foreach ($validated['items'] as $data) {
+                $item = $returnItems->get($data['id']);
+                if (! $item || (float) $data['received_qty'] > (float) $item->requested_qty + 0.00001) {
+                    throw ValidationException::withMessages(['items' => 'Received quantity exceeds the requested return quantity.']);
+                }
+            }
+
             $orderItems = OrderItem::where('order_id', $return->order_id)
                 ->get()
-                ->keyBy('product_id');
+                ->groupBy('product_id');
 
             foreach ($validated['items'] as $itemData) {
                 $item = $returnItems->get($itemData['id']);
@@ -670,14 +774,15 @@ Skipped " . count($skipped) . " return(s):
                     'received_qty' => $itemData['received_qty'],
                     'restocked_qty' => $itemData['restocked_qty'],
                     'damaged_qty' => $itemData['damaged_qty'],
-                    'qc_notes' => $itemData['qc_notes'],
+                    'qc_notes' => $itemData['qc_notes'] ?? null,
                     'qc_status' => 'passed', // simplistically assuming it passed QC if we recorded quantities
                 ]);
 
                 // Calculate proportional refund amount based on received qty
-                $orderItem = $orderItems->get($item->product_id);
-                if ($orderItem && $orderItem->quantity > 0) {
-                    $refundAmount += ((float) $orderItem->total_amount / (float) $orderItem->quantity) * (float) $itemData['received_qty'];
+                $soldLines = $orderItems->get($item->product_id, collect());
+                $soldQuantity = (float) $soldLines->sum('quantity');
+                if ($soldQuantity > 0) {
+                    $refundAmount += (float) $soldLines->sum('total_amount') / $soldQuantity * (float) $itemData['received_qty'];
                 }
 
                 // Inventory Update
@@ -698,7 +803,7 @@ Skipped " . count($skipped) . " return(s):
             $remainingRefund = $refundAmount;
 
             if ($remainingRefund > 0 && $return->order->invoice && $return->order->invoice->paid_amount > 0) {
-                $alreadyRefundedCash = Refund::where('order_id', $return->order_id)->sum('amount');
+                $alreadyRefundedCash = Refund::where('order_id', $return->order_id)->whereIn('status', ['pending', 'completed'])->sum('amount');
                 $availableCash = max(0, $return->order->invoice->paid_amount - $alreadyRefundedCash);
                 $refundable = min($remainingRefund, $availableCash);
 
@@ -725,15 +830,15 @@ Skipped " . count($skipped) . " return(s):
 
             if ($remainingRefund > 0 && $return->order->wallet_amount_used > 0 && $return->order->party_id) {
                 $walletRefundable = min($remainingRefund, (float) $return->order->wallet_amount_used);
-                
+
                 if ($walletRefundable > 0) {
-                    $party = \App\Modules\Customers\Models\Party::find($return->order->party_id);
+                    $party = Party::whereKey($return->order->party_id)->lockForUpdate()->first();
                     if ($party) {
                         $balanceBefore = (float) $party->wallet_balance;
                         $balanceAfter = $balanceBefore + $walletRefundable;
                         $party->increment('wallet_balance', $walletRefundable);
 
-                        \App\Modules\Customers\Models\WalletTransaction::create([
+                        WalletTransaction::create([
                             'party_id' => $party->id,
                             'amount' => $walletRefundable,
                             'type' => 'credit',

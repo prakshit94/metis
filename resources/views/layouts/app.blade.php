@@ -25,11 +25,11 @@
 
     @php
         $appLogo = \App\Models\SystemSetting::where('key', 'default_image_logo_png')->value('value');
-        $logoImage = $appLogo ? $appLogo : asset('assets/images/logo.png');
+        $brandLogo = \App\Services\BrandLogo::resolve($appLogo);
+        $logoImage = $brandLogo['src'];
     @endphp
     <!-- Favicon -->
-    <link rel="icon" type="image/svg+xml" href="{{ $logoImage }}{{ str_contains($logoImage, '?') ? '&' : '?' }}v={{ file_exists(public_path('assets/images/logo.png')) ? filemtime(public_path('assets/images/logo.png')) : time() }}">
-    <link rel="icon" type="image/png" href="{{ $logoImage }}{{ str_contains($logoImage, '?') ? '&' : '?' }}v={{ file_exists(public_path('assets/images/logo.png')) ? filemtime(public_path('assets/images/logo.png')) : time() }}">
+    <link rel="icon" href="{{ $logoImage }}">
 
     <!-- Preconnect to external domains -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -51,8 +51,9 @@
     {{-- Apply saved theme immediately to prevent flash --}}
     <script>
         (function() {
-            var t = localStorage.getItem('theme') ||
-                    (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            var t;
+            try { t = localStorage.getItem('theme'); } catch (_) {}
+            if (t !== 'light' && t !== 'dark') t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
             document.documentElement.setAttribute('data-bs-theme', t);
         })();
     </script>
@@ -122,7 +123,7 @@
     <div id="loading-screen" class="loading-screen">
         <div class="loading-spinner">
             <div class="brand-logo-container rounded-4 d-flex align-items-center justify-content-center mb-3 shadow-sm" style="width: 64px; height: 64px; background-color: var(--bs-body-bg);">
-                <img src="{{ $logoImage }}{{ str_contains($logoImage, '?') ? '&' : '?' }}v={{ file_exists(public_path('assets/images/logo.png')) ? filemtime(public_path('assets/images/logo.png')) : time() }}" alt="Loading Logo" class="w-100 h-100 object-fit-contain rounded-circle p-1">
+                <img src="{{ $logoImage }}" data-fallback-src="{{ $brandLogo['fallback'] }}" onerror="this.onerror=null;this.src=this.dataset.fallbackSrc;" alt="Loading Logo" class="w-100 h-100 object-fit-contain p-1">
             </div>
             <div class="spinner-border text-primary" role="status">
                 <span class="visually-hidden">Loading...</span>

@@ -5,11 +5,20 @@ namespace App\Http\Controllers\Api\Chat;
 use App\Models\Chat\Presence;
 use App\Modules\Core\Controllers\Controller;
 use App\Services\Chat\ChatService;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
-class PresenceController extends Controller
+class PresenceController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:chat-view'),
+        ];
+    }
+
     public function index()
     {
         abort_unless(config('chat.enabled'), 404);

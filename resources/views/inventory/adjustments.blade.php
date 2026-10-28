@@ -140,12 +140,16 @@
                             </span>
                         </div>
                         <div class="d-flex gap-2">
-                            <button class="btn btn-sm btn-success" @click="bulkAction('approve')">
+                            @can('inventoryadjustment-approve')
+<button class="btn btn-sm btn-success" @click="bulkAction('approve')">
                                 <i class="bi bi-check-circle me-1"></i>Approve Selected
                             </button>
-                            <button class="btn btn-sm btn-outline-danger" @click="bulkAction('reject')">
+@endcan
+                            @can('inventoryadjustment-approve')
+<button class="btn btn-sm btn-outline-danger" @click="bulkAction('reject')">
                                 <i class="bi bi-x-circle me-1"></i>Reject Selected
                             </button>
+@endcan
                             <button class="btn btn-sm btn-danger" @click="bulkAction('delete')">
                                 <i class="bi bi-trash me-1"></i>Delete Selected
                             </button>
@@ -243,9 +247,11 @@
                                                 </template>
                                                 <template x-if="item.status === 'pending'">
                                                     <li>
-                                                        <a class="dropdown-item d-flex align-items-center gap-2 text-success" href="#" @click.prevent="approveItem(item)">
+                                                        @can('inventoryadjustment-approve')
+<a class="dropdown-item d-flex align-items-center gap-2 text-success" href="#" @click.prevent="approveItem(item)">
                                                             <i class="bi bi-check-circle"></i> Approve Adjustment
                                                         </a>
+@endcan
                                                     </li>
                                                 </template>
                                                 <template x-if="item.status === 'pending'">
@@ -253,9 +259,11 @@
                                                 </template>
                                                 <template x-if="item.status === 'pending'">
                                                     <li>
-                                                        <a class="dropdown-item text-danger d-flex align-items-center gap-2" href="#" @click.prevent="rejectItem(item)">
+                                                        @can('inventoryadjustment-approve')
+<a class="dropdown-item text-danger d-flex align-items-center gap-2" href="#" @click.prevent="rejectItem(item)">
                                                             <i class="bi bi-x-circle"></i> Reject Count
                                                         </a>
+@endcan
                                                     </li>
                                                 </template>
                                             </ul>

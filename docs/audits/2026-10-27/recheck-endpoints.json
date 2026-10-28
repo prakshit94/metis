@@ -1,0 +1,367 @@
+[
+  {
+    "method": "GET",
+    "uri": "/api/chat/unread-count",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "uri": "/api/chat/conversations",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "uri": "/api/chat/active-status",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "uri": "/api/chat/users",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "uri": "/api/chat/search",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "uri": "/api/auth/me",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "uri": "/api/orders/create-options",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "uri": "/api/analytics/data",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "uri": "/api/inventory/dashboard",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "uri": "/api/inventory/dashboard/activities",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "uri": "/api/orders/nearby-selling-insights",
+    "status": 422
+  },
+  {
+    "method": "GET",
+    "uri": "/api/credit-notes/customers/search",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "uri": "/api/customers/search-by-phone",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "uri": "/api/targets",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "uri": "/api/files",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "uri": "/api/shipping/settings",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "uri": "/api/dashboard",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "uri": "/api/reports",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "uri": "/api/activities/recent",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "uri": "/api/roles/options",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "uri": "/api/permissions/options",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "uri": "/api/roles",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "uri": "/api/permissions",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "uri": "/api/teams",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "uri": "/api/users",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "uri": "/api/security/sessions",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "uri": "/api/security/activity",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "uri": "/api/attendance-corrections",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "uri": "/api/attendances",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "uri": "/api/rosters",
+    "status": 422
+  },
+  {
+    "method": "GET",
+    "uri": "/api/rosters/co",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "uri": "/api/leave-balances",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "uri": "/api/holidays",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "uri": "/api/orders",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "uri": "/api/complaints/stats",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "uri": "/api/complaints",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "uri": "/api/products-search-api",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "uri": "/api/credit-notes",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "uri": "/api/invoices",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "uri": "/api/payments",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "uri": "/api/refunds",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "uri": "/api/returns",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "uri": "/api/promotions/coupons",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "uri": "/api/promotions/offers",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "uri": "/api/promotions/referral-programs",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "uri": "/api/brands",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "uri": "/api/categories",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "uri": "/api/uom",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "uri": "/api/tax-rates",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "uri": "/api/hsn-codes",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "uri": "/api/warehouses",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "uri": "/api/attributes",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "uri": "/api/inventory/stocks",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "uri": "/api/inventory/stocks/show",
+    "status": 422
+  },
+  {
+    "method": "GET",
+    "uri": "/api/inventory/stocks/warehouse-options",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "uri": "/api/inventory/transfers/options",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "uri": "/api/inventory/transfers",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "uri": "/api/inventory/adjustments/options",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "uri": "/api/inventory/adjustments",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "uri": "/api/products",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "uri": "/api/customers",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "uri": "/api/villages/services-options",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "uri": "/api/villages/search",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "uri": "/api/villages",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "uri": "/api/shipping/shipments",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "uri": "/api/shipping/services",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "uri": "/api/shipping/services/provider-options",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "uri": "/api/procurement/purchase-orders",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "uri": "/api/procurement/goods-receipts",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "uri": "/api/procurement/suppliers",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "uri": "/api/call-tags",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "uri": "/api/call-tags-admin",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "uri": "/api/admin/audit-logs",
+    "status": 200
+  }
+]

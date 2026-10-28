@@ -19,7 +19,7 @@ Do not use `migrate:fresh` on a database containing application data. Editing an
 ## Regression checks
 
 ```sh
-php tests/regression/schema_repairs.php
+php tests/regression/audit_fixes.php
 ```
 
 This requires MySQL credentials with permission to create a temporary database. It creates a uniquely named test database, runs the migrations and regression checks there, then drops only that test database.

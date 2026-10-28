@@ -1,10 +1,25 @@
 import Alpine from 'alpinejs';
-import { createSearchComponent } from '../utils/search-component.js';
+import { createAuthenticatorQr } from '../utils/authenticator-qr.js';
 
 document.addEventListener('alpine:init', () => {
   Alpine.data('securityComponent', () => ({
+    canManageMail: false,
+    mailLoaded: false,
+    mailConfigurationSaved: false,
+    mailSavedEnabled: false,
+    mailBusy: false,
+    mailError: '',
+    mailMessage: '',
+    mailProviders: [],
+    mailExistingMailers: [],
+    mailPassword: '',
+    mailCode: '',
+    mailSettings: { enabled: false, provider: 'smtp', host: '', port: 587, encryption: 'starttls', username: '',
+      password: '', api_key: '', aws_key: '', aws_secret: '', region: 'us-east-1', message_stream: '',
+      existing_mailer: 'smtp', timeout: 15, from_address: '', from_name: '', reply_to: '', clear_credentials: false },
+
     // UI State
-    activeSection: 'account',
+    activeSection: 'twofactor',
     loading: false,
     sidebarVisible: false,
 
@@ -14,7 +29,7 @@ document.addEventListener('alpine:init', () => {
     // Data structure to match HTML expectations
     securityData: {
       twoFactor: {
-        app: true,
+        app: false,
         sms: false,
       },
     },
@@ -41,16 +56,41 @@ document.addEventListener('alpine:init', () => {
       weeklyReports: false,
     },
 
-    // Backup Codes
-    backupCodes: [
-      'ABC123-DEF456',
-      'GHI789-JKL012',
-      'MNO345-PQR678',
-      'STU901-VWX234',
-      'YZA567-BCD890',
-    ],
+    backupCodes: [],
+    twoFactorLoaded: false,
+    twoFactorRequired: false,
+    twoFactorRevision: 0,
+    statusRevision: 0,
+    twoFactorMethod: null,
+    enrollmentMethod: 'authenticator',
+    selectedTwoFactorMethod: 'authenticator',
+    emailAvailable: false,
+    emailHint: '',
+    twoFactorBusy: false,
+    twoFactorError: '',
+    twoFactorMessage: '',
+    twoFactorAction: '',
+    twoFactorPassword: '',
+    twoFactorCode: '',
+    enrollmentSecret: '',
+    enrollmentUri: '',
+    enrollmentQr: '',
+    enrollmentQrLoading: false,
+    enrollmentQrError: '',
+    recoveryCount: 0,
 
     init() {
+      this.canManageMail = document.querySelector('.security-page')?.dataset?.canManageMail === 'true';
+      if (this.canManageMail) {
+        this.sections.push({ id: 'mail', name: 'Mail Configuration', icon: 'bi-envelope' });
+        this.loadMailSettings();
+      }
+      this.hashHandler = () => {
+        const section = window.location?.hash?.slice(1);
+        if (this.sections.some(item => item.id === section)) this.setActiveSection(section);
+      };
+      this.hashHandler();
+      window.addEventListener?.('hashchange', this.hashHandler);
       this.loadSecuritySettings();
       this.fetchSessions();
       this.fetchActivity();
@@ -91,8 +131,20 @@ document.addEventListener('alpine:init', () => {
       }
     },
 
+    destroy() {
+      window.removeEventListener?.('hashchange', this.hashHandler);
+      this.clearTwoFactorSensitiveData();
+      this.clearMailSecrets();
+    },
+
     // Navigation
     setActiveSection(section) {
+      if (!this.sections.some(item => item.id === section)) return;
+      if (section !== 'mail') this.clearMailSecrets();
+      if (section !== 'twofactor') {
+        this.clearTwoFactorSensitiveData();
+        this.twoFactorAction = '';
+      }
       this.activeSection = section;
     },
 
@@ -137,76 +189,172 @@ document.addEventListener('alpine:init', () => {
       modal.show();
     },
 
-    setupAuthenticatorApp() {
-      if (this.securityData.twoFactor.app) {
-        this.confirmAction(
-          'Disable Authenticator App',
-          'Are you sure you want to disable your Authenticator App?',
-          () => {
-            this.securityData.twoFactor.app = false;
-            this.saveSecuritySettings();
-            this.showNotification('Authenticator app disabled', 'warning');
-          },
-          'btn-warning',
-          'Disable'
-        );
-      } else {
-        this.confirmAction(
-          'Enable Authenticator App',
-          'Are you sure you want to enable the Authenticator App for Two-Factor Authentication?',
-          () => {
-            this.securityData.twoFactor.app = true;
-            this.saveSecuritySettings();
-            this.showNotification('Authenticator app setup completed', 'success');
-          },
-          'btn-success',
-          'Enable',
-          'bi-shield-check text-success'
-        );
+    toggleTwoFactor() {
+      if (!this.twoFactorLoaded || this.twoFactorBusy || (this.twoFactorRequired && this.securityData.twoFactor.app)) return;
+      if (this.securityData.twoFactor.app) this.openTwoFactorAction('disable');
+      else this.enableSelectedMethod();
+    },
+
+    selectTwoFactorMethod(method) {
+      if (!['authenticator', 'email'].includes(method) || !this.twoFactorLoaded || this.twoFactorBusy) return;
+      this.selectedTwoFactorMethod = method;
+      if (this.twoFactorAction) {
+        this.clearTwoFactorSensitiveData();
+        this.twoFactorAction = '';
+        this.twoFactorError = '';
+        this.twoFactorMessage = '';
       }
     },
 
-    setupSMSVerification() {
-      if (this.securityData.twoFactor.sms) {
-        this.confirmAction(
-          'Disable SMS Verification',
-          'Are you sure you want to disable SMS Verification?',
-          () => {
-            this.securityData.twoFactor.sms = false;
-            this.saveSecuritySettings();
-            this.showNotification('SMS verification disabled', 'warning');
-          },
-          'btn-warning',
-          'Disable'
-        );
-      } else {
-        this.confirmAction(
-          'Enable SMS Verification',
-          'Are you sure you want to enable SMS Verification for Two-Factor Authentication?',
-          () => {
-            this.securityData.twoFactor.sms = true;
-            this.saveSecuritySettings();
-            this.showNotification('SMS verification setup completed', 'success');
-          },
-          'btn-success',
-          'Enable',
-          'bi-shield-check text-success'
-        );
+    enableSelectedMethod() {
+      this.setupMethod(this.selectedTwoFactorMethod);
+    },
+
+    setupAuthenticatorApp() {
+      this.setupMethod('authenticator');
+    },
+
+    setupEmailVerification() {
+      this.setupMethod('email');
+    },
+
+    setupMethod(method) {
+      if (!['authenticator', 'email'].includes(method) || !this.twoFactorLoaded || this.twoFactorBusy || (method === 'email' && !this.emailAvailable) || (this.securityData.twoFactor.app && this.twoFactorMethod === method)) return;
+      this.selectedTwoFactorMethod = method;
+      this.enrollmentMethod = method;
+      this.openTwoFactorAction(this.securityData.twoFactor.app ? 'switch_setup' : 'setup');
+    },
+
+    async sendSettingsEmail() {
+      if (this.twoFactorBusy) return;
+      this.twoFactorBusy = true;
+      this.twoFactorError = '';
+      const revision = this.twoFactorRevision;
+      try {
+        const data = await this.twoFactorRequest('/email', { action: this.twoFactorAction === 'switch_setup' ? 'switch' : this.twoFactorAction, current_password: this.twoFactorPassword });
+        if (revision !== this.twoFactorRevision) return;
+        this.twoFactorMessage = data.message;
+      } catch (error) {
+        this.twoFactorError = error.message;
+      } finally {
+        this.twoFactorPassword = '';
+        this.twoFactorCode = '';
+        this.twoFactorBusy = false;
       }
     },
 
     generateBackupCodes() {
-      this.confirmAction(
-        'Regenerate Backup Codes',
-        'Are you sure you want to regenerate backup codes? This will invalidate all existing codes.',
-        () => {
-          this.showNotification('Backup codes regenerated and downloaded successfully', 'success');
-        }
-      );
+      this.openTwoFactorAction('recovery');
     },
 
-    viewSecurityLog() {
-      this.setActiveSection('activity');
+    openTwoFactorAction(action) {
+      this.clearTwoFactorSensitiveData();
+      this.twoFactorError = '';
+      this.twoFactorMessage = '';
+      this.twoFactorAction = action;
+      this.$nextTick(() => document.getElementById('twoFactorPassword')?.focus());
+    },
+
+    clearTwoFactorSensitiveData() {
+      this.twoFactorRevision++;
+      this.twoFactorPassword = '';
+      this.twoFactorCode = '';
+      this.enrollmentSecret = '';
+      this.enrollmentUri = '';
+      this.enrollmentQr = '';
+      this.enrollmentQrLoading = false;
+      this.enrollmentQrError = '';
+      this.backupCodes = [];
+    },
+
+    async renderEnrollmentQr() {
+      const uri = this.enrollmentUri;
+      if (!uri || this.enrollmentMethod !== 'authenticator') return;
+      this.enrollmentQrLoading = true;
+      this.enrollmentQrError = '';
+      try {
+        const qr = await createAuthenticatorQr(uri);
+        if (this.enrollmentUri === uri && this.twoFactorAction === 'confirm') this.enrollmentQr = qr;
+      } catch {
+        if (this.enrollmentUri === uri) this.enrollmentQrError = 'QR preview could not be generated. Use the manual setup key below.';
+      } finally {
+        if (this.enrollmentUri === uri) this.enrollmentQrLoading = false;
+      }
+    },
+
+    async twoFactorRequest(path, payload) {
+      const response = await fetch('/api/security/two-factor' + path, {
+        method: payload ? 'POST' : 'GET',
+        cache: 'no-store',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ?? '',
+        },
+        ...(payload ? { body: JSON.stringify(payload) } : {}),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(Object.values(data.errors ?? {}).flat()[0] || data.message || 'Unable to update two-factor settings.');
+      return data;
+    },
+
+    async submitTwoFactor() {
+      if (this.twoFactorBusy) return;
+      this.twoFactorBusy = true;
+      this.twoFactorError = '';
+      const revision = this.twoFactorRevision;
+      try {
+        const action = this.twoFactorAction;
+        const setup = action === 'setup' || action === 'switch_setup';
+        const data = await this.twoFactorRequest(setup ? '/setup' : '', {
+          replace: action === 'switch_setup',
+          action,
+          method: this.enrollmentMethod,
+          current_password: this.twoFactorPassword,
+          code: this.twoFactorCode,
+        });
+        ++this.statusRevision;
+        if (revision !== this.twoFactorRevision) { this.loadSecuritySettings(); return; }
+        this.twoFactorPassword = '';
+        this.twoFactorCode = '';
+        if (setup) {
+          this.enrollmentSecret = data.secret || '';
+          this.emailHint = data.email_hint || '';
+          this.enrollmentUri = data.otpauth_uri || '';
+          this.twoFactorAction = 'confirm';
+          this.twoFactorMessage = this.enrollmentMethod === 'email' ? `Enter the verification code sent to ${this.emailHint}. It expires in five minutes.` : 'Scan the QR code with your authenticator app. Re-enter your account password and the six-digit code from the new account to finish. Setup expires in 10 minutes.';
+          if (this.enrollmentMethod === 'authenticator') await this.renderEnrollmentQr();
+        } else {
+          this.clearTwoFactorSensitiveData();
+          this.backupCodes = data.recovery_codes || [];
+          this.securityData.twoFactor.app = data.enabled;
+          this.twoFactorRequired = data.required ?? this.twoFactorRequired;
+          this.twoFactorMethod = data.method || (data.enabled ? 'authenticator' : null);
+          this.selectedTwoFactorMethod = this.twoFactorMethod || this.selectedTwoFactorMethod;
+          this.recoveryCount = data.recovery_codes_remaining;
+          this.emailAvailable = data.email_available ?? this.emailAvailable;
+          this.twoFactorAction = '';
+          this.twoFactorMessage = data.enabled ? 'Two-factor authentication is enabled. Save your recovery codes securely; they are shown only once.' : 'Two-factor authentication is disabled.';
+          this.fetchActivity();
+          this.fetchSessions();
+        }
+      } catch (error) {
+        if (revision === this.twoFactorRevision) this.twoFactorError = error.message;
+        this.twoFactorPassword = '';
+        this.twoFactorCode = '';
+      } finally {
+        this.twoFactorBusy = false;
+      }
+    },
+
+    downloadBackupCodes() {
+      if (!this.backupCodes.length) return;
+      const url = URL.createObjectURL(new Blob(['Metis recovery codes — each code can be used once.\n\n' + this.backupCodes.join('\n')], { type: 'text/plain' }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'metis-recovery-codes.txt';
+      link.click();
+      URL.revokeObjectURL(url);
     },
 
     async emergencyLockdown() {
@@ -326,73 +474,105 @@ document.addEventListener('alpine:init', () => {
       this.showNotification('Security log exported', 'success');
     },
 
-    // Settings Management
-    loadSecuritySettings() {
-      const saved = localStorage.getItem('securitySettings');
-      if (!saved) {
-        return;
-      }
-      try {
-        const parsed = JSON.parse(saved);
-        if (!parsed || typeof parsed !== 'object') throw new Error('not an object');
-
-        if (parsed.securityData) {
-          if (parsed.securityData.twoFactor) {
-            this.securityData.twoFactor.app =
-              parsed.securityData.twoFactor.app ?? this.securityData.twoFactor.app;
-            this.securityData.twoFactor.sms =
-              parsed.securityData.twoFactor.sms ?? this.securityData.twoFactor.sms;
-          }
-        }
-      } catch (error) {
-        console.warn('Failed to load security settings:', error);
-        localStorage.removeItem('securitySettings');
-      }
+    clearMailSecrets() {
+      this.mailPassword = '';
+      this.mailCode = '';
+      for (const key of ['password', 'api_key', 'aws_key', 'aws_secret']) this.mailSettings[key] = '';
     },
 
-    saveSecuritySettings() {
-      const settings = {
-        securityData: this.securityData,
-      };
+    async mailRequest(path = '', payload) {
+      const response = await fetch('/api/security/mail' + path, {
+        method: payload ? 'POST' : 'GET', cache: 'no-store',
+        headers: { Accept: 'application/json', 'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ?? '' },
+        ...(payload ? { body: JSON.stringify(payload) } : {}),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(Object.values(data.errors ?? {}).flat()[0] || data.message || 'Unable to update mail configuration.');
+      return data;
+    },
 
+    applyMailSettings(data) {
+      this.clearMailSecrets();
+      this.mailConfigurationSaved = Boolean(data.configuration_saved);
+      this.mailSavedEnabled = Boolean(data.settings?.enabled);
+      this.mailSettings = { ...this.mailSettings, ...data.settings, clear_credentials: false };
+      this.mailProviders = data.providers || [];
+      this.mailExistingMailers = data.existing_mailers || [];
+      this.mailLoaded = true;
+    },
+
+    async loadMailSettings() {
+      this.mailError = '';
+      try { this.applyMailSettings(await this.mailRequest()); }
+      catch (error) { this.mailError = error.message; }
+    },
+
+    async saveMailSettings() {
+      if (this.mailBusy) return;
+      this.mailBusy = true;
+      this.mailError = ''; this.mailMessage = '';
       try {
-        localStorage.setItem('securitySettings', JSON.stringify(settings));
-        this.showNotification('Security settings saved', 'success');
-      } catch {
-        this.showNotification('Failed to save settings', 'error');
+        const data = await this.mailRequest('', { ...this.mailSettings, current_password: this.mailPassword, code: this.mailCode });
+        this.applyMailSettings(data);
+        this.mailMessage = data.message;
+        window.AdminApp?.notificationManager?.show(data.message || 'Mail configuration saved.', 'success');
+        await this.loadSecuritySettings();
+        this.fetchActivity();
+      } catch (error) {
+        this.mailError = error.message || 'Unable to save mail configuration. Please try again.';
+        window.AdminApp?.notificationManager?.show(this.mailError, 'error');
+      }
+      finally { this.clearMailSecrets(); this.mailBusy = false; }
+    },
+
+    async testMailSettings() {
+      if (this.mailBusy) return;
+      this.mailBusy = true;
+      this.mailError = ''; this.mailMessage = '';
+      try {
+        const data = await this.mailRequest('/test', { current_password: this.mailPassword, code: this.mailCode });
+        this.mailMessage = data.message;
+        this.fetchActivity();
+      } catch (error) { this.mailError = error.message; }
+      finally { this.clearMailSecrets(); this.mailBusy = false; }
+    },
+
+    async sendMailVerification() {
+      if (this.mailBusy) return;
+      this.mailBusy = true; this.mailError = ''; this.mailMessage = '';
+      try {
+        const data = await this.twoFactorRequest('/email', { action: 'mail_settings', current_password: this.mailPassword });
+        this.mailMessage = data.message;
+      } catch (error) { this.mailError = error.message; }
+      finally { this.mailPassword = ''; this.mailCode = ''; this.mailBusy = false; }
+    },
+
+    async loadSecuritySettings() {
+      const revision = ++this.statusRevision;
+      this.twoFactorError = '';
+      try {
+        const data = await this.twoFactorRequest('');
+        if (revision !== this.statusRevision) return;
+        this.twoFactorRequired = data.required ?? false;
+        this.securityData.twoFactor.app = data.enabled;
+        this.twoFactorMethod = data.method || (data.enabled ? 'authenticator' : null);
+        this.selectedTwoFactorMethod = this.twoFactorMethod || this.selectedTwoFactorMethod;
+        this.emailAvailable = data.email_available ?? false;
+        this.emailHint = data.email_hint || '';
+        this.recoveryCount = data.recovery_codes_remaining;
+        this.twoFactorLoaded = true;
+      } catch (error) {
+        if (revision !== this.statusRevision) return;
+        this.twoFactorLoaded = false;
+        this.twoFactorError = error.message;
       }
     },
 
     // Notifications
     showNotification(message, type = 'info') {
-      console.log(`[${type.toUpperCase()}] ${message}`);
-
-      // Dispatch a custom event for a global notification system
-      document.dispatchEvent(
-        new CustomEvent('showNotification', {
-          detail: { message, type },
-        })
-      );
+      window.AdminApp?.notificationManager?.show(message, type);
     },
   }));
 
-  // Also register search and theme components for this page
-  Alpine.data('searchComponent', createSearchComponent({ getResults: () => [] }));
-
-  Alpine.data('themeSwitch', () => ({
-    currentTheme: 'light',
-
-    init() {
-      this.currentTheme =
-        document.documentElement.getAttribute('data-bs-theme') ||
-        localStorage.getItem('theme') ||
-        'light';
-    },
-
-    toggle() {
-      this.currentTheme = this.currentTheme === 'light' ? 'dark' : 'light';
-      document.documentElement.setAttribute('data-bs-theme', this.currentTheme);
-      localStorage.setItem('theme', this.currentTheme);
-    },
-  }));
 });

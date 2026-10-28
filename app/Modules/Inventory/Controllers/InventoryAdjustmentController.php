@@ -9,6 +9,7 @@ use App\Modules\Catalog\Models\Warehouse;
 use App\Modules\Core\Controllers\Controller;
 use App\Modules\Inventory\Models\InventoryAdjustment;
 use App\Modules\Inventory\Models\Stock;
+use App\Services\EnsureRecordVisibility;
 use App\Services\InventoryService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -22,10 +23,12 @@ class InventoryAdjustmentController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
+            new Middleware(EnsureRecordVisibility::class),
             new Middleware('permission:inventoryadjustment-view', only: ['index', 'show', 'options']),
             new Middleware('permission:inventoryadjustment-create', only: ['store']),
-            new Middleware('permission:inventoryadjustment-edit', only: ['update', 'approve', 'reject']),
-            new Middleware('permission:inventoryadjustment-edit|inventoryadjustment-delete', only: ['bulkAction']),
+            new Middleware('permission:inventoryadjustment-edit', only: ['update']),
+            new Middleware('permission:inventoryadjustment-approve', only: ['approve', 'reject']),
+            new Middleware('permission:inventoryadjustment-approve|inventoryadjustment-delete', only: ['bulkAction']),
             new Middleware('permission:inventoryadjustment-delete', only: ['destroy']),
         ];
     }
@@ -109,7 +112,7 @@ class InventoryAdjustmentController extends Controller implements HasMiddleware
                     } elseif (($lobState = $request->user()?->lob_state_name) && $wh->state !== $lobState) {
                         $fail('Unauthorized warehouse selection.');
                     }
-                }
+                },
             ],
             'reason' => 'required|string|max:255',
             'items' => 'required|array|min:1',
@@ -172,7 +175,7 @@ class InventoryAdjustmentController extends Controller implements HasMiddleware
                     } elseif (($lobState = $request->user()?->lob_state_name) && $wh->state !== $lobState) {
                         $fail('Unauthorized warehouse selection.');
                     }
-                }
+                },
             ],
             'reason' => 'required|string|max:255',
             'items' => 'required|array|min:1',
@@ -240,7 +243,7 @@ class InventoryAdjustmentController extends Controller implements HasMiddleware
         $action = $validated['action'];
         $ids = $validated['ids'];
 
-        abort_unless($request->user()?->can($action === 'delete' ? 'inventoryadjustment-delete' : 'inventoryadjustment-edit'), 403);
+        abort_unless($request->user()?->can($action === 'delete' ? 'inventoryadjustment-delete' : 'inventoryadjustment-approve'), 403);
         $adjustments = InventoryAdjustment::with('items')->whereIn('id', $ids)->get();
         $processedCount = 0;
         $failedCount = 0;

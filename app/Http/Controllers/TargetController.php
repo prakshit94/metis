@@ -2,16 +2,25 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Target;
 use App\Exports\TargetsExport;
 use App\Imports\TargetsImport;
+use App\Models\Target;
 use App\Modules\Core\Controllers\Controller;
+use App\Modules\Users\Models\Department;
+use App\Modules\Users\Models\Team;
+use App\Modules\Users\Models\User;
 use App\Services\TargetAchievementService;
+use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Maatwebsite\Excel\Facades\Excel;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class TargetController extends Controller implements HasMiddleware
 {
@@ -20,7 +29,8 @@ class TargetController extends Controller implements HasMiddleware
         return [
             new Middleware('permission:target-view|target-view-all', only: ['index']),
             new Middleware('permission:target-export', only: ['export']),
-            new Middleware('permission:target-create', only: ['create', 'store', 'importForm', 'importTemplate', 'import']),
+            new Middleware('permission:target-create', only: ['create', 'store']),
+            new Middleware('permission:target-import', only: ['importForm', 'importTemplate', 'import']),
             new Middleware('permission:target-edit', only: ['edit', 'update', 'recalculate']),
             new Middleware('permission:target-delete', only: ['destroy']),
         ];
@@ -39,11 +49,11 @@ class TargetController extends Controller implements HasMiddleware
         ]);
 
         $query = Target::with('targetable');
-        
+
         $user = auth()->user();
-        if ($user && !$user->hasAnyRole(['Super Admin', 'Admin']) && !$user->can('target-view-all')) {
+        if ($user && ! $user->hasAnyRole(['Super Admin', 'Admin']) && ! $user->can('target-view-all')) {
             $query->where('targetable_type', $user->getMorphClass())
-                  ->where('targetable_id', $user->id);
+                ->where('targetable_id', $user->id);
         }
 
         if ($request->filled('metric_type')) {
@@ -60,21 +70,21 @@ class TargetController extends Controller implements HasMiddleware
             $query->whereMonth('start_date', $month);
         }
 
-        $currentMonth = (int)date('n');
-        $currentYear = (int)date('Y');
+        $currentMonth = (int) date('n');
+        $currentYear = (int) date('Y');
         $defaultFinancialYear = $currentMonth < 4 ? $currentYear - 1 : $currentYear;
         $financialYear = $request->input('financial_year', $defaultFinancialYear);
 
         if ($financialYear) {
-            $startYear = (int)$financialYear;
-            $start = \Carbon\Carbon::createFromDate($startYear, 4, 1)->startOfDay();
-            $end = \Carbon\Carbon::createFromDate($startYear + 1, 3, 31)->endOfDay();
+            $startYear = (int) $financialYear;
+            $start = Carbon::createFromDate($startYear, 4, 1)->startOfDay();
+            $end = Carbon::createFromDate($startYear + 1, 3, 31)->endOfDay();
             $query->whereBetween('start_date', [$start, $end]);
         }
 
         // For daily view: only show today and past days — hide upcoming/future dates
         if ($periodType === 'daily') {
-            $query->where('start_date', '<=', \Carbon\Carbon::today()->endOfDay());
+            $query->where('start_date', '<=', Carbon::today()->endOfDay());
         }
 
         if ($request->filled('search')) {
@@ -82,9 +92,9 @@ class TargetController extends Controller implements HasMiddleware
             $query->whereHasMorph('targetable', '*', function ($q, $type) use ($searches) {
                 $q->where(function ($q2) use ($type, $searches) {
                     foreach ($searches as $search) {
-                        if ($type === \App\Modules\Users\Models\User::class) {
+                        if ($type === User::class) {
                             $q2->orWhere('name', 'like', "%{$search}%")->orWhere('email', 'like', "%{$search}%");
-                        } elseif ($type === \App\Modules\Users\Models\Team::class || $type === \App\Modules\Users\Models\Department::class) {
+                        } elseif ($type === Team::class || $type === Department::class) {
                             $q2->orWhere('name', 'like', "%{$search}%");
                         }
                     }
@@ -93,7 +103,7 @@ class TargetController extends Controller implements HasMiddleware
         }
 
         $baseStatsQuery = clone $query;
-        
+
         $perPage = $request->integer('per_page', 20);
         $targets = $query->orderByDesc('start_date')->orderByDesc('id')->paginate($perPage);
         $this->addPaceMetrics($targets->getCollection());
@@ -115,9 +125,15 @@ class TargetController extends Controller implements HasMiddleware
 
         if ($isGlobalViewer) {
             $availableAssignees = [
-                'User' => \App\Modules\Users\Models\User::select('id', 'name', 'email')->get()->map(function($u) { return ['id' => $u->id, 'name' => $u->name ?? $u->email]; }),
-                'Team' => \App\Modules\Users\Models\Team::select('id', 'name')->get()->map(function($t) { return ['id' => $t->id, 'name' => $t->name]; }),
-                'Department' => \App\Modules\Users\Models\Department::select('id', 'name')->get()->map(function($d) { return ['id' => $d->id, 'name' => $d->name]; }),
+                'User' => User::select('id', 'name', 'email')->get()->map(function ($u) {
+                    return ['id' => $u->id, 'name' => $u->name ?? $u->email];
+                }),
+                'Team' => Team::select('id', 'name')->get()->map(function ($t) {
+                    return ['id' => $t->id, 'name' => $t->name];
+                }),
+                'Department' => Department::select('id', 'name')->get()->map(function ($d) {
+                    return ['id' => $d->id, 'name' => $d->name];
+                }),
             ];
         } else {
             $availableAssignees = [
@@ -125,6 +141,10 @@ class TargetController extends Controller implements HasMiddleware
                 'Team' => collect(),
                 'Department' => collect(),
             ];
+        }
+
+        if ($request->wantsJson()) {
+            return response()->json(compact('targets', 'stats', 'availableAssignees'));
         }
 
         return view('targets.index', compact('targets', 'stats', 'availableAssignees'));
@@ -168,15 +188,15 @@ class TargetController extends Controller implements HasMiddleware
         $validated = $request->validate($rules);
 
         if ($validated['targetable_type'] === 'User') {
-            $validated['targetable_type'] = \App\Modules\Users\Models\User::class;
+            $validated['targetable_type'] = User::class;
         } elseif ($validated['targetable_type'] === 'Team') {
-            $validated['targetable_type'] = \App\Modules\Users\Models\Team::class;
+            $validated['targetable_type'] = Team::class;
         } elseif ($validated['targetable_type'] === 'Department') {
-            $validated['targetable_type'] = \App\Modules\Users\Models\Department::class;
+            $validated['targetable_type'] = Department::class;
         }
 
         $user = auth()->user();
-        if ($user && !$user->hasAnyRole(['Super Admin', 'Admin']) && !$user->can('target-view-all')) {
+        if ($user && ! $user->hasAnyRole(['Super Admin', 'Admin']) && ! $user->can('target-view-all')) {
             if ($validated['targetable_type'] !== $user->getMorphClass() || count($validated['targetable_ids']) !== 1 || (int) $validated['targetable_ids'][0] !== $user->id) {
                 abort(403, 'Unauthorized action. You can only assign targets to yourself.');
             }
@@ -187,14 +207,14 @@ class TargetController extends Controller implements HasMiddleware
                 $this->createTargetChain($validated, $id);
 
                 if ($validated['period_type'] === 'yearly') {
-                    $rangeStart = \Carbon\Carbon::createFromDate((int) $validated['target_year'], 4, 1)->startOfDay();
+                    $rangeStart = Carbon::createFromDate((int) $validated['target_year'], 4, 1)->startOfDay();
                     $rangeEnd = $rangeStart->copy()->addYear()->subDay()->endOfDay();
                 } elseif ($validated['period_type'] === 'monthly') {
-                    $rangeStart = \Carbon\Carbon::createFromDate((int) $validated['target_year'], (int) $validated['target_month'], 1)->startOfDay();
+                    $rangeStart = Carbon::createFromDate((int) $validated['target_year'], (int) $validated['target_month'], 1)->startOfDay();
                     $rangeEnd = $rangeStart->copy()->endOfMonth()->endOfDay();
                 } else {
-                    $rangeStart = \Carbon\Carbon::parse($validated['start_date'])->startOfDay();
-                    $rangeEnd = \Carbon\Carbon::parse($validated['end_date'])->endOfDay();
+                    $rangeStart = Carbon::parse($validated['start_date'])->startOfDay();
+                    $rangeEnd = Carbon::parse($validated['end_date'])->endOfDay();
                 }
 
                 $this->recalculateTargetsInRange(
@@ -206,6 +226,10 @@ class TargetController extends Controller implements HasMiddleware
                 );
             }
         });
+
+        if (request()->wantsJson()) {
+            return response()->json(['message' => 'Targets created successfully.']);
+        }
 
         return redirect()->route('targets.index')->with('success', 'Targets created successfully.');
     }
@@ -221,10 +245,10 @@ class TargetController extends Controller implements HasMiddleware
         ];
 
         if ($data['period_type'] === 'yearly') {
-            $startYear = (int)$data['target_year'];
-            $startDate = \Carbon\Carbon::createFromDate($startYear, 4, 1)->startOfDay();
-            $endDate = \Carbon\Carbon::createFromDate($startYear + 1, 3, 31)->endOfDay();
-            
+            $startYear = (int) $data['target_year'];
+            $startDate = Carbon::createFromDate($startYear, 4, 1)->startOfDay();
+            $endDate = Carbon::createFromDate($startYear + 1, 3, 31)->endOfDay();
+
             $target = $this->firstOrRestoreTarget([
                 'targetable_type' => $baseData['targetable_type'],
                 'targetable_id' => $baseData['targetable_id'],
@@ -235,7 +259,7 @@ class TargetController extends Controller implements HasMiddleware
             ]);
             $target->target_amount = $data['target_amount'];
             $target->status = $baseData['status'];
-            if (!$target->exists || isset($data['achieved_amount'])) {
+            if (! $target->exists || isset($data['achieved_amount'])) {
                 $target->achieved_amount = $baseData['achieved_amount'];
             }
             $target->save();
@@ -249,7 +273,7 @@ class TargetController extends Controller implements HasMiddleware
                 ];
             }
             $monthlyAmounts = $this->allocateAmountByWorkingDays($data['target_amount'], $monthPeriods);
-            
+
             for ($m = 0; $m < 12; $m++) {
                 $monthDate = $monthPeriods[$m]['start'];
                 $monthData = $data;
@@ -262,7 +286,7 @@ class TargetController extends Controller implements HasMiddleware
             }
 
         } elseif ($data['period_type'] === 'monthly') {
-            $startDate = \Carbon\Carbon::createFromDate($data['target_year'], $data['target_month'], 1)->startOfDay();
+            $startDate = Carbon::createFromDate($data['target_year'], $data['target_month'], 1)->startOfDay();
             $endDate = $startDate->copy()->endOfMonth();
 
             $target = $this->firstOrRestoreTarget([
@@ -275,7 +299,7 @@ class TargetController extends Controller implements HasMiddleware
             ]);
             $target->target_amount = $data['target_amount'];
             $target->status = $baseData['status'];
-            if (!$target->exists || isset($data['achieved_amount'])) {
+            if (! $target->exists || isset($data['achieved_amount'])) {
                 $target->achieved_amount = $baseData['achieved_amount'];
             }
             $target->save();
@@ -311,7 +335,7 @@ class TargetController extends Controller implements HasMiddleware
                     ]);
                     $dTarget->target_amount = $dailyAmounts[$index];
                     $dTarget->status = $baseData['status'];
-                    if (!$dTarget->exists || isset($data['achieved_amount'])) {
+                    if (! $dTarget->exists || isset($data['achieved_amount'])) {
                         $dTarget->achieved_amount = $baseData['achieved_amount'];
                     }
                     $dTarget->save();
@@ -319,8 +343,8 @@ class TargetController extends Controller implements HasMiddleware
             }
         } else {
             if ($data['period_type'] === 'daily') {
-                $startDate = \Carbon\Carbon::parse($data['start_date'])->startOfDay();
-                $endDate = \Carbon\Carbon::parse($data['end_date'])->endOfDay();
+                $startDate = Carbon::parse($data['start_date'])->startOfDay();
+                $endDate = Carbon::parse($data['end_date'])->endOfDay();
 
                 $workingDays = [];
                 $current = $startDate->copy();
@@ -353,7 +377,7 @@ class TargetController extends Controller implements HasMiddleware
                         ]);
                         $dTarget->target_amount = $dailyAmounts[$index];
                         $dTarget->status = $baseData['status'];
-                        if (!$dTarget->exists || isset($data['achieved_amount'])) {
+                        if (! $dTarget->exists || isset($data['achieved_amount'])) {
                             $dTarget->achieved_amount = $baseData['achieved_amount'];
                         }
                         $dTarget->save();
@@ -365,12 +389,12 @@ class TargetController extends Controller implements HasMiddleware
                     'targetable_id' => $baseData['targetable_id'],
                     'metric_type' => $baseData['metric_type'],
                     'period_type' => $data['period_type'],
-                    'start_date' => \Carbon\Carbon::parse($data['start_date']),
-                    'end_date' => \Carbon\Carbon::parse($data['end_date']),
+                    'start_date' => Carbon::parse($data['start_date']),
+                    'end_date' => Carbon::parse($data['end_date']),
                 ]);
                 $target->target_amount = $data['target_amount'];
                 $target->status = $baseData['status'];
-                if (!$target->exists || isset($data['achieved_amount'])) {
+                if (! $target->exists || isset($data['achieved_amount'])) {
                     $target->achieved_amount = $baseData['achieved_amount'];
                 }
                 $target->save();
@@ -386,9 +410,9 @@ class TargetController extends Controller implements HasMiddleware
     public function importTemplate()
     {
         $headers = [
-            'Content-Type'        => 'text/csv',
+            'Content-Type' => 'text/csv',
             'Content-Disposition' => 'attachment; filename="targets_import_template.csv"',
-            'Cache-Control'       => 'no-cache',
+            'Cache-Control' => 'no-cache',
         ];
 
         // Columns exactly as the importer expects them
@@ -443,16 +467,23 @@ class TargetController extends Controller implements HasMiddleware
         try {
             Excel::import($importer, $request->file('file'));
         } catch (\Exception $e) {
+            if ($request->wantsJson()) {
+                return response()->json(['message' => 'Target import failed.', 'errors' => ['file' => [$e->getMessage()]]], 422);
+            }
+
             return redirect()->route('targets.index')
-                ->withErrors(['import' => 'Import failed: ' . $e->getMessage()]);
+                ->withErrors(['import' => 'Import failed: '.$e->getMessage()]);
         }
 
         $skipped = $importer->skippedRows;
+        if ($request->wantsJson()) {
+            return response()->json(['message' => 'Target import completed.', 'warnings' => $skipped]);
+        }
 
-        if (!empty($skipped)) {
+        if (! empty($skipped)) {
             // Flash each skipped row reason as a separate error message
             return redirect()->route('targets.index')
-                ->with('success', count($skipped) . ' row(s) had issues (see warnings below). Any valid rows were imported successfully.')
+                ->with('success', count($skipped).' row(s) had issues (see warnings below). Any valid rows were imported successfully.')
                 ->withErrors($skipped);
         }
 
@@ -460,7 +491,7 @@ class TargetController extends Controller implements HasMiddleware
             ->with('success', 'Targets imported successfully.');
     }
 
-    public function export(Request $request): \Symfony\Component\HttpFoundation\BinaryFileResponse
+    public function export(Request $request): BinaryFileResponse
     {
         $request->validate([
             'period_type' => 'nullable|in:daily,monthly,yearly',
@@ -475,7 +506,7 @@ class TargetController extends Controller implements HasMiddleware
         $metricType = $request->query('metric_type');
         $financialYear = $request->query('financial_year');
 
-        $fileName = 'targets_' . ($periodType ?: 'all') . '_' . date('Ymd_His') . '.xlsx';
+        $fileName = 'targets_'.($periodType ?: 'all').'_'.date('Ymd_His').'.xlsx';
 
         return Excel::download(new TargetsExport(
             $periodType,
@@ -486,7 +517,7 @@ class TargetController extends Controller implements HasMiddleware
         ), $fileName);
     }
 
-    public function recalculate(Request $request, TargetAchievementService $service): \Illuminate\Http\RedirectResponse
+    public function recalculate(Request $request, TargetAchievementService $service): RedirectResponse|JsonResponse
     {
         $request->validate([
             'metric_type' => 'nullable|in:sales_revenue,orders_count,invoice_collection,payment_collection,calls_made',
@@ -498,11 +529,11 @@ class TargetController extends Controller implements HasMiddleware
         ]);
 
         $query = Target::query();
-        
+
         $user = auth()->user();
-        if ($user && !$user->hasAnyRole(['Super Admin', 'Admin']) && !$user->can('target-view-all')) {
+        if ($user && ! $user->hasAnyRole(['Super Admin', 'Admin']) && ! $user->can('target-view-all')) {
             $query->where('targetable_type', $user->getMorphClass())
-                  ->where('targetable_id', $user->id);
+                ->where('targetable_id', $user->id);
         }
 
         // Recalculate every target matching the active filters, across all pages.
@@ -519,13 +550,13 @@ class TargetController extends Controller implements HasMiddleware
 
         $financialYear = $request->input('financial_year');
         if ($financialYear) {
-            $start = \Carbon\Carbon::createFromDate((int) $financialYear, 4, 1)->startOfDay();
+            $start = Carbon::createFromDate((int) $financialYear, 4, 1)->startOfDay();
             $end = $start->copy()->addYear()->subDay()->endOfDay();
             $query->whereBetween('start_date', [$start, $end]);
         }
 
         if ($periodType === 'daily') {
-            $query->where('start_date', '<=', \Carbon\Carbon::today()->endOfDay());
+            $query->where('start_date', '<=', Carbon::today()->endOfDay());
         }
 
         if ($request->filled('search')) {
@@ -533,10 +564,10 @@ class TargetController extends Controller implements HasMiddleware
             $query->whereHasMorph('targetable', '*', function ($q, $type) use ($searches) {
                 $q->where(function ($q2) use ($type, $searches) {
                     foreach ($searches as $search) {
-                        if ($type === \App\Modules\Users\Models\User::class) {
+                        if ($type === User::class) {
                             $q2->orWhere('name', 'like', "%{$search}%")
                                 ->orWhere('email', 'like', "%{$search}%");
-                        } elseif ($type === \App\Modules\Users\Models\Team::class || $type === \App\Modules\Users\Models\Department::class) {
+                        } elseif ($type === Team::class || $type === Department::class) {
                             $q2->orWhere('name', 'like', "%{$search}%");
                         }
                     }
@@ -550,6 +581,10 @@ class TargetController extends Controller implements HasMiddleware
             $count++;
         });
 
+        if ($request->wantsJson()) {
+            return response()->json(['message' => "Recalculated {$count} target(s).", 'count' => $count]);
+        }
+
         return redirect()->back()->with('success', "Recalculated achieved amounts for {$count} target(s) successfully.");
     }
 
@@ -561,7 +596,7 @@ class TargetController extends Controller implements HasMiddleware
     public function update(Request $request, Target $target)
     {
         $user = auth()->user();
-        if ($user && !$user->hasAnyRole(['Super Admin', 'Admin']) && !$user->can('target-view-all')) {
+        if ($user && ! $user->hasAnyRole(['Super Admin', 'Admin']) && ! $user->can('target-view-all')) {
             if ($target->targetable_type !== $user->getMorphClass() || $target->targetable_id !== $user->id) {
                 abort(403, 'Unauthorized action.');
             }
@@ -593,7 +628,7 @@ class TargetController extends Controller implements HasMiddleware
                 }
             } elseif ($target->period_type === 'monthly' && $oldAmount !== (float) $validated['target_amount']) {
                 $startYear = $target->start_date->month < 4 ? $target->start_date->year - 1 : $target->start_date->year;
-            
+
                 $yearlyTarget = Target::where('targetable_type', $target->targetable_type)
                     ->where('targetable_id', $target->targetable_id)
                     ->where('metric_type', $target->metric_type)
@@ -606,7 +641,7 @@ class TargetController extends Controller implements HasMiddleware
                     $monthlyTargetCents = (int) round((float) $target->target_amount * 100);
                     $yearlyTargetCents = (int) round((float) $yearlyTarget->target_amount * 100);
                     if ($monthlyTargetCents > $yearlyTargetCents) {
-                        throw \Illuminate\Validation\ValidationException::withMessages([
+                        throw ValidationException::withMessages([
                             'target_amount' => 'The monthly target cannot exceed its annual target. Increase the annual target first.',
                         ]);
                     }
@@ -628,7 +663,7 @@ class TargetController extends Controller implements HasMiddleware
                             $this->syncDailyTargets($other);
                         }
                     } elseif ($monthlyTargetCents !== $yearlyTargetCents) {
-                        throw \Illuminate\Validation\ValidationException::withMessages([
+                        throw ValidationException::withMessages([
                             'target_amount' => 'This fiscal year has no other monthly target allocations to rebalance.',
                         ]);
                     }
@@ -668,6 +703,10 @@ class TargetController extends Controller implements HasMiddleware
                     ->each(fn (Target $day) => app(TargetAchievementService::class)->recalculate($day));
             }
         });
+
+        if (request()->wantsJson()) {
+            return response()->json(['message' => 'Target updated successfully.']);
+        }
 
         return redirect()->route('targets.index')->with('success', 'Target updated successfully.');
     }
@@ -749,9 +788,9 @@ class TargetController extends Controller implements HasMiddleware
         return $target;
     }
 
-    private function addPaceMetrics(\Illuminate\Support\Collection $targets): void
+    private function addPaceMetrics(Collection $targets): void
     {
-        $today = \Carbon\Carbon::today();
+        $today = Carbon::today();
 
         foreach ($targets as $target) {
             $start = $target->start_date->copy()->startOfDay();
@@ -778,7 +817,7 @@ class TargetController extends Controller implements HasMiddleware
         }
     }
 
-    private function workingDaysBetween(\Carbon\Carbon $start, \Carbon\Carbon $end): int
+    private function workingDaysBetween(Carbon $start, Carbon $end): int
     {
         if ($end->lessThan($start)) {
             return 0;
@@ -812,13 +851,17 @@ class TargetController extends Controller implements HasMiddleware
     public function destroy(Target $target)
     {
         $user = auth()->user();
-        if ($user && !$user->hasAnyRole(['Super Admin', 'Admin']) && !$user->can('target-view-all')) {
+        if ($user && ! $user->hasAnyRole(['Super Admin', 'Admin']) && ! $user->can('target-view-all')) {
             if ($target->targetable_type !== $user->getMorphClass() || $target->targetable_id !== $user->id) {
                 abort(403, 'Unauthorized action.');
             }
         }
-        
+
         $target->delete();
+        if (request()->wantsJson()) {
+            return response()->json(['message' => 'Target deleted successfully.']);
+        }
+
         return redirect()->route('targets.index')->with('success', 'Target deleted successfully.');
     }
 }

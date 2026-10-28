@@ -22,7 +22,7 @@
             <button type="button" class="btn btn-outline-primary shadow-sm bg-body-tertiary" onclick="window.location.reload()" data-bs-toggle="tooltip" title="Refresh data" aria-label="Refresh targets">
                 <i class="bi bi-arrow-clockwise icon-hover"></i>
             </button>
-            @can('target-create')
+            @can('target-import')
             <button class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#importModal">
                 <i class="bi bi-upload me-2"></i>Import
             </button>

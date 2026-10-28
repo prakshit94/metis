@@ -11,9 +11,11 @@
             <p class="text-muted mb-0">Track incoming transactions and capture statuses</p>
         </div>
         <div class="d-flex gap-2">
-            <button type="button" class="btn btn-outline-secondary" @click.prevent="openImportModal">
+            @can('payments.import')
+<button type="button" class="btn btn-outline-secondary" @click.prevent="openImportModal">
                 <i class="bi bi-upload me-2"></i>Import
             </button>
+@endcan
             <button type="button" class="btn btn-outline-secondary">
                 <i class="bi bi-download me-2"></i>Export
             </button>
@@ -126,15 +128,21 @@
                         </span>
                     </div>
                     <div class="d-flex flex-wrap gap-2">
-                        <button class="btn btn-sm btn-outline-info" @click="exportSelectedPayments()" :disabled="isSubmitting" title="Export Selected to CSV">
+                        @can('payments.export')
+<button class="btn btn-sm btn-outline-info" @click="exportSelectedPayments()" :disabled="isSubmitting" title="Export Selected to CSV">
                             <i class="bi bi-download me-1"></i>Export CSV
                         </button>
-                        <button class="btn btn-sm btn-primary" @click="bulkUpdateStatus('completed')" :disabled="isSubmitting" title="Complete authorized payments">
+@endcan
+                        @can('payments.edit')
+<button class="btn btn-sm btn-primary" @click="bulkUpdateStatus('completed')" :disabled="isSubmitting" title="Complete authorized payments">
                             <i class="bi bi-cash me-1"></i>Complete Selected
                         </button>
-                        <button class="btn btn-sm btn-outline-danger" @click="bulkUpdateStatus('failed')" :disabled="isSubmitting" title="Mark as failed">
+@endcan
+                        @can('payments.edit')
+<button class="btn btn-sm btn-outline-danger" @click="bulkUpdateStatus('failed')" :disabled="isSubmitting" title="Mark as failed">
                             <i class="bi bi-x-circle me-1"></i>Mark Failed
                         </button>
+@endcan
                         <button class="btn btn-sm btn-outline-secondary" @click="selectedPayments = []" title="Clear selection">
                             <i class="bi bi-x-lg"></i>
                         </button>
@@ -242,9 +250,11 @@
                                             <li><a class="dropdown-item" href="#" @click.prevent="viewDetails(payment)">
                                                 <i class="bi bi-eye me-2"></i>View Details
                                             </a></li>
-                                            <li><a class="dropdown-item" href="#" @click.prevent="editPayment(payment)">
+                                            <li>@can('payments.edit')
+<a class="dropdown-item" href="#" @click.prevent="editPayment(payment)">
                                                 <i class="bi bi-pencil-square me-2"></i>Edit
-                                            </a></li>
+                                            </a>
+@endcan</li>
                                             <template x-if="payment.status === 'authorized'">
                                                 <li><a class="dropdown-item" href="#" @click.prevent="updatePaymentStatus(payment.id, 'completed')">
                                                     <i class="bi bi-cash me-2"></i>Complete Payment

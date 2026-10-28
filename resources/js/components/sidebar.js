@@ -51,10 +51,14 @@ export class SidebarManager {
     return window.innerWidth < MOBILE_BREAKPOINT_PX;
   }
 
+  readCollapsedState() {
+    try { return localStorage.getItem('sidebar-collapsed'); } catch (_) { return null; }
+  }
+
   init() {
     // Restore desktop collapsed state
     if (!this.isMobile) {
-      const isCollapsed = localStorage.getItem('sidebar-collapsed') === 'true';
+      const isCollapsed = this.readCollapsedState() === 'true';
       if (isCollapsed) {
         this.wrapper.classList.add('sidebar-collapsed');
         this.toggleButton.classList.add('is-active');
@@ -128,14 +132,14 @@ export class SidebarManager {
   collapseDesktop() {
     this.wrapper.classList.add('sidebar-collapsed');
     this.toggleButton.classList.add('is-active');
-    localStorage.setItem('sidebar-collapsed', 'true');
+    try { localStorage.setItem('sidebar-collapsed', 'true'); } catch (_) {}
     this.syncAria();
   }
 
   expandDesktop() {
     this.wrapper.classList.remove('sidebar-collapsed');
     this.toggleButton.classList.remove('is-active');
-    localStorage.setItem('sidebar-collapsed', 'false');
+    try { localStorage.setItem('sidebar-collapsed', 'false'); } catch (_) {}
     this.syncAria();
   }
 
@@ -179,7 +183,7 @@ export class SidebarManager {
       this.backdrop.classList.remove('show');
 
       // Restore desktop collapsed state
-      const isCollapsed = localStorage.getItem('sidebar-collapsed') === 'true';
+      const isCollapsed = this.readCollapsedState() === 'true';
       this.wrapper.classList.toggle('sidebar-collapsed', isCollapsed);
       this.toggleButton.classList.toggle('is-active', isCollapsed);
     } else {

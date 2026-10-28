@@ -16,8 +16,8 @@ use Spatie\Activitylog\LogOptions;
 
 class Payment extends Model implements Auditable
 {
-    use LogsActivity;
     use AuditableTrait;
+    use LogsActivity;
     use SoftDeletes;
 
     protected $fillable = [
@@ -56,8 +56,8 @@ class Payment extends Model implements Auditable
     {
         $syncInvoice = function ($payment) {
             if ($payment->invoice_id) {
-                $invoice = $payment->invoice;
-                if ($invoice) {
+                $invoice = Invoice::whereKey($payment->invoice_id)->lockForUpdate()->first();
+                if ($invoice && $invoice->status !== 'cancelled') {
                     $paid = $invoice->payments()->where('status', 'completed')->sum('amount');
                     if ($paid >= $invoice->net_amount) {
                         $invoice->update(['status' => 'paid']);
