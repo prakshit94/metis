@@ -36,6 +36,17 @@ class VillageController extends Controller implements HasMiddleware
      */
     public function index(Request $request): JsonResponse
     {
+        $request->validate([
+            'sort_by' => ['sometimes', 'string'], 'sort_dir' => ['sometimes', 'string'],
+            'page' => ['sometimes', 'integer', 'min:1'],
+            'per_page' => ['sometimes', function ($attribute, $value, $fail): void {
+                if (!is_scalar($value) || !preg_match('/^(all|-1|[0-9]+)$/', (string) $value)) $fail('Invalid page size.');
+            }],
+            'search' => ['nullable', 'string'], 'state' => ['nullable', 'string'],
+            'district' => ['nullable', 'string'], 'taluka' => ['nullable', 'string'],
+            'village' => ['nullable', 'string'], 'office_type_code' => ['nullable', 'string'],
+            'deleted' => ['nullable', 'string'],
+        ]);
         $sortMap = [
             'id' => 'id',
             'village_name' => 'village_name',
@@ -216,7 +227,9 @@ class VillageController extends Controller implements HasMiddleware
         if ($perPage === -1) {
             $perPage = max((int) ($counts->total ?? 0), 1);
         }
-        $villages = $query->orderBy($sortBy, $sortDir)->paginate($perPage);
+        $query->orderBy($sortBy, $sortDir);
+        if ($sortBy !== 'id') $query->orderBy('id', $sortDir);
+        $villages = $query->paginate($perPage);
 
         // Include filters lists with caching
         // For LOB users, restrict the state dropdown to their own state
@@ -278,10 +291,22 @@ class VillageController extends Controller implements HasMiddleware
     /**
      * Store a new village.
      */
-    public function store(Request $request, IndiaPostProvider $indiaPostProvider): JsonResponse
+    public function store(Request $request): JsonResponse
     {
-        $validated = $request->validate([
-            'village_name' => ['nullable', 'string', 'max:255'],
+        $validated = $request->validate($this->villageRules());
+        $validated = $this->validateVillageState($validated, $request);
+        $village = Village::create($validated);
+
+        return response()->json([
+            'message' => "Village [{$village->village_name}] created successfully. India Post sync can be run manually.",
+            'data' => $village,
+        ], 201);
+    }
+
+    private function villageRules(): array
+    {
+        return [
+            'village_name' => ['required', 'string', 'max:255'],
             'pincode' => ['required', 'string', 'max:10'],
             'post_so_name' => ['nullable', 'string', 'max:255'],
             'taluka_name' => ['nullable', 'string', 'max:255'],
@@ -291,94 +316,20 @@ class VillageController extends Controller implements HasMiddleware
             'office_type_code' => ['nullable', 'string', 'max:255'],
             'delivery_office_flag' => ['nullable', 'boolean'],
             'is_rolled_out' => ['nullable', 'boolean'],
-        ]);
+        ];
+    }
 
-        $offices = [];
-        if (preg_match('/^\d{6}$/', $validated['pincode'])) {
-            try {
-                $offices = $this->indiaPostOfficesForPincode($validated['pincode'], $indiaPostProvider);
-                if ($lobStateName = $request->user()?->lob_state_name) {
-                    $offices = array_values(array_filter($offices, fn (array $office) =>
-                        strcasecmp((string) $office['state_name'], $lobStateName) === 0
-                    ));
-                }
-            } catch (\Throwable $exception) {
-                Log::warning('India Post village auto-import failed.', [
-                    'pincode' => $validated['pincode'],
-                    'error' => $exception->getMessage(),
-                ]);
-            }
-        }
-
-        if ($offices === []) {
-            if (blank($validated['village_name'] ?? null)) {
+    private function validateVillageState(array $data, Request $request): array
+    {
+        if ($state = $request->user()?->lob_state_name) {
+            if (filled($data['state_name'] ?? null) && strcasecmp(trim($data['state_name']), $state) !== 0) {
                 throw \Illuminate\Validation\ValidationException::withMessages([
-                    'village_name' => 'No matching India Post records were found. Enter a village name to create the village manually.',
+                    'state_name' => 'Villages must remain within your assigned state.',
                 ]);
             }
-
-            $village = Village::create($validated);
-
-            return response()->json([
-                'message' => "Village [{$village->village_name}] created successfully.",
-                'data' => $village,
-            ], 201);
+            $data['state_name'] = $state;
         }
-
-        $createdVillages = [];
-        $existingCount = 0;
-        DB::transaction(function () use ($offices, &$createdVillages, &$existingCount): void {
-            $processedVillageIds = [];
-            foreach ($offices as $officeData) {
-                $existingQuery = Village::where('pincode', $officeData['pincode']);
-                if ($officeData['office_id']) {
-                    $existingQuery->where('office_id', $officeData['office_id']);
-                } else {
-                    $existingQuery->where('normalized_name', strtolower(trim($officeData['village_name'])));
-                    if ($officeData['post_so_name']) {
-                        $existingQuery->where('post_so_name', $officeData['post_so_name']);
-                    }
-                }
-                $existing = $existingQuery->first();
-
-                if ($existing) {
-                    $existingCount++;
-                    $processedVillageIds[] = (int) $existing->id;
-                    continue;
-                }
-
-                // Reuse an existing unsynced stub instead of creating a duplicate.
-                $stub = Village::where('pincode', $officeData['pincode'])
-                    ->where(function ($query): void {
-                        $query->whereNull('office_id')
-                            ->orWhereNull('office_type_code')
-                            ->orWhereIn('office_type_code', ['INVALID', 'FAILED', 'API_ERROR', '']);
-                    })
-                    ->when($processedVillageIds !== [], fn ($query) => $query->whereNotIn('id', $processedVillageIds))
-                    ->first();
-
-                if ($stub) {
-                    $stub->update($officeData);
-                    $savedVillage = $stub->fresh();
-                } else {
-                    $savedVillage = Village::create($officeData);
-                }
-                $createdVillages[] = $savedVillage;
-                $processedVillageIds[] = (int) $savedVillage->id;
-            }
-        });
-
-        $createdCount = count($createdVillages);
-        $message = $createdCount > 0
-            ? "Added {$createdCount} India Post office record(s) for pincode {$validated['pincode']}."
-            : "All matching India Post office records for pincode {$validated['pincode']} already exist; no duplicates were added.";
-
-        return response()->json([
-            'message' => $message,
-            'data' => $createdVillages,
-            'created' => $createdCount,
-            'already_existing' => $existingCount,
-        ], 201);
+        return $data;
     }
 
     /**
@@ -400,17 +351,7 @@ class VillageController extends Controller implements HasMiddleware
     {
         $this->assertVillageStateAccess($village, $request);
 
-        $validated = $request->validate([
-            'village_name' => ['required', 'string', 'max:255'],
-            'pincode' => ['required', 'string', 'max:10'],
-            'post_so_name' => ['nullable', 'string', 'max:255'],
-            'taluka_name' => ['nullable', 'string', 'max:255'],
-            'district_name' => ['nullable', 'string', 'max:255'],
-            'state_name' => ['nullable', 'string', 'max:255'],
-            'office_id' => ['nullable', 'string', 'max:255'],
-            'office_type_code' => ['nullable', 'string', 'max:255'],
-            'delivery_office_flag' => ['nullable', 'boolean'],
-            'is_rolled_out' => ['nullable', 'boolean'],
+        $validated = $request->validate(array_merge($this->villageRules(), [
             'services' => ['sometimes', 'array'],
             'services.*' => ['array'],
             'services.*.is_available' => ['required', 'boolean'],
@@ -418,7 +359,8 @@ class VillageController extends Controller implements HasMiddleware
             'services.*.remarks' => ['nullable', 'string', 'max:500'],
             'services.*.serviceable_from_date' => ['nullable', 'date'],
             'services.*.serviceable_to_date' => ['nullable', 'date', 'after_or_equal:services.*.serviceable_from_date'],
-        ]);
+        ]));
+        $validated = $this->validateVillageState($validated, $request);
 
         if (isset($validated['services'])) {
             $priorities = [];
@@ -434,6 +376,9 @@ class VillageController extends Controller implements HasMiddleware
                 }
             }
             $serviceIds = array_map('intval', array_keys($validated['services']));
+            if (count($serviceIds) !== count(array_unique($serviceIds))) {
+                throw \Illuminate\Validation\ValidationException::withMessages(['services' => 'A service may only be supplied once.']);
+            }
             $validServiceIds = Service::whereIn('id', $serviceIds)->pluck('id')->map(fn ($id) => (int) $id)->all();
             if (count(array_unique($validServiceIds)) !== count(array_unique($serviceIds))) {
                 throw \Illuminate\Validation\ValidationException::withMessages([
@@ -496,27 +441,48 @@ class VillageController extends Controller implements HasMiddleware
     /**
      * Bulk actions for villages (delete, service-update).
      */
-    public function syncIndiaPostPincodes(Request $request, IndiaPostProvider $indiaPostProvider): JsonResponse
+    public static function syncCacheKey(?string $state, string $key): string
     {
-        // ── Stop action: write a dedicated stop flag so the running batch loop can
-        //    detect it on every pincode iteration, regardless of timing.
-        if ($request->input('action') === 'stop') {
-            Cache::put('stop_indiapost_sync', true, now()->addMinutes(2));
-            Cache::forget('syncing_indiapost_pincodes');
-            Cache::forget('syncing_indiapost_pincodes_query');
-            return response()->json([
-                'success'  => true,
-                'finished' => true,
-                'stopped'  => true,
-                'message'  => 'Stop signal sent. Sync will halt after the current pincode.',
-            ]);
-        }
+        return 'village_indiapost_'.hash('sha256', $state ?? 'ALL').':'.$key;
+    }
 
+    public function syncIndiaPostPincodes(Request $request, $indiaPostProvider = null): JsonResponse
+    {
+        $request->validate([
+            'pincode' => ['nullable', 'string', 'regex:/^[0-9]{6}$/'],
+            'action' => ['nullable', 'in:stop'],
+        ]);
+        if ($request->input('action') === 'stop') {
+            $state = $request->user()?->lob_state_name;
+            Cache::put(self::syncCacheKey($state, 'stop'), true, now()->addMinutes(2));
+            Cache::forget(self::syncCacheKey($state, 'running'));
+            Cache::forget(self::syncCacheKey($state, 'query'));
+            return response()->json(['success' => true, 'finished' => true, 'stopped' => true, 'message' => 'Sync will stop after the current pincode.']);
+        }
+        $lock = Cache::lock('village_indiapost_batch_lock', 120);
+        if (! $lock->get()) {
+            return response()->json(['message' => 'Another India Post sync batch is running. Please try again shortly.'], 409);
+        }
+        try {
+            try {
+                $indiaPostProvider ??= app(IndiaPostProvider::class);
+            } catch (\Throwable $error) {
+                return response()->json(['message' => 'India Post could not be initialized. Check its configured credentials before retrying.'], 503);
+            }
+            return $this->performIndiaPostSync($request, $indiaPostProvider);
+        } finally {
+            $lock->release();
+        }
+    }
+
+    private function performIndiaPostSync(Request $request, IndiaPostProvider $indiaPostProvider): JsonResponse
+    {
+        $state = $request->user()?->lob_state_name;
         // Honour a queued stop before starting a new batch
-        if (Cache::get('stop_indiapost_sync')) {
-            Cache::forget('stop_indiapost_sync');
-            Cache::forget('syncing_indiapost_pincodes');
-            Cache::forget('syncing_indiapost_pincodes_query');
+        if (Cache::get(self::syncCacheKey($state, 'stop'))) {
+            Cache::forget(self::syncCacheKey($state, 'stop'));
+            Cache::forget(self::syncCacheKey($state, 'running'));
+            Cache::forget(self::syncCacheKey($state, 'query'));
             return response()->json([
                 'success'  => true,
                 'finished' => true,
@@ -529,14 +495,14 @@ class VillageController extends Controller implements HasMiddleware
         $pincode = $request->input('pincode');
 
         // Mark sync as running (TTL refreshed each batch so stale flags expire automatically)
-        Cache::put('syncing_indiapost_pincodes', true, now()->addMinutes(15));
-        Cache::put('syncing_indiapost_pincodes_query', $pincode ?: 'ALL', now()->addMinutes(15));
+        Cache::put(self::syncCacheKey($state, 'running'), true, now()->addMinutes(15));
+        Cache::put(self::syncCacheKey($state, 'query'), $pincode ?: 'ALL', now()->addMinutes(15));
 
         $pincodesToSync = [];
         if ($pincode) {
-            $hasVillageRecords = Village::where('pincode', $pincode)->exists();
-            $hasUnsyncedVillages = Village::where('pincode', $pincode)
-                ->where($this->unsyncedVillageCondition())
+            $hasVillageRecords = Village::when($state, fn ($q) => $q->where('state_name', $state))->where('pincode', $pincode)->exists();
+            $hasUnsyncedVillages = Village::when($state, fn ($q) => $q->where('state_name', $state))->where('pincode', $pincode)
+                ->where($this->unsyncedVillageCondition((bool) $pincode))
                 ->exists();
 
             // Keep support for importing a pincode that has no local records, but
@@ -545,14 +511,14 @@ class VillageController extends Controller implements HasMiddleware
                 $pincodesToSync[] = $pincode;
             }
         } else {
-            $pincodesToSync = Village::where($this->unsyncedVillageCondition())
+            $pincodesToSync = Village::when($state, fn ($q) => $q->where('state_name', $state))->where($this->unsyncedVillageCondition((bool) $pincode))
                 ->select('pincode')->distinct()->pluck('pincode')->toArray();
         }
 
         // Nothing left to sync — clear flags and return done immediately
         if (empty($pincodesToSync)) {
-            Cache::forget('syncing_indiapost_pincodes');
-            Cache::forget('syncing_indiapost_pincodes_query');
+            Cache::forget(self::syncCacheKey($state, 'running'));
+            Cache::forget(self::syncCacheKey($state, 'query'));
             return response()->json([
                 'success'  => true,
                 'finished' => true,
@@ -569,10 +535,10 @@ class VillageController extends Controller implements HasMiddleware
 
         foreach ($pincodesToSync as $code) {
             // ── Per-iteration stop check (reads the flag written by a parallel stop request)
-            if (Cache::get('stop_indiapost_sync')) {
-                Cache::forget('stop_indiapost_sync');
-                Cache::forget('syncing_indiapost_pincodes');
-                Cache::forget('syncing_indiapost_pincodes_query');
+            if (Cache::get(self::syncCacheKey($state, 'stop'))) {
+                Cache::forget(self::syncCacheKey($state, 'stop'));
+                Cache::forget(self::syncCacheKey($state, 'running'));
+                Cache::forget(self::syncCacheKey($state, 'query'));
                 return response()->json([
                     'success'  => true,
                     'finished' => true,
@@ -595,10 +561,16 @@ class VillageController extends Controller implements HasMiddleware
 
             // A preceding batch or another request may have completed this
             // pincode after the candidate list was built.
-            $hasVillageRecords = Village::where('pincode', $code)->exists();
-            if ($hasVillageRecords && !Village::where('pincode', $code)
-                ->where($this->unsyncedVillageCondition())
+            $hasVillageRecords = Village::when($state, fn ($q) => $q->where('state_name', $state))->where('pincode', $code)->exists();
+            if ($hasVillageRecords && !Village::when($state, fn ($q) => $q->where('state_name', $state))->where('pincode', $code)
+                ->where($this->unsyncedVillageCondition((bool) $pincode))
                 ->exists()) {
+                continue;
+            }
+
+            if (!preg_match('/^[0-9]{6}$/', (string) $code)) {
+                $this->markPincodeSyncStatus((string) $code, 'FAILED', $state);
+                $errors[] = $code;
                 continue;
             }
 
@@ -630,6 +602,7 @@ class VillageController extends Controller implements HasMiddleware
                 $officesList = $this->indiaPostOfficeList($details);
                 $hasValidData = false;
                 $hasInvalidData = false;
+                $hasForeignStateData = false;
 
                 if (is_array($officesList) && count($officesList) > 0) {
                     foreach ($officesList as $office) {
@@ -642,6 +615,10 @@ class VillageController extends Controller implements HasMiddleware
                         }
 
                         $officeData = $this->normalizeIndiaPostOffice($office, (string) $code);
+                        if ($state && strcasecmp((string) $officeData['state_name'], $state) !== 0) {
+                            $hasForeignStateData = true;
+                            continue;
+                        }
                         $officeId = $officeData['office_id'];
                         $officePincode = $officeData['pincode'];
                         if ($officePincode !== (string) $code || empty($office['office_type_code']) || empty($officeId)) {
@@ -652,6 +629,7 @@ class VillageController extends Controller implements HasMiddleware
                                 'office_id_present' => !empty($officeId),
                                 'office_type_present' => !empty($office['office_type_code']),
                             ]);
+                            continue;
                         }
                         if ($officePincode !== (string) $code) {
                             $hasInvalidData = true;
@@ -673,7 +651,7 @@ class VillageController extends Controller implements HasMiddleware
                         }
                         $hasValidData = true;
 
-                        $existingVillage = Village::where('pincode', $code)
+                        $existingVillage = Village::when($state, fn ($q) => $q->where('state_name', $state))->where('pincode', $code)
                             ->when($officeId !== null && $officeId !== '', fn ($q) => $q->where('office_id', $officeId), fn ($q) => $q->whereNull('office_id'))
                             ->first();
 
@@ -685,8 +663,8 @@ class VillageController extends Controller implements HasMiddleware
 
                         if (! $existingVillage) {
                             // Adopt an un-synced stub record to avoid orphaned duplicates
-                            $existingVillage = Village::where('pincode', $code)
-                                ->where($this->unsyncedVillageCondition())
+                            $existingVillage = Village::when($state, fn ($q) => $q->where('state_name', $state))->where('pincode', $code)
+                                ->where($this->unsyncedVillageCondition((bool) $pincode))
                                 ->first();
                         }
 
@@ -704,6 +682,11 @@ class VillageController extends Controller implements HasMiddleware
 
                         $syncedCount++;
                     }
+                }
+
+                if (!$hasValidData && $hasForeignStateData) {
+                    $errors[] = $code;
+                    continue;
                 }
 
                 if (!$hasValidData && $officesList !== []) {
@@ -728,9 +711,10 @@ class VillageController extends Controller implements HasMiddleware
                         'status' => 'FAILED',
                     ]);
                     $this->markPincodeSyncStatus((string) $code, 'FAILED', $request->user()?->lob_state_name);
+                    $errors[] = $code;
                 }
             } catch (\Exception $e) {
-                Log::error("Failed to sync India Post pincode {$code}: " . $e->getMessage());
+                Log::error('India Post village sync failed.', ['pincode' => (string) $code, 'exception' => get_class($e)]);
 
                 $isTransientFailure = $e instanceof \Illuminate\Http\Client\ConnectionException
                     || str_contains(strtolower($e->getMessage()), 'curl')
@@ -748,14 +732,16 @@ class VillageController extends Controller implements HasMiddleware
                 // Network or Auth errors
                 if ($isTransientFailure) {
                     $indiaPostProvider->clearAccessToken();
+                    Cache::forget(self::syncCacheKey($state, 'running'));
+                    Cache::forget(self::syncCacheKey($state, 'query'));
 
                     // Instead of aborting with a 500 error, we tell the frontend to
                     // automatically continue to the next batch. The broken token is cleared,
                     // so the next batch will fetch a fresh one without user interaction.
                     return response()->json([
-                        'success'  => true,
-                        'finished' => false,
-                        'message'  => 'Auth/Network timeout. Re-authenticating and continuing automatically...',
+                        'success'  => false,
+                        'finished' => true,
+                        'message'  => 'India Post is unavailable or authentication failed. Check the connection/settings and retry sync manually.',
                         'errors'   => $errors,
                     ]);
                 }
@@ -763,16 +749,16 @@ class VillageController extends Controller implements HasMiddleware
         }
 
         // ── All pincodes processed — clear all running/stop flags
-        Cache::forget('syncing_indiapost_pincodes');
-        Cache::forget('syncing_indiapost_pincodes_query');
-        Cache::forget('stop_indiapost_sync');
+        Cache::forget(self::syncCacheKey($state, 'running'));
+        Cache::forget(self::syncCacheKey($state, 'query'));
+        Cache::forget(self::syncCacheKey($state, 'stop'));
 
         $errorSuffix = count($errors) > 0
             ? ' Errors on ' . count($errors) . ' pincode(s): ' . implode(', ', $errors)
             : '';
 
         return response()->json([
-            'success'  => true,
+            'success'  => $errors === [],
             'finished' => true,
             'message'  => "Sync complete. Synced {$syncedCount} offices from India Post.{$errorSuffix}",
             'errors'   => $errors,
@@ -784,7 +770,7 @@ class VillageController extends Controller implements HasMiddleware
         $validated = $request->validate([
             'action' => ['required', 'string', 'in:delete,service-update,restore,force-delete'],
             'ids' => ['required', 'array', 'min:1'],
-            'ids.*' => ['integer', 'exists:villages,id'],
+            'ids.*' => ['integer', 'distinct', 'exists:villages,id'],
             'service_id' => [\Illuminate\Validation\Rule::requiredIf(fn () => $request->input('action') === 'service-update' && ! $request->has('service_ids')), 'nullable', 'integer', 'exists:services,id'],
             'service_ids' => ['sometimes', 'array', 'min:1', 'max:100'],
             'service_ids.*' => ['required', 'integer', 'distinct', 'exists:services,id'],
@@ -806,7 +792,7 @@ class VillageController extends Controller implements HasMiddleware
 
         if ($action === 'delete') {
             abort_unless($request->user()?->can('village-delete'), 403);
-            Village::whereIn('id', $ids)->get()->each->delete();
+            DB::transaction(fn () => Village::whereIn('id', $ids)->get()->each->delete());
 
             return response()->json([
                 'message' => count($ids).' village(s) deleted successfully.',
@@ -816,7 +802,7 @@ class VillageController extends Controller implements HasMiddleware
 
         if ($action === 'restore') {
             abort_unless($request->user()?->can('village-restore'), 403);
-            Village::withTrashed()->whereIn('id', $ids)->get()->each->restore();
+            DB::transaction(fn () => Village::withTrashed()->whereIn('id', $ids)->get()->each->restore());
 
             return response()->json([
                 'message' => count($ids).' village(s) restored successfully.',
@@ -826,7 +812,12 @@ class VillageController extends Controller implements HasMiddleware
 
         if ($action === 'force-delete') {
             abort_unless($request->user()?->can('village-permanent-delete'), 403);
-            Village::withTrashed()->whereIn('id', $ids)->get()->each->forceDelete();
+            try {
+                DB::transaction(fn () => Village::withTrashed()->whereIn('id', $ids)->get()->each->forceDelete());
+            } catch (\Illuminate\Database\QueryException $error) {
+                if (($error->errorInfo[0] ?? null) !== '23000') throw $error;
+                return response()->json(['message' => 'One or more villages are referenced by business records and cannot be permanently deleted. No villages were deleted.'], 422);
+            }
 
             return response()->json([
                 'message' => count($ids).' village(s) permanently deleted.',
@@ -927,33 +918,6 @@ class VillageController extends Controller implements HasMiddleware
         return response()->json(['services' => $services, 'village_count' => count($ids)]);
     }
 
-    private function indiaPostOfficesForPincode(string $pincode, IndiaPostProvider $indiaPostProvider): array
-    {
-        return Cache::remember('india_post_pincode_lookup_'.$pincode, now()->addHour(), function () use ($indiaPostProvider, $pincode): array {
-            $response = $indiaPostProvider->getPincodeDetails($pincode);
-            $items = $this->indiaPostOfficeList($response);
-
-            return collect($items)
-                ->filter(fn ($office) => is_array($office))
-                ->map(function (array $office) use ($pincode): array {
-                    $normalized = $this->normalizeIndiaPostOffice($office, $pincode);
-                    if ($normalized['pincode'] !== $pincode) {
-                        Log::warning('India Post returned an office for a different pincode during village creation.', [
-                            'requested_pincode' => $pincode,
-                            'returned_pincode' => $normalized['pincode'],
-                            'office_id' => $normalized['office_id'],
-                        ]);
-                    }
-
-                    return $normalized;
-                })
-                ->filter(fn (array $office) => $office['pincode'] === $pincode)
-                ->filter(fn (array $office) => trim($office['village_name']) !== '')
-                ->values()
-                ->all();
-        });
-    }
-
     private function indiaPostOfficeList(mixed $response): array
     {
         if (!is_array($response)
@@ -1013,11 +977,11 @@ class VillageController extends Controller implements HasMiddleware
         return in_array(strtolower(trim((string) $value)), ['1', 'true', 'yes', 'y'], true);
     }
 
-    private function unsyncedVillageCondition(): \Closure
+    private function unsyncedVillageCondition(bool $retryFailed = false): \Closure
     {
-        return static function ($query): void {
+        return static function ($query) use ($retryFailed): void {
             $query->whereNull('office_type_code')
-                ->orWhereIn('office_type_code', ['INVALID', ''])
+                ->orWhereIn('office_type_code', $retryFailed ? ['INVALID', '', 'API_ERROR', 'FAILED'] : ['INVALID', '', 'API_ERROR'])
                 ->orWhere(function ($query): void {
                     $query->whereNull('office_id')
                         ->where('office_type_code', '<>', 'FAILED');
@@ -1036,8 +1000,8 @@ class VillageController extends Controller implements HasMiddleware
 
     private function markPincodeSyncStatus(string $pincode, string $status, ?string $stateName = null): void
     {
-        $pendingQuery = Village::where('pincode', $pincode)
-            ->where($this->unsyncedVillageCondition());
+        $pendingQuery = Village::when($stateName, fn ($q) => $q->where('state_name', $stateName))->where('pincode', $pincode)
+            ->where($this->unsyncedVillageCondition(true));
         $hasPendingRecords = $pendingQuery->exists();
         if ($hasPendingRecords) {
             $pendingQuery->update(['office_type_code' => $status]);
@@ -1045,7 +1009,7 @@ class VillageController extends Controller implements HasMiddleware
 
         // Persist the failure as a searchable management row when there was no
         // unresolved row to annotate. This preserves all completed office rows.
-        $hasStatusRow = Village::where('pincode', $pincode)
+        $hasStatusRow = Village::when($stateName, fn ($q) => $q->where('state_name', $stateName))->where('pincode', $pincode)
             ->where('village_name', 'India Post sync failure')
             ->where('office_type_code', $status)
             ->exists();
@@ -1095,90 +1059,72 @@ class VillageController extends Controller implements HasMiddleware
             'file' => ['required', 'file', 'mimes:csv,txt', 'max:10240'],
             'preview' => ['nullable', 'boolean'],
         ]);
-
-        $file = $request->file('file');
-        $path = $file->getRealPath();
-
-        // Check if just previewing
-        if ($request->input('preview')) {
-            $rows      = [];
-            $totalRows = 0;
-            // Cap the number of rows sent in the JSON response to prevent PHP
-            // memory exhaustion on very large CSVs. 1000 rows is more than
-            // enough for a meaningful preview; the actual import processes every row.
-            $previewLimit = 1000;
-
-            $handle = fopen($path, 'r');
-            if ($handle) {
-                $header = fgetcsv($handle);
-                while (($line = fgetcsv($handle)) !== false) {
-                    // Skip completely blank lines (common at end of CSV exports)
-                    if (count(array_filter($line, fn ($v) => trim($v) !== '')) === 0) {
-                        continue;
-                    }
-                    $totalRows++;
-                    if (count($rows) < $previewLimit) {
-                        $rows[] = array_combine(
-                            array_slice(array_pad($header, count($line), ''), 0, count($line)),
-                            $line
-                        );
-                    }
-                }
-                fclose($handle);
+        $path = $request->file('file')->getRealPath();
+        if ($request->boolean('preview')) {
+            $rows = []; $total = 0;
+            foreach ($this->villageCsvRows($path) as $line => $row) {
+                $data = $this->validatedCsvVillage($row, $request, $line);
+                $total++;
+                if (count($rows) < 1000) $rows[] = $data;
             }
-
-            return response()->json([
-                'preview'   => true,
-                'rows'      => $rows,
-                'total'     => $totalRows,
-                'truncated' => $totalRows > $previewLimit,
-            ]);
+            return response()->json(['preview' => true, 'rows' => $rows, 'total' => $total, 'truncated' => $total > 1000]);
         }
-
-        DB::transaction(function () use ($path): void {
-            LazyCollection::make(function () use ($path) {
-                $handle = fopen($path, 'r');
-                if ($handle) {
-                    fgetcsv($handle); // skip header
-                    while (($line = fgetcsv($handle)) !== false) {
-                        yield $line;
-                    }
-                    fclose($handle);
-                }
-            })
-                ->chunk(1000)
-                ->each(function ($chunk): void {
-                    $data = $chunk->map(function ($row) {
-                        if (count($row) < 2) {
-                            return null;
-                        }
-
-                        return [
-                            'village_name' => $row[0],
-                            'normalized_name' => strtolower(trim($row[0])),
-                            'pincode' => $row[1],
-                            'post_so_name' => ($row[2] ?? null) === '#N/A' ? null : ($row[2] ?? null),
-                            'taluka_name' => ($row[3] ?? null) === '#N/A' ? null : ($row[3] ?? null),
-                            'district_name' => ($row[4] ?? null) === '#N/A' ? null : ($row[4] ?? null),
-                            'state_name' => ($row[5] ?? null) === '#N/A' ? null : ($row[5] ?? null),
-                            'office_id' => ($row[6] ?? null) === '#N/A' ? null : ($row[6] ?? null),
-                            'office_type_code' => ($row[7] ?? null) === '#N/A' ? null : ($row[7] ?? null),
-                            'delivery_office_flag' => strtolower((string)($row[8] ?? '')) === 'yes' || strtolower((string)($row[8] ?? '')) === 'true' || ($row[8] ?? null) == 1,
-                            'is_rolled_out' => strtolower((string)($row[9] ?? '')) === 'yes' || strtolower((string)($row[9] ?? '')) === 'true' || ($row[9] ?? null) == 1,
-                            'created_at' => now(),
-                            'updated_at' => now(),
-                        ];
-                    })->filter()->values()->toArray();
-
-                    if (! empty($data)) {
-                        DB::table('villages')->insert($data);
-                    }
-                });
+        $total = 0;
+        DB::transaction(function () use ($path, $request, &$total): void {
+            $batch = [];
+            foreach ($this->villageCsvRows($path) as $line => $row) {
+                $data = $this->validatedCsvVillage($row, $request, $line);
+                $batch[] = [...$data, 'normalized_name' => strtolower(trim($data['village_name'])), 'created_at' => now(), 'updated_at' => now()];
+                $total++;
+                if (count($batch) === 1000) { DB::table('villages')->insert($batch); $batch = []; }
+            }
+            if ($batch) DB::table('villages')->insert($batch);
         });
+        return response()->json(['message' => "{$total} village(s) imported successfully. India Post sync is manual.", 'imported' => $total]);
+    }
 
-        return response()->json([
-            'message' => 'Villages imported successfully.',
-        ]);
+    private function villageCsvRows(string $path): \Generator
+    {
+        $handle = fopen($path, 'r');
+        if (!$handle) throw \Illuminate\Validation\ValidationException::withMessages(['file' => 'Unable to read CSV.']);
+        try {
+            $header = fgetcsv($handle);
+            if (!is_array($header)) throw \Illuminate\Validation\ValidationException::withMessages(['file' => 'CSV is empty.']);
+            $aliases = ['taluka' => 'taluka_name', 'district' => 'district_name', 'state' => 'state_name', 'office_type' => 'office_type_code', 'delivery_office' => 'delivery_office_flag', 'rolled_out' => 'is_rolled_out'];
+            $header = array_map(function ($name) use ($aliases) {
+                $name = strtolower(preg_replace('/[\s-]+/', '_', trim(str_replace("\xEF\xBB\xBF", '', (string) $name))));
+                return $aliases[$name] ?? $name;
+            }, $header);
+            if (!in_array('village_name', $header, true) || !in_array('pincode', $header, true) || count(array_unique($header)) !== count($header)) {
+                throw \Illuminate\Validation\ValidationException::withMessages(['file' => 'CSV requires unique village_name and pincode headers. Use the import template.']);
+            }
+            $lineNumber = 1;
+            while (($line = fgetcsv($handle)) !== false) {
+                $lineNumber++;
+                if (!array_filter($line, fn ($v) => trim((string) $v) !== '')) continue;
+                if (count($line) > count($header)) throw \Illuminate\Validation\ValidationException::withMessages(['file' => "CSV row {$lineNumber} has too many columns."]);
+                yield $lineNumber => array_combine($header, array_pad($line, count($header), null));
+            }
+        } finally { fclose($handle); }
+    }
+
+    private function validatedCsvVillage(array $row, Request $request, int $line): array
+    {
+        $data = [];
+        foreach (array_keys($this->villageRules()) as $field) {
+            $value = isset($row[$field]) ? trim((string) $row[$field]) : null;
+            $data[$field] = $value === '' || $value === '#N/A' ? null : $value;
+        }
+        foreach (['delivery_office_flag', 'is_rolled_out'] as $field) {
+            $value = strtolower((string) ($data[$field] ?? ''));
+            if (!in_array($value, ['', '0', '1', 'true', 'false', 'yes', 'no', 'y', 'n'], true)) {
+                throw \Illuminate\Validation\ValidationException::withMessages(['file' => "CSV row {$line}: invalid {$field} flag."]);
+            }
+            $data[$field] = in_array($value, ['1', 'true', 'yes', 'y'], true);
+        }
+        $validator = \Illuminate\Support\Facades\Validator::make($data, $this->villageRules());
+        if ($validator->fails()) throw \Illuminate\Validation\ValidationException::withMessages(['file' => "CSV row {$line}: ".implode(' ', $validator->errors()->all())]);
+        return $this->validateVillageState($validator->validated(), $request);
     }
 
     /**
@@ -1201,6 +1147,7 @@ class VillageController extends Controller implements HasMiddleware
      */
     public function export(Request $request)
     {
+        $request->validate(array_fill_keys(['search', 'state', 'district', 'taluka', 'village', 'office_type_code', 'deleted'], ['nullable', 'string']));
         $query = Village::query();
 
         if ($request->filled('search')) {
@@ -1290,7 +1237,8 @@ class VillageController extends Controller implements HasMiddleware
     public function exportSelected(Request $request)
     {
         $validated = $request->validate([
-            'ids' => 'required|array',
+            'ids' => ['required', 'array', 'min:1', 'max:5000'],
+            'ids.*' => ['required', 'integer', 'distinct', 'exists:villages,id'],
         ]);
 
         // Keep selected exports bounded while eager-loading their related services.

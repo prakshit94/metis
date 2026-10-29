@@ -21,7 +21,10 @@ while(($line=fgets($f))!==false){
 fclose($f);$pdo->exec('SET FOREIGN_KEY_CHECKS=1');
 check($sourceTables===109,'all backup table definitions parsed without loading private rows');
 $original=file_get_contents($folder.'/import-data-full.sql');
-$map=fn($s)=>str_replace(['`metis`',"'metis'",'metis_transition_backup_20261029'],['`'.$testDatabase.'`',"'".$testDatabase."'",$stage],$s);
+$audit=json_decode(file_get_contents($folder.'/schema-audit.json'),true);
+$sourceStage=$audit['staging_database']??'metis_transition_backup_20261029';
+$helper=$audit['helper_procedure']??'metis_replace_backup_20261029';
+$map=fn($s)=>str_replace(['`metis`',"'metis'",$sourceStage],['`'.$testDatabase.'`',"'".$testDatabase."'",$stage],$s);
 $sql=$map($original);
 function procedure(string$sql):string{
  $start=strpos($sql,'CREATE PROCEDURE ');$end=strpos($sql,"\nEND$$",$start===false?0:$start);
@@ -29,7 +32,8 @@ function procedure(string$sql):string{
  return substr($sql,$start,$end+4-$start);
 }
 function callImport($c):void{
- $stmt=$c->getPdo()->prepare('CALL metis_replace_backup_20261029()');
+ global $helper;
+ $stmt=$c->getPdo()->prepare('CALL `'.$helper.'`()');
  try{$stmt->execute();do{$stmt->fetchAll();}while($stmt->nextRowset());}finally{$stmt->closeCursor();}
 }
 function rejected($c,string$expected):void{
@@ -44,7 +48,7 @@ rejected($c,'Backup row count differs');
 check($c->table('users')->count()===1,'incomplete staging fails before deleting existing data');
 $settings=(array)$c->selectOne('SELECT @@SESSION.sql_safe_updates AS safe_updates, @@SESSION.time_zone AS tz, @@SESSION.foreign_key_checks AS fk');
 check((int)$settings['safe_updates']===1 && $settings['tz']==='+05:30' && (int)$settings['fk']===1,'failure restores Workbench session settings');
-$c->unprepared('DROP PROCEDURE metis_replace_backup_20261029');
+$c->unprepared('DROP PROCEDURE `'.$helper.'`');
 // Only the test copy changes audited row-count expectations to the empty synthetic source.
 $fixture=preg_replace('/(\(SELECT COUNT\(\*\) FROM `'.preg_quote($stage,'/').'`\.`[^`]+`\) <>) \d+/','$1 0',$sql,-1,$changed);
 check($changed===109,'all audited source counts replaced only in the synthetic fixture');
@@ -53,7 +57,7 @@ $last=$c->table('migrations')->orderByDesc('id')->first();
 $c->statement('SET SESSION sql_safe_updates=0');$c->table('migrations')->where('id',$last->id)->delete();$c->statement('SET SESSION sql_safe_updates=1');
 rejected($c,'Run all current PHP migrations');
 $c->table('migrations')->insert((array)$last);
-$c->unprepared('DROP PROCEDURE metis_replace_backup_20261029');
+$c->unprepared('DROP PROCEDURE `'.$helper.'`');
 $rollbackFixture=str_replace('  DELETE FROM `users`;', "  DELETE FROM `users`;\n  SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Injected rollback test';",$fixture,$injected);
 check($injected===1,'rollback fixture injects one error after deleting the sentinel user');
 $c->unprepared(procedure($rollbackFixture));
@@ -61,7 +65,7 @@ rejected($c,'Injected rollback test');
 check($c->table('users')->count()===1,'an error after deletion rolls back the existing user data');
 $restored=(array)$c->selectOne('SELECT @@SESSION.sql_safe_updates AS safe_updates, @@SESSION.time_zone AS tz, @@SESSION.foreign_key_checks AS fk');
 check((int)$restored['safe_updates']===1 && $restored['tz']==='+05:30' && (int)$restored['fk']===1,'transaction failure restores Workbench session settings');
-$c->unprepared('DROP PROCEDURE metis_replace_backup_20261029');
+$c->unprepared('DROP PROCEDURE `'.$helper.'`');
 $input=tempnam(sys_get_temp_dir(),'metis-import-fixture-');$output=tempnam(sys_get_temp_dir(),'metis-import-output-');$error=tempnam(sys_get_temp_dir(),'metis-import-error-');
 register_shutdown_function(function()use($input,$output,$error){foreach([$input,$output,$error]as$p)@unlink($p);});
 file_put_contents($input,$fixture."\nSELECT @@SESSION.sql_safe_updates, @@SESSION.time_zone;\n");

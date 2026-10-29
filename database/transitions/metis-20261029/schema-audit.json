@@ -25,8 +25,8 @@
     },
     "orders": {
       "new_columns": {
-        "state_team_id": "bigint unsigned DEFAULT NULL",
-        "office_id": "bigint unsigned DEFAULT NULL"
+        "office_id": "bigint unsigned DEFAULT NULL",
+        "state_team_id": "bigint unsigned DEFAULT NULL"
       },
       "type_changes": {}
     },
@@ -34,9 +34,9 @@
       "new_columns": {
         "storefront_visible": "tinyint(1) NOT NULL DEFAULT '0'",
         "max_order_qty": "smallint unsigned NOT NULL DEFAULT '1000'",
-        "selling_price_including_tax": "decimal(15,2) DEFAULT NULL",
         "min_order_qty": "smallint unsigned NOT NULL DEFAULT '1'",
-        "is_featured": "tinyint(1) NOT NULL DEFAULT '0'"
+        "is_featured": "tinyint(1) NOT NULL DEFAULT '0'",
+        "selling_price_including_tax": "decimal(15,2) DEFAULT NULL"
       },
       "type_changes": {}
     },
@@ -60,7 +60,7 @@
       "type_changes": {}
     }
   },
-  "backup_sha256": "96e67f3783857a1b1918280efdc91dcd9631aeee8365d94480b17de1fd848963",
+  "backup_sha256": "bffdf97435371047e57ba68cf102456726ff48715d7c1b095183a2b338419fee",
   "migration_hashes": {
     "0001_01_01_000000_create_departments_table.php": "66779936a76c43aab6d0688519f3739796c0af00f4ef17265c2af66e4bf46050",
     "0001_01_01_000000_create_designations_table.php": "02dc5d8ec6ac784c45ae2767d4c6d0f3a82c75b418af56c308c21fe9231ff811",
@@ -223,6 +223,13 @@
       ],
       "transition_action": "retain all current definitions unchanged"
     },
+    "parties": {
+      "backup_only_definitions": [
+        "  KEY `idx_parties_alternatemobile` (`alternatemobile`)"
+      ],
+      "current_only_definitions": [],
+      "transition_action": "retain all current definitions unchanged"
+    },
     "products": {
       "backup_only_definitions": [],
       "current_only_definitions": [
@@ -260,5 +267,7 @@
       ],
       "transition_action": "retain all current definitions unchanged"
     }
-  }
+  },
+  "staging_database": "metis_transition_backup_20261029_143950",
+  "helper_procedure": "metis_replace_backup_20261029_bffdf974"
 }

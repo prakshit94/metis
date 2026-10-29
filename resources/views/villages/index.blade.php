@@ -4,14 +4,14 @@
 @section('page', 'villages')
 
 @section('content')
-<div class="village-management" x-data="villageTable" x-init="init()">
+<div class="village-management" x-data="villageTable">
     <!-- Page Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4 mb-lg-5 mb-xl-6">
+    <div class="d-flex flex-column flex-xl-row justify-content-between align-items-xl-center gap-3 mb-4 mb-lg-5 mb-xl-6">
         <div>
             <h1 class="h3 mb-0">Village Management</h1>
             <p class="text-muted mb-0">Manage geolocations, pincodes, and service coverage</p>
         </div>
-        <div class="d-flex gap-2">
+        <div class="d-flex flex-wrap gap-2">
             <button class="btn btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#analyticsSections" aria-expanded="false" aria-controls="analyticsSections">
                 <i class="bi bi-graph-up me-2"></i>Toggle Analytics
             </button>
@@ -508,7 +508,7 @@
                             <th style="width: 40px;" class="ps-3">
                                 <input type="checkbox" 
                                        class="user-select-checkbox" 
-                                       :checked="villages.length > 0 && selectedVillages.length === villages.length"
+                                       :checked="allVisibleSelected" x-effect="$el.indeterminate = someVisibleSelected && !allVisibleSelected" aria-label="Select all villages on this page"
                                        @change="toggleAll($event.target.checked)">
                             </th>
                             <th>ID</th>
@@ -558,7 +558,7 @@
                                 <td class="ps-3">
                                     <input type="checkbox" 
                                            class="user-select-checkbox" 
-                                           :value="v.id" :checked="selectedVillages.includes(String(v.id))"
+                                           :aria-label="'Select ' + v.village_name" :value="v.id" :checked="selectedVillages.includes(String(v.id))"
                                            @change="toggleVillage(v.id)">
                                 </td>
                                 <td x-text="v.id"></td>
@@ -602,13 +602,14 @@
                                 </td>
                                 <td>
                                     @if(auth()->user()->can('village-edit') || auth()->user()->can('village-delete') || auth()->user()->can('village-restore') || auth()->user()->can('village-permanent-delete'))
-                                    <div class="dropdown">
+                                    <div class="dropdown" x-data="villageActionMenu">
                                         <button class="btn btn-sm btn-outline-secondary dropdown-toggle"
-                                                type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                                type="button" x-show="v.deleted_at ? @js(auth()->user()->canAny(['village-restore', 'village-permanent-delete'])) : @js(auth()->user()->canAny(['village-edit', 'village-delete']))" x-ref="trigger" @click="toggle()" @keydown="keydown($event)" :aria-expanded="open" aria-haspopup="menu" :aria-label="'Actions for ' + v.village_name">
                                             <i class="bi bi-three-dots"></i>
                                         </button>
-                                        <ul class="dropdown-menu dropdown-menu-end">
+                                        <template x-teleport="body"><ul class="dropdown-menu shadow show" style="z-index:1080;max-height:70vh;max-width:calc(100vw - 16px);overflow-y:auto" x-ref="menu" x-show="open" x-cloak @keydown="keydown($event)" @click.outside="outside($event)" @click="close()">
                                             @can('village-edit')
+                                            <li x-show="!v.deleted_at && /^[0-9]{6}$/.test(v.pincode)"><a class="dropdown-item" href="#" @click.prevent="syncPincodes(v.pincode)"><i class="bi bi-arrow-repeat me-2"></i>Sync India Post</a></li>
                                             <li x-show="!v.deleted_at">
                                                 <a class="dropdown-item" href="#" @click.prevent="openServicesModal(v)">
                                                     <i class="bi bi-gear me-2"></i>Manage Services
@@ -642,7 +643,7 @@
                                                 </a>
                                             </li>
                                             @endcan
-                                        </ul>
+                                        </ul></template>
                                     </div>
                                     @endif
                                 </td>
@@ -691,16 +692,17 @@
             </div>
             <div class="modal-body pt-3">
                 <form @submit.prevent="saveVillage()">
+                    <fieldset :disabled="saving || syncing">
                     <div class="row g-3">
                         <div class="col-md-12">
-                            <label class="form-label fw-semibold">Village Name <span class="text-danger" x-show="editingVillageId">*</span></label>
-                            <input type="text" class="form-control" x-model="form.village_name" placeholder="e.g. Kawatha" :required="!!editingVillageId">
-                            <div class="form-text" x-show="!editingVillageId">Required only when India Post has no matching office for this pincode.</div>
+                            <label class="form-label fw-semibold">Village Name <span class="text-danger" >*</span></label>
+                            <input type="text" class="form-control" x-model="form.village_name" placeholder="e.g. Kawatha" required maxlength="255">
+                            <div class="form-text">Saving creates or updates only this village. India Post sync runs only when you choose it manually.</div>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">Pincode <span class="text-danger">*</span></label>
                             <input type="text" class="form-control" x-model="form.pincode" placeholder="e.g. 440001" inputmode="numeric" maxlength="10" required>
-                            <div class="form-text">Matching India Post offices are added automatically when you create this village.</div>
+                            <div class="form-text">To fetch India Post offices, save first, then use “Sync this pincode” or Actions → Sync India Post. Sync requires a six-digit pincode.</div>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">Post SO Name</label>
@@ -716,7 +718,7 @@
                         </div>
                         <div class="col-md-4">
                             <label class="form-label fw-semibold">State</label>
-                            <input type="text" class="form-control" x-model="form.state_name" placeholder="e.g. Maharashtra">
+                            <input type="text" class="form-control" x-model="form.state_name" :readonly="!!window.villageStateScope" placeholder="e.g. Maharashtra">
                         </div>
                         <div class="col-md-3">
                             <label class="form-label fw-semibold">Office ID</label>
@@ -739,9 +741,16 @@
                             </div>
                         </div>
                     </div>
+                    </fieldset>
+                    <div class="form-text" x-show="editingVillageId && hasUnsavedChanges">Save or discard your changes before syncing.</div>
                     <div class="modal-footer border-top-0 pt-3 px-0 pb-0">
+                        @can('village-edit')
+                        <button type="button" class="btn btn-outline-info" x-show="editingVillageId" @click="syncPincode()" :disabled="saving || syncing || hasUnsavedChanges || !/^[0-9]{6}$/.test(form.pincode)">
+                            <i class="bi bi-arrow-repeat me-1" :class="{'bi-spin': syncing}"></i>Sync this pincode
+                        </button>
+                        @endcan
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-primary" :disabled="saving">
+                        <button type="submit" class="btn btn-primary" :disabled="saving || syncing">
                             <span x-show="saving" class="spinner-border spinner-border-sm me-1"></span>
                             <span x-text="editingVillageId ? 'Save Changes' : 'Create Village'"></span>
                         </button>
@@ -931,7 +940,8 @@
 @push('scripts')
 <!-- Loaded via main.js or separate scripts -->
 <script>
-    window.backendSyncing = @json(\Illuminate\Support\Facades\Cache::has('syncing_indiapost_pincodes'));
-    window.backendSyncQuery = @json(\Illuminate\Support\Facades\Cache::get('syncing_indiapost_pincodes_query', 'ALL'));
+    window.villageStateScope = @json(auth()->user()->lob_state_name);
+    window.backendSyncing = @json(auth()->user()->can('village-edit') && \Illuminate\Support\Facades\Cache::has(\App\Modules\Core\Controllers\VillageController::syncCacheKey(auth()->user()->lob_state_name, 'running')));
+    window.backendSyncQuery = @json(\Illuminate\Support\Facades\Cache::get(\App\Modules\Core\Controllers\VillageController::syncCacheKey(auth()->user()->lob_state_name, 'query'), 'ALL'));
 </script>
 @endpush

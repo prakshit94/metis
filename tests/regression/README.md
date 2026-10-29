@@ -117,3 +117,14 @@ This validates the complete generated import file with Safe Updates enabled,
 including partial-source/missing-migration guards, transaction rollback, restored
 session settings, preserved schema/history and all verification queries. Real
 backup rows are never loaded by this test.
+
+Village manual-sync audit (synthetic records and mocked postal requests):
+
+```sh
+METIS_TEST_MYSQL_SOCKET=/path/to/disposable/mysql.sock php tests/regression/villages_manual_sync.php
+node tests/regression/villages_frontend.mjs
+```
+
+Village saves must never call India Post. Sync is a separate confirmed action.
+The backend suite also checks state-scoped writes, retry/stop/locking behavior,
+CSV rollback after a full insert batch, and preserved service priorities.

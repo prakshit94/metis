@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 """Read only DDL from the supplied dump; never include private row data in artifacts."""
-import pathlib, re, json, hashlib
+import pathlib, re, json, hashlib, os
 root=pathlib.Path(__file__).resolve().parents[3]
 backup=pathlib.Path('/home/user/dumps/metis120261029.sql')
 out=pathlib.Path(__file__).resolve().parent
+previous_audit=json.loads((out/'schema-audit.json').read_text()) if (out/'schema-audit.json').exists() else {}
+configured_staging=os.environ.get('METIS_IMPORT_STAGING_DATABASE',previous_audit.get('staging_database','metis_transition_backup_20261029'))
 source={};active=None; block=[]
 for line in backup.open():
     m=re.match(r'CREATE TABLE `([^`]+)`',line)
@@ -186,3 +188,14 @@ header="""-- COMPLETE METIS DATA IMPORT FOR MYSQL 8: WORKBENCH OR MYSQL CLI.
 SET @METIS_REPLACE_CONFIRMED='REPLACE ALL METIS DATA FROM 20261029';
 """
 (out/'import-data-full.sql').write_text(header+''.join(sql)+'\n-- Post-commit full copied-field verification: counts must match; mismatches must be zero.\n'+''.join(verify))
+
+# Use a fresh staging schema for each live restoration; never overwrite existing staging tables.
+staging=configured_staging
+assert re.fullmatch(r'metis_transition_backup_[a-zA-Z0-9_]+',staging)
+helper='metis_replace_backup_20261029_'+report['backup_sha256'][:8]
+for filename in ['replace-data.sql','verify-data.sql','audit-backup.sql','import-data-full.sql']:
+    path=out/filename
+    path.write_text(path.read_text().replace('metis_transition_backup_20261029',staging).replace('metis_replace_backup_20261029',helper))
+report['staging_database']=staging
+report['helper_procedure']=helper
+(out/'schema-audit.json').write_text(json.dumps(report,indent=2)+'\n')

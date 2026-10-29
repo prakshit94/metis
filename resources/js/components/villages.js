@@ -2,6 +2,7 @@ import Alpine from 'alpinejs';
 import ApexCharts from 'apexcharts';
 import { Modal } from 'bootstrap';
 import Swal from 'sweetalert2';
+import { createUserActionMenu } from '../utils/user-action-menu';
 
 // ─── CSRF helper ─────────────────────────────────────────────────────────────
 function getCsrfToken() {
@@ -21,7 +22,10 @@ async function apiFetch(url, options = {}) {
   });
 
   const text = await res.text();
-  const data = text ? JSON.parse(text) : {};
+  let data = {};
+  try { data = text ? JSON.parse(text) : {}; } catch (_) {
+    throw new Error(res.status === 419 ? 'Your session expired. Refresh the page and try again.' : 'The server returned an invalid response. Please try again.');
+  }
 
   if (!res.ok) {
     const validation = data?.errors ? Object.values(data.errors).flat().join(' ') : '';
@@ -31,7 +35,6 @@ async function apiFetch(url, options = {}) {
       message.toLowerCase().includes('authoriz') ||
       message.toLowerCase().includes('forbidden')
     ) {
-      window.location.href = '/';
       throw new Error(message);
     }
     throw new Error(message);
@@ -96,6 +99,7 @@ async function confirmDelete({ title, text, confirmButtonText = 'Yes, delete it'
 }
 
 document.addEventListener('alpine:init', () => {
+  Alpine.data('villageActionMenu', createUserActionMenu);
   // ─── Village Table Controller ─────────────────────────────────────────────
   Alpine.data('villageTable', () => ({
     villages: [],
@@ -317,7 +321,9 @@ document.addEventListener('alpine:init', () => {
       }
     },
 
+    loadVersion: 0,
     async loadVillages() {
+      const version = ++this.loadVersion;
       this.isLoading = true;
       try {
         const params = new URLSearchParams({
@@ -338,6 +344,7 @@ document.addEventListener('alpine:init', () => {
 
         const data = await apiFetch(`/api/villages?${params.toString()}`);
 
+        if (version !== this.loadVersion) return;
         const list = data.pagination?.data ?? data.data ?? [];
         this.villages = list.map((v) => this._mapVillage(v));
 
@@ -352,12 +359,13 @@ document.addEventListener('alpine:init', () => {
         this.officeTypesList = data.office_types ?? [];
 
         this.$nextTick(() => {
-          this.initCharts(data.stats ?? {});
+          if (version === this.loadVersion) this.initCharts(data.stats ?? {});
         });
       } catch (err) {
+        if (version !== this.loadVersion) return;
         showToast('Failed to load villages: ' + err.message, 'danger');
       } finally {
-        this.isLoading = false;
+        if (version === this.loadVersion) this.isLoading = false;
       }
     },
 
@@ -455,6 +463,13 @@ document.addEventListener('alpine:init', () => {
     },
 
     // Selection
+    get allVisibleSelected() {
+      return this.villages.length > 0 && this.villages.every(v => this.selectedVillages.includes(String(v.id)));
+    },
+    get someVisibleSelected() {
+      return this.villages.some(v => this.selectedVillages.includes(String(v.id)));
+    },
+
     toggleAll(checked) {
       if (checked) {
         this.villages.forEach((item) => {
@@ -762,18 +777,27 @@ document.addEventListener('alpine:init', () => {
       }
     },
 
-    async syncPincodes() {
+    async syncPincodes(explicitPincode = null) {
       // Prevent launching a second concurrent sync
       if (this.syncing) return;
 
+      const pincode = explicitPincode ?? (/^[0-9]{6}$/.test(this.searchQuery.trim()) ? this.searchQuery.trim() : null);
+      if (pincode !== null && !/^[0-9]{6}$/.test(String(pincode))) {
+        showToast('Enter a six-digit pincode to sync India Post.', 'warning');
+        return false;
+      }
+      const confirmation = await Swal.fire({
+        title: 'Sync India Post manually?',
+        text: pincode ? `Fetch pending office records for pincode ${pincode}? Saved village details may be updated. Service assignments are retained.` : 'Fetch pending office records across your permitted state(s)? This action is separate from saving villages and does not use the other table filters.',
+        icon: 'question', showCancelButton: true, confirmButtonText: 'Sync now', cancelButtonText: 'Cancel',
+      });
+      if (!confirmation.isConfirmed || this.syncing) return false;
       this.syncing = true;
       this.stopSyncing = false;
       this._syncAbort = null; // will hold the current AbortController
 
       let url = '/api/villages/sync-indiapost';
-      if (this.searchQuery && /^\d+$/.test(this.searchQuery)) {
-        url += '?pincode=' + this.searchQuery;
-      }
+      if (pincode !== null) url += '?pincode=' + encodeURIComponent(pincode);
 
       let abortController = new AbortController();
       this._syncAbort = abortController;
@@ -834,7 +858,7 @@ document.addEventListener('alpine:init', () => {
 
           // finished:true — full sync is done (or fatal error)
           if (res.finished) {
-            showToast(res.message || 'Sync complete.', res.success ? 'success' : 'danger');
+            showToast(res.message || 'Sync complete.', res.errors?.length ? 'warning' : (res.success ? 'success' : 'danger'));
             break;
           }
 
@@ -950,13 +974,30 @@ document.addEventListener('alpine:init', () => {
   Alpine.data('villageForm', () => ({
     editingVillageId: null,
     saving: false,
+    syncing: false,
+    originalForm: '',
+    formVersion: 0,
+    get hasUnsavedChanges() { return JSON.stringify(this.form) !== this.originalForm; },
+    async syncPincode() {
+      if (this.saving || this.syncing || !this.editingVillageId || this.hasUnsavedChanges) return;
+      const version = this.formVersion;
+      const id = this.editingVillageId;
+      this.syncing = true;
+      try {
+        const table = Alpine.$data(document.querySelector('[x-data="villageTable"]'));
+        await table.syncPincodes(this.form.pincode);
+        const response = await apiFetch(`/api/villages/${id}`);
+        if (version === this.formVersion) this.loadVillage(response.data);
+      } catch (error) { showToast(error.message, 'danger'); }
+      finally { if (version === this.formVersion) this.syncing = false; }
+    },
     form: {
       village_name: '',
       pincode: '',
       post_so_name: '',
       taluka_name: '',
       district_name: '',
-      state_name: '',
+      state_name: window.villageStateScope ?? '',
       office_id: '',
       office_type_code: '',
       delivery_office_flag: false,
@@ -964,6 +1005,8 @@ document.addEventListener('alpine:init', () => {
     },
 
     loadVillage(v) {
+      this.formVersion++;
+      this.syncing = false;
       this.editingVillageId = v.id;
       this.form = {
         village_name: v.village_name ?? '',
@@ -977,9 +1020,12 @@ document.addEventListener('alpine:init', () => {
         delivery_office_flag: !!v.delivery_office_flag,
         is_rolled_out: !!v.is_rolled_out,
       };
+      this.originalForm = JSON.stringify(this.form);
     },
 
     resetForm() {
+      this.formVersion++;
+      this.syncing = false;
       this.editingVillageId = null;
       this.form = {
         village_name: '',
@@ -987,7 +1033,7 @@ document.addEventListener('alpine:init', () => {
         post_so_name: '',
         taluka_name: '',
         district_name: '',
-        state_name: '',
+        state_name: window.villageStateScope ?? '',
         office_id: '',
         office_type_code: '',
         delivery_office_flag: false,
@@ -996,6 +1042,8 @@ document.addEventListener('alpine:init', () => {
     },
 
     async saveVillage() {
+      if (this.saving || this.syncing) return;
+      const version = this.formVersion;
       this.saving = true;
       try {
         const payload = { ...this.form };
@@ -1010,7 +1058,7 @@ document.addEventListener('alpine:init', () => {
         });
 
         showToast(res.message || 'Village saved successfully.', 'success');
-        getModal('#villageModal')?.hide();
+        if (version === this.formVersion) getModal('#villageModal')?.hide();
         window.dispatchEvent(new CustomEvent('village-updated'));
       } catch (err) {
         showToast(err.message, 'danger');

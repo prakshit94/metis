@@ -1,10 +1,11 @@
 {
-  "test": "tests/regression/import_sql_workbench.php",
-  "assertions_passed": 16,
-  "source": "synthetic only; no private rows loaded",
-  "verification_queries_executed": 108,
-  "current_tables_preserved": 119,
-  "current_migrations_preserved": 125,
-  "live_database_modified": false,
-  "sql_sha256": "b03d68ede9baf442f8de1f4de7309484dd18b42f8796764a12af1841679a780f"
+  "validation": "full live execution and field-by-field verification completed",
+  "source_backup_sha256": "bffdf97435371047e57ba68cf102456726ff48715d7c1b095183a2b338419fee",
+  "sql_sha256": "9c3dcd5abfcd6b16801106e4041947596ca90b88a8bc514c29406b6d9ddbdda2",
+  "tables_verified": 108,
+  "mismatched_tables": 0,
+  "tables_preserved": 119,
+  "migration_records_preserved": 125,
+  "previous_synthetic_guard_assertions_passed": 16,
+  "live_database_modified": true
 }
