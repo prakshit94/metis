@@ -1,0 +1,80 @@
+<?php
+require __DIR__.'/bootstrap.php';
+
+use App\Modules\Catalog\Controllers\ProductController;
+use App\Modules\Catalog\Models\{Product,Category,Warehouse,TaxRate,HsnCode,UnitOfMeasure};
+use App\Modules\Inventory\Models\Stock;
+use App\Modules\Users\Models\{User,Role};
+use Illuminate\Support\Facades\{Artisan,DB,Storage};
+use Illuminate\Http\{Request,UploadedFile};
+
+Artisan::call('migrate',['--force'=>true]);
+$dir='/tmp/metis-product-files-'.bin2hex(random_bytes(5));
+config(['filesystems.disks.public.root'=>$dir]);Storage::forgetDisk('public');
+register_shutdown_function(function()use($dir){if(is_dir($dir)){foreach(new RecursiveIteratorIterator(new RecursiveDirectoryIterator($dir,FilesystemIterator::SKIP_DOTS),RecursiveIteratorIterator::CHILD_FIRST)as$f){$f->isDir()?rmdir($f->getPathname()):unlink($f->getPathname());}rmdir($dir);}});
+$actor=User::create(['name'=>'Product auditor','email'=>'product-audit@example.invalid','password'=>'Example123!','is_active'=>true]);
+setPermissionsTeamId(null);$actor->assignRole(Role::findOrCreate('Super Admin','web'));auth()->guard('web')->setUser($actor);
+$category=Category::create(['name'=>'Sample','slug'=>'sample','status'=>'active','is_active'=>true]);
+$wh=Warehouse::create(['name'=>'Sample warehouse','code'=>'SAMPLE','state'=>'Gujarat','status'=>'active','is_active'=>true]);
+$tax=TaxRate::create(['name'=>'Sample GST','rate'=>18,'status'=>'active','is_active'=>true]);
+$hsn=HsnCode::create(['code'=>'SAMPLE','description'=>'Sample','status'=>'active']);
+$uom=UnitOfMeasure::create(['name'=>'Sample unit','slug'=>'sample-unit','code'=>'SMP','short_name'=>'smp','status'=>'active']);
+$base=['name'=>'Original product','sku'=>'AUDIT-1','category_id'=>$category->id,'uom_id'=>$uom->id,'tax_rate_id'=>$tax->id,'hsn_code_id'=>$hsn->id,'default_warehouse_id'=>$wh->id,'purchase_price'=>50,'selling_price'=>100,'mrp'=>150,'min_stock_level'=>0,'status'=>'published','is_sku_enabled'=>true,'storefront_visible'=>true,'is_featured'=>true,'min_order_qty'=>2,'max_order_qty'=>8];
+function catalogRequest(array $data=[],array $files=[]): Request { $r=Request::create('/api/products','POST',$data,[],$files,['HTTP_ACCEPT'=>'application/json']);$r->setUserResolver(fn()=>auth()->user());return $r; }
+function imageUpload(): UploadedFile { $p=tempnam('/tmp','catalog-png-');file_put_contents($p,base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/lfoAAAAASUVORK5CYII='));register_shutdown_function(fn()=>is_file($p)?unlink($p):null);return new UploadedFile($p,'sample.png','image/png',null,true); }
+$controller=app(ProductController::class);
+$response=$controller->store(catalogRequest($base,['image'=>imageUpload()]));$data=$response->getData(true)['data'];$product=Product::findOrFail($data['id']);$slug=$product->slug;$oldImage=$product->image_path;
+check($data['storefront_available'] && str_contains($data['storefront_url'],$slug),'created product exposes correct storefront availability and URL');
+check(Storage::disk('public')->exists($oldImage),'uploaded product image persists');
+$copy=$controller->duplicate(catalogRequest(),$product)->getData(true)['data'];$copy=Product::findOrFail($copy['id']);
+check(!$copy->storefront_visible && !$copy->is_featured && $copy->status==='draft','duplicates remain explicitly private and unfeatured');
+$controller->update(catalogRequest(array_merge($base,['name'=>'Renamed product']),['image'=>imageUpload()]),$product);
+$product->refresh();check($product->slug===$slug,'renaming a product preserves its public URL');
+check(Storage::disk('public')->exists($oldImage),'replacing an image preserves the image used by its duplicate');
+$copy->delete();$controller->forceDelete(catalogRequest(),(string)$copy->id);
+check(!Storage::disk('public')->exists($oldImage) && Storage::disk('public')->exists($product->image_path),'permanent deletion removes only images with no remaining product references');
+$before=Storage::disk('public')->allFiles();$oldName=$product->name;$oldPath=$product->image_path;$failStock=true;
+Stock::saving(function($stock)use(&$failStock,$product){if($failStock && (int)$stock->product_id===(int)$product->id)throw new RuntimeException('Synthetic related write failure');});
+try{$controller->update(catalogRequest(array_merge($base,['name'=>'Must roll back','warehouse_is_sku_enabled'=>true]),['image'=>imageUpload()]),$product);throw new LogicException('Failed write accepted');}catch(RuntimeException $e){check($e->getMessage()==='Synthetic related write failure','related stock failure is propagated');}$failStock=false;
+check($product->fresh()->name===$oldName && $product->fresh()->image_path===$oldPath,'product row rolls back together with related stock failure');
+check(Storage::disk('public')->exists($oldPath) && Storage::disk('public')->allFiles()===$before,'failed save keeps previous image and removes the new upload');$product->refresh();
+invalid(fn()=>$controller->update(catalogRequest(array_merge($base,['min_order_qty'=>9,'max_order_qty'=>2])),$product),'invalid storefront quantity range rejected');
+invalid(fn()=>$controller->update(catalogRequest(array_merge($base,['default_discount_type'=>'percent','default_discount'=>101])),$product),'percentage discounts above client limit rejected by backend');
+$legacy=$base;foreach(['storefront_visible','is_featured','min_order_qty','max_order_qty']as$key)unset($legacy[$key]);
+$controller->update(catalogRequest($legacy),$product);$product->refresh();check($product->storefront_visible && $product->min_order_qty===2 && $product->max_order_qty===8,'older update clients preserve storefront settings');
+$controller->bulkStorefront(catalogRequest(['ids'=>[$product->id],'storefront_visible'=>false]));check(!$product->fresh()->storefront_visible && $product->fresh()->selling_price==='100.00','bulk shop hiding leaves existing price unchanged');
+$controller->bulkStorefront(catalogRequest(['ids'=>[$product->id],'storefront_visible'=>true]));
+$product->update(['status'=>'draft','is_active'=>false]);
+$listed=$controller->index(catalogRequest(['summary'=>1,'without_options'=>1,'storefront'=>'listed']))->getData(true)['data'];
+$blocked=$controller->index(catalogRequest(['summary'=>1,'without_options'=>1,'storefront'=>'blocked']))->getData(true)['data'];
+check(count($listed)===0 && count($blocked)===1,'enabled draft products are shown as unavailable rather than publicly listed');
+$denied=User::create(['name'=>'No product grants','email'=>'no-product@example.invalid','password'=>'Example123!','is_active'=>true]);$r=catalogRequest(['ids'=>[$product->id],'storefront_visible'=>false]);$r->setUserResolver(fn()=>$denied);
+try{$controller->bulkStorefront($r);throw new LogicException('Permission bypass');}catch(Symfony\Component\HttpKernel\Exception\HttpException $e){check($e->getStatusCode()===403,'shop bulk changes enforce existing product-edit permission');}
+$product->update(['status'=>'published','is_active'=>true]);
+$collision=Product::create(['name'=>'Deleted slug','sku'=>'DELETED-COPY','slug'=>'deleted-slug','selling_price'=>1]);$collision->delete();
+$new=$controller->store(catalogRequest(array_merge($base,['name'=>'Deleted slug','sku'=>'AUDIT-2'])))->getData(true)['data'];
+check($new['slug']!=='deleted-slug','new slugs avoid soft-deleted unique keys');
+function csvRequest(string $csv): Request { $path=tempnam('/tmp','catalog-csv-');file_put_contents($path,$csv);register_shutdown_function(fn()=>is_file($path)?unlink($path):null);return catalogRequest([],['file'=>new UploadedFile($path,'products.csv','text/csv',null,true)]); }
+$csv="name,sku,category_id,selling_price,default_warehouse_id,storefront_visible,is_featured,min_order_qty,max_order_qty\nBad row,BAD-ROW,{$category->id},not-a-price,{$wh->id},1,1,2,6\nGood row,CSV-GOOD,{$category->id},25,{$wh->id},1,1,2,6\n";
+$result=$controller->import(csvRequest($csv))->getData(true);
+check($result['imported']===1 && count($result['errors'])===1 && !Product::where('sku','BAD-ROW')->exists(),'CSV rejects malformed numbers without partially creating a row');
+$imported=Product::where('sku','CSV-GOOD')->firstOrFail();check($imported->storefront_visible && $imported->is_featured && $imported->max_order_qty===6,'CSV imports validated storefront settings');
+$controller->import(csvRequest("name,sku,category_id,selling_price,default_warehouse_id\nLegacy import,CSV-GOOD,{$category->id},26,{$wh->id}\n"));check($imported->fresh()->max_order_qty===6 && $imported->fresh()->storefront_visible,'legacy CSV without storefront columns preserves those settings');
+invalid(fn()=>$controller->import(csvRequest("name,sku,sku\nTest,A,B\n")),'duplicate CSV headers rejected');
+ob_start();$controller->export(catalogRequest())->sendContent();$csv=ob_get_clean();check(str_contains(explode("\n",$csv)[0],'storefront_visible') && str_contains(explode("\n",$csv)[0],'max_order_qty'),'server CSV export includes storefront fields');
+invalid(fn()=>$controller->index(catalogRequest(['q'=>['invalid']])),'invalid search payload returns validation instead of a server error');
+$inclusivePayload=array_merge($base,['sku'=>'EXACT-GST','name'=>'Exact inclusive price','selling_price'=>1,'selling_price_including_tax'=>'2000.00','mrp'=>2500]);
+$exact=$controller->store(catalogRequest($inclusivePayload))->getData(true)['data'];$exactProduct=Product::findOrFail($exact['id']);
+check($exact['selling_price_inc_gst']===2000 && $exactProduct->selling_price_including_tax==='2000.00','entered inclusive price survives persistence and API mapping exactly');
+check(abs((float)$exactProduct->selling_price*1.18-2000)<0.000001,'taxable price is derived precisely from authoritative inclusive input');
+$controller->update(catalogRequest($inclusivePayload),$exactProduct);check($exactProduct->fresh()->selling_price_inc_gst===2000.0,'repeated product edits do not drift the inclusive price');
+$copy=$controller->duplicate(catalogRequest(),$exactProduct)->getData(true)['data'];check($copy['selling_price_inc_gst']===2000,'duplicated products retain exact inclusive pricing');
+ob_start();$controller->export(catalogRequest())->sendContent();$priceCsv=ob_get_clean();check(str_contains(explode("\n",$priceCsv)[0],'selling_price_including_tax'),'CSV export preserves authoritative inclusive prices');
+$csvResult=$controller->import(csvRequest("name,sku,category_id,tax_rate_id,selling_price,selling_price_including_tax\nExact import,EXACT-IMPORT,{$category->id},{$tax->id},1,2000.00\n"))->getData(true);
+check($csvResult['imported']===1 && Product::where('sku','EXACT-IMPORT')->firstOrFail()->selling_price_inc_gst===2000.0,'CSV accepts an authoritative inclusive price without trusting the supplied base');
+$coupon=App\Modules\Orders\Models\Coupon::create(['code'=>'EXACT-TYPE','type'=>'percentage','value'=>10,'is_active'=>true]);
+$couponData=app(App\Modules\Orders\Controllers\CouponController::class)->validateApi(catalogRequest(['code'=>'EXACT-TYPE','subtotal'=>'999999','items'=>[['product_id'=>(string)$exactProduct->id,'quantity'=>'1.25']]]))->getData(true);
+check($couponData['valid'] && abs($couponData['eligible_subtotal']-(2000/1.18*1.25))<0.000001,'coupon preview retains exact inclusive pricing with string IDs and fractional quantities');
+$exactProduct->update(['selling_price'=>100]);check($exactProduct->fresh()->selling_price_including_tax===null && $exactProduct->fresh()->selling_price==='100.00','legacy base-price writes clear obsolete inclusive pricing');
+invalid(fn()=>$controller->store(catalogRequest(array_merge($inclusivePayload,['sku'=>'BAD-PRECISION','selling_price_including_tax'=>'2000.001']))),'inclusive amounts reject fractions smaller than one paisa');
+echo "Catalog/storefront regression checks complete.\n";

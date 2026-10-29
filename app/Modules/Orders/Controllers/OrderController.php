@@ -609,11 +609,15 @@ class OrderController extends Controller implements HasMiddleware
         $sortDirection = $request->input('sort_direction', 'desc');
         if (in_array($sortField, ['id', 'order_no', 'net_amount', 'order_date', 'status'])) {
             $query->orderBy($sortField, $sortDirection === 'asc' ? 'asc' : 'desc');
+            if ($sortField !== 'id') {
+                $query->orderBy('id', $sortDirection === 'asc' ? 'asc' : 'desc');
+            }
         } else {
             $query->latest('id');
         }
         $perPage = min(max($request->integer('limit', 10), 1), 200);
         $orders = $query->paginate($perPage);
+        app(\App\Services\OrderAttribution::class)->attach($orders->getCollection());
 
         $productWarehousePairs = [];
         foreach ($orders as $order) {
@@ -1230,7 +1234,7 @@ class OrderController extends Controller implements HasMiddleware
                 'local_product.name',
                 'local_product.sku',
                 'local_product.image_path',
-                'local_product.selling_price',
+                DB::raw('COALESCE(local_product.selling_price_including_tax / (1 + COALESCE(local_tax_rate.rate, 0) / 100), local_product.selling_price) as selling_price'),
                 DB::raw('COALESCE(local_tax_rate.rate, 0) as tax_rate'),
                 DB::raw('SUM(local_item.quantity) as units_sold'),
                 DB::raw('COUNT(DISTINCT local_order.id) as order_count'),
@@ -1238,7 +1242,7 @@ class OrderController extends Controller implements HasMiddleware
                 DB::raw('SUM(local_item.total_amount) as sales_value'),
                 DB::raw('MAX(local_order.order_date) as last_sold_at')
             )
-            ->groupBy('local_product.id', 'local_product.name', 'local_product.sku', 'local_product.image_path', 'local_product.selling_price', 'local_tax_rate.rate')
+            ->groupBy('local_product.id', 'local_product.name', 'local_product.sku', 'local_product.image_path', 'local_product.selling_price', 'local_product.selling_price_including_tax', 'local_tax_rate.rate')
             ->orderByDesc('units_sold')
             ->orderByDesc('order_count')
             ->limit(5)
@@ -1479,6 +1483,7 @@ class OrderController extends Controller implements HasMiddleware
         $this->applyOrderActionPermissionScope($query, $user);
 
         $order = $query->findOrFail($id);
+        app(\App\Services\OrderAttribution::class)->attach(new \Illuminate\Database\Eloquent\Collection([$order]));
 
         if (request()->wantsJson() || request()->ajax()) {
             return response()->json([

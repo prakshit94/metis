@@ -1,0 +1,12 @@
+import fs from 'node:fs';
+import vm from 'node:vm';
+import assert from 'node:assert/strict';
+const factories=new Map();
+vm.runInNewContext(fs.readFileSync(new URL('../../resources/js/components/orders.js',import.meta.url),'utf8').replace(/^import .*;\n/gm,''),{Alpine:{data:(name,factory)=>factories.set(name,factory)},document:{addEventListener:(name,fn)=>{if(name==='alpine:init')fn();}},createSearchComponent:()=>()=>({}),window:{location:{hostname:'127.0.0.1'}},URL,console});
+const table=factories.get('orderTable')();
+const customer=table.mapOrder({id:1,status:'pending',created_by:null,creator:null,placed_by:{name:'Shop Customer',type:'customer',source:'shop',email:'',photo:null}});
+assert.equal(customer.createdBy.name,'Shop Customer');assert.equal(customer.createdBy.source,'shop');assert.equal(customer.createdBy.avatar,'/assets/images/default_avatar.jpeg');
+const staff=table.mapOrder({id:2,status:'pending',creator:{name:'Staff User',email:'staff@example.invalid',photo:'users/photos/sample.jpg'}});
+assert.equal(staff.createdBy.name,'Staff User');assert.equal(staff.createdBy.avatar,'/storage/users/photos/sample.jpg');
+const unknown=table.mapOrder({id:3,status:'pending',creator:null});assert.equal(unknown.createdBy.name,'Not recorded');assert.equal(unknown.createdBy.source,'');
+console.log('PASS: admin order mapping distinguishes shop customers, staff creators and unknown legacy orders.');

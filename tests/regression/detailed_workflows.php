@@ -76,7 +76,7 @@ $response = $uploadHttp('/api/payments/import/preview', [], "\xEF\xBB\xBFreferen
 $json = json_decode($response->getContent(), true);
 check($response->getStatusCode() === 200 && count($json['preview'] ?? []) === 1 && ($json['preview'][0]['transaction_id'] ?? '') === "TXN\nMULTILINE" && empty($json['errors']), 'payment CSV preview accepts UTF-8 BOM and quoted multiline fields');
 $operator = User::create(['name' => 'CSV operator', 'email' => 'csv-operator@example.invalid', 'password' => bcrypt('Example123!')]);
-foreach (['orders.deliver', 'orders.return', 'orders.view.dispatched', 'orders.view.delivered'] as $grant) {
+foreach (['orders.deliver', 'orders.return', 'orders.view.dispatched', 'orders.view.delivered', 'returns.qc', 'chat-view', 'messages-view', 'messages-edit'] as $grant) {
     $operator->givePermissionTo(Permission::findOrCreate($grant, 'web'));
 }
 $operatorToken = $operator->createToken('csv-regression')->plainTextToken;
@@ -120,6 +120,9 @@ check($response->getStatusCode() === 200 && DB::table('chat_messages')->where('i
 $response = $http('POST', '/api/chat/conversations/'.$chatId.'/read', ['message_id' => $messageId], $operatorToken);
 check($response->getStatusCode() === 200 && DB::table('chat_message_reads')->where('message_id', $messageId)->where('user_id', $operator->id)->exists(), 'native read receipts are recorded');
 $outsider = User::create(['name' => 'Chat outsider', 'email' => 'chat-outsider@example.invalid', 'password' => bcrypt('Example123!')]);
+foreach (['chat-view', 'messages-view', 'messages-create'] as $grant) {
+    $outsider->givePermissionTo(Permission::findOrCreate($grant, 'web'));
+}
 $outsiderToken = $outsider->createToken('chat-outsider')->plainTextToken;
 $response = $http('GET', '/api/chat/conversations/'.$chatId.'/messages', [], $outsiderToken);
 check($response->getStatusCode() === 404, 'non-member cannot read a private conversation');

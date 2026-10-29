@@ -1,0 +1,33 @@
+<?php
+require __DIR__.'/bootstrap.php';
+use App\Modules\Users\Models\{User,Role};
+use App\Modules\Customers\Models\Customer;
+use App\Modules\Orders\Models\Order;
+use App\Modules\Orders\Controllers\OrderController;
+use Illuminate\Support\Facades\{DB,Artisan};
+use Illuminate\Http\Request;
+Artisan::call('migrate',['--force'=>true]);
+$actor=User::create(['name'=>'Staff placer','email'=>'staff-placer@example.invalid','password'=>'Example123!','is_active'=>true]);setPermissionsTeamId(null);$actor->assignRole(Role::findOrCreate('Super Admin','web'));auth()->setUser($actor);
+$customer=Customer::create(['firstname'=>'Shop','middlename'=>'Sample','lastname'=>'Customer']);
+$accountId=DB::table('customer_accounts')->insertGetId(['customer_id'=>$customer->id,'email'=>'shop-placer@example.invalid','password'=>bcrypt('Example123!'),'email_verified_at'=>now(),'login_enabled'=>true,'ordering_enabled'=>true,'created_at'=>now(),'updated_at'=>now()]);
+$ids=[];foreach(['shop','staff','unknown'] as $source){$ids[$source]=DB::table('orders')->insertGetId(['order_no'=>'PLACER-'.strtoupper($source),'type'=>'sale','party_id'=>$customer->id,'status'=>'pending_confirmation','created_by'=>$source==='staff'?$actor->id:null,'order_date'=>'2026-10-15','net_amount'=>2000,'created_at'=>now(),'updated_at'=>now()]);}
+DB::table('storefront_checkouts')->insert(['request_key'=>(string)Illuminate\Support\Str::uuid(),'customer_account_id'=>$accountId,'order_id'=>$ids['shop'],'contact_name'=>'Different delivery recipient','contact_phone'=>'9999999999','created_at'=>now(),'updated_at'=>now()]);
+$before=DB::table('orders')->select('id','created_by','party_id','status','net_amount')->orderBy('id')->get()->toJson();
+$collection=Order::whereIn('id',array_values($ids))->get();app(App\Services\OrderAttribution::class)->attach($collection);$rows=$collection->keyBy('id');
+check($rows[$ids['shop']]->placed_by['name']==='Shop Sample Customer' && $rows[$ids['shop']]->placed_by['source']==='shop','shop attribution identifies the customer account rather than its delivery recipient');
+check($rows[$ids['shop']]->created_by===null && $rows[$ids['shop']]->creator===null,'shop attribution never fabricates a staff creator');
+check($rows[$ids['staff']]->placed_by['name']==='Staff placer' && $rows[$ids['staff']]->placed_by['type']==='staff','staff order attribution is preserved');
+check($rows[$ids['unknown']]->placed_by['type']==='unknown' && $rows[$ids['unknown']]->placed_by['name']==='Not recorded','unattributed legacy orders are not assumed to be shop orders');
+check(!array_key_exists('password',$rows[$ids['shop']]->placed_by) && !array_key_exists('contact_phone',$rows[$ids['shop']]->placed_by),'attribution exposes no credentials or recipient phone');
+check($before===DB::table('orders')->select('id','created_by','party_id','status','net_amount')->orderBy('id')->get()->toJson(),'attaching attribution leaves all stored order fields unchanged');
+$controller=app(OrderController::class);
+$params=['status'=>'pending,unfulfillable,pending_confirmation,confirmed,processing,ready_to_ship','date'=>'30d','from_date'=>'2026-09-29','to_date'=>'2026-10-29','limit'=>'25','page'=>'1','sort_field'=>'id','sort_direction'=>'desc'];
+$r=Request::create('/api/orders','GET',$params,[],[],['HTTP_ACCEPT'=>'application/json']);$r->setUserResolver(fn()=>$actor);app()->instance('request',$r);
+$result=$controller->index($r)->getData(true);$data=collect($result['orders']['data'])->keyBy('id');
+check($result['orders']['total']===3 && $data[$ids['shop']]['placed_by']['name']==='Shop Sample Customer','provided status/date/pagination filters return customer attribution in the admin list');
+check($data[$ids['staff']]['placed_by']['name']==='Staff placer','list response preserves staff attribution beside customer orders');
+$detail=$controller->show((string)$ids['shop'])->getData(true)['order'];check($detail['placed_by']['source']==='shop','order detail API includes the same shop attribution');
+$params['sort_field']='net_amount';$params['limit']='1';$r=Request::create('/api/orders','GET',$params,[],[],['HTTP_ACCEPT'=>'application/json']);$r->setUserResolver(fn()=>$actor);app()->instance('request',$r);$first=$controller->index($r)->getData(true)['orders']['data'][0]['id'];
+$params['page']='2';$r=Request::create('/api/orders','GET',$params,[],[],['HTTP_ACCEPT'=>'application/json']);$r->setUserResolver(fn()=>$actor);app()->instance('request',$r);$second=$controller->index($r)->getData(true)['orders']['data'][0]['id'];
+check($first===$ids['unknown'] && $second===$ids['staff'],'tied totals paginate deterministically using order ID');
+echo "Admin order attribution checks complete.\n";

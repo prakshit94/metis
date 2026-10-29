@@ -1228,9 +1228,10 @@ document.addEventListener('alpine:init', () => {
         isDraft: o.status === 'future_order',
         futureOrderDate: o.future_order_date || null,
         createdBy: {
-          name: o.creator ? (o.creator.name || '').trim() : 'N/A',
-          email: o.creator ? o.creator.email || '' : '',
-          avatar: this.creatorPhotoUrl(o.creator?.photo || o.creator?.avatar),
+          name: o.placed_by?.name || (o.creator ? (o.creator.name || '').trim() : 'Not recorded'),
+          email: o.placed_by?.email ?? (o.creator ? o.creator.email || '' : ''),
+          avatar: this.creatorPhotoUrl(o.placed_by?.photo || o.creator?.photo || o.creator?.avatar),
+          source: o.placed_by?.source || '',
         },
         updatedBy: o.updater ? `${o.updater.name || ''}`.trim() : 'N/A',
         isUnfulfillable: o.is_unfulfillable || false,

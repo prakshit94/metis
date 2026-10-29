@@ -83,3 +83,37 @@ complete Blade rendering. It writes read-only fixture HTML/JSON under
 configuration, delayed visibility measurement, keyboard access and observer/listener
 cleanup. Menus are portaled outside the scrolling table/card without changing the
 underlying user actions.
+
+Shared integer validation (no database required):
+
+```sh
+php tests/regression/typed_validation.php
+php tests/regression/typed_validation.php --storefront
+node tests/regression/integer_selection.mjs
+```
+
+Only fields declared `integer` are normalized after successful validation. Keep
+money/fractional quantities as `numeric` and phone/PIN/OTP/SKU values as text or
+`digits` rules. Use validated data for persisted application input.
+
+PHP migration and seeder verification (disposable database only):
+
+```sh
+METIS_TEST_MYSQL_SOCKET=/path/to/disposable/mysql.sock php tests/regression/migration_fresh_seed.php
+```
+
+Fresh installs execute every PHP migration in `database/migrations`, followed by
+`DatabaseSeeder`. No Laravel SQL schema dump is present. The storefront shares
+the root migration directory. Backup import SQL under `database/transitions`
+is manual tooling and is never executed by Artisan migrations.
+
+MySQL Workbench import SQL checks (synthetic source data, disposable schemas):
+
+```sh
+METIS_TEST_MYSQL_SOCKET=/path/to/disposable/mysql.sock php tests/regression/import_sql_workbench.php
+```
+
+This validates the complete generated import file with Safe Updates enabled,
+including partial-source/missing-migration guards, transaction rollback, restored
+session settings, preserved schema/history and all verification queries. Real
+backup rows are never loaded by this test.

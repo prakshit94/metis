@@ -553,12 +553,12 @@ document.addEventListener('alpine:init', () => {
     toggleAll(checked) {
       if (checked) {
         this.currentItems.forEach((item) => {
-          if (!this.selectedItems.includes(String(item.id))) {
-            this.selectedItems.push(String(item.id));
+          if (!this.selectedItems.includes(item.id)) {
+            this.selectedItems.push(item.id);
           }
         });
       } else {
-        const currentIds = this.currentItems.map((item) => String(item.id));
+        const currentIds = this.currentItems.map((item) => item.id);
         this.selectedItems = this.selectedItems.filter((id) => !currentIds.includes(id));
       }
     },

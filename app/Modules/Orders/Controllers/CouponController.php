@@ -53,8 +53,8 @@ class CouponController extends Controller
         if ($request->has('items')) {
             $items = $request->input('items', []);
             $productIds = collect($items)->pluck('product_id')->unique()->values();
-            $products = Product::whereIn('id', $productIds)
-                ->get(['id', 'category_id', 'selling_price', 'default_discount', 'default_discount_type'])
+            $products = Product::with('taxRate')->whereIn('id', $productIds)
+                ->get(['id', 'category_id', 'selling_price', 'selling_price_including_tax', 'tax_rate_id', 'default_discount', 'default_discount_type'])
                 ->keyBy('id');
             $applicableProducts = array_map('strval', $coupon->applicable_products ?? []);
             $excludedProducts = array_map('strval', $coupon->excluded_products ?? []);

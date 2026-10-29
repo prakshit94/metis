@@ -1184,6 +1184,7 @@
                                          :alt="order.createdBy.name">
                                     <div>
                                         <div class="fw-medium small" x-text="order.createdBy.name"></div>
+                                        <div x-show="order.createdBy.source === 'shop'" class="small text-body-secondary"><i class="bi bi-bag me-1" aria-hidden="true"></i>Shop · Customer</div>
                                         <div x-show="order.officeName" class="small text-body-secondary"><i class="bi bi-building me-1" aria-hidden="true"></i><span x-text="order.officeName"></span></div>
                                     </div>
                                 </div>

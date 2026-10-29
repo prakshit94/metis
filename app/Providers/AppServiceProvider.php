@@ -36,6 +36,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        \Illuminate\Support\Facades\Validator::resolver(
+            fn ($translator, $data, $rules, $messages, $attributes) => new \App\Validation\TypedValidator($translator, $data, $rules, $messages, $attributes)
+        );
+
         // Enable strict modes but handle lazy loading gracefully to prevent app crashes
         Model::preventSilentlyDiscardingAttributes(! app()->isProduction());
         Model::preventAccessingMissingAttributes(! app()->isProduction());

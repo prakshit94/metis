@@ -1,0 +1,264 @@
+{
+  "backup_tables": 109,
+  "project_tables": 119,
+  "new_tables": [
+    "business_sequences",
+    "customer_accounts",
+    "offices",
+    "organization_events",
+    "security_mail_settings",
+    "storefront_checkouts",
+    "two_factor_email_codes",
+    "two_factor_login_challenges",
+    "two_factor_security_events",
+    "user_two_factor_settings"
+  ],
+  "changes": {
+    "order_items": {
+      "new_columns": {},
+      "type_changes": {
+        "unit_price": [
+          "decimal(15,2) NOT NULL",
+          "decimal(21,8) NOT NULL"
+        ]
+      }
+    },
+    "orders": {
+      "new_columns": {
+        "state_team_id": "bigint unsigned DEFAULT NULL",
+        "office_id": "bigint unsigned DEFAULT NULL"
+      },
+      "type_changes": {}
+    },
+    "products": {
+      "new_columns": {
+        "storefront_visible": "tinyint(1) NOT NULL DEFAULT '0'",
+        "max_order_qty": "smallint unsigned NOT NULL DEFAULT '1000'",
+        "selling_price_including_tax": "decimal(15,2) DEFAULT NULL",
+        "min_order_qty": "smallint unsigned NOT NULL DEFAULT '1'",
+        "is_featured": "tinyint(1) NOT NULL DEFAULT '0'"
+      },
+      "type_changes": {}
+    },
+    "refunds": {
+      "new_columns": {
+        "credit_note_id": "bigint unsigned DEFAULT NULL"
+      },
+      "type_changes": {}
+    },
+    "shipment_tracking_events": {
+      "new_columns": {
+        "provider_event_key": "varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL"
+      },
+      "type_changes": {}
+    },
+    "users": {
+      "new_columns": {
+        "two_factor_required": "tinyint(1) NOT NULL DEFAULT '0'",
+        "office_id": "bigint unsigned DEFAULT NULL"
+      },
+      "type_changes": {}
+    }
+  },
+  "backup_sha256": "96e67f3783857a1b1918280efdc91dcd9631aeee8365d94480b17de1fd848963",
+  "migration_hashes": {
+    "0001_01_01_000000_create_departments_table.php": "66779936a76c43aab6d0688519f3739796c0af00f4ef17265c2af66e4bf46050",
+    "0001_01_01_000000_create_designations_table.php": "02dc5d8ec6ac784c45ae2767d4c6d0f3a82c75b418af56c308c21fe9231ff811",
+    "0001_01_01_000000_create_employment_types_table.php": "3b898303d2983f0732ed055a4d1db0b82132c44d4b159ded2f8509dfccf1a282",
+    "0001_01_01_000000a_create_users_table.php": "17e2f5e730e34e10c151d1b2274f3028176dab6346286773fc731d669e8e9174",
+    "0001_01_01_000000b_create_password_reset_tokens_table.php": "5626fbbf4786695f0f39a1d9782dfaa6cc929961252624e5164be3116102e421",
+    "0001_01_01_000000c_create_sessions_table.php": "527f8282518417a32a706b8f0df001fede796625e8b319cd9ca14532f35fa4b5",
+    "0001_01_01_000001_create_cache_table.php": "7a869384ac171149b2dd93d6fdfe3546bfa636e2d21c93995fbcbda19da2a871",
+    "0001_01_01_000001a_create_cache_locks_table.php": "9a939cff8a38a78de40397048574d15a3a44efa52c376cebdd6c0c158199013e",
+    "0001_01_01_000002_create_jobs_table.php": "c90b41f134032f94bf1863783020660ab7755725127c31dfd2d2b74559e0a7d7",
+    "0001_01_01_000002a_create_job_batches_table.php": "aefa00945a7112e714f5dfb1d77e390919d3352afdbdb0f1d71ed0a929621a58",
+    "0001_01_01_000002b_create_failed_jobs_table.php": "4f4e4692e4ef2beb75a8420869f1a63185c967e5c8f8f790429465c6ea9fd155",
+    "2025_01_01_000001_create_personal_access_tokens_table.php": "2227a68e399b09233d75a4d539930442bc9b5aefca5c4dd50b4c6d92220ffe7c",
+    "2025_01_01_000002_create_permissions_table.php": "7c3fb4f70ee36097889af07ed53e89b0523f2cfd6cf1686bfa00ffca201c66f5",
+    "2025_01_01_000002a_create_roles_table.php": "1ac149dca33866125606b560c3e93a429050e09497a84c7e93f6837ee721507a",
+    "2025_01_01_000002b_create_model_has_permissions_table.php": "523d92049fcfe528978a2fd3f81a7f30a45a77e24371602963b3c0fb62f9623e",
+    "2025_01_01_000002c_create_model_has_roles_table.php": "6ecb15381bda29c679095b6f0a887923eb2d2d6f44e67da2759434d84fb525a4",
+    "2025_01_01_000002d_create_role_has_permissions_table.php": "22172915f27b211186b8cf216eac2ed155df564a8debcdf8153bddbc0d66328e",
+    "2025_01_01_000003_create_login_histories_table.php": "ffa60cde9bddca85b748a4c77834deab98c3617270931f6d9972c09358921b29",
+    "2026_06_01_000100_create_chat_conversations_table.php": "3c77b8507870aaf9184b1f4acdb4bc6e30425e86601aba24b69fed14e53e8cb2",
+    "2026_06_01_000100a_create_chat_members_table.php": "62308495a78bdce89acf5497ec86ced0d8a5c975a603777b4fefaf8bc86d681c",
+    "2026_06_01_000100b_create_chat_messages_table.php": "0d406717a74cb65d35adbef471ca67539a19caa54e92c2cbcbad09e0510375ea",
+    "2026_06_01_000100c_create_chat_message_reads_table.php": "d9b3af3d18655cab20bb5a1bfb2e3b3ab425b0e583611ab393434f9a503d2cbb",
+    "2026_06_01_000100d_create_chat_message_deliveries_table.php": "801961e803fea8fd3b080abdd9c1d24475f54379c9aa984cd2c8c3499f8e7b4f",
+    "2026_06_01_000100e_create_chat_presence_table.php": "a2a84f04dc6ba154069a16ad6fecc101159e04007dc0beaf2e41c02f36ff72b2",
+    "2026_06_01_000100f_create_chat_notifications_table.php": "f606a9977c5407c0fe2b753c33d30eefa5c23fd443570c3c9739bfa41ca1b516",
+    "2026_06_01_000100g_create_chat_audit_logs_table.php": "582653f3bd816af9456e6d57ff7dd45de0f3c38c132c16dbb79ba33dac863776",
+    "2026_07_07_000001_create_categories_table.php": "d2e5b29f0dc86eba2bd6ac5c474cb4bfb77b5b401c165d93825c260b549758d5",
+    "2026_07_07_000002_create_brands_table.php": "c564109294b69629b9d5d68af5eb004d7c92f798eba1d2ca98f475826e3f2ce0",
+    "2026_07_07_000003_create_units_of_measure_table.php": "0d65b3c5b4cb86f9bc0d0a296343eb8feebe75023e78060d18dfb07a02ce027d",
+    "2026_07_07_000004_create_tax_rates_table.php": "b93340a98da5993349c4c700710822f4dbb689bbc8050eb5f134eafdfe5be7dd",
+    "2026_07_07_000005_create_hsn_codes_table.php": "10f7ad746fda5329df7e861a8e04cfa1c17f4f5645e2ad38ddbc1434216a1cf0",
+    "2026_07_07_000005a_create_villages_table.php": "73801da50c9f45f8f74e0e7d1fbc81c32efa2ed5869fc72bfab0785487d8d561",
+    "2026_07_07_000005b_create_services_table.php": "fa666291b84a6259d4c190aa1dd7671963dbdc212d9e2996dff08e92f3ef5796",
+    "2026_07_07_000005c_create_village_service_mappings_table.php": "216b10ab3bcab218753e1b4f61d09425f1f8d52b9777c79c7eded4d6865cc413",
+    "2026_07_07_000006_create_warehouses_table.php": "315ceeaf853cba1473559b147b7a4031cff783cb6e754d8b1ba5f6fe6756a0a7",
+    "2026_07_07_000007_create_product_attributes_table.php": "92668e5b035c52db4e95e9e1b1c9a85b576ec5bc1f8a7390a520ba8c890741f3",
+    "2026_07_07_000008_create_product_attribute_values_table.php": "e8d0f18aa3726d8a311b6f2d5d682371d80cd4bbe60daf2a6fcc6509756b6228",
+    "2026_07_07_000009_create_suppliers_table.php": "1c3a173cb858c8b3bdde1a02d0eb9dac7ccdbf906e85bf4969dd5fde5052fc2a",
+    "2026_07_07_000010_create_products_table.php": "14529de80bcf85b95b217bb024b4877ae69f7d3211b42bc036c1e32892cd0de6",
+    "2026_07_07_000010a_create_product_attribute_mapping_table.php": "8cb43749b4c8354e7fbdc2e43b842e6bdf63df7281800ce8c5cb1fc6429d7efb",
+    "2026_07_07_000014_create_stocks_table.php": "2ce9d8c03cc7fae572c02a7b7b1cce019e1b4696dd90f6c955c388a06798d684",
+    "2026_07_07_000015_create_stock_batches_table.php": "128054a16cae390859e0c859eb5f4403e48cd263490c8c9f9d07918b7cffd85a",
+    "2026_07_07_000016_create_stock_movements_table.php": "f1b5d0020be51265f4d0bd6dfabb9f762845d8d3272e133d276532960792cfa3",
+    "2026_07_07_000016a1_create_coupons_table.php": "573b3906b44744b85de0756302231a7c41fded65d42a3c9d093a84db3dc5500a",
+    "2026_07_07_000016a2_create_offers_table.php": "a8472558f519f79d26dd24e280d2b6b83da166c651692417cdd0219c8ac301e6",
+    "2026_07_07_000016a3_create_parties_table.php": "b3e5c60cef1bdd04d7a06ee547b312a0f0027be5e7e2c95c67d6e94c88a670b5",
+    "2026_07_07_000016a4_create_party_addresses_table.php": "eff954b7c923f56e79162091873205694928316769d548f8f4b13107b93f99ca",
+    "2026_07_07_000016b_create_orders_table.php": "dd2d3a8098eac73c2d7d18c81f9551fc1e1f08981dae8ad285b870a79db9681b",
+    "2026_07_07_000016ba_create_order_items_table.php": "afa32588ed13cd85498f7cad033dab7bbbf040f8736b7aa8029dd79018c1dabb",
+    "2026_07_07_000016bb_create_order_status_logs_table.php": "7f5923012c940b239e64a08214664b55a44bd3b4fdee75f1ea9d4e10e893d982",
+    "2026_07_07_000017_create_stock_reservations_table.php": "0c417325f5caa1fce129b0d43e171e1a0cc1b96231d4ffde0d0ceda6f16b66f0",
+    "2026_07_07_000018_create_stock_transfers_table.php": "323089f06a21f781d5604459cad08d172142e122e447932ea7e78e9c9f0a414b",
+    "2026_07_07_000019_create_stock_transfer_items_table.php": "1c6b3fcf1744f2977aa06d96da58eb01f1216df60d1124705d2eace7ea9f2abe",
+    "2026_07_07_000020_create_inventory_adjustments_table.php": "7bc2db2b8fda72ab23d425b4c8f180009e110ed4c0748b8d37b7672d0731cb32",
+    "2026_07_07_000021_create_inventory_adjustment_items_table.php": "9683c1567782728fddddcc27322a3d927fc6304f30add58588261d33db19dd78",
+    "2026_07_09_000003_create_invoices_table.php": "9b2f882fb1c123bc902dad5663cd82f064b293cd8e5f3972cf14924abbe23f4d",
+    "2026_07_09_000004_create_shipments_table.php": "0d27d86d1d42272b92a9d7bf6ac82c431b99066e1fccfbe37b440cf5895d9760",
+    "2026_07_09_000005_create_payments_table.php": "624cfde2228907c9a403a9d3b64aadff3e40f42be3abc60b2173468e1e48b813",
+    "2026_07_09_000006_create_shipment_tracking_events_table.php": "9515aac27839855b03d3558a3ceea00b5b817e4636c103061a6b138bce6f8bf2",
+    "2026_07_15_092902_create_order_verification_logs_table.php": "3030c5f4db2a95fdc1a59ddf17d97c779d8d53902519cf77a12478bff9f1f159",
+    "2026_07_16_142452_create_order_returns_table.php": "5985b27c8cf7181ee95627ef89f86bdf3e4fba66cf63d3ab0830cdfdd74d1ac2",
+    "2026_07_16_142453_create_order_return_items_table.php": "4f1ac59ad4c36036cbcf2c80fe7525985e08996d183864293fcbfaaf7684903e",
+    "2026_07_16_142454_create_refunds_table.php": "03c2c803f4ee6d963ba0e33fcf69acf312f76b44b39cb0d52c8629f550c3b1d8",
+    "2026_07_16_142455_create_credit_notes_table.php": "6b37402d9d2a72c0882378075f4f3e0f6146d897bedd0f6a77fba3544c4a61eb",
+    "2026_07_18_000001_create_service_provider_users_table.php": "49a348c2a6a32f5e7d0ed380f72a835a4b9ab705a570762fc1e3b54079bb408e",
+    "2026_07_20_223744_create_audits_table.php": "a1de801cffcb9fe9d5ff99cc0e56172a5ef070a214e32b5723d39e0c85256822",
+    "2026_07_20_223745_create_activity_log_table.php": "50ed25b0fb94f0d8adcd847029bdc20063771be72b6d705806f8bc499badf7d9",
+    "2026_07_20_224124_create_notifications_table.php": "cb80a8cf924b6e7f9f60802eb6d30522a598dba0a1d7942757fe8b534da79faf",
+    "2026_07_20_225002_create_user_read_activities_table.php": "3d41bdc190519b2f78e586e9fbceb8588c26f315e81d313fad7b70fe87658de2",
+    "2026_07_24_184607_create_return_reasons_table.php": "2a17601a0bad228fbefb00fa487de2124ffc51be97ee2892b4a6659f1a7a868f",
+    "2026_07_24_184920_create_reschedule_reasons_table.php": "f68653d51255cd85e614cd1b3a7b88374a0b06a603129b475a554c3a83337e69",
+    "2026_07_24_185207_create_delivery_failure_reasons_table.php": "53712724af7cc12f12a6d202319f1a33f68f0217d1a18b7cc03b27f3fd51c3b0",
+    "2026_07_25_142033_create_call_tags_table.php": "6ae0ec9bc4c66674074f21d720b10e63aaa5780cf8736c19185d238465cbb274",
+    "2026_07_25_142034_create_call_tag_form_fields_table.php": "75bc1b2b9710770092b4a17688de13c8597fa6ec2f0aba646174ff28e95a299a",
+    "2026_07_25_142035_create_call_logs_table.php": "d2009786d37f9aac0bc63db6c713e98cc795453d5a1cf1e5dedd7bc778903f96",
+    "2026_07_25_142036_create_call_log_metas_table.php": "dbe5eac6f637b283855bf1c215dff360c1a2053458ecc88f86cfe3891ef83750",
+    "2026_07_26_133645_create_crops_table.php": "3ef591ff472fc4528eac621d350dadf9dca345fc210c458e7fb3d461f1326993",
+    "2026_07_26_133645_create_lead_sources_table.php": "cb26e82bfbe25af59b5e577e18d82dd2a5a6c20e5188d653448ebdcc378fa8de",
+    "2026_07_26_133646_create_irrigation_types_table.php": "053fc4fe8c837c382be09d236da65622c27dc33f7dfb8a1b37b63fcb8b04c09c",
+    "2026_07_26_133646_create_land_units_table.php": "c9388981eeff64e039a3beee19144670b4ed486dcf78da5c9e004c74faf691ae",
+    "2026_07_26_215014_create_cancel_reasons_table.php": "7dc0ba8b939c023b5585879948d64c68ac02830b4abf5ddf01da6d214aab0afe",
+    "2026_07_26_224148_create_referral_programs_table.php": "9941dc3bb18a469da53c6e857be2a9443a4782697d01eb59666b08d63bc8df56",
+    "2026_07_26_224149_create_referral_program_milestones_table.php": "ce8969983ccae9832d802bd3a2a10b5008bc5d214e48cb6a5db0902d1062a2cb",
+    "2026_07_26_224151_create_referral_rewards_table.php": "aff44c7f1a89e1cf9bba7d52ef52920e571cf4749a0dfa3704d539155a7a9543",
+    "2026_07_28_141155_create_user_warehouse_table.php": "b6c955cbc691037cd14a0f9da54c1a6021a09716558a2a0ab35807fb74214294",
+    "2026_07_29_170728_create_purchase_orders_table.php": "a25093972c1f10969811d047c4dba1f7f338ba770c8559b0861acc414942b107",
+    "2026_07_29_170729_create_purchase_order_items_table.php": "a8677dee5a4414baabda5ec43301138f71b42c8b1695c3e6947bd8efd56edb53",
+    "2026_07_29_170730_create_goods_receipts_table.php": "82e5acdbaee973e69ea108f18f9ed81398ed9ce3d71f5ec5f35903b74beff8ac",
+    "2026_07_29_170741_create_goods_receipt_items_table.php": "a2e9a195fefee1c2a69a9545f3496dc74ab888a0b1628eafeec008705f1f8e06",
+    "2026_08_14_212444_create_attendances_table.php": "046b43eb9e785e6e78576d18c603e296f7eb9326a00022f1c4fe0a20e51b5cad",
+    "2026_08_14_212449_create_leaves_table.php": "628e71fa74a759da30bda0fef2290fad9e66a477b0165c044fd57684e5efca2b",
+    "2026_08_15_184131_create_holidays_table.php": "0c07a2310ad5e5a6f73b82e8ccc81bd4387fec86edc6e783a82e74976988456c",
+    "2026_08_15_184131_create_leave_balances_table.php": "980f8364ac61ee58efe0f3694e7c200e05154b9cf5a703bd247a736c6035c76b",
+    "2026_08_17_121206_create_wallet_transactions_table.php": "d4e53fc79b0bf55326823474c806c99bdd5c62ca59a0d10710ddfcda929af5ee",
+    "2026_08_26_152316_create_order_complaints_table.php": "144e06633498ed9e1c5fe522039a940f40b0c34ad2c22211ccf8abcd9d4d3e12",
+    "2026_08_26_214805_create_order_complaint_status_logs_table.php": "4d8a04cc28d66f8c3f5b329f1981d46023cf290f794197f1735d8f74e7c9dc89",
+    "2026_08_26_232856_create_order_complaint_replies_table.php": "224c4fefc24a21648c79d7681970f677e388b2512466f151e21aea766adb50ca",
+    "2026_08_27_143304_create_system_settings_table.php": "63ab4892d690fa553b65d2f08546bfca9f1c7a8b59eca87ffce62c7272a1bee4",
+    "2026_08_27_151038_create_system_files_table.php": "f602b08d9bc01973ebf7b63f7154f0c9ad1670cc6089388d20e3d15f1105fd48",
+    "2026_09_03_160313_create_teams_table.php": "44607e112c79a334666c0190873b50cb2ae85e6652a3d12c28b4f1d5923cc9d3",
+    "2026_09_09_182621_create_targets_table.php": "4dcafbecd086920f94f3827a3818665dad96caf04e4cff8f624a4a7ca34826be",
+    "2026_09_09_182622_create_target_achievements_table.php": "33bc8b508d015df7a1d3207948bc53d890ad814498e779a15a5774de87acae84",
+    "2026_09_10_112538_create_india_post_barcode_ranges_table.php": "ccdc824a15708607a89ae38aa4eff1cfb816bd639a2e6f9d4dda9c5ef9812004",
+    "2026_09_10_112540_create_india_post_awb_trackings_table.php": "5c86d9c488d3c2b4ae2278c0128dd72209eebe520800944429f640a773c5c4fb",
+    "2026_09_30_170117_create_purchase_order_payments_table.php": "12af5450ad705773c49d6468db4e542dba442b8dbfad95180dede3096d708ae5",
+    "2026_10_17_180000_create_attendance_corrections_table.php": "025f168dc8a32599a3e43810d234678a191a58e660b492c1eb9b64264a9567d1",
+    "2026_10_17_210000_create_employee_rosters_table.php": "b03a2d95086739b43886bc956f0242fb38bb83a01e3ba7003fb7fdd19698cbac",
+    "2026_10_20_150000_ensure_purchase_order_approval_permission.php": "b709444cf0c314a74227125013bd39cfe9026deffd0b9e9ef76d9db4e736085d",
+    "2026_10_20_160000_add_hr_action_permissions.php": "6a4c07b30569ace8a57293e1e5e762b625dc51a6456926440f2afe6ed24065a9",
+    "2026_10_24_120000_add_order_target_lookup_index.php": "47c9a47377aba6faedf671bc6054ecc8d77b5c319dc62f8e22c52d2ad4dd11dd",
+    "2026_10_24_140000_add_activity_feed_indexes.php": "728d452b854b7a206cbfa731321b19ec3ced9d05732063ab2bb6703a7d406fb4",
+    "2026_10_24_150000_add_audit_history_feed_indexes.php": "8e72e944784550d6a23744632178cd4874cd6e73eb87b385492bb9d12325fe64",
+    "2026_10_27_100000_link_refund_credit_settlements.php": "2197440a4bf640d4aa30cbfcbad3740a460a9d3b18b29dc030e494f52ae2652a",
+    "2026_10_27_110000_create_business_sequences_table.php": "e7c7b65b22e03dde8053da3ed7d6e654555487760bac2fb7e13b08cf11dbba80",
+    "2026_10_27_120000_add_provider_event_deduplication.php": "1b38212785e6a5c0b16c6bb08b380245c18766000585535f2cbfbd6d76f6af0a",
+    "2026_10_28_100000_create_two_factor_security_tables.php": "e353ae79d27244dd74eeafb5a681b9494a2684c9aed907decf0202d5ebbea5ed",
+    "2026_10_28_110000_add_email_two_factor_authentication.php": "d865e220672d33dbc77a0fa81e7cae6c5749ab3f53074aff103fe306d9cce169",
+    "2026_10_28_120000_create_security_mail_settings.php": "36f42d5fdbfc350946459bae751ad3822a4965922be17e91720efae54afe15ac",
+    "2026_10_28_130000_add_user_two_factor_requirement.php": "5eb850a73184e0ee1bd9932e969d7ba6849b02eea8b1f054ce949676401734dd",
+    "2026_10_28_140000_complete_feature_permissions.php": "b5bec54fa9db29f1f94b498590522a2f4c090a3833a77f3b86d344c1db84c0b7",
+    "2026_10_28_160000_add_state_offices.php": "38e14307e1649f8ca2513d19c483d7dd85288b92b0149ba32d74c6d25330331e",
+    "2026_10_28_160100_add_office_permissions.php": "d8565b19195a53183e845eac5ca7f090f5d220924588556cc710fc4056243d20",
+    "2026_10_28_170000_add_office_address_details.php": "ddc002b0782958835a260db090dd2905c114a80a7015e13fdc8340d8d593e07e",
+    "2026_10_28_180000_add_storefront_customer_access.php": "10a42c1cb1730fac8dc9ba2c9152631d766e6915d37fb06296b723e7d07ae429",
+    "2026_10_29_010000_preserve_gst_inclusive_product_prices.php": "0605090e97049242b6f38d6de0bdacdae75bb265260f891c6ff9e161e009c547"
+  },
+  "generated_columns": {
+    "leave_balances.balance": "total_leaves - used_leaves; unchanged, computed by MySQL"
+  },
+  "index_changes": {
+    "activity_log": {
+      "backup_only_definitions": [
+        "  KEY `idx_activity_log_causer_id` (`causer_id`)"
+      ],
+      "current_only_definitions": [
+        "  KEY `activity_feed_causer_created_idx` (`causer_id`,`created_at`)",
+        "  KEY `activity_feed_created_idx` (`created_at`)"
+      ],
+      "transition_action": "retain all current definitions unchanged"
+    },
+    "audits": {
+      "backup_only_definitions": [],
+      "current_only_definitions": [
+        "  KEY `audit_history_created_idx` (`created_at`)",
+        "  KEY `audit_history_event_created_idx` (`event`,`created_at`)"
+      ],
+      "transition_action": "retain all current definitions unchanged"
+    },
+    "orders": {
+      "backup_only_definitions": [
+        "  KEY `orders_created_by_foreign` (`created_by`)"
+      ],
+      "current_only_definitions": [
+        "  CONSTRAINT `orders_office_id_foreign` FOREIGN KEY (`office_id`) REFERENCES `offices` (`id`) ON DELETE RESTRICT",
+        "  CONSTRAINT `orders_state_team_id_foreign` FOREIGN KEY (`state_team_id`) REFERENCES `teams` (`id`) ON DELETE RESTRICT",
+        "  KEY `orders_creator_date_deleted_idx` (`created_by`,`order_date`,`deleted_at`)",
+        "  KEY `orders_office_id_foreign` (`office_id`)",
+        "  KEY `orders_state_team_id_foreign` (`state_team_id`)"
+      ],
+      "transition_action": "retain all current definitions unchanged"
+    },
+    "products": {
+      "backup_only_definitions": [],
+      "current_only_definitions": [
+        "  KEY `products_storefront_catalog` (`storefront_visible`,`is_active`,`status`,`id`)"
+      ],
+      "transition_action": "retain all current definitions unchanged"
+    },
+    "refunds": {
+      "backup_only_definitions": [],
+      "current_only_definitions": [
+        "  CONSTRAINT `refunds_credit_note_id_foreign` FOREIGN KEY (`credit_note_id`) REFERENCES `credit_notes` (`id`) ON DELETE RESTRICT",
+        "  UNIQUE KEY `refunds_credit_note_id_unique` (`credit_note_id`)"
+      ],
+      "transition_action": "retain all current definitions unchanged"
+    },
+    "shipment_tracking_events": {
+      "backup_only_definitions": [],
+      "current_only_definitions": [
+        "  UNIQUE KEY `shipment_tracking_events_provider_event_key_unique` (`provider_event_key`)"
+      ],
+      "transition_action": "retain all current definitions unchanged"
+    },
+    "teams": {
+      "backup_only_definitions": [],
+      "current_only_definitions": [
+        "  UNIQUE KEY `teams_code_unique` (`code`)"
+      ],
+      "transition_action": "retain all current definitions unchanged"
+    },
+    "users": {
+      "backup_only_definitions": [],
+      "current_only_definitions": [
+        "  CONSTRAINT `users_office_id_foreign` FOREIGN KEY (`office_id`) REFERENCES `offices` (`id`) ON DELETE RESTRICT",
+        "  KEY `users_office_id_foreign` (`office_id`)"
+      ],
+      "transition_action": "retain all current definitions unchanged"
+    }
+  }
+}

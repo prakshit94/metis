@@ -573,6 +573,7 @@ class CustomerController extends Controller implements HasMiddleware
         abort_unless($request->user()?->can('customer-permanent-delete'), 403);
         $customer = Customer::withTrashed()->findOrFail($customer);
 
+        $this->assertNoStorefrontAccounts([$customer->id]);
         $name = $customer->name;
         $customer->forceDelete();
 
@@ -640,6 +641,7 @@ class CustomerController extends Controller implements HasMiddleware
 
         if ($action === 'force-delete') {
             abort_unless($request->user()?->can('customer-permanent-delete'), 403);
+            $this->assertNoStorefrontAccounts($ids);
             Customer::withTrashed()->whereIn('id', $ids)->get()->each(function (Customer $customer): void {
                 $customer->forceDelete();
             });
@@ -746,4 +748,15 @@ class CustomerController extends Controller implements HasMiddleware
             return back()->with('error', 'Failed to process order: '.$e->getMessage());
         }
     }
+
+    private function assertNoStorefrontAccounts(array $ids): void
+    {
+        if (\Illuminate\Support\Facades\Schema::hasTable('customer_accounts')
+            && DB::table('customer_accounts')->whereIn('customer_id', $ids)->exists()) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'customer' => 'Customers linked to shopping accounts cannot be permanently deleted. Disable or temporarily delete the customer to suspend access while preserving shopping records.',
+            ]);
+        }
+    }
+
 }

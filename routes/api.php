@@ -536,6 +536,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::get('/', [CatalogProductController::class, 'index'])->name('index');
         Route::get('/export', [CatalogProductController::class, 'export'])->name('export');
         Route::post('/import', [CatalogProductController::class, 'import'])->name('import');
+        Route::post('/bulk-storefront', [CatalogProductController::class, 'bulkStorefront'])->name('bulk-storefront');
         Route::post('/bulk-status', [CatalogProductController::class, 'bulkStatus'])->name('bulk-status');
         Route::post('/bulk-disable-sku', [CatalogProductController::class, 'bulkDisableSku'])->name('bulk-disable-sku');
         Route::post('/bulk-enable-sku', [CatalogProductController::class, 'bulkEnableSku'])->name('bulk-enable-sku');

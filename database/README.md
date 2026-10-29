@@ -1,27 +1,13 @@
-# Consolidated migrations
+# Database setup
 
-Each application table has one creation migration. Fresh databases use the normal `php artisan migrate` command.
+Run from `/home/user/metis`:
 
-## Existing databases
-
-Before running migrations on a database created with the former combined migrations:
-
-```sh
-php artisan schema:repair-consolidated
-php artisan schema:repair-consolidated --apply
-php artisan migrate
+```bash
+php artisan migrate:fresh --seed
 ```
 
-The first command previews the changes. `--apply` adds missing nullable India Post tracking fields and their indexes, then registers the split migrations for tables already created by a recorded combined migration. It preserves the original batch and historical migration records. It does not change orders, stock, payments, or other application records. Repeating the repair does not add duplicate columns, indexes, or migration records.
+This command deletes the configured database's existing tables, executes all 125 PHP migration files in `database/migrations`, then runs the existing `DatabaseSeeder`. There is no SQL schema baseline. Both applications share these PHP migrations. For an existing database that must keep its data, use `php artisan migrate` instead.
 
-Do not use `migrate:fresh` on a database containing application data. Editing an already-executed creation migration does not upgrade an existing table.
+The SQL under `database/transitions/metis-20261029` is retained solely for the reviewed backup import. Artisan does not execute it automatically. See that folder's README before importing; do not import the original schema-bearing dump directly into the project database.
 
-## Regression checks
-
-```sh
-php tests/regression/audit_fixes.php
-```
-
-This requires MySQL credentials with permission to create a temporary database. It creates a uniquely named test database, runs the migrations and regression checks there, then drops only that test database.
-
-The stock-ledger CSV exports recorded movement quantities. Historical before/after stock balances are not stored and are not fabricated. Accounting remains optional: payment hooks run only when all three accounting tables exist; this project does not define an accounting installation.
+The disposable database verification is `tests/regression/migration_fresh_seed.php`.

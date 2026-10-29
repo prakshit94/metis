@@ -32,6 +32,7 @@ class ProductController extends Controller
     public function index(Request $request): JsonResponse
     {
         abort_unless($request->user()?->can('product-view'), 403);
+        $request->validate(['q'=>'nullable|string|max:100','category_id'=>'nullable|integer|min:1','status'=>'nullable|string|max:50','storefront'=>'nullable|in:listed,hidden,blocked']);
         $this->assertWarehouseAccess($request);
 
         $stockScope = function ($q) use ($request) {
@@ -95,6 +96,9 @@ class ProductController extends Controller
         if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
+        if ($request->input('storefront') === 'listed') $query->storefrontAvailable();
+        if ($request->input('storefront') === 'hidden') $query->where('storefront_visible', false);
+        if ($request->input('storefront') === 'blocked') $query->where('storefront_visible', true)->whereNot(fn ($q) => $q->storefrontAvailable());
         if ($request->boolean('trashed')) {
             $query->onlyTrashed();
         }
@@ -180,19 +184,7 @@ class ProductController extends Controller
         $data = $this->validatePayload($request);
 
         $product = new Product;
-        $this->fillProduct($product, $data, $request);
-        $product->save();
-        $this->syncAttributes($product, $data['attributes'] ?? []);
-        
-        $stockConfig = [];
-        foreach (['allow_overselling', 'overselling_qty', 'is_sku_enabled'] as $field) {
-            if (array_key_exists('warehouse_'.$field, $data)) {
-                $stockConfig[$field] = $data['warehouse_'.$field];
-            }
-        }
-        $this->syncStockConfig($product, $stockConfig, isset($data['warehouse_config_id']) ? (int) $data['warehouse_config_id'] : null);
-
-
+        $this->persistProduct($product, $data, $request);
 
         $stockScope = function ($q) use ($request) {
             if ($lobState = $request->user()?->lob_state_name) {
@@ -225,22 +217,7 @@ class ProductController extends Controller
         abort_unless($request->user()?->can('product-edit'), 403);
 
         $data = $this->validatePayload($request, $product);
-        $this->fillProduct($product, $data, $request);
-        $product->save();
-
-        if (array_key_exists('attributes', $data)) {
-            $this->syncAttributes($product, $data['attributes']);
-        }
-
-        $stockConfig = [];
-        foreach (['allow_overselling', 'overselling_qty', 'is_sku_enabled'] as $field) {
-            if (array_key_exists('warehouse_'.$field, $data)) {
-                $stockConfig[$field] = $data['warehouse_'.$field];
-            }
-        }
-        $this->syncStockConfig($product, $stockConfig, isset($data['warehouse_config_id']) ? (int) $data['warehouse_config_id'] : null);
-
-
+        $this->persistProduct($product, $data, $request);
 
         $stockScope = function ($q) use ($request) {
             if ($lobState = $request->user()?->lob_state_name) {
@@ -361,7 +338,7 @@ class ProductController extends Controller
             $imagePath = $product->image_path;
             DB::transaction(fn () => $product->forceDelete());
             if ($imagePath) {
-                Storage::disk('public')->delete($imagePath);
+                $this->deleteUnusedImage($imagePath);
             }
             $deleted[] = $id;
         }
@@ -392,6 +369,22 @@ class ProductController extends Controller
         return response()->json([
             'message' => 'Selected products updated successfully.',
         ]);
+    }
+
+    public function bulkStorefront(Request $request): JsonResponse
+    {
+        abort_unless($request->user()?->can('product-edit'), 403);
+        $data = $request->validate([
+            'ids' => ['required', 'array', 'min:1', 'max:1000'],
+            'ids.*' => ['required', 'integer', 'distinct', \Illuminate\Validation\Rule::exists('products', 'id')->whereNull('deleted_at')],
+            'storefront_visible' => ['required', 'boolean'],
+        ]);
+        DB::transaction(function () use ($data) {
+            foreach (Product::whereIn('id', $data['ids'])->orderBy('id')->lockForUpdate()->get() as $product) {
+                $product->update(['storefront_visible' => $data['storefront_visible']]);
+            }
+        });
+        return response()->json(['message' => 'Shop visibility updated. Draft, inactive or SKU-disabled products remain unavailable until their existing requirements are met.']);
     }
 
     public function bulkDisableSku(Request $request): JsonResponse
@@ -532,7 +525,7 @@ class ProductController extends Controller
         $imagePath = $product->image_path;
         DB::transaction(fn () => $product->forceDelete());
         if ($imagePath) {
-            Storage::disk('public')->delete($imagePath);
+            $this->deleteUnusedImage($imagePath);
         }
 
         return response()->json([
@@ -716,6 +709,8 @@ class ProductController extends Controller
         $clone->name = $product->name.' (Copy)';
         $clone->sku = $this->generateUniqueSku($product->sku);
         $clone->slug = $this->generateUniqueSlug($clone->name);
+        $clone->storefront_visible = false;
+        $clone->is_featured = false;
         $clone->status = 'draft';
         $clone->is_active = false;
         $clone->save();
@@ -781,6 +776,11 @@ class ProductController extends Controller
                     $row,
                 );
 
+                $headers[0] = ltrim($headers[0], "\xEF\xBB\xBF");
+                if (count(array_unique($headers)) !== count($headers)) {
+                    fclose($handle);
+                    throw ValidationException::withMessages(['file'=>'CSV column names must be unique.']);
+                }
                 continue;
             }
 
@@ -794,6 +794,24 @@ class ProductController extends Controller
             if (! is_array($record)) {
                 $errors[] = "Row {$rowNum}: Invalid record format.";
 
+                continue;
+            }
+
+            $rules = ['name'=>'required|string|max:255','sku'=>'required|string|max:255'];
+            foreach (['purchase_price','mrp','selling_price','price','weight_g','weight','overselling_qty','min_stock_level','default_discount'] as $field) $rules[$field] = 'sometimes|nullable|numeric|min:0';
+            $rules['selling_price_including_tax'] = 'sometimes|nullable|numeric|min:0|max:9999999999999.99|decimal:0,2';
+            foreach (['stock','stock_quantity'] as $field) $rules[$field] = 'sometimes|nullable|integer|min:0';
+            foreach (['brand_id'=>'brands','uom_id'=>'units_of_measure','tax_rate_id'=>'tax_rates','hsn_code_id'=>'hsn_codes','default_warehouse_id'=>'warehouses'] as $field=>$table) $rules[$field] = 'sometimes|nullable|integer|exists:'.$table.',id';
+            foreach (['storefront_visible','is_featured'] as $field) $rules[$field] = 'sometimes|boolean';
+            foreach (['min_order_qty','max_order_qty'] as $field) $rules[$field] = 'sometimes|integer|min:1|max:1000';
+            $validator = \Illuminate\Support\Facades\Validator::make($record, $rules);
+            if ($validator->fails()) {
+                $errors[] = "Row {$rowNum}: ".implode(' ', $validator->errors()->all());
+                continue;
+            }
+            if (!empty($record['default_warehouse_id']) && ($state=$request->user()?->lob_state_name)
+                && Warehouse::find($record['default_warehouse_id'])?->state !== $state) {
+                $errors[] = "Row {$rowNum}: Unauthorized warehouse selection.";
                 continue;
             }
 
@@ -843,17 +861,30 @@ class ProductController extends Controller
                 continue;
             }
 
-            $product = Product::withTrashed()->firstOrNew(['sku' => $payload['sku']]);
-            $this->fillProduct($product, $payload, null);
-            $product->save();
-
-            $this->syncStock($product, (int) $payload['stock'], $importMode);
-
-            if ($product->trashed()) {
-                $product->restore();
+            foreach (['storefront_visible','is_featured','min_order_qty','max_order_qty','selling_price_including_tax'] as $field) {
+                if (array_key_exists($field, $record)) $payload[$field] = $record[$field];
             }
-
-            $imported++;
+            try {
+                DB::transaction(function () use ($payload, $importMode) {
+                    $product = Product::withTrashed()->firstOrNew(['sku' => $payload['sku']]);
+                    if ((int)($payload['max_order_qty'] ?? $product->max_order_qty ?? 1000) < (int)($payload['min_order_qty'] ?? $product->min_order_qty ?? 1)) {
+                        throw ValidationException::withMessages(['max_order_qty'=>'Maximum order quantity must be at least the minimum.']);
+                    }
+                    if (($payload['default_discount_type'] ?? 'percent') === 'percent' && $payload['default_discount'] > 100) {
+                        throw ValidationException::withMessages(['default_discount'=>'Percentage discount cannot exceed 100%.']);
+                    }
+                    $this->fillProduct($product, $payload, null);
+                    $product->save();
+                    $this->syncStock($product, (int)$payload['stock'], $importMode);
+                    if ($product->trashed()) $product->restore();
+                });
+                $imported++;
+            } catch (ValidationException $error) {
+                $errors[] = "Row {$rowNum}: ".implode(' ', $error->validator->errors()->all());
+            } catch (\Throwable $error) {
+                report($error);
+                $errors[] = "Row {$rowNum}: Could not save this product. Check reference IDs and numeric field limits.";
+            }
         }
 
         fclose($handle);
@@ -895,6 +926,7 @@ class ProductController extends Controller
                 'expiry_tracking',
                 'allow_overselling',
                 'overselling_qty',
+                'storefront_visible', 'is_featured', 'min_order_qty', 'max_order_qty', 'selling_price_including_tax',
             ]);
 
             $stockScope = function ($q) use ($request) {
@@ -933,6 +965,8 @@ class ProductController extends Controller
                             $product->expiry_tracking ? '1' : '0',
                             $product->allow_overselling ? '1' : '0',
                             $product->overselling_qty,
+                            $product->storefront_visible ? '1' : '0', $product->is_featured ? '1' : '0',
+                            $product->min_order_qty, $product->max_order_qty, $product->selling_price_including_tax,
                         ]);
                     }
                 });
@@ -944,6 +978,10 @@ class ProductController extends Controller
     private function validatePayload(Request $request, ?Product $product = null): array
     {
         $validated = $request->validate([
+            'storefront_visible' => ['sometimes', 'boolean'],
+            'is_featured' => ['sometimes', 'boolean'],
+            'min_order_qty' => ['sometimes', 'integer', 'min:1', 'max:1000'],
+            'max_order_qty' => ['sometimes', 'integer', 'min:1', 'max:1000'],
             'name' => ['required', 'string', 'max:255'],
             'sku' => ['required', 'string', 'max:255', 'unique:products,sku'.($product ? ','.$product->id : '')],
             'category_id' => ['required', 'integer', 'exists:categories,id'],
@@ -973,6 +1011,7 @@ class ProductController extends Controller
             'purchase_price' => ['required', 'numeric', 'min:0'],
             'mrp' => ['nullable', 'numeric', 'min:0'],
             'selling_price' => ['required', 'numeric', 'min:0'],
+            'selling_price_including_tax' => ['sometimes', 'nullable', 'numeric', 'min:0', 'max:9999999999999.99', 'decimal:0,2'],
             // stock / stock_quantity are accepted interchangeably
             'stock' => ['nullable', 'integer', 'min:0'],
             'stock_quantity' => ['nullable', 'integer', 'min:0'],
@@ -1011,6 +1050,13 @@ class ProductController extends Controller
             'warehouse_is_sku_enabled' => ['nullable', 'boolean'],
         ]);
 
+        if ((int) ($validated['max_order_qty'] ?? $product?->max_order_qty ?? 1000) < (int) ($validated['min_order_qty'] ?? $product?->min_order_qty ?? 1)) {
+            throw \Illuminate\Validation\ValidationException::withMessages(['max_order_qty' => 'Maximum order quantity must be at least the minimum.']);
+        }
+if (($validated['default_discount_type'] ?? $product?->default_discount_type ?? 'percent') === 'percent'
+            && (float)($validated['default_discount'] ?? $product?->default_discount ?? 0) > 100) {
+            throw ValidationException::withMessages(['default_discount' => 'Percentage discount cannot exceed 100%.']);
+        }
         $validated['attributes'] = $validated['attributes'] ?? null;
 
         return $validated;
@@ -1018,9 +1064,16 @@ class ProductController extends Controller
 
     private function fillProduct(Product $product, array $data, ?Request $request): void
     {
+        foreach (['storefront_visible', 'is_featured', 'min_order_qty', 'max_order_qty'] as $field) {
+            if (array_key_exists($field, $data)) {
+                $product->{$field} = $data[$field];
+            }
+        }
         $product->name = trim((string) $data['name']);
         $product->sku = trim((string) $data['sku']);
-        $product->slug = $this->generateUniqueSlug($product->name, $product->exists ? $product->id : null);
+        if (!$product->exists || !$product->slug) {
+            $product->slug = $this->generateUniqueSlug($product->name, $product->exists ? $product->id : null);
+        }
         $product->category_id = (int) $data['category_id'];
         $product->brand_id = $this->resolveId($data['brand_id'] ?? null);
         $product->uom_id = $this->resolveId($data['uom_id'] ?? null);
@@ -1035,13 +1088,21 @@ class ProductController extends Controller
         $product->height_cm = isset($data['height_cm']) ? (float) $data['height_cm'] : null;
         $product->purchase_price = (float) $data['purchase_price'];
         $product->selling_price = (float) $data['selling_price'];
+        if (isset($data['selling_price_including_tax']) && $data['selling_price_including_tax'] !== '') {
+            $product->selling_price_including_tax = $data['selling_price_including_tax'];
+        }
 
         $taxRateValue = 0;
         if ($product->tax_rate_id) {
             $taxRate = \App\Modules\Catalog\Models\TaxRate::find($product->tax_rate_id);
             $taxRateValue = $taxRate ? $taxRate->rate : 0;
         }
-        $sellingPriceIncGst = $product->selling_price * (1 + $taxRateValue / 100);
+        if (isset($data['selling_price_including_tax']) && $data['selling_price_including_tax'] !== '') {
+            // Inclusive input is authoritative; do not trust a separately submitted base price.
+            $product->selling_price = round((float) $data['selling_price_including_tax'] / (1 + $taxRateValue / 100), 2);
+            $product->selling_price_including_tax = $data['selling_price_including_tax'];
+        }
+        $sellingPriceIncGst = $product->selling_price_including_tax !== null ? (float) $product->selling_price_including_tax : $product->selling_price * (1 + $taxRateValue / 100);
         $product->mrp = isset($data['mrp']) && $data['mrp'] !== '' ? (float) $data['mrp'] : $sellingPriceIncGst;
 
         $product->min_stock_level = (int) ($data['min_stock_level'] ?? 0);
@@ -1099,7 +1160,6 @@ class ProductController extends Controller
                 ]);
             }
 
-            $this->deleteImage($product);
             $product->image_path = $imagePath;
         }
     }
@@ -1206,6 +1266,8 @@ class ProductController extends Controller
             'height_cm' => $product->height_cm,
             'price' => (float) $product->selling_price,
             'selling_price' => (float) $product->selling_price,
+            'selling_price_including_tax' => $product->selling_price_including_tax,
+            'selling_price_inc_gst' => $product->selling_price_inc_gst,
             'purchase_price' => (float) $product->purchase_price,
             'mrp' => (float) $product->mrp,
             'stock' => (int) $totalQty,
@@ -1231,6 +1293,13 @@ class ProductController extends Controller
             'image' => $product->image_url ?? '/assets/images/product-placeholder.svg',
             'description' => $product->description,
             'deleted_at' => optional($product->deleted_at)?->toDateTimeString(),
+            'slug' => $product->slug,
+            'storefront_available' => $product->isAvailableInStorefront(),
+            'storefront_url' => $product->isAvailableInStorefront() ? rtrim(config('storefront.url'), '/').'/shop/products/'.rawurlencode($product->slug) : null,
+            'storefront_visible' => (bool) $product->storefront_visible,
+            'is_featured' => (bool) $product->is_featured,
+            'min_order_qty' => (int) ($product->min_order_qty ?? 1),
+            'max_order_qty' => (int) ($product->max_order_qty ?? 1000),
             'is_sku_enabled' => (bool) $product->is_sku_enabled,
             'grade' => $product->grade,
             'warehouse_stocks' => $product->stocks->map(fn ($stock) => [
@@ -1304,6 +1373,8 @@ class ProductController extends Controller
             'height_cm' => $product->height_cm,
             'price' => (float) $product->selling_price,
             'selling_price' => (float) $product->selling_price,
+            'selling_price_including_tax' => $product->selling_price_including_tax,
+            'selling_price_inc_gst' => $product->selling_price_inc_gst,
             'purchase_price' => (float) $product->purchase_price,
             'mrp' => (float) $product->mrp,
             'stock' => (int) $totalQty,
@@ -1328,6 +1399,13 @@ class ProductController extends Controller
             'image' => $product->image_url ?? '/assets/images/product-placeholder.svg',
             'description' => $product->description,
             'deleted_at' => optional($product->deleted_at)?->toDateTimeString(),
+            'slug' => $product->slug,
+            'storefront_available' => $product->isAvailableInStorefront(),
+            'storefront_url' => $product->isAvailableInStorefront() ? rtrim(config('storefront.url'), '/').'/shop/products/'.rawurlencode($product->slug) : null,
+            'storefront_visible' => (bool) $product->storefront_visible,
+            'is_featured' => (bool) $product->is_featured,
+            'min_order_qty' => (int) ($product->min_order_qty ?? 1),
+            'max_order_qty' => (int) ($product->max_order_qty ?? 1000),
             'is_sku_enabled' => (bool) $product->is_sku_enabled,
             'grade' => $product->grade,
             'attributes' => $product->attributeValues->map(fn (ProductAttributeValue $value) => [
@@ -1568,12 +1646,12 @@ class ProductController extends Controller
 
     private function generateUniqueSlug(string $name, ?int $ignoreId = null): string
     {
-        $base = Str::slug($name);
+        $base = Str::limit(Str::slug($name), 235, '') ?: 'product';
         $slug = $base;
         $counter = 1;
 
         while (
-            Product::query()
+            Product::withTrashed()
                 ->when($ignoreId, fn ($query) => $query->whereKeyNot($ignoreId))
                 ->where('slug', $slug)
                 ->exists()
@@ -1586,21 +1664,43 @@ class ProductController extends Controller
 
     private function generateUniqueSku(string $sku): string
     {
-        $base = Str::upper(Str::slug($sku));
+        $base = Str::limit(Str::upper(Str::slug($sku)), 235, '') ?: 'PRODUCT';
         $candidate = $base.'-COPY';
         $counter = 1;
 
-        while (Product::where('sku', $candidate)->exists()) {
+        while (Product::withTrashed()->where('sku', $candidate)->exists()) {
             $candidate = $base.'-COPY-'.$counter++;
         }
 
         return $candidate;
     }
 
-    private function deleteImage(Product $product): void
+    private function deleteUnusedImage(?string $path): void
     {
-        if ($product->image_path) {
-            Storage::disk('public')->delete($product->image_path);
+        if ($path && str_starts_with($path, 'products/')
+            && !Product::withTrashed()->where('image_path', $path)->exists()) {
+            Storage::disk('public')->delete($path);
+        }
+    }
+
+    private function persistProduct(Product $product, array $data, Request $request): void
+    {
+        $originalImage = $product->image_path;
+        try {
+            DB::transaction(function () use ($product, $data, $request, $originalImage) {
+                $this->fillProduct($product, $data, $request);
+                $product->save();
+                if (array_key_exists('attributes', $data)) $this->syncAttributes($product, $data['attributes']);
+                $stockConfig = [];
+                foreach (['allow_overselling', 'overselling_qty', 'is_sku_enabled'] as $field) {
+                    if (array_key_exists('warehouse_'.$field, $data)) $stockConfig[$field] = $data['warehouse_'.$field];
+                }
+                $this->syncStockConfig($product, $stockConfig, isset($data['warehouse_config_id']) ? (int)$data['warehouse_config_id'] : null);
+                if ($originalImage !== $product->image_path) DB::afterCommit(fn () => $this->deleteUnusedImage($originalImage));
+            });
+        } catch (\Throwable $error) {
+            if ($product->image_path !== $originalImage) $this->deleteUnusedImage($product->image_path);
+            throw $error;
         }
     }
 

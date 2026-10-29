@@ -139,7 +139,7 @@ try {
     $res = $http('POST', '/api/webhooks/indiapost', ['articles' => []]);
     check($res->getStatusCode() === 401, 'webhook rejects missing integration credential');
     setPermissionsTeamId(null);
-    foreach (['orders.view', 'orders.view.pending'] as $permission) {
+    foreach (['orders.view', 'orders.view.pending', 'payments.view'] as $permission) {
         $user->givePermissionTo(Permission::findOrCreate($permission, 'web'));
     }
     $otherUser = DB::table('users')->insertGetId(['name' => 'Other user', 'email' => 'other@example.invalid', 'password' => 'unused']);

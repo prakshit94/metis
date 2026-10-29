@@ -195,7 +195,7 @@ class WarehouseController extends Controller implements HasMiddleware
         ]);
 
         // If a village is selected, fill in address details from it
-        if (! empty($validated['village_id']) && $validated['village_id'] !== $model->village_id) {
+        if (! empty($validated['village_id']) && (int) $validated['village_id'] !== (int) $model->village_id) {
             $village = Village::find($validated['village_id']);
             if ($village) {
                 $validated['village_name'] = $village->village_name;

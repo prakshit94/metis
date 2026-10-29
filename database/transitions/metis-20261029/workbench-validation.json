@@ -1,0 +1,10 @@
+{
+  "test": "tests/regression/import_sql_workbench.php",
+  "assertions_passed": 16,
+  "source": "synthetic only; no private rows loaded",
+  "verification_queries_executed": 108,
+  "current_tables_preserved": 119,
+  "current_migrations_preserved": 125,
+  "live_database_modified": false,
+  "sql_sha256": "b03d68ede9baf442f8de1f4de7309484dd18b42f8796764a12af1841679a780f"
+}

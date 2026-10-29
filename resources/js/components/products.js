@@ -129,7 +129,9 @@ async function apiFetch(url, options = {}) {
   });
 
   const text = await res.text();
-  const data = text ? JSON.parse(text) : {};
+  let data = {};
+  try { data = text ? JSON.parse(text) : {}; }
+  catch { throw new Error(res.status === 419 ? 'Your session expired. Refresh the page and try again.' : 'The server returned an unexpected response. Please try again.'); }
 
   if (!res.ok) {
     const validation = data?.errors ? Object.values(data.errors).flat().join(' ') : '';
@@ -191,6 +193,7 @@ document.addEventListener('alpine:init', () => {
     searchQuery: '',
     categoryFilter: '',
     stockFilter: 'in-stock',
+    storefrontFilter: '',
     skuFilter: 'sku-on',   // Default to SKU-enabled products; users can still choose another SKU filter.
     warehouseFilter: window.userContext?.warehouseId
       ? String(window.userContext.warehouseId)
@@ -205,6 +208,7 @@ document.addEventListener('alpine:init', () => {
     _themeObserver: null,
     _loadAbortController: null,
     _optionsLoaded: false,
+    _detailVersion: 0,
     chartsInitialized: false,
 
     // Statistics
@@ -522,7 +526,7 @@ document.addEventListener('alpine:init', () => {
               (s) => String(s.warehouse_id) === String(this.warehouseFilter)
             ));
 
-        return matchesSearch && matchesCategory && matchesWarehouse;
+        return matchesSearch && matchesCategory && matchesWarehouse && this.matchesStorefront(product);
       });
 
       this.stats.total = baseProducts.length;
@@ -581,6 +585,13 @@ document.addEventListener('alpine:init', () => {
       return colors[category] || '#6b7280';
     },
 
+    matchesStorefront(product) {
+      if (!this.storefrontFilter) return true;
+      if (this.storefrontFilter === 'listed') return Boolean(product.storefront_available);
+      if (this.storefrontFilter === 'hidden') return !product.storefront_visible;
+      return Boolean(product.storefront_visible) && !product.storefront_available;
+    },
+
     filterProducts() {
       this.filteredProducts = this.products.filter((product) => {
         const matchesSearch =
@@ -613,7 +624,7 @@ document.addEventListener('alpine:init', () => {
           (this.skuFilter === 'sku-on' && skuEnabled) ||
           (this.skuFilter === 'sku-off' && !skuEnabled);
 
-        return matchesSearch && matchesCategory && matchesWarehouse && matchesStock && matchesSku;
+        return matchesSearch && matchesCategory && matchesWarehouse && matchesStock && matchesSku && this.matchesStorefront(product);
       });
 
       const visibleIds = new Set(this.filteredProducts.map((product) => product.id));
@@ -629,6 +640,7 @@ document.addEventListener('alpine:init', () => {
       this.searchQuery = '';
       this.categoryFilter = '';
       this.stockFilter = '';
+      this.storefrontFilter = '';
       this.skuFilter = 'sku-on';
       this.warehouseFilter = window.userContext?.warehouseId
         ? String(window.userContext.warehouseId)
@@ -715,6 +727,7 @@ document.addEventListener('alpine:init', () => {
     },
 
     openCreateProduct() {
+      ++this._detailVersion;
       this.resetProductForm();
       const form = this._getProductForm();
       if (form && this.warehouseFilter) {
@@ -746,6 +759,7 @@ document.addEventListener('alpine:init', () => {
           : '',
         mrp: product.mrp !== null && product.mrp !== undefined ? String(product.mrp) : '',
         selling_price_inc_gst: (() => {
+          if (product.selling_price_including_tax !== null && product.selling_price_including_tax !== undefined) return Number(product.selling_price_including_tax).toFixed(2);
           let basePrice = parseFloat(product.selling_price ?? product.price ?? 0);
           let rateId = String(product.tax_rate_id ?? '');
           let rate = 0;
@@ -767,6 +781,10 @@ document.addEventListener('alpine:init', () => {
         manage_stock: product.manage_stock !== undefined ? Boolean(product.manage_stock) : true,
         batch_tracking: Boolean(product.batch_tracking),
         expiry_tracking: Boolean(product.expiry_tracking),
+        storefront_visible: Boolean(product.storefront_visible),
+        is_featured: Boolean(product.is_featured),
+        min_order_qty: Number(product.min_order_qty ?? 1),
+        max_order_qty: Number(product.max_order_qty ?? 1000),
         is_sku_enabled:
           product.is_sku_enabled !== undefined ? Boolean(product.is_sku_enabled) : true,
         description: product.description ?? '',
@@ -818,6 +836,7 @@ document.addEventListener('alpine:init', () => {
       const form = this._getProductForm();
       if (!form) return;
 
+      if (form.form.image?.startsWith('blob:')) URL.revokeObjectURL(form.form.image);
       form.form.image = URL.createObjectURL(file);
       form.form.imageFile = file;
     },
@@ -835,11 +854,13 @@ document.addEventListener('alpine:init', () => {
     },
 
     async editProduct(product) {
+      const version = ++this._detailVersion;
       const form = this._getProductForm();
       if (!form) return;
 
       try {
         product = await this.fetchProductDetails(product, false);
+        if (version !== this._detailVersion) return;
 
         form.editingProductId = product.id;
 
@@ -865,6 +886,7 @@ document.addEventListener('alpine:init', () => {
           }
         }
 
+        if (form.form.image?.startsWith('blob:')) URL.revokeObjectURL(form.form.image);
         form.form = mapped;
         form.originalProduct = product;
         form.form.imageFile = null;
@@ -879,11 +901,13 @@ document.addEventListener('alpine:init', () => {
     },
 
     async cloneProduct(product) {
+      const version = ++this._detailVersion;
       const form = this._getProductForm();
       if (!form) return;
 
       try {
         product = await this.fetchProductDetails(product);
+        if (version !== this._detailVersion) return;
 
         form.editingProductId = null;
 
@@ -893,10 +917,15 @@ document.addEventListener('alpine:init', () => {
         mapped.sku = mapped.sku + '-COPY'; // User will likely change this
 
         mapped.stock = '0';
+        mapped.storefront_visible = false;
+        mapped.is_featured = false;
+        mapped.status = 'draft';
+        mapped.image = '/assets/images/product-placeholder.svg';
         mapped.warehouse_allow_overselling = null;
         mapped.warehouse_overselling_qty = null;
         mapped.warehouse_is_sku_enabled = null;
 
+        if (form.form.image?.startsWith('blob:')) URL.revokeObjectURL(form.form.image);
         form.form = mapped;
         form.originalProduct = null;
         form.form.imageFile = null;
@@ -943,6 +972,8 @@ document.addEventListener('alpine:init', () => {
       }
 
       const actions = {
+        show_shop: {url: `${this.apiBase}/bulk-storefront`, body: {ids, storefront_visible:true}, success:'Shop visibility enabled.', failure:'Unable to update shop visibility.'},
+        hide_shop: {url: `${this.apiBase}/bulk-storefront`, body: {ids, storefront_visible:false}, success:'Shop visibility disabled.', failure:'Unable to update shop visibility.'},
         disable_sku: {
           url: `${this.apiBase}/bulk-disable-sku`,
           body: { ids, warehouse_id: this.warehouseFilter || null },
@@ -1074,7 +1105,7 @@ document.addEventListener('alpine:init', () => {
 
     exportProducts() {
       const csvContent = [
-        ['Name', 'SKU', 'Category', 'Price', 'Stock', 'Status', 'Created', 'Description'],
+        ['Name', 'SKU', 'Category', 'Price', 'Stock', 'Status', 'Created', 'Description', 'storefront_visible', 'is_featured', 'min_order_qty', 'max_order_qty'],
         ...this.filteredProducts.map((product) => [
           escapeCsv(product.name),
           escapeCsv(product.sku),
@@ -1084,6 +1115,10 @@ document.addEventListener('alpine:init', () => {
           escapeCsv(product.status),
           escapeCsv(product.created),
           escapeCsv(product.description),
+          escapeCsv(product.storefront_visible ? 1 : 0),
+          escapeCsv(product.is_featured ? 1 : 0),
+          escapeCsv(product.min_order_qty ?? 1),
+          escapeCsv(product.max_order_qty ?? 1000),
         ]),
       ]
         .map((row) => row.join(','))
@@ -1369,6 +1404,7 @@ document.addEventListener('alpine:init', () => {
       manage_stock: true,
       batch_tracking: false,
       expiry_tracking: false,
+      storefront_visible: false, is_featured: false, min_order_qty: 1, max_order_qty: 1000,
       is_sku_enabled: true,
       description: '',
       application_instructions: '',
@@ -1385,6 +1421,7 @@ document.addEventListener('alpine:init', () => {
     saving: false,
 
     resetForm() {
+      if (this.form.image?.startsWith('blob:')) URL.revokeObjectURL(this.form.image);
       this.activeTab = 'general';
       this.editingProductId = null;
       this.originalProduct = null;
@@ -1417,7 +1454,8 @@ document.addEventListener('alpine:init', () => {
         manage_stock: true,
         batch_tracking: false,
         expiry_tracking: false,
-        is_sku_enabled: true,
+        storefront_visible: false, is_featured: false, min_order_qty: 1, max_order_qty: 1000,
+      is_sku_enabled: true,
         description: '',
         application_instructions: '',
         status: 'published',
@@ -1481,6 +1519,7 @@ document.addEventListener('alpine:init', () => {
         return;
       }
 
+      if (this.form.image?.startsWith('blob:')) URL.revokeObjectURL(this.form.image);
       this.form.image = URL.createObjectURL(file);
       this.form.imageFile = file;
     },
@@ -1514,6 +1553,13 @@ document.addEventListener('alpine:init', () => {
       }
       if (event && event.target) {
           event.target.classList.remove('was-validated');
+      }
+
+      const shopMin = Number(this.form.min_order_qty), shopMax = Number(this.form.max_order_qty);
+      if (!Number.isInteger(shopMin) || !Number.isInteger(shopMax) || shopMin < 1 || shopMax < shopMin || shopMax > 1000) {
+        showToast('Shop quantity limits must be whole numbers between 1 and 1000, with maximum at least minimum.', 'warning');
+        this.activeTab = 'general';
+        return;
       }
 
       const spGst = parseFloat(this.form.selling_price_inc_gst) || 0;
@@ -1597,6 +1643,7 @@ document.addEventListener('alpine:init', () => {
       if (this.form.mrp !== '' && this.form.mrp !== null && this.form.mrp !== undefined) {
         formData.append('mrp', String(Number(this.form.mrp)));
       }
+      formData.append('selling_price_including_tax', Number(this.form.selling_price_inc_gst).toFixed(2));
       formData.append(
         'selling_price',
         String(Number(this.baseSellingPriceExcludingTax.toFixed(2)))
@@ -1611,6 +1658,10 @@ document.addEventListener('alpine:init', () => {
       formData.append('default_discount_type', this.form.default_discount_type || 'percent');
       formData.append('description', String(this.form.description ?? '').trim());
       formData.append('status', normalizeStatus(this.form.status));
+      formData.append('storefront_visible', this.form.storefront_visible ? '1' : '0');
+      formData.append('is_featured', this.form.is_featured ? '1' : '0');
+      formData.append('min_order_qty', String(this.form.min_order_qty));
+      formData.append('max_order_qty', String(this.form.max_order_qty));
       formData.append('allow_overselling', this.form.allow_overselling ? '1' : '0');
       formData.append('manage_stock', this.form.manage_stock ? '1' : '0');
       formData.append('batch_tracking', this.form.batch_tracking ? '1' : '0');

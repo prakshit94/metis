@@ -29,6 +29,7 @@ class Product extends Model implements Auditable
     protected $appends = ['image_url'];
 
     protected $fillable = [
+        'storefront_visible', 'is_featured', 'min_order_qty', 'max_order_qty',
         'name',
         'sku',
         'slug',
@@ -48,6 +49,7 @@ class Product extends Model implements Auditable
         'purchase_price',
         'mrp',
         'selling_price',
+        'selling_price_including_tax',
         'default_discount',
         'default_discount_type',
         'min_stock_level',
@@ -65,9 +67,12 @@ class Product extends Model implements Auditable
     ];
 
     protected $casts = [
+        'storefront_visible' => 'boolean', 'is_featured' => 'boolean',
+        'min_order_qty' => 'integer', 'max_order_qty' => 'integer',
         'purchase_price' => 'decimal:2',
         'mrp' => 'decimal:2',
         'selling_price' => 'decimal:2',
+        'selling_price_including_tax' => 'decimal:2',
         'default_discount' => 'decimal:2',
         'weight_g' => 'decimal:2',
         'length_cm' => 'decimal:2',
@@ -82,6 +87,45 @@ class Product extends Model implements Auditable
         'is_sku_enabled' => 'boolean',
         'is_active' => 'boolean',
     ];
+
+    /** Preserve legacy base prices; new inclusive prices are the authoritative sale price. */
+    public function getSellingPriceAttribute($value)
+    {
+        $inclusive = $this->attributes['selling_price_including_tax'] ?? null;
+        if ($inclusive === null) {
+            return number_format((float) $value, 2, '.', '');
+        }
+
+        return (float) $inclusive / (1 + (float) ($this->taxRate?->rate ?? 0) / 100);
+    }
+
+    public function setSellingPriceAttribute($value): void
+    {
+        $this->attributes['selling_price'] = $value;
+        // Legacy base-price writers must not leave an obsolete inclusive price behind.
+        if (array_key_exists('selling_price_including_tax', $this->attributes)) {
+            $this->attributes['selling_price_including_tax'] = null;
+        }
+    }
+
+    public function getSellingPriceIncGstAttribute(): float
+    {
+        return $this->selling_price_including_tax !== null
+            ? (float) $this->selling_price_including_tax
+            : round((float) $this->selling_price * (1 + (float) ($this->taxRate?->rate ?? 0) / 100), 2);
+    }
+
+    public function scopeStorefrontAvailable(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
+    {
+        return $query->where('storefront_visible', true)->where('is_active', true)
+            ->where('status', 'published')->where('is_sku_enabled', true)->where('selling_price', '>=', 0);
+    }
+
+    public function isAvailableInStorefront(): bool
+    {
+        return !$this->trashed() && $this->storefront_visible && $this->is_active
+            && $this->status === 'published' && $this->is_sku_enabled && (float)$this->selling_price >= 0;
+    }
 
     public function category(): BelongsTo
     {

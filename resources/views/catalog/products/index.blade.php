@@ -209,7 +209,7 @@
                                                 <option value="">All SKU</option>
                                                 <option value="sku-on">SKU On</option>
                                                 <option value="sku-off">SKU Off</option>
-                                            </select></div><div class="catalog-filter"><label for="catalog-per-page">Per page</label><select id="catalog-per-page" class="form-select form-select-sm shadow-none border-secondary border-opacity-25"
+                                            </select></div><div class="catalog-filter"><label for="catalog-storefront">Customer shop</label><select id="catalog-storefront" class="form-select form-select-sm" x-model="storefrontFilter" @change="filterProducts()"><option value="">All shop visibility</option><option value="listed">Listed in shop</option><option value="hidden">Hidden from shop</option><option value="blocked">Enabled but unavailable</option></select></div><div class="catalog-filter"><label for="catalog-per-page">Per page</label><select id="catalog-per-page" class="form-select form-select-sm shadow-none border-secondary border-opacity-25"
                                                     x-model.number="itemsPerPage"
                                                     @change="filterProducts()">
                                                 <option value="10">10 / page</option>
@@ -229,12 +229,14 @@
                                                 <span x-text="selectedProducts.length"></span> record<span x-show="selectedProducts.length !== 1">s</span> selected
                                             </span>
                                         </div>
-                                        <div class="d-flex gap-2">
+                                        <div class="d-flex flex-wrap gap-2">
                                             <button class="btn btn-sm btn-outline-secondary bg-body" type="button"
                                                     @click="selectedProducts = []" :disabled="bulkActionLoading">
                                                 Clear selection
                                             </button>
                                             @can('product-edit')
+                                            <button type="button" class="btn btn-sm btn-outline-primary bg-body" x-show="!showDeletedProducts" :disabled="bulkActionLoading" @click="bulkAction('show_shop')"><i class="bi bi-shop me-1"></i>Show in shop</button>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary bg-body" x-show="!showDeletedProducts" :disabled="bulkActionLoading" @click="bulkAction('hide_shop')">Hide from shop</button>
                                             <button class="btn btn-sm btn-outline-secondary bg-body" 
                                                     :disabled="bulkActionLoading"
                                                     x-show="!showDeletedProducts && filteredProducts.filter(p => selectedProducts.includes(p.id)).some(p => p.status !== 'published' && p.status !== 'active')"
@@ -327,11 +329,11 @@
                                                                      class="rounded border shadow-sm object-fit-cover" 
                                                                      style="width: 48px; height: 48px;" 
                                                                      :alt="product.name"
-                                                                     x-on:error="$el.src='/assets/images/product-placeholder.svg'">
-                                                                <div x-show="product.grade" 
+                                                                     x-on:error="if ($el.getAttribute('src') !== '/assets/images/product-placeholder.svg') $el.src='/assets/images/product-placeholder.svg'">
+                                                                <div x-show.important="product.grade"
                                                                      class="position-absolute top-100 start-50 translate-middle badge border shadow-sm rounded-pill px-2 d-flex align-items-center" 
                                                                      style="font-size: 9px; padding-top: 2px; padding-bottom: 2px;"
-                                                                     :class="{'bg-success-subtle text-success-emphasis border-success': product.grade === 'A', 'bg-warning-subtle text-warning-emphasis border-warning': product.grade === 'B', 'bg-danger-subtle text-danger-emphasis border-danger': product.grade === 'C', 'bg-dark-subtle text-body-emphasis-emphasis border-dark': !['A','B','C'].includes(product.grade)}"
+                                                                     :class="{'bg-success-subtle text-success-emphasis border-success': product.grade === 'A', 'bg-warning-subtle text-warning-emphasis border-warning': product.grade === 'B', 'bg-danger-subtle text-danger-emphasis border-danger': product.grade === 'C', 'bg-dark-subtle text-body-emphasis border-dark': !['A','B','C'].includes(product.grade)}"
                                                                      :title="'Grade ' + product.grade"
                                                                      x-cloak>
                                                                     <i class="bi bi-star-fill text-warning me-1" style="font-size: 8px;"></i><span x-text="product.grade" style="font-weight: 800;"></span>
@@ -341,6 +343,8 @@
                                                                 <a href="#" class="catalog-product-name fw-semibold text-decoration-none text-body-emphasis mb-1" @click.prevent="viewProduct(product)" x-text="product.name"></a>
                                                                 <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
                                                                     <small class="text-muted" style="font-size: 11px;" x-text="product.sku"></small>
+                                                                    <span class="badge" :class="product.storefront_available ? 'bg-success-subtle text-success-emphasis' : 'bg-secondary-subtle text-secondary-emphasis'" x-text="product.storefront_available ? 'Listed in shop' : (product.storefront_visible ? 'Shop enabled · unavailable' : 'Hidden from shop')"></span>
+
                                                                     <span class="badge bg-secondary bg-opacity-10 text-secondary-emphasis border border-secondary border-opacity-25" style="font-size: 9px; padding: 0.25em 0.5em;" x-text="product.category_label || product.category"></span>
                                                                     <span class="badge bg-danger-subtle text-danger-emphasis border border-danger-subtle" x-show="showDeletedProducts">Deleted <span x-text="product.deleted_at"></span></span>
                                                                 </div>
@@ -354,7 +358,7 @@
                                                     </td>
                                                     <td class="align-middle">
                                                         <div class="catalog-price">
-                                                            <strong x-text="'₹' + (Number(product.price) * (1 + Number(product.tax_rate || 0) / 100)).toFixed(2)"></strong>
+                                                            <strong x-text="'₹' + Number(product.selling_price_inc_gst ?? (Number(product.price) * (1 + Number(product.tax_rate || 0) / 100))).toFixed(2)"></strong>
                                                             <small>Including GST <span x-text="'(' + Number(product.tax_rate || 0) + '%)'"></span></small>
                                                             <small x-text="'MRP ₹' + Number(product.mrp || 0).toFixed(2)"></small>
                                                         </div>
@@ -824,6 +828,14 @@
                                         </div>
                                         
                                         <div class="col-12">
+                                            <section class="border rounded-3 p-3 mb-4" aria-label="Storefront settings">
+                                                <h6>Customer storefront</h6>
+                                                <p class="small text-muted" x-show="editingProductId">The saved product URL stays the same when its name changes.</p>
+                                                <p class="small text-muted">Publish this product in the separate shop. Products must also be published, active and have SKU enabled. Existing prices, stock and sales rules remain in effect.</p>
+                                                <div class="form-check form-switch mb-2"><input id="product-storefront-visible" class="form-check-input" type="checkbox" x-model="form.storefront_visible"><label class="form-check-label" for="product-storefront-visible">Visible in customer shop</label></div>
+                                                <div class="form-check form-switch mb-3"><input id="product-storefront-featured" class="form-check-input" type="checkbox" x-model="form.is_featured"><label class="form-check-label" for="product-storefront-featured">Featured pick</label></div>
+                                                <div class="row g-3"><div class="col-sm-6"><label for="product-shop-min" class="form-label">Minimum per order</label><input id="product-shop-min" class="form-control" type="number" min="1" max="1000" step="1" x-model.number="form.min_order_qty" required></div><div class="col-sm-6"><label for="product-shop-max" class="form-label">Maximum per order</label><input id="product-shop-max" class="form-control" type="number" :min="form.min_order_qty || 1" max="1000" step="1" x-model.number="form.max_order_qty" required></div></div>
+                                            </section>
                                             <label class="form-label fw-medium text-muted small">Product Image</label>
                                             <div class="border border-dashed rounded-3 p-4 text-center bg-body-secondary d-flex flex-column align-items-center justify-content-center" style="min-height: 200px; border-style: dashed !important; border-width: 2px !important; transition: all 0.2s;">
                                                 <div class="mb-3 position-relative">
@@ -936,7 +948,7 @@
                     <h5 class="modal-title fw-bold mb-0" x-text="product ? product?.name : ''"></h5>
                     <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary" x-text="product ? product?.sku : ''"></span>
                     <span class="badge text-uppercase" :class="product && ['published', 'active'].includes(product?.status) ? 'bg-success' : 'bg-warning-subtle text-warning-emphasis'" x-text="product ? product?.status : ''"></span>
-                    <span x-show="product && product?.grade" class="badge border shadow-sm" :class="{'bg-success-subtle text-success-emphasis border-success': product?.grade === 'A', 'bg-warning-subtle text-warning-emphasis border-warning': product?.grade === 'B', 'bg-danger-subtle text-danger-emphasis border-danger': product?.grade === 'C', 'bg-dark-subtle text-body-emphasis-emphasis border-dark': !['A','B','C'].includes(product?.grade)}"><i class="bi bi-star-fill me-1 text-warning"></i>Grade <span x-text="product ? product?.grade : ''"></span></span>
+                    <span x-show="product && product?.grade" class="badge border shadow-sm" :class="{'bg-success-subtle text-success-emphasis border-success': product?.grade === 'A', 'bg-warning-subtle text-warning-emphasis border-warning': product?.grade === 'B', 'bg-danger-subtle text-danger-emphasis border-danger': product?.grade === 'C', 'bg-dark-subtle text-body-emphasis border-dark': !['A','B','C'].includes(product?.grade)}"><i class="bi bi-star-fill me-1 text-warning"></i>Grade <span x-text="product ? product?.grade : ''"></span></span>
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
@@ -947,7 +959,7 @@
                     <!-- Left: Image & Meta (sticky panel) -->
                     <div class="pvm-left bg-body-tertiary border-end p-3">
                         <div class="card border-start border-4 border-danger shadow-sm mb-3 rounded-4 overflow-hidden position-relative" style="aspect-ratio:1;width:100%;">
-                            <img :src="product ? (product?.image || '/assets/images/product-placeholder.svg') : ''" class="w-100 h-100 object-fit-cover" x-on:error="$el.src='/assets/images/product-placeholder.svg'">
+                            <img :src="product ? (product?.image || '/assets/images/product-placeholder.svg') : ''" class="w-100 h-100 object-fit-cover" x-on:error="if ($el.getAttribute('src') !== '/assets/images/product-placeholder.svg') $el.src='/assets/images/product-placeholder.svg'">
                             <span class="position-absolute top-0 end-0 m-2 badge bg-success shadow-sm" x-show="product && product?.default_discount > 0" x-text="product ? product?.default_discount + (product?.default_discount_type === 'percent' ? '%' : '') + ' OFF' : ''"></span>
                         </div>
                         <div x-show="product">
@@ -965,7 +977,7 @@
                                         <tr x-show="product && (product?.weight_g || product?.length_cm || product?.width_cm || product?.height_cm)">
                                             <th class="ps-0">Dimensions</th>
                                             <td style="font-size: 11px;">
-                                                <span class="d-block" x-show="product?.weight_g" x-text="Number(product?.weight_g || 0) + ' g'"></span>
+                                                <span class="d-block" x-show.important="product?.weight_g" x-text="Number(product?.weight_g || 0) + ' g'"></span>
                                                 <span x-show="product?.length_cm || product?.width_cm || product?.height_cm" x-text="Number(product?.length_cm || 0) + ' × ' + Number(product?.width_cm || 0) + ' × ' + Number(product?.height_cm || 0) + ' cm'"></span>
                                             </td>
                                         </tr>
@@ -994,7 +1006,7 @@
                                         <label class="form-label mb-1 fw-bold text-muted text-uppercase d-block" style="font-size:9px;">Selling Price (Inc. GST)</label>
                                         <div class="d-flex align-items-center flex-wrap gap-2">
                                             <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 text-decoration-line-through" x-show="product && Math.round(Number(product?.mrp || 0) * 100) > Math.round(Number(product?.selling_price || product?.price || 0) * (1 + Number(product?.tax_rate || 0) / 100) * 100)" x-text="product ? 'MRP: ₹' + (parseFloat(product?.mrp||0)).toFixed(2) : ''"></span>
-                                            <span class="badge bg-success text-white fw-bold shadow-sm" style="font-size: 16px;" x-text="product ? '₹ ' + (parseFloat(product?.selling_price || product?.price || 0) * (1 + (parseFloat(product?.tax_rate || 0) / 100))).toFixed(2) : ''"></span>
+                                            <span class="badge bg-success text-white fw-bold shadow-sm" style="font-size: 16px;" x-text="product ? '₹ ' + Number(product.selling_price_inc_gst ?? (parseFloat(product?.selling_price || product?.price || 0) * (1 + (parseFloat(product?.tax_rate || 0) / 100)))).toFixed(2) : ''"></span>
                                         </div>
                                     </div>
                                     @if(auth()->user()?->hasRole('Super Admin'))
