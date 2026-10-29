@@ -1,0 +1,489 @@
+SET FOREIGN_KEY_CHECKS=0;
+-- MySQL Deep Audit Migration Scripts from `multi-tenancy` to `metis`
+-- Make sure to run these scripts on a database where both schemas are accessible,
+-- or export the data from `multi-tenancy` and run these transformed inserts into `metis`.
+-- Assuming the source database is `central_database` and target is `metis`.
+
+-- 0. Migrate Users
+INSERT IGNORE INTO metis.users (
+    id, name, email, phone, address_line_1, designation, 
+    email_verified_at, password, is_active, remember_token, 
+    created_at, updated_at, deleted_at
+)
+SELECT 
+    id, name, email, phone, location, designation, 
+    email_verified_at, password, 
+    CASE WHEN status = 'active' THEN 1 ELSE 0 END, 
+    remember_token, 
+    created_at, updated_at, deleted_at
+FROM central_database.users;
+
+-- 1. Migrate Customers to Parties
+INSERT IGNORE INTO metis.parties (
+    id, uuid, party_code, type, firstname, lastname, 
+    email, phone, alternatemobile, relative_phone, 
+    source, category, company_name, gst_no, pan_no, 
+    land_area, land_unit, crops, irrigation_type, 
+    credit_limit, outstanding_balance, credit_valid_till, 
+    aadhaar_last4, kyc_completed, kyc_verified_at, 
+    first_purchase_at, last_purchase_at, orders_count, 
+    status, is_active, is_blacklisted, internal_notes, tags, 
+    created_by, updated_by, created_at, updated_at, deleted_at
+)
+SELECT 
+    id, 
+    uuid, 
+    customer_code, 
+    'customer', 
+    first_name, 
+    last_name, 
+    email, 
+    mobile, 
+    phone_number_2, 
+    relative_phone, 
+    CASE WHEN source IS NOT NULL THEN JSON_ARRAY(source) ELSE NULL END,
+    category, 
+    company_name, 
+    gst_number, 
+    pan_number, 
+    land_area, 
+    land_unit, 
+    crops, 
+    CASE WHEN irrigation_type IS NOT NULL THEN JSON_ARRAY(irrigation_type) ELSE NULL END,
+    credit_limit, 
+    outstanding_balance, 
+    credit_valid_till, 
+    aadhaar_last4, 
+    kyc_completed, 
+    kyc_verified_at, 
+    first_purchase_at, 
+    last_purchase_at, 
+    orders_count, 
+    CASE WHEN is_active = 1 THEN 'active' ELSE 'inactive' END,
+    is_active, 
+    is_blacklisted, 
+    internal_notes, 
+    tags, 
+    created_by, 
+    updated_by, 
+    created_at, 
+    updated_at, 
+    deleted_at
+FROM central_database.customers;
+
+-- 2. Migrate Customer Addresses to Party Addresses
+INSERT IGNORE INTO metis.party_addresses (
+    id, party_id, label, address_line_1, address_line_2, 
+    village_name, post_office, taluka, district, state, 
+    pincode, is_default, status, created_at, updated_at, deleted_at
+)
+SELECT 
+    id, 
+    customer_id, 
+    IFNULL(label, 'Primary'), 
+    address_line1, 
+    address_line2, 
+    village, 
+    post_office, 
+    taluka, 
+    district, 
+    state, 
+    pincode, 
+    is_default, 
+    'active', 
+    created_at, 
+    updated_at, 
+    deleted_at
+FROM central_database.customer_addresses;
+
+-- 3. Migrate Orders
+INSERT IGNORE INTO metis.orders (
+    id, order_no, type, party_id, order_date, 
+    total_amount, tax_amount, discount_amount, coupon_code, net_amount, 
+    status, warehouse_id, 
+    shipping_address_id, billing_address_id, 
+    pending_at, -- mapped to placed_at
+    created_by, updated_by, created_at, updated_at, deleted_at
+)
+SELECT 
+    id, 
+    order_number, 
+    'sale', 
+    customer_id, 
+    IFNULL(placed_at, created_at), -- Ensured order_date is properly set
+    total_amount, 
+    tax_amount, 
+    discount_amount, 
+    discount_code, 
+    grand_total, 
+    CASE 
+        WHEN status = 'shipped' THEN 'dispatched'
+        WHEN status = 'completed' THEN 'delivered'
+        WHEN status = 'scheduled' THEN 'future_order'
+        ELSE status 
+    END as status, 
+    warehouse_id, 
+    shipping_address_id, 
+    billing_address_id, 
+    IFNULL(placed_at, created_at) as pending_at, 
+    created_by, 
+    updated_by, 
+    created_at, 
+    updated_at, 
+    deleted_at
+FROM central_database.orders;
+
+-- 4. Migrate Order Items
+INSERT IGNORE INTO metis.order_items (
+    id, order_id, product_id, quantity, unit_price, 
+    tax_rate, discount_amount, total_amount, created_at, updated_at
+)
+SELECT 
+    id, 
+    order_id, 
+    product_id, 
+    quantity, 
+    unit_price, 
+    tax_percent, 
+    discount_amount, 
+    total_price, 
+    created_at, 
+    updated_at
+FROM central_database.order_items;
+
+-- 5. Migrate Invoices
+INSERT IGNORE INTO metis.invoices (
+    id, invoice_no, order_id, invoice_date, due_date, 
+    total_amount, tax_amount, net_amount, status, 
+    created_at, updated_at, deleted_at
+)
+SELECT 
+    id, 
+    invoice_number, 
+    order_id, 
+    issue_date, 
+    due_date, 
+    total_amount, 
+    0, -- default tax_amount, not clearly separated in multi_tenancy invoices
+    total_amount, -- default net_amount
+    CASE 
+        WHEN status IN ('draft', 'sent', 'overdue') THEN 'unpaid'
+        WHEN status = 'void' THEN 'cancelled'
+        ELSE 'paid'
+    END,
+    created_at, 
+    updated_at, 
+    deleted_at
+FROM central_database.invoices;
+
+-- 6. Migrate Payments
+INSERT IGNORE INTO metis.payments (
+    id, payment_no, invoice_id, order_id, amount, 
+    payment_method, transaction_id, payment_date, status, 
+    created_at, updated_at
+)
+SELECT 
+    id, 
+    CONCAT('PAY-', id), -- Multi-tenancy lacks explicit payment_no
+    invoice_id, 
+    order_id, 
+    amount, 
+    method, 
+    transaction_id, 
+    paid_at, 
+    'completed', -- Default mapping
+    created_at, 
+    updated_at
+FROM central_database.payments;
+
+-- 7. Migrate Shipments
+INSERT IGNORE INTO metis.shipments (
+    id, shipment_no, order_id, carrier_name, tracking_no, 
+    status, shipped_at, delivered_at, estimated_delivery_date, 
+    actual_weight_g, created_at, updated_at
+)
+SELECT 
+    id, 
+    CONCAT('SHP-', id), -- Multi-tenancy lacks explicit shipment_no
+    order_id, 
+    carrier, 
+    tracking_number, 
+    CASE 
+        WHEN status = 'shipped' THEN 'in_transit'
+        ELSE status
+    END, 
+    shipped_at, 
+    delivered_at, 
+    estimated_delivery_date, 
+    weight * 1000, -- Assuming multi-tenancy was kg, metis is grams
+    created_at, 
+    updated_at
+FROM central_database.shipments;
+
+-- 8. Migrate Returns
+INSERT IGNORE INTO metis.order_returns (
+    id, order_id, return_no, status, reason, 
+    refund_amount, created_at, updated_at
+)
+SELECT 
+    id, 
+    order_id, 
+    rma_number, 
+    CASE WHEN status = 'requested' THEN 'pending' ELSE status END,
+    reason, 
+    IFNULL(refunded_amount, 0),
+    created_at, 
+    updated_at
+FROM central_database.returns;
+
+-- 9. Migrate Return Items
+INSERT IGNORE INTO metis.order_return_items (
+    id, order_return_id, product_id, requested_qty, received_qty, 
+    qc_notes, created_at, updated_at
+)
+SELECT 
+    id, 
+    return_id, 
+    product_id, 
+    quantity, 
+    IFNULL(quantity_received, 0), 
+    `condition`, 
+    created_at, 
+    updated_at
+FROM central_database.return_items;
+
+-- 10. Migrate Complaints
+INSERT IGNORE INTO metis.order_complaints (
+    id, order_id, customer_id, assigned_to, complaint_number, 
+    category, priority, status, subject, description, 
+    resolution_notes, resolved_at, created_at, updated_at, deleted_at
+)
+SELECT 
+    id, 
+    order_id, 
+    customer_id, 
+    user_id, 
+    reference_number, 
+    type, 
+    priority, 
+    status, 
+    subject, 
+    description, 
+    resolution, 
+    resolved_at, 
+    created_at, 
+    updated_at, 
+    deleted_at
+FROM central_database.complaints;
+
+-- 11. Migrate Order Verifications
+INSERT IGNORE INTO metis.order_verification_logs (
+    id, order_id, outcome, remark, follow_up_at, created_by, 
+    created_at, updated_at
+)
+SELECT 
+    id, 
+    order_id, 
+    status, 
+    remarks, 
+    next_followup_at, 
+    IFNULL(user_id, 1), -- fallback user if null
+    created_at, 
+    updated_at
+FROM central_database.order_verifications;
+
+-- 12. Migrate Categories
+INSERT IGNORE INTO metis.categories (
+    id, parent_id, name, slug, image, status, is_active, 
+    created_at, updated_at, deleted_at
+)
+SELECT 
+    id, parent_id, name, slug, banner_image, 
+    CASE WHEN is_active = 1 THEN 'active' ELSE 'inactive' END, 
+    is_active, 
+    created_at, updated_at, deleted_at
+FROM central_database.categories;
+
+-- 13. Migrate Brands
+INSERT IGNORE INTO metis.brands (
+    id, name, slug, image, logo, status, is_active, 
+    created_at, updated_at, deleted_at
+)
+SELECT 
+    id, name, slug, banner_image, logo, 
+    CASE WHEN is_active = 1 THEN 'active' ELSE 'inactive' END, 
+    is_active, 
+    created_at, updated_at, deleted_at
+FROM central_database.brands;
+
+-- 14. Migrate Products
+INSERT IGNORE INTO metis.products (
+    id, name, sku, slug, category_id, brand_id, barcode, image_path, 
+    weight_g, purchase_price, mrp, selling_price, default_discount, 
+    default_discount_type, min_stock_level, manage_stock, is_active, 
+    application_instructions, status, description, 
+    created_at, updated_at, deleted_at
+)
+SELECT 
+    id, name, IFNULL(sku, CONCAT('SKU-', id)), slug, category_id, brand_id, barcode, image, 
+    weight * 1000, IFNULL(cost_price, 0), IFNULL(mrp, 0), price, IFNULL(default_discount_value, 0), 
+    IFNULL(default_discount_type, 'fixed'), reorder_level, manage_stock, is_active, 
+    usage_instructions, CASE WHEN is_active = 1 THEN 'published' ELSE 'draft' END, description, 
+    created_at, updated_at, deleted_at
+FROM central_database.products;
+
+-- 15. Migrate Order Status Logs (Trackings)
+INSERT IGNORE INTO metis.order_status_logs (
+    id, order_id, status, notes, changed_by, created_at, updated_at
+)
+SELECT 
+    id, order_id, status, remarks, user_id, created_at, updated_at
+FROM central_database.order_trackings;
+
+-- 16. Migrate Villages
+INSERT IGNORE INTO metis.villages (
+    id, village_name, normalized_name, pincode, post_so_name, taluka_name, 
+    district_name, state_name, created_at, updated_at
+)
+SELECT 
+    id, village_name, village_name, pincode, post_so_name, taluka_name, 
+    district_name, state_name, created_at, updated_at
+FROM central_database.villages;
+
+-- 17. Migrate Warehouses
+INSERT IGNORE INTO metis.warehouses (
+    id, name, code, email, phone, address, is_default, is_active, 
+    status, created_at, updated_at, deleted_at
+)
+SELECT 
+    id, name, code, email, phone, address, is_default, is_active, 
+    CASE WHEN is_active = 1 THEN 'active' ELSE 'inactive' END, 
+    created_at, updated_at, deleted_at
+FROM central_database.warehouses;
+
+-- 18. Migrate Suppliers
+INSERT IGNORE INTO metis.suppliers (
+    id, company_name, firstname, email, phone, is_active, 
+    status, created_at, updated_at, deleted_at
+)
+SELECT 
+    id, company_name, contact_name, email, phone, is_active, 
+    CASE WHEN is_active = 1 THEN 'active' ELSE 'inactive' END, 
+    created_at, updated_at, deleted_at
+FROM central_database.suppliers;
+
+-- 19. Migrate Units of Measure
+INSERT IGNORE INTO metis.units_of_measure (
+    id, name, slug, status, created_at, updated_at, deleted_at
+)
+SELECT 
+    id, name, name, CASE WHEN is_active = 1 THEN 'active' ELSE 'inactive' END, 
+    created_at, updated_at, deleted_at
+FROM central_database.units;
+
+-- 20. Migrate Stocks (Inventory)
+INSERT IGNORE INTO metis.stocks (
+    id, warehouse_id, product_id, quantity, reserved_qty, 
+    created_at, updated_at
+)
+SELECT 
+    id, warehouse_id, product_id, quantity, reserve_quantity, 
+    created_at, updated_at
+FROM central_database.inventory_stocks;
+
+-- 21. Migrate Stock Movements
+INSERT IGNORE INTO metis.stock_movements (
+    id, product_id, warehouse_id, reference_type, reference_id, 
+    quantity, type, performed_by, created_at, updated_at
+)
+SELECT 
+    m.id, s.product_id, s.warehouse_id, 
+    CASE 
+        WHEN m.type = 'purchase' THEN 'Order'
+        WHEN m.type = 'sale' THEN 'Order'
+        ELSE m.type 
+    END, 
+    m.reference_id, m.quantity, 
+    CASE 
+        WHEN m.type IN ('purchase', 'transfer', 'return') THEN 'in' 
+        WHEN m.type = 'sale' THEN 'out'
+        WHEN m.type = 'adjustment' THEN 'adjustment'
+        ELSE 'adjustment'
+    END,
+    m.user_id, m.created_at, m.updated_at
+FROM central_database.inventory_movements m
+JOIN central_database.inventory_stocks s ON m.stock_id = s.id;
+
+-- 22. Migrate Purchase Orders
+INSERT IGNORE INTO metis.purchase_orders (
+    id, po_number, supplier_id, warehouse_id, status, expected_delivery_date, 
+    total_amount, notes, created_by, created_at, updated_at, deleted_at
+)
+SELECT 
+    id, po_number, supplier_id, warehouse_id, 
+    CASE 
+        WHEN status = 'ordered' THEN 'pending'
+        ELSE status 
+    END, 
+    expected_date, total_cost, notes, created_by, 
+    created_at, updated_at, deleted_at
+FROM central_database.purchase_orders;
+
+-- 23. Migrate Purchase Order Items
+INSERT IGNORE INTO metis.purchase_order_items (
+    id, purchase_order_id, product_id, quantity, received_qty, 
+    unit_price, total_price, net_amount, created_at, updated_at
+)
+SELECT 
+    id, purchase_order_id, product_id, quantity_ordered, quantity_received, 
+    unit_cost, total_cost, total_cost, created_at, updated_at
+FROM central_database.purchase_order_items;
+
+-- 24. Migrate Notifications
+INSERT IGNORE INTO metis.notifications (
+    id, type, notifiable_type, notifiable_id, data, read_at, 
+    created_at, updated_at
+)
+SELECT 
+    id, type, notifiable_type, notifiable_id, data, read_at, 
+    created_at, updated_at
+FROM central_database.notifications;
+
+-- 25. Migrate Customer Interactions to Call Logs
+INSERT IGNORE INTO metis.call_logs (
+    id, customer_id, agent_id, duration_seconds, direction, 
+    status, notes, created_at, updated_at
+)
+SELECT 
+    id, customer_id, user_id, 0, 'inbound', 'completed', 
+    CONCAT(
+        'Type: ', IFNULL(type, 'N/A'), ' | ', 
+        'Outcome: ', IFNULL(outcome, 'N/A'), ' | ', 
+        'Notes: ', IFNULL(notes, ''), ' | ', 
+        'Meta: ', IFNULL(metadata, '')
+    ),
+    created_at, updated_at
+FROM central_database.customer_interactions;
+
+-- 26. Migrate Coupons
+INSERT IGNORE INTO metis.coupons (
+    id, code, type, value, expiry_date, usage_limit, used_count, 
+    status, is_active, created_at, updated_at
+)
+SELECT 
+    id, code, type, amount, expires_at, usage_limit, usage_count, 
+    CASE WHEN is_active = 1 THEN 'active' ELSE 'inactive' END, 
+    is_active, created_at, updated_at
+FROM central_database.coupons;
+
+-- 27. Migrate Tax Rates
+INSERT IGNORE INTO metis.tax_rates (
+    id, name, rate, status, is_active, created_at, updated_at
+)
+SELECT 
+    id, name, rate, 'active', 1, created_at, updated_at
+FROM central_database.tax_rates;
+
+-- End of Script
+SET FOREIGN_KEY_CHECKS=1;
+
