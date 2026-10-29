@@ -546,12 +546,26 @@
                             
                             <div class="col-12">
                                 <h6 class="mb-2 fw-bold text-uppercase text-body" style="font-size: 11px; letter-spacing: 1px;">Usage History</h6>
+                                <form class="row g-2 align-items-end mb-3" @submit.prevent="loadAwbLogs(1)">
+                                    <div class="col-12 col-md-8">
+                                        <label for="awb-log-search" class="form-label small">Search order or tracking ID</label>
+                                        <input id="awb-log-search" type="search" class="form-control" maxlength="120" placeholder="Order number, order ID or AWB barcode" x-model="awbLogSearch" @input.debounce.350ms="loadAwbLogs(1)">
+                                    </div>
+                                    <div class="col-8 col-md-3">
+                                        <label for="awb-log-per-page" class="form-label small">Records per page</label>
+                                        <select id="awb-log-per-page" class="form-select" x-model.number="awbLogPerPage" @change="loadAwbLogs(1)">
+                                            <option value="15">15</option><option value="25">25</option><option value="50">50</option><option value="100">100</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-4 col-md-1"><button type="submit" class="btn btn-primary w-100" aria-label="Search AWB logs"><i class="bi bi-search" aria-hidden="true"></i></button></div>
+                                </form>
+                                <div x-show="awbLogError" x-cloak class="alert alert-danger py-2 small" role="alert"><span x-text="awbLogError"></span> <button type="button" class="btn btn-sm btn-outline-danger" @click="loadAwbLogs(awbLogPagination.current_page)">Retry</button></div>
                                 <div class="table-responsive bg-body rounded shadow-sm border">
                                     <table class="table table-hover align-middle mb-0 text-nowrap">
                                         <thead class="table-light">
                                             <tr>
                                                 <th>Barcode (AWB)</th>
-                                                <th>Order ID</th>
+                                                <th>Order / ID</th>
                                                 <th>Status</th>
                                                 <th>Generated At</th>
                                             </tr>
@@ -562,7 +576,7 @@
                                                     <span class="spinner-border spinner-border-sm me-2"></span> Loading logs...
                                                 </td>
                                             </tr>
-                                            <tr x-show="!loadingAwbLogs && awbLogs.length === 0">
+                                            <tr x-show="!loadingAwbLogs && !awbLogError && awbLogs.length === 0">
                                                 <td colspan="4" class="text-center py-4 text-muted">
                                                     <i class="bi bi-inbox fs-4 d-block mb-2"></i> No tracking IDs have been used yet.
                                                 </td>
@@ -571,17 +585,30 @@
                                                 <tr>
                                                     <td class="fw-medium text-primary"><i class="bi bi-upc-scan me-2 text-muted"></i><span x-text="log.barcode"></span></td>
                                                     <td>
-                                                        <span x-show="log.order_id" x-text="'#' + log.order_id"></span>
+                                                        <span class="d-block fw-medium" x-show="log.order_no" x-text="log.order_no"></span>
+                                                        <span x-show="log.order_id" class="small text-body-secondary" x-text="'#' + log.order_id"></span>
                                                         <span x-show="!log.order_id" class="text-muted fst-italic">Unknown</span>
                                                     </td>
                                                     <td>
-                                                        <span class="badge bg-success-subtle text-success text-uppercase" style="font-size: 10px;" x-text="log.status"></span>
+                                                        <span class="badge text-uppercase" :class="log.status === 'used' ? 'bg-success-subtle text-success' : (log.status === 'rejected_duplicate' ? 'bg-danger-subtle text-danger' : 'bg-secondary-subtle text-body-secondary')" style="font-size: 10px;" x-text="(log.status || 'unknown').replaceAll('_', ' ')"></span>
                                                     </td>
                                                     <td class="text-muted small" x-text="new Date(log.created_at).toLocaleString()"></td>
                                                 </tr>
                                             </template>
                                         </tbody>
                                     </table>
+                                </div>
+                                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-3" x-show="!loadingAwbLogs && !awbLogError">
+                                    <span class="small text-body-secondary" role="status" aria-live="polite" x-text="`Showing ${awbLogPagination.from || 0}–${awbLogPagination.to || 0} of ${awbLogPagination.total} records`"></span>
+                                    <nav aria-label="AWB log pages" x-show="awbLogPagination.total > 0">
+                                        <div class="d-flex flex-wrap gap-1">
+                                            <button type="button" class="btn btn-sm btn-outline-secondary" @click="loadAwbLogs(1)" :disabled="awbLogPagination.current_page <= 1" aria-label="First AWB log page">First</button>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary" @click="loadAwbLogs(awbLogPagination.current_page - 1)" :disabled="awbLogPagination.current_page <= 1" aria-label="Previous AWB log page">Previous</button>
+                                            <template x-for="page in awbLogPages" :key="page"><button type="button" class="btn btn-sm" :class="page === awbLogPagination.current_page ? 'btn-primary' : 'btn-outline-secondary'" :aria-current="page === awbLogPagination.current_page ? 'page' : null" @click="loadAwbLogs(page)" x-text="page"></button></template>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary" @click="loadAwbLogs(awbLogPagination.current_page + 1)" :disabled="awbLogPagination.current_page >= awbLogPagination.last_page" aria-label="Next AWB log page">Next</button>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary" @click="loadAwbLogs(awbLogPagination.last_page)" :disabled="awbLogPagination.current_page >= awbLogPagination.last_page" aria-label="Last AWB log page">Last</button>
+                                        </div>
+                                    </nav>
                                 </div>
                             </div>
                         </div>
@@ -759,6 +786,16 @@ document.addEventListener('alpine:init', () => {
         awbLogsModalInstance: null,
         awbLogs: [],
         loadingAwbLogs: false,
+        awbLogSearch: '',
+        awbLogPerPage: 15,
+        awbLogError: '',
+        awbLogRequestVersion: 0,
+        awbLogPagination: {current_page: 1, last_page: 1, total: 0, from: null, to: null},
+        get awbLogPages() {
+            const last = this.awbLogPagination.last_page || 1;
+            const start = Math.max(1, Math.min(this.awbLogPagination.current_page - 2, last - 4));
+            return Array.from({length: Math.min(5, last)}, (_, index) => start + index);
+        },
         officeForm: {
             id: '',
             pickup_dropoff_office_id: '',
@@ -904,21 +941,34 @@ document.addEventListener('alpine:init', () => {
         async viewAwbLogs(office) {
             this.activeAwbOffice = office;
             this.awbLogs = [];
-            this.loadingAwbLogs = true;
+            this.awbLogSearch = '';
+            this.awbLogError = '';
+            this.awbLogPagination = {current_page: 1, last_page: 1, total: 0, from: null, to: null};
             this.getAwbLogsModal().show();
-            
+            await this.loadAwbLogs(1);
+        },
+        async loadAwbLogs(page = 1) {
+            if (!this.activeAwbOffice) return;
+            const version = ++this.awbLogRequestVersion;
+            const officeId = this.activeAwbOffice.id;
+            const params = new URLSearchParams({q: this.awbLogSearch.trim(), per_page: this.awbLogPerPage, page});
+            this.loadingAwbLogs = true;
+            this.awbLogError = '';
+            this.awbLogs = [];
             try {
-                const res = await fetch(`/api/shipping/awb-logs/${office.id}`, {
-                    headers: { 'Accept': 'application/json' }
+                const res = await fetch(`/api/shipping/awb-logs/${encodeURIComponent(officeId)}?${params}`, {
+                    headers: {'Accept': 'application/json'}
                 });
-                const data = await res.json();
-                if (data.success) {
-                    this.awbLogs = data.logs.data;
-                }
+                const data = await res.json().catch(() => { throw new Error('Unable to load AWB logs. Refresh the page and try again.'); });
+                if (version !== this.awbLogRequestVersion) return;
+                if (!res.ok || !data.success || !Array.isArray(data.logs?.data)) throw new Error(data.message || 'Unable to load AWB logs.');
+                if (page > data.logs.last_page) return await this.loadAwbLogs(data.logs.last_page);
+                this.awbLogs = data.logs.data;
+                this.awbLogPagination = data.logs;
             } catch (error) {
-                console.error('Failed to load logs', error);
+                if (version === this.awbLogRequestVersion) this.awbLogError = error.message || 'Unable to load AWB logs. Please try again.';
             } finally {
-                this.loadingAwbLogs = false;
+                if (version === this.awbLogRequestVersion) this.loadingAwbLogs = false;
             }
         },
 

@@ -10,6 +10,7 @@ use App\Modules\Orders\Models\Order;
 use App\Modules\Orders\Models\Shipment;
 use App\Services\BusinessSequence;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -418,30 +419,69 @@ class IndiaPostProvider implements ShippingProviderInterface
             'articles' => [$article],
         ];
 
-        $response = $this->apiRequest('post', "{$this->baseUrl}/process-articles/{$customId}", $payload);
+        for ($attempt = 1; $attempt <= 3; $attempt++) {
+            $response = $this->apiRequest('post', "{$this->baseUrl}/process-articles/{$customId}", $payload);
+            if ($this->isDuplicateArticleRejection($response, $article['barcode_no'])) {
+                app(BusinessSequence::class)->reserveCommitted('awb:allocation', function () use ($article, $order) {
+                    IndiaPostAwbTracking::where('barcode', $article['barcode_no'])
+                        ->where('order_id', $order->id)->update(['status' => 'rejected_duplicate']);
+                });
+                if ($attempt < 3) {
+                    $article['barcode_no'] = $this->generateBarcode($order->id);
+                    $payload['articles'] = [$article];
 
-        if ($response->successful() && $response->json('success')) {
-            $validArticles = $response->json('valid_articles');
-            if (empty($validArticles)) {
-                throw new \Exception('No valid articles processed. Errors: '.json_encode($response->json('error_articles')));
+                    continue;
+                }
+            }
+            if ($response->successful() && $response->json('success')) {
+                $validArticles = $response->json('valid_articles');
+                if (empty($validArticles)) {
+                    throw new \Exception('No valid articles processed. Errors: '.json_encode($response->json('error_articles')));
+                }
+
+                return [
+                    'tracking_number' => $validArticles[0]['barcode_no'],
+                    'article_type' => $articleType,
+                    'provider_response' => $response->json(),
+                    'actual_weight_g' => $totalWeightG,
+                    'length_cm' => $maxLength,
+                    'width_cm' => $maxWidth,
+                    'height_cm' => $maxHeight,
+                    'shipping_cost' => $validArticles[0]['calculated_tariff'] ?? $validArticles[0]['tariff'] ?? null,
+                    'tax_components' => $validArticles[0]['taxes'] ?? $validArticles[0]['tax_components'] ?? null,
+                    'booking_data' => $validArticles[0],
+                    'estimated_delivery_date' => $validArticles[0]['estimated_delivery_date'] ?? $validArticles[0]['expected_delivery_date'] ?? null,
+                ];
             }
 
-            return [
-                'tracking_number' => $validArticles[0]['barcode_no'],
-                'article_type' => $articleType,
-                'provider_response' => $response->json(),
-                'actual_weight_g' => $totalWeightG,
-                'length_cm' => $maxLength,
-                'width_cm' => $maxWidth,
-                'height_cm' => $maxHeight,
-                'shipping_cost' => $validArticles[0]['calculated_tariff'] ?? $validArticles[0]['tariff'] ?? null,
-                'tax_components' => $validArticles[0]['taxes'] ?? $validArticles[0]['tax_components'] ?? null,
-                'booking_data' => $validArticles[0],
-                'estimated_delivery_date' => $validArticles[0]['estimated_delivery_date'] ?? $validArticles[0]['expected_delivery_date'] ?? null,
-            ];
+            throw new \Exception('Failed to create shipment: '.$response->body());
+        }
+    }
+
+    private function isDuplicateArticleRejection($response, string $barcode): bool
+    {
+        if (! $response->successful() || ! empty($response->json('valid_articles'))) {
+            return false;
+        }
+        $articles = $response->json('error_articles');
+        if (! is_array($articles) || count($articles) !== 1) {
+            return false;
+        }
+        $article = array_values($articles)[0];
+        if (! is_array($article) || ($article['barcode_no'] ?? null) !== $barcode) {
+            return false;
+        }
+        $errors = $article['errors'] ?? null;
+        if (! is_array($errors) || empty($errors)) {
+            return false;
+        }
+        foreach ($errors as $error) {
+            if (! is_string($error) || ! str_starts_with(strtolower(trim($error)), 'duplicate article:') || ! str_contains(strtolower($error), 'already booked')) {
+                return false;
+            }
         }
 
-        throw new \Exception('Failed to create shipment: '.$response->body());
+        return true;
     }
 
     public function createShipmentBatch(string $filePath): array
@@ -573,96 +613,107 @@ class IndiaPostProvider implements ShippingProviderInterface
 
     private function allocateBarcode(?int $orderId): string
     {
-        $officeId = $this->activeOfficeId ?: 'default';
-        $range = IndiaPostBarcodeRange::where('office_id', $officeId)
-            ->where('status', 'active')
-            ->orderBy('id', 'asc')
-            ->lockForUpdate()
-            ->first();
+        while (true) {
+            $officeId = $this->activeOfficeId ?: 'default';
+            $range = IndiaPostBarcodeRange::where('office_id', $officeId)
+                ->where('status', 'active')
+                ->orderBy('id', 'asc')
+                ->lockForUpdate()
+                ->first();
 
-        if (! $range) {
-            if (app()->environment('production')) {
-                throw new \RuntimeException('No India Post barcode range is configured for the active office.');
+            if (! $range) {
+                if (IndiaPostBarcodeRange::where('office_id', $officeId)->exists()) {
+                    throw new \RuntimeException('No active India Post barcode range remains for this office. Activate an assigned range before booking.');
+                }
+                if (app()->environment('production')) {
+                    throw new \RuntimeException('No India Post barcode range is configured for the active office.');
+                }
+                // Fallback for backwards compatibility or missing setup
+                $prefix = strtoupper(config('shipping.providers.india_post.barcode_prefix', 'EA'));
+                $start = (int) config('shipping.providers.india_post.barcode_start', '10000000');
+                $current = (int) config('shipping.providers.india_post.barcode_current', $start);
+                $end = (int) config('shipping.providers.india_post.barcode_end', '19999999');
+                $rangeId = null;
+            } else {
+                $prefix = strtoupper($range->prefix);
+                $start = $range->start_sequence;
+                $current = $range->current_sequence;
+                $end = $range->end_sequence;
+                $rangeId = $range->id;
             }
-            // Fallback for backwards compatibility or missing setup
-            $prefix = strtoupper(config('shipping.providers.india_post.barcode_prefix', 'EA'));
-            $start = (int) config('shipping.providers.india_post.barcode_start', '10000000');
-            $current = (int) config('shipping.providers.india_post.barcode_current', $start);
-            $end = (int) config('shipping.providers.india_post.barcode_end', '19999999');
-            $rangeId = null;
-        } else {
-            $prefix = strtoupper($range->prefix);
-            $start = $range->start_sequence;
-            $current = $range->current_sequence;
-            $end = $range->end_sequence;
-            $rangeId = $range->id;
-        }
 
-        if (! $current) {
-            $current = $start;
-        }
+            if (! $current) {
+                $current = $start;
+            }
 
-        if (strlen($prefix) !== 2 || $current < $start || $current > $end || $start < 0 || $end > 99999999) {
-            throw new \RuntimeException('The configured India Post barcode sequence is outside its assigned range.');
-        }
+            if (strlen($prefix) !== 2 || $current < $start || $current > $end || $start < 0 || $end > 99999999) {
+                throw new \RuntimeException('The configured India Post barcode sequence is outside its assigned range.');
+            }
 
-        $sequence = str_pad((string) $current, 8, '0', STR_PAD_LEFT);
+            $sequence = str_pad((string) $current, 8, '0', STR_PAD_LEFT);
 
-        $weights = [8, 6, 4, 2, 3, 5, 9, 7];
-        $sum = 0;
-        for ($i = 0; $i < 8; $i++) {
-            $sum += ((int) $sequence[$i]) * $weights[$i];
-        }
-        $mod = 11 - ($sum % 11);
-        if ($mod === 10) {
-            $checkDigit = '0';
-        } elseif ($mod === 11) {
-            $checkDigit = '5';
-        } else {
-            $checkDigit = (string) $mod;
-        }
+            $weights = [8, 6, 4, 2, 3, 5, 9, 7];
+            $sum = 0;
+            for ($i = 0; $i < 8; $i++) {
+                $sum += ((int) $sequence[$i]) * $weights[$i];
+            }
+            $mod = 11 - ($sum % 11);
+            if ($mod === 10) {
+                $checkDigit = '0';
+            } elseif ($mod === 11) {
+                $checkDigit = '5';
+            } else {
+                $checkDigit = (string) $mod;
+            }
 
-        $barcode = $prefix.$sequence.$checkDigit.'IN';
+            $barcode = $prefix.$sequence.$checkDigit.'IN';
 
-        $nextSequence = (int) $current + 1;
+            $nextSequence = (int) $current + 1;
 
-        if ($range) {
-            if ($nextSequence > $end) {
-                $range->status = 'exhausted';
-                $range->current_sequence = $end; // Max it out
-                $range->save();
+            if ($range) {
+                if ($nextSequence > $end) {
+                    $range->status = 'exhausted';
+                    $range->current_sequence = $end; // Max it out
+                    $range->save();
 
-                // Activate next queued range if available
-                $nextRange = IndiaPostBarcodeRange::where('office_id', $officeId)
-                    ->where('status', 'queued')
-                    ->orderBy('id', 'asc')
-                    ->first();
-                if ($nextRange) {
-                    $nextRange->status = 'active';
-                    $nextRange->save();
+                    // Activate next queued range if available
+                    $nextRange = IndiaPostBarcodeRange::where('office_id', $officeId)
+                        ->where('status', 'queued')
+                        ->orderBy('id', 'asc')
+                        ->first();
+                    if ($nextRange) {
+                        $nextRange->status = 'active';
+                        $nextRange->save();
+                    }
+                } else {
+                    $range->current_sequence = $nextSequence;
+                    $range->save();
                 }
             } else {
-                $range->current_sequence = $nextSequence;
-                $range->save();
+                // Legacy config update
+                if ($nextSequence > (int) $end) {
+                    throw new \RuntimeException('The configured India Post barcode range is exhausted.');
+                }
+                $this->updateBarcodeSequence((string) $nextSequence);
+                config(['shipping.providers.india_post.barcode_current' => (string) $nextSequence]);
             }
-        } else {
-            // Legacy config update
-            if ($nextSequence > (int) $end) {
-                throw new \RuntimeException('The configured India Post barcode range is exhausted.');
+
+            // Imported ranges can point behind historical local bookings. Never reuse
+            // an allocated or shipped barcode, including soft-deleted shipments.
+            if (IndiaPostAwbTracking::where('barcode', $barcode)->exists() || DB::table('shipments')->where('tracking_no', $barcode)->exists()) {
+                continue;
             }
-            $this->updateBarcodeSequence((string) $nextSequence);
-            config(['shipping.providers.india_post.barcode_current' => (string) $nextSequence]);
+
+            IndiaPostAwbTracking::create([
+                'range_id' => $rangeId,
+                'office_id' => $officeId,
+                'barcode' => $barcode,
+                'order_id' => $orderId,
+                'status' => 'used',
+            ]);
+
+            return $barcode;
         }
-
-        IndiaPostAwbTracking::create([
-            'range_id' => $rangeId,
-            'office_id' => $officeId,
-            'barcode' => $barcode,
-            'order_id' => $orderId,
-            'status' => 'used',
-        ]);
-
-        return $barcode;
     }
 
     private function updateBarcodeSequence(string $nextSequence): void

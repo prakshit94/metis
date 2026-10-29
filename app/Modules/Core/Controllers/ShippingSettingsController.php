@@ -124,16 +124,33 @@ class ShippingSettingsController extends Controller
         return response()->json(['success' => true, 'message' => 'India Post settings updated successfully.']);
     }
 
-    public function awbLogs(string $officeId)
+    public function awbLogs(Request $request, string $officeId)
     {
-        $logs = IndiaPostAwbTracking::where('office_id', $officeId)
-            ->orderBy('id', 'desc')
-            ->paginate(15);
-
-        return response()->json([
-            'success' => true,
-            'logs' => $logs,
+        $request->validate([
+            'q' => ['nullable', 'string', 'max:120'],
+            'page' => ['sometimes', 'integer', 'min:1'],
+            'per_page' => ['sometimes', 'integer', 'min:1', 'max:100'],
         ]);
+        $term = trim((string) $request->input('q', ''));
+        $logs = IndiaPostAwbTracking::query()
+            ->leftJoin('orders', 'orders.id', '=', 'india_post_awb_trackings.order_id')
+            ->select('india_post_awb_trackings.*', 'orders.order_no')
+            ->where('india_post_awb_trackings.office_id', $officeId)
+            ->when($term !== '', function ($query) use ($term) {
+                $like = '%'.str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $term).'%';
+                $query->where(function ($match) use ($term, $like) {
+                    $match->where('india_post_awb_trackings.barcode', 'like', $like)
+                        ->orWhere('orders.order_no', 'like', $like);
+                    if (ctype_digit($term)) {
+                        $match->orWhere('india_post_awb_trackings.order_id', $term);
+                    }
+                });
+            })
+            ->orderByDesc('india_post_awb_trackings.id')
+            ->paginate($request->integer('per_page', 15), ['*'], 'page', $request->integer('page', 1))
+            ->appends($request->only('q', 'per_page'));
+
+        return response()->json(['success' => true, 'logs' => $logs]);
     }
 
     /**

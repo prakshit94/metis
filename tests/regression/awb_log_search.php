@@ -1,0 +1,26 @@
+<?php
+require __DIR__.'/bootstrap.php';
+use App\Modules\Core\Controllers\ShippingSettingsController;
+use Illuminate\Support\Facades\{DB,Schema};
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Http\Request;
+Schema::create('orders',function(Blueprint $t){$t->id();$t->string('order_no');$t->softDeletes();});
+Schema::create('india_post_awb_trackings',function(Blueprint $t){$t->id();$t->string('office_id');$t->string('barcode');$t->unsignedBigInteger('order_id')->nullable();$t->string('status');$t->timestamps();});
+DB::table('orders')->insert([['id'=>35679,'order_no'=>'GJ2910202676','deleted_at'=>null],['id'=>35680,'order_no'=>'HISTORY-ORDER','deleted_at'=>now()]]);
+for($i=1;$i<=36;$i++) DB::table('india_post_awb_trackings')->insert(['office_id'=>'office-a','barcode'=>'CX'.str_pad((string)$i,9,'0',STR_PAD_LEFT).'IN','order_id'=>$i===1?35679:($i===2?35680:null),'status'=>'used','created_at'=>now()]);
+DB::table('india_post_awb_trackings')->insert(['office_id'=>'office-b','barcode'=>'OTHER-OFFICE','order_id'=>35679,'status'=>'used']);
+$c=new ShippingSettingsController;
+$logs=fn(array $q=[])=>$c->awbLogs(Request::create('/api/shipping/awb-logs/office-a','GET',$q),'office-a')->getData(true)['logs'];
+$first=$logs();$second=$logs(['page'=>2]);
+check($first['total']===36 && count($first['data'])===15 && $first['last_page']===3,'all office records are available with bounded default pagination');
+check($first['data'][14]['id']>$second['data'][0]['id'] && count(array_intersect(array_column($first['data'],'id'),array_column($second['data'],'id')))===0,'pages use deterministic newest-first ordering without overlap');
+check(count($logs(['per_page'=>100])['data'])===36,'page-size control can show every record in a small office');
+check($logs(['q'=>'GJ2910202676'])['total']===1 && $logs(['q'=>'35679'])['total']===1,'order number and numeric ID search remain office scoped');
+check($logs(['q'=>'cx000000001in'])['total']===1,'tracking search supports case-insensitive full barcodes');
+check($logs(['q'=>'000000001'])['total']===1,'tracking search supports partial barcodes');
+check($logs(['q'=>'%'])['total']===0 && $logs(['q'=>'_'])['total']===0,'search treats SQL wildcards as literal text');
+check($logs(['q'=>'OTHER-OFFICE'])['total']===0,'tracking search never leaks another office logs');
+check($logs(['q'=>'HISTORY-ORDER'])['data'][0]['order_no']==='HISTORY-ORDER','historical soft-deleted orders remain searchable in usage history');
+invalid(fn()=>$logs(['per_page'=>101]),'API rejects unbounded page sizes');
+invalid(fn()=>$logs(['page'=>0]),'API rejects invalid page numbers');
+echo "AWB log search checks complete.\n";

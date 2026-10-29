@@ -128,3 +128,18 @@ node tests/regression/villages_frontend.mjs
 Village saves must never call India Post. Sync is a separate confirmed action.
 The backend suite also checks state-scoped writes, retry/stop/locking behavior,
 CSV rollback after a full insert batch, and preserved service priorities.
+
+India Post duplicate-barcode recovery checks:
+
+```sh
+METIS_TEST_MYSQL_SOCKET=/path/to/test/mysql.sock php tests/regression/india_post_duplicate_awb.php
+```
+
+Uses disposable data and a mocked carrier. Covers stale counters, committed allocations,
+explicit duplicate-only retries, unsafe retry exclusions, range transitions, actual
+ready-to-ship rollback/success and concurrent allocation. No live bookings are made.
+
+Run `php tests/regression/awb_log_search.php` with the isolated MySQL socket above
+for office-scoped AWB log search, order/partial-barcode matching, literal wildcard
+handling, historical orders and bounded pagination. Fixtures are disposable and
+no carrier calls or production updates are made.
