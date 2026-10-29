@@ -320,3 +320,39 @@
     .auth-main { transition: none !important; }
   }
 }
+
+// Only the initial login uses a compact floating card. Verification/enrollment
+// screens retain their existing layout and all authentication behavior is shared.
+.login-page.auth-layout--login {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: clamp(1rem, 4vw, 4rem);
+
+  .auth-main {
+    flex: 0 1 26rem;
+    align-self: center;
+    width: 100%;
+    max-width: 26rem;
+    margin: 0;
+    padding: 1.5rem;
+    border: 1px solid var(--login-border);
+    border-radius: 1rem;
+    background: var(--login-form-surface);
+    box-shadow: 0 1rem 3rem rgba(15, 23, 42, 0.16);
+  }
+
+  .auth-topbar { margin-bottom: 1rem; }
+  .auth-body { flex: 0 1 auto; max-width: none; padding-block: 0; }
+  .auth-form-brand {
+    margin-bottom: 1rem;
+    img { height: 48px; max-width: 10rem; }
+  }
+  .auth-heading { margin-bottom: 1.25rem; }
+
+  @media (max-width: 575.98px) {
+    justify-content: center;
+    padding: 1rem;
+    .auth-main { padding: 1.25rem; }
+  }
+}

@@ -106,25 +106,7 @@
                 </button>
             </form>
         </div>
-        <p class="auth-legal">Metis &mdash; your business workspace.</p>
     </main>
-
-    <aside class="auth-aside" aria-label="About your workspace">
-        <div class="auth-aside-inner">
-            <p class="auth-quote">Your business, in one place.</p>
-            <ul class="auth-points">
-                <li><i class="bi bi-check" aria-hidden="true"></i><span>Manage orders and customer relationships from one workspace.</span></li>
-                <li><i class="bi bi-check" aria-hidden="true"></i><span>Keep inventory, payments and daily operations connected.</span></li>
-                <li><i class="bi bi-check" aria-hidden="true"></i><span>Stay informed with reports and insights across your business.</span></li>
-                <li><i class="bi bi-check" aria-hidden="true"></i><span>Work comfortably with light and dark themes.</span></li>
-            </ul>
-            <dl class="auth-stats">
-                <div><dt>Sales</dt><dd>Orders &amp; customers</dd></div>
-                <div><dt>Operations</dt><dd>Stock &amp; payments</dd></div>
-                <div><dt>Insights</dt><dd>Reports &amp; analytics</dd></div>
-            </dl>
-        </div>
-    </aside>
 </div>
 @endsection
 
