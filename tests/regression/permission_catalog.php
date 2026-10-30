@@ -46,3 +46,20 @@ app(PermissionCatalogSync::class)->run(true, ['office-view','office-create','off
 $officeView = Permission::findByName('office-view','web');
 check(DB::table('role_has_permissions')->where('role_id',$role)->where('permission_id',$officeView->id)->exists(), 'office compatibility migration copies corresponding team grants');
 check(!DB::table('role_has_permissions')->where('role_id',$role)->where('permission_id',$action->id)->exists(), 'office-only compatibility migration preserves unrelated manual revocations');
+
+// Explicit post-import repair differs from an ordinary catalog-only refresh.
+$productView = Permission::findByName('product-view', 'web');
+DB::table('role_has_permissions')->insertOrIgnore(['role_id'=>$role,'permission_id'=>$productView->id]);
+foreach ([null,7,9] as $team) DB::table('model_has_permissions')->insert(['team_id'=>$team,'model_type'=>'App\\Modules\\Users\\Models\\User','model_id'=>77,'permission_id'=>$productView->id]);
+$customBefore=DB::table('role_has_permissions')->where('permission_id',$custom->id)->count();
+app(\Database\Seeders\LegacyPermissionGrantsSeeder::class)->run();
+$productExport=Permission::findByName('product-export','web');
+check(DB::table('role_has_permissions')->where('role_id',$role)->where('permission_id',$productExport->id)->exists(),'explicit legacy repair restores product-export for existing product-view roles');
+$productTeams=DB::table('model_has_permissions')->where('model_id',77)->where('permission_id',$productExport->id)->pluck('team_id')->all();sort($productTeams);
+check($productTeams===[null,7,9],'explicit legacy repair preserves direct product grant team scopes');
+$writeIds=Permission::whereIn('name',['product-create','product-edit','product-delete','product-restore','product-permanent-delete','product-import'])->pluck('id');
+check(!DB::table('role_has_permissions')->where('role_id',$role)->whereIn('permission_id',$writeIds)->exists(),'product-view compatibility does not grant product write, import or destructive actions');
+check(DB::table('role_has_permissions')->where('permission_id',$custom->id)->count()===$customBefore && DB::table('roles')->count()===1 && !Schema::hasTable('users'),'explicit legacy repair preserves custom grants and never resets roles or users');
+$repairCounts=[DB::table('role_has_permissions')->count(),DB::table('model_has_permissions')->count()];
+app(\Database\Seeders\LegacyPermissionGrantsSeeder::class)->run();
+check($repairCounts===[DB::table('role_has_permissions')->count(),DB::table('model_has_permissions')->count()],'explicit legacy repair is idempotent for role and nullable team grants');

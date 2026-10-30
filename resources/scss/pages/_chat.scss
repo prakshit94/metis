@@ -238,3 +238,11 @@ body[data-page="chat"] .admin-footer {
   .min-w-0 { min-width: 0; }
   .chat-bubble { overflow-wrap: anywhere; }
 }
+
+// Make the existing people directory reachable on narrow chat screens.
+.chat-workspace { position: relative; }
+@media (max-width: 1199.98px) {
+  .chat-workspace .chat-people-pane.is-people-open {
+    display: flex !important; position: absolute; inset: 0; width: 100%; z-index: 20;
+  }
+}

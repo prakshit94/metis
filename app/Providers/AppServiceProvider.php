@@ -78,6 +78,15 @@ class AppServiceProvider extends ServiceProvider
             return $user->hasRole('Super Admin') ? true : null;
         });
 
+        Scramble::configure()->withParametersExtractors(function ($extractors) {
+            $extractors->use(array_map(
+                fn ($extractor) => $extractor === \Dedoc\Scramble\Support\OperationExtensions\ParameterExtractor\ValidateCallParametersExtractor::class
+                    ? \App\Documentation\StaticValidationParametersExtractor::class
+                    : $extractor,
+                $extractors->all(),
+            ));
+        });
+
         Scramble::routes(function (Route $route) {
             $uri = $route->uri();
             $name = $route->getName() ?? '';

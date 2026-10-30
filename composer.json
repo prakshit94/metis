@@ -6,12 +6,13 @@
     "keywords": ["laravel", "framework"],
     "license": "MIT",
     "require": {
-        "php": "^8.2",
+        "php": "^8.3",
         "barryvdh/laravel-dompdf": "^3.1",
         "dedoc/scramble": "^0.13.33",
+        "ext-curl": "*",
+        "ext-pdo_mysql": "*",
         "laravel/framework": "^12.0",
         "laravel/sanctum": "^4.3",
-        "laravel/tinker": "^2.10.1",
         "maatwebsite/excel": "^4.0",
         "owen-it/laravel-auditing": "^14.0",
         "picqer/php-barcode-generator": "^2.4",
@@ -22,7 +23,7 @@
         "fakerphp/faker": "^1.23",
         "laravel/pail": "^1.2.2",
         "laravel/pint": "^1.24",
-        "laravel/sail": "^1.41",
+        "laravel/tinker": "^2.10.1",
         "nunomaduro/collision": "^8.6"
     },
     "autoload": {
@@ -46,7 +47,9 @@
         ],
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
-            "@php artisan package:discover --ansi"
+            "@php scripts/clear-storefront-package-cache.php",
+            "@php artisan package:discover --ansi",
+            "@php storefront/artisan package:discover --ansi"
         ],
         "post-update-cmd": [
             "@php artisan vendor:publish --tag=laravel-assets --ansi --force"

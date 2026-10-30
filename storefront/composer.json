@@ -2,7 +2,7 @@
   "name": "metis/storefront",
   "type": "project",
   "require": {
-    "php": "^8.2",
+    "php": "^8.3",
     "laravel/framework": "^12.0"
   },
   "autoload": {

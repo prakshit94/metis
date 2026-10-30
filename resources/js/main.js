@@ -1,3 +1,5 @@
+import { headerChatUnread } from './utils/header-chat-unread.js';
+import { chatHttp, chatStorage } from './utils/chat-http.js';
 // ==========================================================================
 // Bootstrap Admin Template - Modern JavaScript Entry Point
 // ES6+ Modules with Bootstrap 5
@@ -32,6 +34,9 @@ window.addEventListener('DOMContentLoaded', () => ProfileImages.refreshProfileIm
 // Import Alpine.js for reactive components
 import Alpine from 'alpinejs';
 window.Alpine = Alpine;
+window.chatHttp = chatHttp;
+window.chatStorage = chatStorage;
+Alpine.data('headerChatUnread', headerChatUnread);
 
 // Import SweetAlert2
 import Swal from 'sweetalert2';

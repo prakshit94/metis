@@ -23,3 +23,27 @@
 *.woff2  binary
 *.ttf    binary
 *.eot    binary
+
+# Source-control verification/diagnostics are not production application files.
+/tests export-ignore
+/storefront/tests export-ignore
+/docs/audits export-ignore
+/docs/screenshots export-ignore
+/docs/reviews export-ignore
+/docs/templates export-ignore
+/docs/*.md export-ignore
+/database/transitions export-ignore
+/CLAUDE.md export-ignore
+/CONTRIBUTING.md export-ignore
+/DEVELOPMENT.md export-ignore
+/CHANGELOG.md export-ignore
+
+# Regenerable/private directories must not be packaged.
+/vendor export-ignore
+/node_modules export-ignore
+/public/build export-ignore
+/storage/app/private export-ignore
+/migrationquery.text export-ignore
+/migrationscripts.txt export-ignore
+/public/storage export-ignore
+/storefront/public/storage export-ignore

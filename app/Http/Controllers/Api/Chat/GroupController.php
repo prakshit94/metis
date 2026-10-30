@@ -6,9 +6,9 @@ use App\Models\Chat\Conversation;
 use App\Models\Chat\Member;
 use App\Modules\Core\Controllers\Controller;
 use App\Services\Chat\ChatService;
+use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
@@ -28,22 +28,25 @@ class GroupController extends Controller implements HasMiddleware
         abort_unless(config('chat.enabled'), 404);
         abort_unless($conversation->type === 'group', 404);
 
-        $member = $chat->ensureMember($conversation, $request->user());
-        abort_unless($member->canManageSettings(), 403);
+        return DB::transaction(function () use ($request, $conversation, $chat) {
+            $conversation = Conversation::lockForUpdate()->findOrFail($conversation->id);
+            $member = $chat->ensureMember($conversation, $request->user());
+            abort_unless($member->canManageSettings(), 403);
 
-        $data = $request->validate([
-            'name' => ['sometimes', 'required', 'string', 'max:150'],
-            'description' => ['nullable', 'string', 'max:2000'],
-            'image_path' => ['nullable', 'string', 'max:1000'],
-            'privacy' => ['nullable', 'in:public,private'],
-            'settings' => ['nullable', 'array'],
-        ]);
+            $data = $request->validate([
+                'name' => ['sometimes', 'required', 'string', 'max:150'],
+                'description' => ['nullable', 'string', 'max:2000'],
+                'image_path' => ['nullable', 'string', 'max:1000'],
+                'privacy' => ['nullable', 'in:public,private'],
+                'settings' => ['nullable', 'array'],
+            ]);
 
-        $before = $conversation->only(array_keys($data));
-        $conversation->update($data);
-        $chat->audit($request->user(), 'group.updated', $conversation, null, $before, $conversation->only(array_keys($data)), $request);
+            $before = $conversation->only(array_keys($data));
+            $conversation->update($data);
+            $chat->audit($request->user(), 'group.updated', $conversation, null, $before, $conversation->only(array_keys($data)), $request);
 
-        return response()->json(['data' => $conversation->fresh('activeMembers.user')]);
+            return response()->json(['data' => $conversation->fresh('activeMembers.user:id,name,first_name,last_name,email,photo,gender')]);
+        }, 3);
     }
 
     public function destroy(Request $request, Conversation $conversation, ChatService $chat)
@@ -51,13 +54,16 @@ class GroupController extends Controller implements HasMiddleware
         abort_unless(config('chat.enabled'), 404);
         abort_unless($conversation->type === 'group', 404);
 
-        $member = $chat->ensureMember($conversation, $request->user());
-        abort_unless($member->role === 'owner', 403);
+        return DB::transaction(function () use ($request, $conversation, $chat) {
+            $conversation = Conversation::lockForUpdate()->findOrFail($conversation->id);
+            $member = $chat->ensureMember($conversation, $request->user());
+            abort_unless($member->role === 'owner', 403);
 
-        $conversation->delete();
-        $chat->audit($request->user(), 'group.deleted', $conversation, null, $conversation->only(['id', 'name']), null, $request);
+            $conversation->delete();
+            $chat->audit($request->user(), 'group.deleted', $conversation, null, $conversation->only(['id', 'name']), null, $request);
 
-        return response()->json(['message' => 'Group deleted.']);
+            return response()->json(['message' => 'Group deleted.']);
+        }, 3);
     }
 
     public function addMember(Request $request, Conversation $conversation, ChatService $chat)
@@ -65,26 +71,29 @@ class GroupController extends Controller implements HasMiddleware
         abort_unless(config('chat.enabled'), 404);
         abort_unless($conversation->type === 'group', 404);
 
-        $actor = $chat->ensureMember($conversation, $request->user());
-        abort_unless($actor->canManageMembers(), 403);
+        return DB::transaction(function () use ($request, $conversation, $chat) {
+            $conversation = Conversation::lockForUpdate()->findOrFail($conversation->id);
+            $actor = $chat->ensureMember($conversation, $request->user());
+            abort_unless($actor->canManageMembers(), 403);
 
-        $data = $request->validate([
-            'user_ids' => ['required', 'array', 'min:1'],
-            'user_ids.*' => ['integer', Rule::exists('users', 'id')->where('is_active', 1)->whereNull('deleted_at')],
-            'role' => ['nullable', 'in:admin,moderator,member'],
-        ]);
-        if (($data['role'] ?? 'member') !== 'member') {
-            abort_unless($actor->canManageSettings(), 403, 'Only owners and admins can add managers.');
-        }
+            $data = $request->validate([
+                'user_ids' => ['required', 'array', 'min:1', 'max:500'],
+                'user_ids.*' => ['integer', 'distinct', Rule::exists('users', 'id')->where('is_active', 1)->whereNull('deleted_at')],
+                'role' => ['nullable', 'in:admin,moderator,member'],
+            ]);
+            if (($data['role'] ?? 'member') !== 'member') {
+                abort_unless($actor->canManageSettings(), 403, 'Only owners and admins can add managers.');
+            }
 
-        $members = collect();
-        foreach ($data['user_ids'] as $userId) {
-            $member = $chat->attachMember($conversation, (int) $userId, $data['role'] ?? 'member');
-            $chat->audit($request->user(), 'member.added', $conversation, null, null, $member->only(['user_id', 'role']), $request);
-            $members->push($member->load('user'));
-        }
+            $members = collect();
+            foreach ($data['user_ids'] as $userId) {
+                $member = $chat->attachMember($conversation, (int) $userId, $data['role'] ?? 'member');
+                $chat->audit($request->user(), 'member.added', $conversation, null, null, $member->only(['user_id', 'role']), $request);
+                $members->push($member->load('user:id,name,first_name,last_name,email,photo,gender'));
+            }
 
-        return response()->json(['data' => $members, 'conversation' => $conversation->fresh('activeMembers.user')], 201);
+            return response()->json(['data' => $members, 'conversation' => $conversation->fresh('activeMembers.user:id,name,first_name,last_name,email,photo,gender')], 201);
+        }, 3);
     }
 
     public function removeMember(Request $request, Conversation $conversation, ChatService $chat)
@@ -105,7 +114,7 @@ class GroupController extends Controller implements HasMiddleware
 
         $data = $request->validate(['user_id' => ['required', 'integer', 'exists:users,id'], 'role' => ['required', 'in:admin,moderator,member']]);
 
-        return response()->json(['data' => $chat->updateRole($request->user(), $conversation, (int) $data['user_id'], $data['role']), 'conversation' => $conversation->fresh('activeMembers.user')]);
+        return response()->json(['data' => $chat->updateRole($request->user(), $conversation, (int) $data['user_id'], $data['role']), 'conversation' => $conversation->fresh('activeMembers.user:id,name,first_name,last_name,email,photo,gender')]);
     }
 
     public function transferOwner(Request $request, Conversation $conversation, ChatService $chat)
@@ -117,9 +126,12 @@ class GroupController extends Controller implements HasMiddleware
         abort_unless($member->role === 'owner', 403);
 
         $data = $request->validate(['user_id' => ['required', 'integer', 'exists:users,id']]);
-        abort_unless($conversation->activeMembers()->where('user_id', $data['user_id'])->exists(), 422, 'New owner must be an active group member.');
+        abort_if((int) $data['user_id'] === (int) $request->user()->id, 422, 'Choose another active group member.');
+        abort_unless($conversation->activeMembers()->where('user_id', $data['user_id'])->whereHas('user', fn ($query) => $query->where('is_active', 1))->exists(), 422, 'New owner must be an active group member.');
 
         $newOwner = DB::transaction(function () use ($chat, $conversation, $data, $request) {
+            $conversation = Conversation::lockForUpdate()->findOrFail($conversation->id);
+            abort_unless($chat->ensureMember($conversation, $request->user())->role === 'owner', 403);
             $member = $chat->updateRole($request->user(), $conversation, (int) $data['user_id'], 'owner');
 
             Member::where('conversation_id', $conversation->id)
@@ -131,7 +143,7 @@ class GroupController extends Controller implements HasMiddleware
             return $member;
         });
 
-        return response()->json(['data' => $newOwner, 'conversation' => $conversation->fresh('activeMembers.user')]);
+        return response()->json(['data' => $newOwner, 'conversation' => $conversation->fresh('activeMembers.user:id,name,first_name,last_name,email,photo,gender')]);
     }
 
     public function leave(Request $request, Conversation $conversation, ChatService $chat)

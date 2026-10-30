@@ -23,17 +23,29 @@ final class BrandLogo
         }
         $path = '/'.ltrim($parts['path'] ?? '', '/');
         $decoded = rawurldecode($path);
-        if (str_contains($decoded, "\0") || str_contains($decoded, '\\') || preg_match('~(?:^|/)\.\.?(?:/|$)~', $decoded)
-            || !is_file(public_path(ltrim($decoded, '/')))) {
+        if (str_contains($decoded, "\0") || str_contains($decoded, '\\') || preg_match('~(?:^|/)\.\.?(?:/|$)~', $decoded)) {
             return ['src' => $fallback, 'fallback' => $fallback];
         }
-        $src = self::local($path, $parts['query'] ?? '', $parts['fragment'] ?? '');
+        $file = public_path(ltrim($decoded, '/'));
+        // Uploaded images are served by a controller, not a file under public/api.
+        if ($decoded === '/api/files/preview') {
+            parse_str($parts['query'] ?? '', $query);
+            $filename = $query['f'] ?? null;
+            if (config('filesystems.disks.public.driver') !== 'local' || !is_string($filename) || $filename === ''
+                || in_array($filename, ['.', '..'], true) || str_contains($filename, "\0")
+                || str_contains($filename, '/') || str_contains($filename, '\\')) {
+                return ['src' => $fallback, 'fallback' => $fallback];
+            }
+            $file = \Illuminate\Support\Facades\Storage::disk('public')->path('uploads/'.$filename);
+        }
+        if (!is_file($file)) return ['src' => $fallback, 'fallback' => $fallback];
+        $src = self::local($path, $parts['query'] ?? '', $parts['fragment'] ?? '', $file);
         return ['src' => $src, 'fallback' => $fallback];
     }
 
-    private static function local(string $path, string $query = '', string $fragment = ''): string
+    private static function local(string $path, string $query = '', string $fragment = '', ?string $file = null): string
     {
-        $file = public_path(ltrim(rawurldecode($path), '/'));
+        $file ??= public_path(ltrim(rawurldecode($path), '/'));
         if (is_file($file)) {
             $version = 'v='.filemtime($file);
             $query = preg_match('/(?:^|&)v=[^&]*/', $query)

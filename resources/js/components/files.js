@@ -1,6 +1,20 @@
 import Alpine from 'alpinejs';
 import { createSearchComponent } from '../utils/search-component.js';
 
+// Keep an already-rendered header in sync with a successful App Logo save.
+function updateHeaderLogo(branding) {
+  if (!branding?.src) return;
+  document.querySelectorAll('img[data-header-logo]').forEach((image) => {
+    if (branding.fallback) image.dataset.fallbackSrc = branding.fallback;
+    // A previous image failure may have cleared the original onerror handler.
+    image.onerror = function () {
+      this.onerror = null;
+      if (this.dataset.fallbackSrc) this.src = this.dataset.fallbackSrc;
+    };
+    image.src = branding.src;
+  });
+}
+
 document.addEventListener('alpine:init', () => {
   Alpine.data('filesComponent', () => ({
     // UI State
@@ -682,6 +696,7 @@ document.addEventListener('alpine:init', () => {
 
         if (response.ok && !response.redirected) {
           const result = await response.json();
+          if (targetName === 'logo.png') updateHeaderLogo(result.brand_logo);
           if (targetName === 'default_avatar.jpeg') window.ProfileImages?.setDefaultAvatar(result.url);
           this.showNotification(`Default image ${targetName} updated`, 'success');
           await this.loadFiles();

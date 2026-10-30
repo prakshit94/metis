@@ -21,3 +21,20 @@ brandCheck(str_contains($header,'object-fit-contain rounded-2') && !str_contains
 $layout=file_get_contents(resource_path('views/layouts/app.blade.php'));
 brandCheck(substr_count($layout,'<link rel="icon"')===1,'layout does not advertise the same bitmap as conflicting SVG and PNG icons');
 foreach(['components/header','layouts/app'] as $name){$path='/tmp/metis-'.str_replace('/','-',$name).'-branding.php';file_put_contents($path,app('blade.compiler')->compileString(file_get_contents(resource_path('views/'.$name.'.blade.php'))));passthru('php -l '.escapeshellarg($path),$status);brandCheck($status===0,$name.' compiles successfully');}
+
+// Preview-backed uploads must resolve without a physical public/api/files/preview file.
+$root = sys_get_temp_dir().'/metis-brand-logo-'.bin2hex(random_bytes(6));
+mkdir($root.'/uploads', 0700, true);
+file_put_contents($root.'/uploads/brand.png', 'synthetic-logo');
+config(['filesystems.disks.public.driver'=>'local','filesystems.disks.public.root'=>$root]);
+\Illuminate\Support\Facades\Storage::forgetDisk('public');
+try {
+    $preview=BrandLogo::resolve('/api/files/preview?f=brand.png')['src'];
+    brandCheck($preview==='/api/files/preview?f=brand.png&v='.filemtime($root.'/uploads/brand.png'), 'uploaded preview logo uses its route and actual uploaded-file cache version');
+    brandCheck(BrandLogo::resolve('/api/files/preview?f=missing.png')['src']===$fallback, 'missing preview upload keeps the standard fallback');
+    foreach(['../brand.png','..','a\\b.png',"\0",['brand.png']] as $invalid) {
+        brandCheck(BrandLogo::resolve('/api/files/preview?'.http_build_query(['f'=>$invalid]))['src']===$fallback, 'invalid preview filenames never escape the upload directory');
+    }
+} finally {
+    unlink($root.'/uploads/brand.png');rmdir($root.'/uploads');rmdir($root);
+}

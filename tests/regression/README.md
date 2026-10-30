@@ -1,5 +1,17 @@
 # Audit regression checks
 
+Composer package integration checks (disposable MySQL only):
+
+```sh
+METIS_TEST_MYSQL_SOCKET=/path/to/test/mysql.sock php tests/regression/composer_integration.php
+```
+
+These verify both persistent audit/activity formats, actor attribution, activity
+read state, PDF/barcode/XLSX generation and MIME attachment serialization. To
+also verify API request schemas, generate a document with `scramble:export` and
+set `METIS_OPENAPI_FILE` to its path. Fake email and synthetic data are used;
+neither production records nor live delivery are exercised.
+
 Run syntax/route/theme checks without application database access:
 
 ```sh
@@ -143,3 +155,34 @@ Run `php tests/regression/awb_log_search.php` with the isolated MySQL socket abo
 for office-scoped AWB log search, order/partial-barcode matching, literal wildcard
 handling, historical orders and bounded pagination. Fixtures are disposable and
 no carrier calls or production updates are made.
+
+Explicit post-import permission repair: `php artisan db:seed --class=LegacyPermissionGrantsSeeder --force`.
+This copies the documented legacy-to-action grants; use only when that repair is
+intended. It can restore a mapped action revoked while its broader legacy grant
+remains assigned. It is excluded from routine DatabaseSeeder runs. Use
+FeaturePermissionsSeeder for a catalog-only refresh that preserves revocations.
+The permission_catalog.php suite verifies product export compatibility without
+adding product write/import/destructive access, team preservation and idempotence.
+
+Chat integrity and frontend checks:
+
+```sh
+METIS_TEST_MYSQL_SOCKET=/path/to/isolated/mysql.sock php tests/regression/chat_integrity.php
+node tests/regression/chat_frontend.mjs
+```
+
+The PHP suite creates a disposable schema and synthetic chat data, fakes delivery
+and uploads, and starts two isolated workers for concurrency cases. It verifies
+message/group integrity, permissions, rollback, cleanup and the history index.
+No production messages or external notifications are sent.
+
+Header chat notification regression checks:
+
+```sh
+node tests/regression/header_chat_unread.mjs
+METIS_TEST_MYSQL_SOCKET=/path/to/isolated/mysql.sock php tests/regression/header_chat_counts.php
+```
+
+These cover fresh server counts, cross-page polling, hidden tabs, event races,
+cleanup, throttling and legacy API compatibility. Counter fixtures are disposable;
+no messages are sent or marked read in production.

@@ -4,6 +4,7 @@ namespace App\Services\Chat;
 
 use App\Jobs\Chat\ProcessMessageDeliveries;
 use App\Models\Chat\AuditLog;
+use App\Models\Chat\ChatNotification;
 use App\Models\Chat\Conversation;
 use App\Models\Chat\Member;
 use App\Models\Chat\Message;
@@ -23,8 +24,22 @@ class ChatService
 {
     private const ONLINE_WINDOW_MINUTES = 5;
 
+    /** Keep legacy unread-conversation totals and message badges consistent. */
+    public function unreadCounts(User $user): array
+    {
+        $counts = Message::query()
+            ->whereHas('conversation', fn ($query) => $query->visibleTo($user))
+            ->where('sender_id', '!=', $user->id)
+            ->whereDoesntHave('reads', fn ($query) => $query->where('user_id', $user->id))
+            ->toBase()->selectRaw('COUNT(*) as messages, COUNT(DISTINCT conversation_id) as conversations')->first();
+
+        return ['unread' => (int) $counts->conversations, 'unread_messages' => (int) $counts->messages];
+    }
+
     public function listConversations(User $user, ?int $perPage = null, int $page = 1): Collection
     {
+        $mayRead = $user->can('messages-view');
+
         return Conversation::query()
             ->visibleTo($user)
             ->with([
@@ -47,7 +62,10 @@ class ChatService
             ->orderByDesc('id')
             ->when($perPage !== null, fn ($query) => $query->skip((max(1, $page) - 1) * min(max($perPage, 1), 100))->take(min(max($perPage, 1), 100)))
             ->get()
-            ->map(function ($conversation) use ($user) {
+            ->map(function ($conversation) use ($user, $mayRead) {
+                if (! $mayRead) {
+                    $conversation->unsetRelation('latestMessage');
+                }
                 $member = $conversation->activeMembers->firstWhere('user_id', $user->id);
                 $conversation->is_pinned = $member ? ! is_null($member->pinned_at) : false;
                 $conversation->is_archived = $member ? ! is_null($member->archived_at) : false;
@@ -62,17 +80,17 @@ class ChatService
             throw ValidationException::withMessages(['user_id' => 'Choose another user for private chat.']);
         }
 
-        $existing = Conversation::query()
-            ->where('type', 'direct')
-            ->whereHas('members', fn ($query) => $query->where('user_id', $creator->id))
-            ->whereHas('members', fn ($query) => $query->where('user_id', $recipientId))
-            ->first();
-
-        if ($existing) {
-            return $existing->load('activeMembers.user');
-        }
-
         return DB::transaction(function () use ($creator, $recipientId) {
+            $users = User::whereIn('id', [$creator->id, $recipientId])->where('is_active', 1)->orderBy('id')->lockForUpdate()->get(['id']);
+            if ($users->count() !== 2) {
+                throw ValidationException::withMessages(['user_id' => 'Choose an active user.']);
+            }
+            $existing = Conversation::where('type', 'direct')
+                ->whereHas('activeMembers', fn ($query) => $query->where('user_id', $creator->id))
+                ->whereHas('activeMembers', fn ($query) => $query->where('user_id', $recipientId))->first();
+            if ($existing) {
+                return $existing->load('activeMembers.user:id,name,first_name,last_name,email,photo,gender');
+            }
             $conversation = Conversation::create([
                 'type' => 'direct',
                 'privacy' => 'private',
@@ -83,7 +101,7 @@ class ChatService
             $this->attachMember($conversation, $recipientId, 'member');
             $this->audit($creator, 'conversation.created', $conversation);
 
-            return $conversation->load('activeMembers.user');
+            return $conversation->load('activeMembers.user:id,name,first_name,last_name,email,photo,gender');
         }, 3);
     }
 
@@ -111,7 +129,7 @@ class ChatService
 
             $this->audit($creator, 'group.created', $conversation, null, $conversation->toArray());
 
-            return $conversation->load('activeMembers.user');
+            return $conversation->load('activeMembers.user:id,name,first_name,last_name,email,photo,gender');
         }, 3);
     }
 
@@ -120,6 +138,16 @@ class ChatService
         $this->ensureMember($conversation, $sender);
 
         return DB::transaction(function () use ($sender, $conversation, $data) {
+            $conversation = Conversation::lockForUpdate()->findOrFail($conversation->id);
+            $this->ensureMember($conversation, $sender);
+            if (! empty($data['client_id'])) {
+                $existing = $conversation->messages()->withTrashed()->where('sender_id', $sender->id)->where('metadata->client_id', $data['client_id'])->first();
+                if ($existing) {
+                    abort_if($existing->trashed(), 409, 'The original message was deleted. Refresh the conversation before sending again.');
+
+                    return $existing->load('sender:id,name,photo,gender');
+                }
+            }
             $message = Message::create([
                 'conversation_id' => $conversation->id,
                 'sender_id' => $sender->id,
@@ -137,13 +165,9 @@ class ChatService
             $conversation->touch();
 
             $preview = str($message->content ?? $message->type)->limit(120)->toString();
-            ProcessMessageDeliveries::dispatchAfterResponse(
-                $message->id,
-                $conversation->id,
-                $sender->id,
-                $sender->name,
-                $preview
-            );
+            DB::afterCommit(function () use ($message, $conversation, $sender, $preview) {
+                ProcessMessageDeliveries::dispatchAfterResponse($message->id, $conversation->id, $sender->id, $sender->name, $preview);
+            });
 
             MessageRead::updateOrCreate(
                 ['message_id' => $message->id, 'user_id' => $sender->id],
@@ -156,42 +180,71 @@ class ChatService
         }, 3);
     }
 
-    public function messages(User $user, Conversation $conversation, int $perPage = 30): LengthAwarePaginator
+    public function messages(User $user, Conversation $conversation, int $perPage = 30, ?int $beforeId = null, ?int $afterId = null): LengthAwarePaginator
     {
         $this->ensureMember($conversation, $user);
 
-        return $conversation->messages()
+        $query = $conversation->messages()->reorder()
+            ->orderBy('created_at', $afterId ? 'asc' : 'desc')->orderBy('id', $afterId ? 'asc' : 'desc');
+        foreach ([[$beforeId, '<'], [$afterId, '>']] as [$cursorId, $operator]) {
+            if (! $cursorId) {
+                continue;
+            }
+            $anchor = $conversation->messages()->withTrashed()->findOrFail($cursorId, ['id', 'created_at']);
+            $query->where(function ($window) use ($anchor, $operator) {
+                if ($anchor->created_at === null) {
+                    $window->where(fn ($tie) => $tie->whereNull('created_at')->where('id', $operator, $anchor->id));
+                    if ($operator === '>') {
+                        $window->orWhereNotNull('created_at');
+                    }
+                } else {
+                    $window->where('created_at', $operator, $anchor->created_at)
+                        ->orWhere(fn ($tie) => $tie->where('created_at', $anchor->created_at)->where('id', $operator, $anchor->id));
+                    if ($operator === '<') {
+                        $window->orWhereNull('created_at');
+                    }
+                }
+            });
+        }
+
+        return $query
             ->with(['sender:id,name,photo,gender', 'parent:id,content,sender_id,attachments', 'parent.sender:id,name,photo,gender', 'reads:user_id,message_id,read_at'])
             ->paginate(min(max($perPage, 10), 100));
     }
 
     public function updateMessage(User $user, Message $message, string $content): Message
     {
-        $this->ensureMember($message->conversation, $user);
+        return DB::transaction(function () use ($user, $message, $content) {
+            $message = Message::lockForUpdate()->findOrFail($message->id);
+            $this->ensureMember($message->conversation, $user);
 
-        if ($message->sender_id !== $user->id) {
-            abort(403, 'Only the sender can edit this message.');
-        }
+            if ($message->sender_id !== $user->id) {
+                abort(403, 'Only the sender can edit this message.');
+            }
 
-        $before = $message->only(['content', 'edited_at']);
-        $message->forceFill(['content' => $content, 'edited_at' => now()])->save();
-        $this->audit($user, 'message.edited', $message->conversation, $message, $before, $message->only(['content', 'edited_at']));
+            $before = $message->only(['content', 'edited_at']);
+            $message->forceFill(['content' => $content, 'edited_at' => now()])->save();
+            $this->audit($user, 'message.edited', $message->conversation, $message, $before, $message->only(['content', 'edited_at']));
 
-        return $message->fresh('sender:id,name,photo,gender');
+            return $message->fresh('sender:id,name,photo,gender');
+        }, 3);
     }
 
     public function deleteMessage(User $user, Message $message): void
     {
-        $member = $this->ensureMember($message->conversation, $user);
+        DB::transaction(function () use ($user, $message) {
+            $message = Message::lockForUpdate()->findOrFail($message->id);
+            $member = $this->ensureMember($message->conversation, $user);
 
-        if ($message->sender_id !== $user->id && ! $member->canManageMembers()) {
-            abort(403, 'You cannot delete this message.');
-        }
+            if ($message->sender_id !== $user->id && ! $member->canManageMembers()) {
+                abort(403, 'You cannot delete this message.');
+            }
 
-        $before = $message->only(['content', 'type', 'attachments']);
-        $message->forceFill(['deleted_by' => $user->id])->save();
-        $message->delete();
-        $this->audit($user, 'message.deleted', $message->conversation, $message, $before);
+            $before = $message->only(['content', 'type', 'attachments']);
+            $message->forceFill(['deleted_by' => $user->id])->save();
+            $message->delete();
+            $this->audit($user, 'message.deleted', $message->conversation, $message, $before);
+        }, 3);
     }
 
     public function markRead(User $user, Conversation $conversation, ?int $messageId = null): void
@@ -202,33 +255,27 @@ class ChatService
             abort(404);
         }
 
-        $query = $conversation->messages()->where('sender_id', '!=', $user->id);
-
-        if ($messageId) {
-            $query->where('id', '<=', $messageId);
+        $boundary = $messageId ?? $conversation->messages()->max('id');
+        if (! $boundary) {
+            return;
         }
-
-        $ids = $query->pluck('id');
-        if ($ids->isNotEmpty()) {
-            $now = now();
-            $reads = $ids->map(fn ($id) => [
-                'message_id' => $id,
-                'user_id' => $user->id,
-                'read_at' => $now,
-            ])->toArray();
-
-            MessageRead::upsert($reads, ['message_id', 'user_id'], ['read_at']);
-        }
-
-        Member::where('conversation_id', $conversation->id)
-            ->where('user_id', $user->id)
-            ->update(['last_read_message_id' => $messageId]);
+        $conversation->messages()->reorder()->where('sender_id', '!=', $user->id)->where('id', '<=', $boundary)
+            ->whereDoesntHave('reads', fn ($query) => $query->where('user_id', $user->id))
+            ->select('id')->chunkById(500, function ($messages) use ($user) {
+                MessageRead::insertOrIgnore($messages->map(fn ($message) => ['message_id' => $message->id, 'user_id' => $user->id, 'read_at' => now(), 'created_at' => now(), 'updated_at' => now()])->all());
+            });
+        Member::where('conversation_id', $conversation->id)->where('user_id', $user->id)
+            ->where('status', 'active')->whereNull('left_at')
+            ->where(fn ($query) => $query->whereNull('last_read_message_id')->orWhere('last_read_message_id', '<', $boundary))
+            ->update(['last_read_message_id' => DB::raw('GREATEST(COALESCE(last_read_message_id, 0), '.(int) $boundary.')')]);
+        ChatNotification::where('conversation_id', $conversation->id)->where('user_id', $user->id)
+            ->where('message_id', '<=', $boundary)->whereNull('read_at')->update(['read_at' => now()]);
     }
 
     public function attachMember(Conversation $conversation, int $userId, string $role = 'member'): Member
     {
         $existing = Member::where('conversation_id', $conversation->id)->where('user_id', $userId)->first();
-        if ($existing && $existing->status === 'active') {
+        if ($existing && $existing->status === 'active' && $existing->left_at === null) {
             return $existing;
         }
 
@@ -246,42 +293,48 @@ class ChatService
 
     public function removeMember(User $actor, Conversation $conversation, int $userId): void
     {
-        $actorMember = $this->ensureMember($conversation, $actor);
-        $targetMember = Member::where('conversation_id', $conversation->id)->where('user_id', $userId)->where('status', 'active')->firstOrFail();
+        DB::transaction(function () use ($actor, $conversation, $userId) {
+            $conversation = Conversation::lockForUpdate()->findOrFail($conversation->id);
+            $actorMember = $this->ensureMember($conversation, $actor);
+            $targetMember = Member::where('conversation_id', $conversation->id)->where('user_id', $userId)->where('status', 'active')->firstOrFail();
 
-        if (! $actorMember->canManageMembers() && $actor->id !== $userId) {
-            abort(403, 'You cannot remove members from this chat.');
-        }
-        if ($targetMember->role === 'owner') {
-            abort(422, 'Transfer ownership before removing the owner.');
-        }
+            if (! $actorMember->canManageMembers() && $actor->id !== $userId) {
+                abort(403, 'You cannot remove members from this chat.');
+            }
+            if ($targetMember->role === 'owner') {
+                abort(422, 'Transfer ownership before removing the owner.');
+            }
 
-        $targetMember->forceFill(['status' => 'left', 'left_at' => now()])->save();
+            $targetMember->forceFill(['status' => 'left', 'left_at' => now()])->save();
 
-        $this->audit($actor, 'member.removed', $conversation, null, ['user_id' => $userId]);
+            $this->audit($actor, 'member.removed', $conversation, null, ['user_id' => $userId]);
+        }, 3);
     }
 
     public function updateRole(User $actor, Conversation $conversation, int $userId, string $role): Member
     {
-        $actorMember = $this->ensureMember($conversation, $actor);
+        return DB::transaction(function () use ($actor, $conversation, $userId, $role) {
+            $conversation = Conversation::lockForUpdate()->findOrFail($conversation->id);
+            $actorMember = $this->ensureMember($conversation, $actor);
 
-        if (! $actorMember->canManageSettings()) {
-            abort(403, 'Only owners and admins can update roles.');
-        }
+            if (! $actorMember->canManageSettings()) {
+                abort(403, 'Only owners and admins can update roles.');
+            }
 
-        $member = Member::where('conversation_id', $conversation->id)->where('user_id', $userId)->firstOrFail();
-        if ($member->role === 'owner' && $role !== 'owner') {
-            abort(422, 'Transfer ownership before changing the owner role.');
-        }
-        if ($role === 'owner' && $actorMember->role !== 'owner') {
-            abort(403, 'Only the owner can transfer ownership.');
-        }
+            $member = $conversation->activeMembers()->where('user_id', $userId)->firstOrFail();
+            if ($member->role === 'owner' && $role !== 'owner') {
+                abort(422, 'Transfer ownership before changing the owner role.');
+            }
+            if ($role === 'owner' && $actorMember->role !== 'owner') {
+                abort(403, 'Only the owner can transfer ownership.');
+            }
 
-        $before = $member->only(['role']);
-        $member->forceFill(['role' => $role])->save();
-        $this->audit($actor, 'member.role_updated', $conversation, null, $before, $member->only(['role']));
+            $before = $member->only(['role']);
+            $member->forceFill(['role' => $role])->save();
+            $this->audit($actor, 'member.role_updated', $conversation, null, $before, $member->only(['role']));
 
-        return $member->fresh('user');
+            return $member->fresh('user:id,name,first_name,last_name,email,photo,gender');
+        }, 3);
     }
 
     public function updatePresence(User $user, array $data): Presence
@@ -315,8 +368,9 @@ class ChatService
                     ->where('login_histories.attempted_at', '>=', today())
                     ->where('login_histories.attempted_at', '<', today()->addDay());
             }))
+            ->when($includeSelf, fn ($query) => $query->orderByRaw('id = ? DESC', [$viewer->id]))
             ->orderBy('name')
-            ->when(! $loggedInToday, fn ($query) => $query->limit(250))
+            ->when(! $loggedInToday, fn ($query) => $query->limit($includeSelf ? 251 : 250))
             ->get();
 
         $userIds = $users->pluck('id');
@@ -361,13 +415,12 @@ class ChatService
             ->get()
             ->keyBy('tokenable_id');
 
-        $sessions = DB::table('sessions')
-            ->select('user_id', 'last_activity', 'user_agent')
-            ->whereIn('user_id', $userIds)
-            ->orderByDesc('last_activity')
-            ->get()
-            ->unique('user_id')
-            ->keyBy('user_id');
+        $latestSessions = DB::table('sessions')->select('user_id')->selectRaw('MAX(last_activity) as latest_activity')
+            ->whereIn('user_id', $userIds)->groupBy('user_id');
+        $sessions = DB::table('sessions')->joinSub($latestSessions, 'latest_sessions', fn ($join) => $join
+            ->on('sessions.user_id', '=', 'latest_sessions.user_id')->on('sessions.last_activity', '=', 'latest_sessions.latest_activity'))
+            ->select('sessions.user_id', 'sessions.last_activity', 'sessions.user_agent')
+            ->orderByDesc('sessions.last_activity')->get()->unique('user_id')->keyBy('user_id');
 
         return $users->map(function (User $user) use ($presences, $todayOrders, $tokens, $sessions, $lobAssignments) {
             $session = $sessions->get($user->id);
@@ -430,7 +483,8 @@ class ChatService
         $term = trim((string) ($filters['q'] ?? ''));
 
         $messages = Message::query()
-            ->whereHas('conversation.members', fn ($query) => $query->where('user_id', $user->id)->where('status', 'active'))
+            ->when(! $user->can('messages-view'), fn ($query) => $query->whereRaw('1 = 0'))
+            ->whereHas('conversation.activeMembers', fn ($query) => $query->where('user_id', $user->id))
             ->when($term !== '', fn ($query) => $query->where('content', 'like', "%{$term}%"))
             ->when($filters['type'] ?? null, fn ($query, $type) => $query->where('type', $type))
             ->when($filters['conversation_id'] ?? null, fn ($query, $id) => $query->where('conversation_id', $id))
@@ -457,8 +511,10 @@ class ChatService
         return trim((string) $user->village_name) ?: null;
     }
 
-    public function ensureMember(Conversation $conversation, User $user): Member
+    public function ensureMember(?Conversation $conversation, User $user): Member
     {
+        abort_if(! $conversation || $conversation->trashed(), 404);
+
         return $conversation->members()
             ->where('user_id', $user->id)
             ->where('status', 'active')

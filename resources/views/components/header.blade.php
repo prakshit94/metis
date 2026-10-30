@@ -762,27 +762,7 @@
     $chatTotalUnread = 0;
     if (config('chat.enabled', false) && auth()->check() && auth()->user()->can('chat-view')) {
         try {
-            if (\Illuminate\Support\Facades\Schema::hasTable('chat_conversations')
-                && \Illuminate\Support\Facades\Schema::hasTable('chat_members')
-                && \Illuminate\Support\Facades\Schema::hasTable('chat_messages')) {
-
-                $userId = auth()->id();
-
-                $chatTotalUnread = (int) \Illuminate\Support\Facades\DB::table('chat_messages as msg')
-                    ->join('chat_members as m', function($j) use ($userId) {
-                        $j->on('m.conversation_id', '=', 'msg.conversation_id')
-                          ->where('m.user_id', $userId)
-                          ->where('m.status', 'active');
-                    })
-                    ->whereRaw('msg.sender_id != ?', [$userId])
-                    ->whereNull('msg.deleted_at')
-                    ->whereNotExists(function($q) use ($userId) {
-                        $q->from('chat_message_reads as r')
-                          ->whereColumn('r.message_id', 'msg.id')
-                          ->where('r.user_id', $userId);
-                    })
-                    ->count();
-            }
+            $chatTotalUnread = app(\App\Services\Chat\ChatService::class)->unreadCounts(auth()->user())['unread_messages'];
         } catch (\Exception $e) {}
     }
 
@@ -792,33 +772,14 @@
                 @can('chat-view')
                 {{-- Team Chat quick-access with live unread badge --}}
                 <div class="h-100 d-flex align-items-center"
-                     x-data="{
-                         chatUnread: 0,
-                         init() {
-                             // Prefer localStorage (updated by chat page poll) over server value
-                             const serverCount = {{ (int) $chatTotalUnread }};
-                             const stored = parseInt(localStorage.getItem('metis_chat_unread_{{ (int) auth()->id() }}') ?? '', 10);
-                             this.chatUnread = isNaN(stored) ? serverCount : stored;
-
-                             // Live update from same-tab chat page poll
-                             window.addEventListener('metis:chat-unread', (e) => {
-                                 this.chatUnread = parseInt(e.detail.count, 10) || 0;
-                             });
-                             // Cross-tab update via storage event
-                             window.addEventListener('storage', (e) => {
-                                 if (e.key === 'metis_chat_unread_{{ (int) auth()->id() }}') {
-                                     this.chatUnread = parseInt(e.newValue ?? '0', 10) || 0;
-                                 }
-                             });
-                         }
-                     }">
+                     x-data="headerChatUnread({{ (int) $chatTotalUnread }}, {{ (int) auth()->id() }}, @js((bool) config('chat.enabled', false)))">
                     <a href="{{ route('chat.index') }}"
                        class="header-icon-control btn btn-outline-secondary border-0 shadow-sm bg-body rounded-circle p-2 d-flex align-items-center justify-content-center transition-all hover-scale position-relative"
                        style="width: 42px; height: 42px;"
                        data-bs-toggle="tooltip"
                        data-bs-placement="bottom"
                        title="Team Chat"
-                       aria-label="Team Chat">
+                       :aria-label="chatUnread > 0 ? `Team Chat, ${chatUnread} unread messages` : 'Team Chat'">
                         <i class="bi bi-chat-dots-fill fs-5 text-secondary" aria-hidden="true"></i>
                         {{-- Badge: hidden by default via d-none; Alpine shows it only when count > 0 --}}
                         <span x-cloak
@@ -1283,8 +1244,8 @@ document.addEventListener('alpine:init', () => {
             fetchingActivities: false,
 
             // Restore persisted dismissed state from localStorage on init
-            alertsRead:   localStorage.getItem(alertsKey)   === '1',
-            messagesRead: localStorage.getItem(messagesKey) === '1',
+            alertsRead:   window.chatStorage.getItem(alertsKey)   === '1',
+            messagesRead: window.chatStorage.getItem(messagesKey) === '1',
 
             get totalCount() {
                 // If alerts/messages have been dismissed client-side, remove their contribution
@@ -1339,8 +1300,8 @@ document.addEventListener('alpine:init', () => {
                     this.messagesRead = true;
 
                     // Persist dismissed state so it survives page refresh
-                    localStorage.setItem(alertsKey, '1');
-                    localStorage.setItem(messagesKey, '1');
+                    window.chatStorage.setItem(alertsKey, '1');
+                    window.chatStorage.setItem(messagesKey, '1');
 
                 } else if (id === 'alerts') {
                     // Mark only alerts as read (Alerts tab "Mark all as read")
@@ -1348,7 +1309,7 @@ document.addEventListener('alpine:init', () => {
                     this.otherCount = Math.max(0, this.otherCount - {{ $systemAlerts->count() }});
 
                     // Persist so it survives refresh
-                    localStorage.setItem(alertsKey, '1');
+                    window.chatStorage.setItem(alertsKey, '1');
 
                     // No API call needed — these are dynamic system alerts, not DB-stored notifications
                     return;
@@ -1359,17 +1320,9 @@ document.addEventListener('alpine:init', () => {
                     this.otherCount = Math.max(0, this.otherCount - {{ $unreadMessages->count() }});
 
                     // Persist so it survives refresh
-                    localStorage.setItem(messagesKey, '1');
+                    window.chatStorage.setItem(messagesKey, '1');
 
-                    // Call the messages read API if it exists
-                    fetch('/api/chat/messages/read-all', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Accept': 'application/json',
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                        }
-                    }).catch(() => {});
+                    // Chat reads are handled in the chat workspace; this bell only dismisses its static alerts.
                     return;
 
                 } else if (id === 'activities') {

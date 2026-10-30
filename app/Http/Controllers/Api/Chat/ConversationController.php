@@ -6,9 +6,9 @@ use App\Models\Chat\Conversation;
 use App\Models\Chat\Message;
 use App\Modules\Core\Controllers\Controller;
 use App\Services\Chat\ChatService;
+use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
-use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
 class ConversationController extends Controller implements HasMiddleware
@@ -50,11 +50,11 @@ class ConversationController extends Controller implements HasMiddleware
             'image_path' => ['nullable', 'string', 'max:1000'],
             'privacy' => ['nullable', 'in:public,private'],
             'settings' => ['nullable', 'array'],
-            'member_ids' => ['nullable', 'array'],
-            'member_ids.*' => ['integer', Rule::exists('users', 'id')->where('is_active', 1)->whereNull('deleted_at')],
+            'member_ids' => ['nullable', 'array', 'max:500'],
+            'member_ids.*' => ['integer', 'distinct', Rule::exists('users', 'id')->where('is_active', 1)->whereNull('deleted_at')],
         ]);
 
-        abort_if($data['type'] === 'group' && !$request->user()->can('chat-create-group'), 403);
+        abort_if($data['type'] === 'group' && ! $request->user()->can('chat-create-group'), 403);
         $conversation = $data['type'] === 'direct'
             ? $chat->createDirectConversation($request->user(), (int) $data['user_id'])
             : $chat->createGroup($request->user(), $data);
@@ -86,11 +86,8 @@ class ConversationController extends Controller implements HasMiddleware
     public function messages(Request $request, Conversation $conversation, ChatService $chat)
     {
         abort_unless(config('chat.enabled'), 404);
-        $chat->ensureMember($conversation, $request->user());
-
-        $messages = $conversation->messages()
-            ->with(['sender', 'reads', 'parent'])
-            ->paginate(50);
+        abort_unless($request->user()->can('messages-view'), 403);
+        $messages = $chat->messages($request->user(), $conversation, 50);
 
         return response()->json(['data' => $messages]);
     }
@@ -123,13 +120,8 @@ class ConversationController extends Controller implements HasMiddleware
 
     public function unreadCount(Request $request)
     {
-        $count = Conversation::visibleTo($request->user())
-            ->whereHas('messages', function ($query) use ($request) {
-                $query->whereDoesntHave('reads', function ($read) use ($request) {
-                    $read->where('user_id', $request->user()->id);
-                })->where('sender_id', '!=', $request->user()->id);
-            })->count();
+        abort_unless(config('chat.enabled'), 404);
 
-        return response()->json(['unread' => $count]);
+        return response()->json(app(ChatService::class)->unreadCounts($request->user()));
     }
 }

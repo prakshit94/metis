@@ -1,7 +1,6 @@
 @extends('layouts.app')
 
 @push('head')
-    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <style>
         [x-cloak] { display: none !important; }
         /* Strip container padding and breadcrumb for full-height chat layout */
@@ -10,18 +9,11 @@
         /* Hide the page footer — chat fills the full viewport height */
         .admin-footer { display: none !important; }
     </style>
-    <script>
-        // Ensure Axios sends XMLHttpRequest header for Laravel
-        axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
-        // Add CSRF token
-        document.addEventListener('DOMContentLoaded', () => {
-            const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-            if (token) axios.defaults.headers.common['X-CSRF-TOKEN'] = token;
-        });
-    </script>
+
 @endpush
 
 @section('title', 'Chat')
+@section('page', 'chat')
 
 @section('content')
     <div
@@ -31,6 +23,8 @@
             users: @js($users),
             pollInterval: @js($pollInterval),
             currentUserData: @js($currentUserData),
+            canManageGroups: @js(auth()->user()->can('chat-group-manage')),
+            canSend: @js(auth()->user()->can('messages-create') && auth()->user()->can('messages-view')),
         })"
     >
         <div class="row g-0 h-100">
@@ -43,6 +37,7 @@
                             <h5 class="mb-0 fw-bold">Messages</h5>
                             <small class="text-muted" x-text="onlineLabel"></small>
                         </div>
+                        <button type="button" class="btn btn-outline-secondary btn-sm d-xl-none" @click="showPeople=true">People</button>
                         @can('chat-create-group')
                         <button type="button" @click="showGroupModal = true; groupError = ''" class="btn btn-primary btn-sm d-flex align-items-center gap-1" title="Create group">
                             <i class="bi bi-people-fill"></i>
@@ -183,8 +178,9 @@
 
                         <!-- Message List -->
                         <div class="flex-grow-1 overflow-y-auto p-4 bg-body-tertiary d-flex flex-column gap-3 chat-scroll-area" x-ref="messageScroller">
+                            <button type="button" x-show="hasOlderMessages" :disabled="loadingOlder" @click="loadOlderMessages()" class="btn btn-sm btn-outline-secondary align-self-center" x-text="loadingOlder ? 'Loading…' : 'Load earlier messages'"></button>
                             <template x-for="message in messages" :key="message.id">
-                                <div class="d-flex" :class="message.sender_id == currentUserId ? 'justify-content-end' : 'justify-content-start'">
+                                <div :data-chat-message-id="message.id" class="d-flex" :class="message.sender_id == currentUserId ? 'justify-content-end' : 'justify-content-start'">
                                     <div style="max-width: 75%;">
                                         <div class="d-flex align-items-center gap-2 mb-1 text-muted" style="font-size: 10px;" :class="message.sender_id == currentUserId ? 'justify-content-end' : 'justify-content-start'">
                                             <template x-if="message.sender">
@@ -256,7 +252,7 @@
                                         </div>
 
                                         <div class="mt-1 d-flex gap-2" :class="message.sender_id == currentUserId ? 'justify-content-end' : 'justify-content-start'">
-                                            <button type="button" @click="setReply(message)" class="btn btn-link btn-sm p-0 text-muted text-decoration-none" style="font-size: 10px;">REPLY</button>
+                                            <button type="button" x-show="canSend" @click="setReply(message)" class="btn btn-link btn-sm p-0 text-muted text-decoration-none" style="font-size: 10px;">REPLY</button>
                                             @can('messages-edit')
                                             <button type="button" @click="startEdit(message)" x-show="message.sender_id == currentUserId" class="btn btn-link btn-sm p-0 text-muted text-decoration-none" style="font-size: 10px;">EDIT</button>
                                             @endcan
@@ -317,10 +313,11 @@
                                 <input x-ref="attachmentInput" type="file" multiple class="d-none" @change="handleAttachmentSelection">
                                 <button type="button" @click="$refs.attachmentInput.click()"
                                         class="btn btn-outline-secondary rounded-circle flex-shrink-0 d-flex align-items-center justify-content-center"
-                                        style="width:40px;height:40px;" title="Attach" aria-label="Attach files">
+                                        style="width:40px;height:40px;" title="Attach" aria-label="Attach files" :disabled="!canSend">
                                     <i class="bi bi-paperclip"></i>
                                 </button>
                                 <textarea
+                                    :disabled="!canSend"
                                     x-model="draft"
                                     x-ref="composer"
                                     rows="1"
@@ -330,7 +327,7 @@
                                     class="form-control flex-grow-1 chat-composer-textarea">
                                 </textarea>
                                 <button type="submit"
-                                        :disabled="sendingMessage || (!(draft || '').trim() && !pendingAttachments.length)"
+                                        :disabled="!canSend || sendingMessage || (!(draft || '').trim() && !pendingAttachments.length)"
                                         class="btn btn-primary rounded-circle flex-shrink-0 d-flex align-items-center justify-content-center shadow-sm"
                                         style="width:40px;height:40px;" aria-label="Send message">
                                     <span x-show="sendingMessage" class="spinner-border spinner-border-sm"></span>
@@ -360,8 +357,9 @@
             </section>
 
             <!-- Right Sidebar: Online Users -->
-            <aside class="d-none d-xl-flex col-xl-3 flex-column border-start bg-body-tertiary h-100">
+            <aside class="chat-people-pane d-none d-xl-flex col-xl-3 flex-column border-start bg-body-tertiary h-100" :class="{'is-people-open':showPeople}" @keydown.escape="showPeople=false">
                 <div class="p-3 border-bottom">
+                    <button type="button" class="btn btn-sm btn-outline-secondary d-xl-none mb-3" @click="showPeople=false">Back to chat</button>
                     <div class="d-flex align-items-center justify-content-between mb-3">
                         <div>
                             <h6 class="mb-0 fw-bold text-uppercase" style="font-size:0.75rem; letter-spacing:0.5px;">Online Users</h6>
@@ -616,7 +614,7 @@
                         <div class="col-md-6 border-end-md">
                             <div class="d-flex justify-content-between align-items-center mb-3">
                                 <h6 class="fw-bold text-muted text-uppercase mb-0" style="font-size:0.75rem; letter-spacing:0.5px;">Group Details</h6>
-                                @can('messages-edit')
+                                @can('chat-group-manage')
                                 <button type="button" x-show="canManageSettings" @click="updateGroup" :disabled="groupBusy" class="btn btn-primary btn-sm fw-semibold px-3 shadow-sm">Save</button>
                                 @endcan
                             </div>
@@ -644,9 +642,9 @@
                             <hr class="my-4">
                             
                             <h6 class="fw-bold text-danger mb-3" style="font-size:0.75rem; letter-spacing:0.5px; text-transform:uppercase;">Danger Zone</h6>
-                            <button type="button" x-show="!canManageSettings" @click="leaveGroup" :disabled="groupBusy" class="btn btn-outline-danger w-100 fw-semibold">Leave Group</button>
+                            <button type="button" x-show="!isOwner" @click="leaveGroup" :disabled="groupBusy" class="btn btn-outline-danger w-100 fw-semibold">Leave Group</button>
                             @can('chat-delete')
-                            <button type="button" x-show="canManageSettings" @click="deleteGroup" :disabled="groupBusy" class="btn btn-danger w-100 fw-semibold shadow-sm">Delete Group</button>
+                            <button type="button" x-show="isOwner" @click="deleteGroup" :disabled="groupBusy" class="btn btn-danger w-100 fw-semibold shadow-sm">Delete Group</button>
                             @endcan
                         </div>
 
@@ -654,8 +652,8 @@
                         <div class="col-md-6 d-flex flex-column" style="max-height: 500px;">
                             <div class="d-flex justify-content-between align-items-center mb-3">
                                 <h6 class="fw-bold text-muted text-uppercase mb-0" style="font-size:0.75rem; letter-spacing:0.5px;">Members (<span x-text="activeConversation?.active_members?.length"></span>)</h6>
-                                @can('messages-edit')
-                                <button type="button" x-show="canManageSettings" @click="showAddMember = !showAddMember" class="btn btn-outline-primary btn-sm fw-semibold px-3 border shadow-sm">
+                                @can('chat-group-manage')
+                                <button type="button" x-show="canManageMembers" @click="showAddMember = !showAddMember" class="btn btn-outline-primary btn-sm fw-semibold px-3 border shadow-sm">
                                     <i class="bi bi-person-plus-fill me-1"></i> Add
                                 </button>
                                 @endcan
@@ -711,11 +709,11 @@
                                                 </div>
                                             </div>
                                         </div>
-                                        @can('messages-edit')
-                                        <div x-show="canManageSettings && member.user_id != currentUserId" class="dropdown">
+                                        @can('chat-group-manage')
+                                        <div x-show="canManageMembers && member.user_id != currentUserId && member.role !== 'owner'" class="dropdown">
                                             <button class="btn btn-outline-secondary btn-sm px-2 rounded-circle border shadow-sm d-flex align-items-center justify-content-center" style="width:28px;height:28px;" data-bs-toggle="dropdown"><i class="bi bi-three-dots-vertical" style="font-size:12px;"></i></button>
                                             <ul class="dropdown-menu dropdown-menu-end shadow border-0 text-sm py-2">
-                                                <li><button type="button" @click="updateGroupMemberRole(member, member.role === 'admin' ? 'member' : 'admin')" class="dropdown-item small" x-text="member.role === 'admin' ? 'Demote to Member' : 'Make Admin'"></button></li>
+                                                <li x-show="canManageSettings"><button type="button" @click="updateGroupMemberRole(member, member.role === 'admin' ? 'member' : 'admin')" class="dropdown-item small" x-text="member.role === 'admin' ? 'Demote to Member' : 'Make Admin'"></button></li>
                                                 <li><hr class="dropdown-divider my-2"></li>
                                                 <li><button type="button" @click="removeGroupMember(member)" class="dropdown-item small text-danger fw-semibold">Remove from Group</button></li>
                                             </ul>
@@ -755,16 +753,25 @@
             currentUserId: @js(auth()->id()),
             conversations: initial.conversations || [],
             users: initial.users || [],
-            pollInterval: initial.pollInterval || 15000,
+            pollInterval: Math.max(5000, Number(initial.pollInterval) || 15000),
+            stopped: false,
+            showPeople: false,
+            messagePage: 1,
+            hasOlderMessages: false,
+            loadingOlder: false,
+            pendingClientId: null,
+            canManageGroups: initial.canManageGroups === true,
+            canSend: initial.canSend === true,
+            retryAt: 0,
             activeConversation: null,
             messages: [],
 
             conversationType: 'all',
             search: '',
             userSearch: '',
-            filter: localStorage.getItem('metis_chat_filter_' + @js(auth()->id())) || 'all',
+            filter: window.chatStorage.getItem('metis_chat_filter_' + @js(auth()->id())) || 'all',
             userFilter: 'online',
-            userSort: localStorage.getItem('metis_chat_userSort_' + @js(auth()->id())) || 'revenue_desc',
+            userSort: window.chatStorage.getItem('metis_chat_userSort_' + @js(auth()->id())) || 'revenue_desc',
 
             // Logged-in user's own stats (injected server-side, refreshed on poll)
             selfUser: initial.currentUserData && Object.keys(initial.currentUserData).length
@@ -808,6 +815,7 @@
 
             destroy() {
                 clearInterval(this.pollTimer);
+                this.stopped = true;
                 this.selectionVersion++;
                 const attachments = new Set([
                     ...this.pendingAttachments,
@@ -825,8 +833,8 @@
                     const composer = this.$refs.composer;
                     if (composer) { composer.style.height = 'auto'; composer.style.height = Math.min(composer.scrollHeight, 120) + 'px'; }
                 }));
-                this.$watch('filter', val => localStorage.setItem('metis_chat_filter_' + this.currentUserId, val));
-                this.$watch('userSort', val => localStorage.setItem('metis_chat_userSort_' + this.currentUserId, val));
+                this.$watch('filter', val => window.chatStorage.setItem('metis_chat_filter_' + this.currentUserId, val));
+                this.$watch('userSort', val => window.chatStorage.setItem('metis_chat_userSort_' + this.currentUserId, val));
 
                 this.poll();
                 this.pollTimer = setInterval(() => this.poll(), this.pollInterval);
@@ -835,14 +843,14 @@
                 this.$watch('activeConversation', (val) => {
                     const storeKey = 'metis_chat_id_' + this.currentUserId;
                     if (val && val.id) {
-                        localStorage.setItem(storeKey, val.id);
+                        window.chatStorage.setItem(storeKey, val.id);
                     } else {
-                        localStorage.removeItem(storeKey);
+                        window.chatStorage.removeItem(storeKey);
                     }
                 });
 
                 const storeKey = 'metis_chat_id_' + this.currentUserId;
-                const savedId = localStorage.getItem(storeKey);
+                const savedId = window.chatStorage.getItem(storeKey);
                 if (savedId) {
                     const conv = this.conversations.find(c => c.id == savedId);
                     if (conv) {
@@ -958,11 +966,15 @@
             },
             
             get canManageSettings() {
-                if (!this.activeConversation || this.activeConversation.type !== 'group') return false;
+                if (!this.canManageGroups || !this.activeConversation || this.activeConversation.type !== 'group') return false;
                 const member = this.activeConversation.active_members?.find(m => Number(m.user_id) === Number(this.currentUserId));
                 return member && ['owner', 'admin'].includes(member.role);
             },
 
+            get canManageMembers() {
+                const member=this.activeConversation?.active_members?.find(m=>Number(m.user_id)===Number(this.currentUserId));
+                return this.canManageGroups && this.activeConversation?.type==='group' && ['owner','admin','moderator'].includes(member?.role);
+            },
             get isOwner() {
                 if (!this.activeConversation) return false;
                 const member = this.activeConversation.active_members?.find(m => Number(m.user_id) === Number(this.currentUserId));
@@ -971,40 +983,34 @@
             
             async fetchConversationPages() {
                 const responses = await Promise.all(Array.from({ length: this.conversationPages }, (_, i) =>
-                    axios.get('/api/chat/conversations', { params: { page: i + 1, per_page: 50 } })));
+                    window.chatHttp.get('/api/chat/conversations', { params: { page: i + 1, per_page: 50 } })));
                 const unique = new Map();
                 responses.forEach(response => (response.data.data || []).forEach(conversation => unique.set(conversation.id, conversation)));
                 return { data: { data: [...unique.values()], meta: responses.at(-1)?.data.meta } };
             },
 
             async poll() {
-                if (this.polling) return;
+                if (this.polling || this.stopped || document.hidden || Date.now()<this.retryAt) return;
                 this.polling = true;
+                let messageContext=null;
                 try {
                     const [convRes, userRes] = await Promise.all([
                         this.fetchConversationPages(),
-                        axios.get('/api/chat/users'),
+                        window.chatHttp.get('/api/chat/users', {params:{include_self:1}}),
                     ]);
 
+                    if(this.stopped || document.hidden) return;
                     this.conversations = convRes.data.data || convRes.data.conversations || convRes.data || [];
                     this.hasMoreConversations = !!convRes.data.meta?.has_more;
                     const usersRaw = userRes.data.data || userRes.data.users || userRes.data || [];
-                    this.users = Array.isArray(usersRaw) ? usersRaw : [];
+                    this.users = (Array.isArray(usersRaw) ? usersRaw : []).filter(u => Number(u.id)!==Number(this.currentUserId));
+                    const selfData = (Array.isArray(usersRaw) ? usersRaw : []).find(u => Number(u.id)===Number(this.currentUserId));
+                    if(selfData) this.selfUser = {...selfData,isMe:true,is_online:true};
 
                     // ── Sync unread count to localStorage so the header badge updates live ──
                     const totalUnread = convRes.data.meta?.unread_messages ?? this.conversations.reduce((sum, c) => sum + (c.unread_count || 0), 0);
-                    localStorage.setItem('metis_chat_unread_' + this.currentUserId, totalUnread);
+                    window.chatStorage.setItem('metis_chat_unread_' + this.currentUserId, totalUnread);
                     window.dispatchEvent(new CustomEvent('metis:chat-unread', { detail: { count: totalUnread } }));
-
-                    // Refresh logged-in user's own stats (include_self=1 returns self in the list)
-                    try {
-                        const selfRes = await axios.get('/api/chat/users', { params: { include_self: 1 } });
-                        const selfRaw = selfRes.data.data || selfRes.data.users || selfRes.data || [];
-                        const selfData = (Array.isArray(selfRaw) ? selfRaw : []).find(u => u.id == this.currentUserId);
-                        if (selfData) {
-                            this.selfUser = { ...selfData, isMe: true, is_online: true };
-                        }
-                    } catch (_) {}
 
                     if (this.activeConversation) {
                         const updated = this.conversations.find(c => c.id == this.activeConversation.id);
@@ -1013,9 +1019,10 @@
                         const conversationId = this.activeConversation.id;
                         const selectionVersion = this.selectionVersion;
                         const messageVersion = this.messageVersion;
+                        messageContext={id:conversationId,version:selectionVersion};
                         const scroller = this.$refs.messageScroller;
                         const nearBottom = !scroller || scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < 80;
-                        const msgRes = await axios.get(`/api/chat/conversations/${conversationId}/messages`);
+                        const msgRes = await window.chatHttp.get(`/api/chat/conversations/${conversationId}/messages`);
                         if (this.activeConversation?.id != conversationId || this.selectionVersion !== selectionVersion || this.messageVersion !== messageVersion || this.sendingMessage) return;
                         // Backend returns paginated: { data: { data: [...], current_page, ... } }
                         const paginatedData = msgRes.data.data;
@@ -1023,13 +1030,45 @@
                             ? paginatedData
                             : (paginatedData?.data || [])).slice().reverse();
                         const lastOldId = this.messages.at(-1)?.id;
-                        this.messages = newMessages;
+                        if(this.stopped || document.hidden) return;
+                        let missed=[];
+                        if (lastOldId && newMessages.length && this.compareMessages(newMessages[0],this.messages.at(-1))>0) {
+                            let page=1, hasMore=true;
+                            while(hasMore && page<=3) {
+                                const delta=await window.chatHttp.get(`/api/chat/conversations/${conversationId}/messages`,{params:{after_id:lastOldId,per_page:100,page}});
+                                missed.push(...delta.data.data.data);hasMore=!!delta.data.data.next_page_url;page++;
+                                if(this.selectionVersion!==selectionVersion || this.messageVersion!==messageVersion || this.stopped || document.hidden) return;
+                            }
+                            if(hasMore) {missed=[];this.messagePage=1;}
+                        }
+                        const oldest=newMessages[0]?.id;
+                        const history=this.messagePage>1?this.messages.filter(m=>oldest && this.compareMessages(m,newMessages[0])<0):[];
+                        this.messages=[...new Map([...history,...missed,...newMessages].map(m=>[Number(m.id),m])).values()].sort((a,b)=>this.compareMessages(a,b));
+                        if(this.messagePage===1) this.hasOlderMessages=!!paginatedData?.next_page_url;
+                        if(nearBottom && (this.activeConversation.unread_count || 0)>0 && this.messages.length && !this.showGroupSettingsModal) {
+                            try {
+                                await window.chatHttp.post(`/api/chat/conversations/${conversationId}/read`,{message_id:this.messages.at(-1).id});
+                                if(this.activeConversation?.id===conversationId) this.activeConversation.unread_count=0;
+                            } catch(readError) {
+                                if([401,403,419,429].includes(readError.response?.status))throw readError;
+                                // The boundary message may have been deleted after it was loaded.
+                                console.error('Unable to update read receipt:',readError);
+                            }
+                        }
                         if (nearBottom && lastOldId != newMessages.at(-1)?.id) this.scrollToBottom();
                     }
 
                     // Mark ourselves online
-                    axios.post('/api/chat/active-status', { status: 'online' }).catch(() => {});
+                    window.chatHttp.post('/api/chat/active-status', { status: 'online' }).catch(() => {});
                 } catch (e) {
+                    if(e.response?.status===429)this.retryAt=Date.now()+Math.max(5000,Math.min(600000,(Number(e.response?.headers?.['retry-after']) || 60)*1000));
+                    if(e.response?.status===403){this.stopped=true;this.errorMessage='Your chat access has changed. Refresh the page to continue.';}
+                    if([401,419].includes(e.response?.status)) {this.stopped=true;this.errorMessage='Your session expired. Refresh the page to sign in again.';}
+                    if(e.response?.status===404) {
+                        if(messageContext && (this.activeConversation?.id!==messageContext.id || this.selectionVersion!==messageContext.version))return;
+                        if(this.activeConversation)this.conversationDrafts[this.activeConversation.id]={draft:this.draft,attachments:this.pendingAttachments,clientId:this.pendingClientId};
+                        this.selectionVersion++;this.activeConversation=null;this.messages=[];this.showGroupSettingsModal=false;
+                    }
                     console.error('Poll failed:', e);
                 } finally {
                     this.polling = false;
@@ -1038,7 +1077,7 @@
 
             async fetchUsers() {
                 try {
-                    const res = await axios.get('/api/chat/users');
+                    const res = await window.chatHttp.get('/api/chat/users');
                     const raw = res.data.data || res.data.users || res.data;
                     this.users = Array.isArray(raw) ? raw : [];
                 } catch (e) {
@@ -1051,31 +1090,35 @@
                 if (this.sendingMessage) return;
                 const selectionVersion = ++this.selectionVersion;
                 if (this.activeConversation) {
-                    this.conversationDrafts[this.activeConversation.id] = { draft: this.draft, attachments: this.pendingAttachments };
+                    this.conversationDrafts[this.activeConversation.id] = { draft: this.draft, attachments: this.pendingAttachments, clientId: this.pendingClientId };
                 }
                 const savedDraft = this.conversationDrafts[conversation.id];
                 this.draft = savedDraft?.draft || '';
                 this.pendingAttachments = savedDraft?.attachments || [];
+                this.pendingClientId = savedDraft?.clientId || null;
+                this.messagePage=1;this.hasOlderMessages=false;this.showGroupSettingsModal=false;
                 this.activeConversation = conversation;
+                this.showPeople=false;
                 this.messages = [];
                 this.errorMessage = '';
                 this.replyTo = null;
                 this.cancelEdit();
 
                 try {
-                    const res = await axios.get(`/api/chat/conversations/${conversation.id}/messages`);
+                    const res = await window.chatHttp.get(`/api/chat/conversations/${conversation.id}/messages`);
                     if (this.selectionVersion !== selectionVersion || this.activeConversation?.id != conversation.id) return;
                     // Backend returns paginated LengthAwarePaginator inside data key
                     const paginatedData = res.data.data;
                     this.messages = (Array.isArray(paginatedData)
                         ? paginatedData
                         : (paginatedData?.data || [])).slice().reverse();
+                    this.hasOlderMessages=!!paginatedData?.next_page_url;
                     this.scrollToBottom();
 
-                    if ((conversation.unread_count || 0) > 0) {
+                    if (!document.hidden && (conversation.unread_count || 0) > 0) {
                         const lastMsg = this.messages[this.messages.length - 1];
                         try {
-                            await axios.post(`/api/chat/conversations/${conversation.id}/read`,
+                            await window.chatHttp.post(`/api/chat/conversations/${conversation.id}/read`,
                                 lastMsg ? { message_id: lastMsg.id } : {});
                             conversation.unread_count = 0;
                         } catch (e) {
@@ -1097,13 +1140,33 @@
                 }
             },
             
+            compareMessages(a,b) {
+                const time=value=>{const parsed=value?.created_at ? Date.parse(value.created_at) : NaN;return Number.isNaN(parsed)?-Infinity:parsed;};
+                const left=time(a),right=time(b);
+                return left===right ? Number(a.id)-Number(b.id) : (left<right ? -1 : 1);
+            },
+            async loadOlderMessages() {
+                if(!this.activeConversation || !this.hasOlderMessages || this.loadingOlder) return;
+                const id=this.activeConversation.id,version=this.selectionVersion;
+                const scroller=this.$refs.messageScroller,oldHeight=scroller?.scrollHeight || 0;
+                this.loadingOlder=true;
+                try {
+                    const response=await window.chatHttp.get(`/api/chat/conversations/${id}/messages`,{params:{before_id:this.messages[0]?.id}});
+                    if(this.selectionVersion!==version || this.stopped) return;
+                    this.messages=[...new Map([...response.data.data.data,...this.messages].map(m=>[Number(m.id),m])).values()].sort((a,b)=>this.compareMessages(a,b));
+                    this.messagePage++;this.hasOlderMessages=!!response.data.data.next_page_url;
+                    this.$nextTick(()=>{if(scroller && this.selectionVersion===version) scroller.scrollTop+=scroller.scrollHeight-oldHeight;});
+                } catch(e){if(this.selectionVersion===version)this.errorMessage=e.response?.data?.message || 'Unable to load earlier messages.';}
+                finally {this.loadingOlder=false;}
+            },
+            newClientId() {return window.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;},
             async startDirect(userId) {
                 if (this.startingUserId || this.sendingMessage) return;
                 this.startingUserId = userId;
                 this.errorMessage = '';
                 try {
                     // Backend expects 'user_id' for direct conversations
-                    const res = await axios.post('/api/chat/conversations', {
+                    const res = await window.chatHttp.post('/api/chat/conversations', {
                         type: 'direct',
                         user_id: userId
                     });
@@ -1131,6 +1194,7 @@
                     }
                     return {
                         file: file,
+                        clientKey: this.newClientId(),
                         name: file.name,
                         size: file.size,
                         type: file.type,
@@ -1156,7 +1220,7 @@
             },
             
             async sendMessage() {
-                if (this.sendingMessage) return;
+                if (this.sendingMessage || this.stopped || !this.canSend) return;
                 const draftContent = (this.draft || '').trim();
                 if (!draftContent && !this.pendingAttachments.length) return;
                 if (!this.activeConversation) return;
@@ -1169,7 +1233,9 @@
                 this.errorMessage = '';
 
                 const formData = new FormData();
-                // Backend validates: content, parent_id, files[]
+                const fingerprint=JSON.stringify([conversationId,draftContent,submittedReply?.id,submittedAttachments.map(a=>[a.clientKey,a.name,a.size,a.file?.lastModified])]);
+                if(!this.pendingClientId || this.pendingClientId.fingerprint!==fingerprint) this.pendingClientId={fingerprint,id:this.newClientId()};
+                formData.append('client_id',this.pendingClientId.id);
                 if (draftContent) formData.append('content', draftContent);
                 if (this.replyTo?.id) formData.append('parent_id', this.replyTo.id);
                 submittedAttachments.forEach(item => {
@@ -1179,15 +1245,15 @@
                 });
 
                 try {
-                    const res = await axios.post(
+                    const res = await window.chatHttp.post(
                         `/api/chat/conversations/${conversationId}/messages`,
-                        formData,
-                        { headers: { 'Content-Type': 'multipart/form-data' } }
+                        formData
                     );
                     const newMessage = res.data.data || res.data.message || res.data;
                     this.messageVersion++;
                     if (this.activeConversation?.id == conversationId && !this.messages.some(m => m.id == newMessage.id)) this.messages.push(newMessage);
 
+                    this.pendingClientId=null;
                     // Cleanup
                     if (this.draft === submittedDraft) this.draft = '';
                     submittedAttachments.forEach(item => { if (item.previewUrl) URL.revokeObjectURL(item.previewUrl); });
@@ -1208,10 +1274,6 @@
                 }
             },
             
-            sendTyping() {
-                // Implement typing indicator if backend supports it
-            },
-            
             startEdit(message) {
                 this.editingMessageId = message.id;
                 this.editingDraft = message.content;
@@ -1227,7 +1289,7 @@
                 const content = this.editingDraft;
                 
                 try {
-                    const res = await axios.put(`/api/chat/messages/${message.id}`, { content });
+                    const res = await window.chatHttp.put(`/api/chat/messages/${message.id}`, { content });
                     this.messageVersion++;
                     message.content = content;
                     message.edited_at = new Date().toISOString();
@@ -1240,7 +1302,7 @@
             async deleteMessage(message) {
                 this.busyMessageId = message.id;
                 try {
-                    await axios.delete(`/api/chat/messages/${message.id}`);
+                    await window.chatHttp.delete(`/api/chat/messages/${message.id}`);
                     this.messageVersion++;
                     this.messages = this.messages.filter(m => m.id != message.id);
                 } catch (e) {
@@ -1256,25 +1318,26 @@
             },
             
             scrollToMessage(id) {
-                // Logic to scroll to message
+                this.$refs.messageScroller?.querySelector(`[data-chat-message-id="${Number(id)}"]`)?.scrollIntoView({block:'center',behavior:'smooth'});
             },
             async togglePin() {
+                const target=this.activeConversation;
+                if(!target) return;
+                const nextState=!target.is_pinned;
                 try {
-                    const nextState = !this.activeConversation.is_pinned;
-                    await axios.post(`/api/chat/conversations/${this.activeConversation.id}/pin`, { pinned: nextState });
-                    this.activeConversation.is_pinned = nextState;
-                } catch (e) {}
+                    await window.chatHttp.post(`/api/chat/conversations/${target.id}/pin`,{pinned:nextState});
+                    const listed=this.conversations.find(c=>c.id===target.id);if(listed)listed.is_pinned=nextState;
+                    if(this.activeConversation?.id===target.id)this.activeConversation.is_pinned=nextState;
+                } catch(e){this.errorMessage=e.response?.data?.message || 'Unable to update pin preference.';}
             },
-            
             async toggleArchive() {
+                const target=this.activeConversation;if(!target)return;
                 try {
-                    const nextState = !this.activeConversation.is_archived;
-                    await axios.post(`/api/chat/conversations/${this.activeConversation.id}/archive`, { archived: nextState });
-                    this.activeConversation = null;
-                    this.poll();
-                } catch (e) {}
+                    await window.chatHttp.post(`/api/chat/conversations/${target.id}/archive`,{archived:!target.is_archived});
+                    if(this.activeConversation?.id===target.id){this.selectionVersion++;this.activeConversation=null;this.messages=[];}
+                    await this.poll();
+                } catch(e){this.errorMessage=e.response?.data?.message || 'Unable to update archive preference.';}
             },
-            
             openGroupSettings() {
                 if (!this.activeConversation || this.activeConversation.type !== 'group') return;
                 this.groupSettingsForm = {
@@ -1292,6 +1355,7 @@
             },
             
             async createGroup() {
+                if(this.groupBusy) return;
                 if (!this.groupForm.name.trim()) {
                     this.groupError = 'Group name is required.';
                     return;
@@ -1299,7 +1363,7 @@
                 this.groupBusy = true;
                 this.groupError = '';
                 try {
-                    const res = await axios.post('/api/chat/conversations', {
+                    const res = await window.chatHttp.post('/api/chat/conversations', {
                         type: 'group',
                         name: this.groupForm.name,
                         description: this.groupForm.description || null,
@@ -1307,7 +1371,7 @@
                         member_ids: this.groupForm.member_ids,
                     });
                     const conv = res.data.data || res.data.conversation || res.data;
-                    this.conversations.unshift(conv);
+                    if(!this.conversations.some(c=>c.id===conv.id))this.conversations.unshift(conv);
                     this.showGroupModal = false;
                     this.groupForm = { name: '', description: '', privacy: 'private', member_ids: [] };
                     this.groupCreateSearch = '';
@@ -1322,10 +1386,12 @@
             },
 
             async updateGroup() {
+                const conversationId=this.activeConversation?.id;if(!conversationId || this.groupBusy)return;
                 this.groupBusy = true;
                 this.errorMessage = '';
                 try {
-                    const res = await axios.put(`/api/chat/groups/${this.activeConversation.id}`, this.groupSettingsForm);
+                    const res = await window.chatHttp.put(`/api/chat/groups/${conversationId}`, {...this.groupSettingsForm});
+                    if(this.activeConversation?.id!==conversationId)return;
                     const updated = res.data.data || res.data;
                     this.activeConversation.name = updated.name || this.groupSettingsForm.name;
                     this.activeConversation.description = updated.description || this.groupSettingsForm.description;
@@ -1341,12 +1407,13 @@
             },
 
             async deleteGroup() {
+                const conversationId=this.activeConversation?.id;if(!conversationId)return;
                 this.confirm('Delete Group', 'Are you sure you want to delete this group? All messages will be lost.', async () => {
                     this.groupBusy = true;
                     try {
-                        await axios.delete(`/api/chat/groups/${this.activeConversation.id}`);
-                        this.conversations = this.conversations.filter(c => c.id != this.activeConversation.id);
-                        this.activeConversation = null;
+                        await window.chatHttp.delete(`/api/chat/groups/${conversationId}`);
+                        this.conversations = this.conversations.filter(c => c.id != conversationId);
+                        if(this.activeConversation?.id===conversationId){this.selectionVersion++;this.activeConversation=null;this.messages=[];}
                         this.closeGroupSettings();
                     } catch (e) {
                         this.errorMessage = e.response?.data?.message || 'Failed to delete group.';
@@ -1357,12 +1424,13 @@
             },
             
             async leaveGroup() {
+                const conversationId=this.activeConversation?.id;if(!conversationId)return;
                 this.confirm('Leave Group', 'Are you sure you want to leave this group?', async () => {
                     this.groupBusy = true;
                     try {
-                        await axios.post(`/api/chat/groups/${this.activeConversation.id}/leave`);
-                        this.conversations = this.conversations.filter(c => c.id != this.activeConversation.id);
-                        this.activeConversation = null;
+                        await window.chatHttp.post(`/api/chat/groups/${conversationId}/leave`);
+                        this.conversations = this.conversations.filter(c => c.id != conversationId);
+                        if(this.activeConversation?.id===conversationId){this.selectionVersion++;this.activeConversation=null;this.messages=[];}
                         this.closeGroupSettings();
                     } catch (e) {
                         this.errorMessage = 'Failed to leave group';
@@ -1376,7 +1444,7 @@
                 this.groupBusy = true;
                 try {
                     // Backend expects user_ids[] array
-                    await axios.post(`/api/chat/groups/${this.activeConversation.id}/members`, { user_ids: [userId] });
+                    await window.chatHttp.post(`/api/chat/groups/${this.activeConversation.id}/members`, { user_ids: [userId] });
                     // Refresh the conversation to get updated members
                     await this.poll();
                 } catch (e) {
@@ -1387,11 +1455,12 @@
             },
 
             async removeGroupMember(member) {
+                const conversationId=this.activeConversation?.id;if(!conversationId)return;
                 // Backend POST /members/remove expects user_id (not member_id)
                 const userId = member.user_id ?? member.id;
                 try {
-                    await axios.post(`/api/chat/groups/${this.activeConversation.id}/members/remove`, { user_id: userId });
-                    this.activeConversation.active_members = this.activeConversation.active_members.filter(m => m.id != member.id);
+                    await window.chatHttp.post(`/api/chat/groups/${conversationId}/members/remove`, { user_id: userId });
+                    if(this.activeConversation?.id===conversationId)this.activeConversation.active_members=this.activeConversation.active_members.filter(m=>m.id!=member.id);
                 } catch (e) {
                     this.errorMessage = e.response?.data?.message || 'Failed to remove member.';
                 }
@@ -1401,7 +1470,7 @@
                 // Backend PUT/POST members/role expects user_id (not member_id)
                 const userId = member.user_id ?? member.id;
                 try {
-                    await axios.put(`/api/chat/groups/${this.activeConversation.id}/members/role`, { user_id: userId, role });
+                    await window.chatHttp.put(`/api/chat/groups/${this.activeConversation.id}/members/role`, { user_id: userId, role });
                     member.role = role;
                 } catch (e) {
                     this.errorMessage = e.response?.data?.message || 'Failed to update role.';
@@ -1586,7 +1655,7 @@
                 if (this.exportingUsers) return;
                 this.exportingUsers = true;
                 try {
-                    const response = await axios.get('/api/chat/users/export', { responseType: 'blob' });
+                    const response = await window.chatHttp.get('/api/chat/users/export', { responseType: 'blob' });
                     const url = URL.createObjectURL(response.data);
                     const link = document.createElement('a');
                     link.href = url;

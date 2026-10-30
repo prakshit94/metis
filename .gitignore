@@ -75,3 +75,42 @@ test_dropdown.js
 # Preserved read-only source backup from local audit work
 /app/Services/.shipping-original/
 /app/.imports-original/
+
+# Private operational snapshots must never be committed.
+/storage/app/private/permission-repairs/
+
+# One-off release audit evidence is local operational data.
+/storage/app/private/release-audits/
+
+# Composer installs and Laravel discovery caches are generated per environment.
+/vendor/
+/bootstrap/cache/*.php
+
+# Local databases, private recovery files, uploads and generated public links.
+/database/*.sqlite*
+/public/storage
+/storefront/public/storage
+/storage/app/private/
+/storage/app/public/*
+!/storage/app/public/categories/
+/storage/app/public/categories/*
+!/storage/app/public/categories/01_seeds.png
+!/storage/app/public/categories/02_plants_saplings.png
+!/storage/app/public/categories/03_fertilizers.png
+!/storage/app/public/categories/04_pesticides.png
+!/storage/app/public/categories/05_farm_equipment.png
+!/storage/app/public/categories/06_agri_tools.png
+!/storage/app/public/categories/07_irrigation.png
+!/storage/app/public/categories/08_grow_bags_pots.png
+!/storage/app/public/categories/09_organic_products.png
+!/storage/app/public/categories/10_animal_feed.png
+!/storage/app/public/categories/11_dairy_poultry.png
+!/storage/app/public/categories/12_agri_machinery.png
+!/storage/app/public/categories/13_harvesting_tools.png
+!/storage/app/public/categories/14_storage_packaging.png
+!/storage/app/public/categories/15_other_products.png
+/.audit-backups/
+/resources/views/*.orig/
+/migrationquery.text
+/migrationscripts.txt
+/.aws/
