@@ -1,0 +1,1261 @@
+@extends('layouts.app')
+
+@section('title', 'Shipping Settings')
+@section('page', 'shipping-settings')
+
+@section('content')
+<div class="shipping-settings" x-data="shippingSettings" x-cloak>
+
+    <!-- ═══════════════════════ Page Header ════════════════════════════════ -->
+    <div class="d-flex justify-content-between align-items-center mb-4 mb-lg-5">
+        <div>
+            <h1 class="h3 mb-0">India Post Configuration</h1>
+            <p class="text-muted mb-0">Manage independent post office branches and API credentials</p>
+        </div>
+        
+    </div>
+    <div class="alert alert-warning d-flex align-items-start gap-2 mb-4"
+         x-show="isProduction && form.india_post_offices.some(o => o.status === 'active' && (o.api_base_url || '').includes('test.cept.gov.in'))"
+         x-cloak>
+        <i class="bi bi-exclamation-triangle-fill mt-1"></i>
+        <div><strong>UAT endpoint is active in production.</strong> Update the affected office to the approved production API URL before enabling bookings.</div>
+    </div>
+
+    <!-- ═══════════════════════ Stats Widgets ══════════════════════════════ -->
+    <div class="row g-4 g-lg-5 mb-5">
+        <div class="col-xl-4 col-lg-4 col-md-4">
+            <div class="card stats-card border-start border-4 border-primary" style="cursor: default;">
+                <div class="card-body p-3 p-lg-4">
+                    <div class="d-flex align-items-center">
+                        <div class="stats-icon bg-primary bg-opacity-10 text-primary me-3">
+                            <i class="bi bi-building"></i>
+                        </div>
+                        <div>
+                            <p class="h6 mb-0 text-muted">Total Offices</p>
+                            <div class="h3 mb-0" aria-live="polite"><span x-text="form.india_post_offices.length"></span></div>
+                            <small class="text-muted">All configured branches</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-4 col-lg-4 col-md-4">
+            <div class="card stats-card border-start border-4 border-success" style="cursor: default;">
+                <div class="card-body p-3 p-lg-4">
+                    <div class="d-flex align-items-center">
+                        <div class="stats-icon bg-success bg-opacity-10 text-success me-3">
+                            <i class="bi bi-check-circle-fill"></i>
+                        </div>
+                        <div>
+                            <p class="h6 mb-0 text-muted">Active Offices</p>
+                            <div class="h3 mb-0" aria-live="polite"><span x-text="form.india_post_offices.filter(o => o.status === 'active').length"></span></div>
+                            <small class="text-success"><i class="bi bi-arrow-right me-1"></i>Currently operational</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-4 col-lg-4 col-md-4">
+            <div class="card stats-card border-start border-4 border-warning" style="cursor: default;">
+                <div class="card-body p-3 p-lg-4">
+                    <div class="d-flex align-items-center">
+                        <div class="stats-icon bg-secondary bg-opacity-10 text-secondary me-3">
+                            <i class="bi bi-dash-circle"></i>
+                        </div>
+                        <div>
+                            <p class="h6 mb-0 text-muted">Inactive Offices</p>
+                            <div class="h3 mb-0" aria-live="polite"><span x-text="form.india_post_offices.filter(o => o.status === 'inactive').length"></span></div>
+                            <small class="text-secondary">Disabled routing</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════ Main Table Card ═════════════════════════════ -->
+    <div class="card mb-5">
+        <div class="card-header">
+            <div class="row align-items-center">
+                <div class="col">
+                    <h2 class="h5 card-title mb-0">Offices Directory</h2>
+                </div>
+                <div class="col-auto mt-3 mt-md-0">
+                    <div class="d-flex gap-2 flex-wrap justify-content-end">
+                        <div class="position-relative">
+                            <input type="search" 
+                                   class="form-control form-control-sm" 
+                                   placeholder="Search offices..."
+                                   x-model="searchQuery"
+                                   style="width:250px;">
+                            <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-2 text-muted"></i>
+                        </div>
+                        <select class="form-select form-select-sm" x-model="statusFilter" style="width:160px;">
+                            <option value="">All Statuses</option>
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                        </select>
+                        <button type="button" class="btn btn-sm btn-primary ms-2" @click.prevent="openOfficeModal()">
+                            <i class="bi bi-plus-lg me-1"></i> Add Office
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <!-- Bulk Actions Bar matching PO -->
+            <div class="bulk-actions-bar p-3 bg-primary bg-opacity-10 border-bottom border-primary border-opacity-25" x-show="selectedOffices.length > 0" x-transition style="display: none;">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-check-circle-fill text-primary me-2"></i>
+                        <span class="fw-medium text-primary">
+                            <span x-text="selectedOffices.length"></span> item(s) selected
+                        </span>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-sm btn-success fw-medium shadow-sm" @click="bulkAction('active')">
+                            <i class="bi bi-check-circle me-1"></i>Mark Active
+                        </button>
+                        <button type="button" class="btn btn-sm btn-warning fw-medium shadow-sm" @click="bulkAction('inactive')">
+                            <i class="bi bi-x-circle me-1"></i>Mark Inactive
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-danger fw-medium shadow-sm bg-body" @click="bulkAction('delete')">
+                            <i class="bi bi-trash me-1"></i>Delete Selected
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Table -->
+            <div class="table-responsive overflow-visible">
+                <table class="table table-hover align-middle mb-0 text-nowrap">
+                    <thead class="table-group-divider">
+                        <tr>
+                            <th class="ps-3" style="width:44px;">
+                                <input type="checkbox" class="user-select-checkbox" @change="$event.isTrusted && toggleAll($event.target.checked)" :checked="filteredOffices.length > 0 && filteredOffices.every(o => selectedOffices.includes(o.id))">
+                            </th>
+                            <th>Post Office</th>
+                            <th>IDs & Pincodes</th>
+                            <th>Active Range</th>
+                            <th>Status</th>
+                            <th style="width:90px;" class="text-end pe-4">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <template x-if="paginatedOffices.length === 0">
+                            <tr>
+                                <td colspan="6" class="text-center py-5 text-muted">
+                                    <i class="bi bi-inbox fs-2 d-block mb-2"></i>
+                                    No offices found matching your criteria.
+                                </td>
+                            </tr>
+                        </template>
+                        <template x-for="office in paginatedOffices" :key="office.id">
+                            <tr :class="{ 'selected': selectedOffices.includes(office.id) }">
+                                <td class="ps-3">
+                                    <input type="checkbox" class="user-select-checkbox" :value="office.id" :checked="selectedOffices.includes(office.id)" @change="toggleOffice(office.id)">
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="fw-bold text-primary px-2 py-1" style="margin-left:-0.5rem;" x-text="office.booking_office_name"></div>
+                                        <span x-show="office.is_default" class="badge bg-primary bg-opacity-10 text-primary border border-primary-subtle"><i class="bi bi-star-fill"></i> Default</span>
+                                    </div>
+                                    <div class="small text-muted mt-1">PIN: <span x-text="office.booking_office_pin"></span></div>
+                                </td>
+                                <td>
+                                    <div class="small d-flex align-items-center gap-2">
+                                        <i class="bi bi-hash text-muted"></i>
+                                        <span>ID: <span class="fw-medium" x-text="office.pickup_dropoff_office_id"></span></span>
+                                    </div>
+                                    <div class="small d-flex align-items-center gap-2 mt-1">
+                                        <i class="bi bi-geo-alt text-muted"></i>
+                                        <span>Dropoff PIN: <span class="fw-medium" x-text="office.drop_off_pincode"></span></span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <template x-if="office.awb_stats && office.awb_stats.prefix">
+                                        <div>
+                                            <div class="fw-bold text-uppercase" x-text="office.awb_stats.prefix"></div>
+                                            <div class="small text-muted mt-1 font-monospace" x-text="office.awb_stats.start_sequence + ' - ' + office.awb_stats.end_sequence"></div>
+                                            <div class="small text-primary fw-medium mt-1 font-monospace" x-text="'Curr: ' + office.awb_stats.current_sequence"></div>
+                                        </div>
+                                    </template>
+                                    <template x-if="!office.awb_stats || !office.awb_stats.prefix">
+                                        <div class="text-muted small fst-italic">No active range</div>
+                                    </template>
+                                </td>
+                                <td>
+                                    <span class="badge" 
+                                          :class="office.status === 'active' ? 'bg-success-subtle text-success' : 'bg-secondary-subtle text-secondary'"
+                                          x-text="(office.status || 'unknown').toUpperCase()"></span>
+                                </td>
+                                <td class="text-end pe-4">
+                                    <div class="dropdown">
+                                        <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="dropdown" data-bs-boundary="window">
+                                            <i class="bi bi-three-dots-vertical"></i>
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                                            <li>
+                                                <a class="dropdown-item fw-medium" href="#" @click.prevent="viewOffice(office)">
+                                                    <i class="bi bi-eye me-2 text-info"></i> View Details
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <a class="dropdown-item fw-medium" href="#" @click.prevent="viewAwbLogs(office)">
+                                                    <i class="bi bi-list-check me-2 text-warning"></i> AWB Tracking Logs
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <a class="dropdown-item fw-medium" href="#" @click.prevent="manageRanges(office)">
+                                                    <i class="bi bi-upc-scan me-2 text-success"></i> Manage Barcode Ranges
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <a class="dropdown-item fw-medium" href="#" @click.prevent="editOffice(office)">
+                                                    <i class="bi bi-pencil me-2 text-primary"></i> Edit Details
+                                                </a>
+                                            </li>
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li>
+                                                <a class="dropdown-item text-danger" href="#" @click.prevent="deleteOffice(office.id)">
+                                                    <i class="bi bi-trash me-2"></i> Delete
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            <div class="d-flex justify-content-between align-items-center p-3 border-top" x-show="filteredOffices.length > 0">
+                <div class="text-muted small">
+                    Showing <span x-text="(currentPage - 1) * itemsPerPage + 1"></span> to 
+                    <span x-text="Math.min(currentPage * itemsPerPage, filteredOffices.length)"></span> of 
+                    <span x-text="filteredOffices.length"></span> results
+                </div>
+                <nav>
+                    <ul class="pagination pagination-sm mb-0">
+                        <li class="page-item" :class="{ 'disabled': currentPage === 1 }">
+                            <a class="page-link" href="#" @click.prevent="previousPage()" :aria-disabled="currentPage <= 1">Previous</a>
+                        </li>
+                        <li class="page-item disabled">
+                            <span class="page-link">Page <span x-text="currentPage"></span> of <span x-text="totalPages"></span></span>
+                        </li>
+                        <li class="page-item" :class="{ 'disabled': currentPage === totalPages }">
+                            <a class="page-link" href="#" @click.prevent="nextPage()" :aria-disabled="currentPage >= totalPages">Next</a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- View Details Modal -->
+    <div class="modal fade" id="viewOfficeModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header border-bottom-0 pb-0 bg-body-tertiary">
+                    <h5 class="modal-title fw-bold">Office Configuration Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body pt-3 bg-body-tertiary">
+                    <template x-if="officeViewData">
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <div class="card mb-0 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary">
+                                    <div class="card-body p-3">
+                                        <h6 class="mb-3 fw-bold text-uppercase text-body" style="font-size: 11px; letter-spacing: 1px;"><i class="bi bi-info-circle text-primary me-2"></i>Basic Information</h6>
+                                        <table class="table table-sm table-borderless mb-0">
+                                            <tbody>
+                                                <tr><td class="text-muted fw-bold" style="width: 200px;">Post Office Name</td><td class="fw-medium" x-text="officeViewData.booking_office_name || '—'"></td></tr>
+                                                <tr><td class="text-muted fw-bold">Booking PIN Code</td><td class="fw-medium" x-text="officeViewData.booking_office_pin || '—'"></td></tr>
+                                                <tr><td class="text-muted fw-bold">Drop-off PIN Code</td><td class="fw-medium" x-text="officeViewData.drop_off_pincode || '—'"></td></tr>
+                                                <tr><td class="text-muted fw-bold">Facility ID (Office ID)</td><td class="fw-medium" x-text="officeViewData.pickup_dropoff_office_id || '—'"></td></tr>
+                                                <tr><td class="text-muted fw-bold">Status</td><td>
+                                                    <span class="badge" :class="officeViewData.status === 'active' ? 'bg-success' : 'bg-secondary'" x-text="(officeViewData.status || '').toUpperCase()"></span>
+                                                </td></tr>
+                                                <tr><td class="text-muted fw-bold">Default Office</td><td>
+                                                    <span class="badge bg-primary" x-show="officeViewData.is_default">Yes</span>
+                                                    <span class="text-muted" x-show="!officeViewData.is_default">No</span>
+                                                </td></tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+
+
+                            <div class="col-12">
+                                <div class="card mb-0 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary">
+                                    <div class="card-body p-3">
+                                        <h6 class="mb-3 fw-bold text-uppercase text-body" style="font-size: 11px; letter-spacing: 1px;"><i class="bi bi-key text-success me-2"></i>API Credentials</h6>
+                                        <table class="table table-sm table-borderless mb-0">
+                                            <tbody>
+                                                <tr><td class="text-muted fw-bold" style="width: 200px;">Base URL</td><td class="fw-medium text-primary text-break" x-text="officeViewData.api_base_url || '—'"></td></tr>
+                                                <tr><td class="text-muted fw-bold">Username</td><td class="fw-medium" x-text="officeViewData.api_username || '—'"></td></tr>
+                                                <tr><td class="text-muted fw-bold">Password</td><td class="fw-medium text-muted fst-italic">[Encrypted in Database]</td></tr>
+                                                <tr><td class="text-muted fw-bold">Bulk Customer ID</td><td class="fw-medium" x-text="officeViewData.bulk_customer_id || '—'"></td></tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-12">
+                                <div class="card mb-0 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary">
+                                    <div class="card-body p-3">
+                                        <h6 class="mb-3 fw-bold text-uppercase text-body" style="font-size: 11px; letter-spacing: 1px;"><i class="bi bi-file-earmark-text text-warning me-2"></i>Contract Details</h6>
+                                        <table class="table table-sm table-borderless mb-0">
+                                            <tbody>
+                                                <tr><td class="text-muted fw-bold" style="width: 200px;">Speed Post (Document)</td><td class="fw-medium" x-text="officeViewData.contract_sp_doc || '—'"></td></tr>
+                                                <tr><td class="text-muted fw-bold">Speed Post (Parcel)</td><td class="fw-medium" x-text="officeViewData.contract_sp_parcel || '—'"></td></tr>
+                                                <tr><td class="text-muted fw-bold">Business Parcel</td><td class="fw-medium" x-text="officeViewData.contract_bp || '—'"></td></tr>
+                                                <tr><td class="text-muted fw-bold">Express Parcel (Document)</td><td class="fw-medium" x-text="officeViewData.contract_24_sp_doc || '—'"></td></tr>
+                                                <tr><td class="text-muted fw-bold">Express Parcel</td><td class="fw-medium" x-text="officeViewData.contract_24_spp_parspl || '—'"></td></tr>
+                                                <tr><td class="text-muted fw-bold">Registered Parcel</td><td class="fw-medium" x-text="officeViewData.contract_48_sp_doc || '—'"></td></tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+                <div class="modal-footer border-top-0 pt-3 bg-body-tertiary">
+                    <button type="button" class="btn btn-secondary px-4 shadow-sm" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Office Modal Matching PO Create Form UI -->
+    <div class="modal fade" id="officeModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header border-bottom-0 pb-0 bg-body-tertiary">
+                    <h5 class="modal-title fw-bold" x-text="isEditing ? 'Edit Office Configuration' : 'Add Office Configuration'"></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body pt-3 bg-body-tertiary">
+                    <form @submit.prevent="saveOffice" autocomplete="off">
+                        <p class="small text-muted mb-3">Configure branch details and API credentials. Use values issued for this India Post office and environment.</p>
+
+                        <div class="alert alert-info border-info-subtle small mb-3" role="note">
+                            <div class="fw-bold mb-1"><i class="bi bi-list-check me-1"></i>Production setup checklist</div>
+                            <ul class="mb-2 ps-3">
+                                <li>For production, use <code>https://app.indiapost.gov.in/beextcustomer</code> and production username/password and Bulk Customer ID issued by India Post. Do not use UAT credentials.</li>
+                                <li>Enter the assigned Facility ID as exactly 8 digits. Booking PIN and drop-off PIN must each be exactly 6 digits and belong to this office.</li>
+                                <li>Enter the production contract IDs for products enabled on your account: Speed Post document, Speed Post parcel, Business Parcel, 24_SPEEDPOST_DOC, 24_SPP_PARSPL, and 48_SPEEDPOST_DOC. India Post must confirm which products/contracts are enabled. The current automatic booking flow uses Business Parcel, so its contract is required.</li>
+                                <li>Add only the AWB/barcode range assigned to this production account in <strong>Manage Ranges</strong>: two-letter prefix and sequence bounds from 0 to 99,999,999.</li>
+                                <li>Set the correct office to <strong>Active</strong> and <strong>Default</strong>. Coordinate deployment: configure the same production URL and credentials in environment settings, allowlist the application’s production IP, and confirm India Post webhook access requirements.</li>
+                                <li>Apply the tracking migration before enabling tracking persistence. Confirm the pincode lookup route with India Post: the supplied documents specify <code>/v1/pincode-search</code>, while this project currently calls <code>/v1/offices/limited-details</code> on the master-data host.</li>
+                            </ul>
+                            <span class="text-muted">Use the production values above only for a production office; use the matching UAT URL and credentials for a UAT office.</span>
+                        </div>
+
+                        <div class="row g-3">
+                            
+                            {{-- Basic Details Card --}}
+                            <div class="col-12 position-relative">
+                                <div class="card mb-0 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary">
+                                    <div class="card-body p-3">
+                                        <div class="d-flex align-items-center gap-2 pb-2 mb-2 border-bottom">
+                                            <div class="bg-primary bg-opacity-10 text-primary rounded-2 d-flex align-items-center justify-content-center" style="width: 20px; height: 20px;">
+                                                <i class="bi bi-info-circle" style="font-size: 10px;"></i>
+                                            </div>
+                                            <h6 class="mb-0 fw-bold text-uppercase text-body" style="font-size: 11px; letter-spacing: 1px;">Basic Information</h6>
+                                        </div>
+                                        <div class="row g-2">
+                                            <div class="col-md-6">
+                                                <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Post Office Name *</label>
+                                                <input type="text" class="form-control form-control-sm fw-semibold" x-model="officeForm.booking_office_name" placeholder="e.g. Bengaluru Foreign Post" style="font-size: 12px;" required>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Booking PIN Code *</label>
+                                                <input type="text" class="form-control form-control-sm fw-semibold" x-model="officeForm.booking_office_pin" placeholder="6 digits from India Post" inputmode="numeric" maxlength="6" style="font-size: 12px;" required>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Drop-off PIN Code *</label>
+                                                <input type="text" class="form-control form-control-sm fw-semibold" x-model="officeForm.drop_off_pincode" placeholder="6 digits from India Post" inputmode="numeric" maxlength="6" style="font-size: 12px;" required>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Facility ID (Office ID) *</label>
+                                                <input type="text" class="form-control form-control-sm fw-semibold" x-model="officeForm.pickup_dropoff_office_id" placeholder="8 digits from India Post" inputmode="numeric" maxlength="8" style="font-size: 12px;" required>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Status</label>
+                                                <select class="form-select form-select-sm fw-semibold" x-model="officeForm.status" style="font-size: 12px;">
+                                                    <option value="active">Active</option>
+                                                    <option value="inactive">Inactive</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-3 d-flex align-items-end">
+                                                <div class="form-check mb-2">
+                                                    <input class="form-check-input" type="checkbox" id="isDefaultCheck" x-model="officeForm.is_default">
+                                                    <label class="form-check-label fw-bold text-muted text-uppercase" for="isDefaultCheck" style="font-size: 9px; letter-spacing: 0.1em;">Set as Default Office</label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+
+                            {{-- API Credentials Card --}}
+                            <div class="col-12 position-relative">
+                                <div class="card mb-0 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary">
+                                    <div class="card-body p-3">
+                                        <div class="d-flex align-items-center gap-2 pb-2 mb-2 border-bottom">
+                                            <div class="bg-success bg-opacity-10 text-success rounded-2 d-flex align-items-center justify-content-center" style="width: 20px; height: 20px;">
+                                                <i class="bi bi-key" style="font-size: 10px;"></i>
+                                            </div>
+                                            <h6 class="mb-0 fw-bold text-uppercase text-body" style="font-size: 11px; letter-spacing: 1px;">API Credentials</h6>
+                                        </div>
+                                        <div class="row g-2">
+                                            <div class="col-md-12">
+                                                <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Base URL *</label>
+                                                <input type="url" class="form-control form-control-sm fw-semibold text-primary" x-model.trim="officeForm.api_base_url" :placeholder="isProduction ? 'https://app.indiapost.gov.in/beextcustomer' : defaultApiBaseUrl" style="font-size: 12px;" required>
+                                                <div class="form-text" style="font-size: 10px;">Production: <code>https://app.indiapost.gov.in/beextcustomer</code>. Use the UAT host only with UAT credentials.</div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Username *</label>
+                                                <div class="input-group input-group-sm">
+                                                    <span class="input-group-text bg-body text-muted border-end-0"><i class="bi bi-person"></i></span>
+                                                    <input type="text" class="form-control border-start-0 ps-0 fw-semibold bg-body" x-model="officeForm.api_username" placeholder="API Username" style="font-size: 12px;" required>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Password</label>
+                                                <div class="input-group input-group-sm">
+                                                    <span class="input-group-text bg-body text-muted border-end-0"><i class="bi bi-asterisk"></i></span>
+                                                    <input :type="showPassword ? 'text' : 'password'" class="form-control border-start-0 border-end-0 ps-0 fw-semibold bg-body" x-model="officeForm.api_password" placeholder="Leave blank to keep unchanged" style="font-size: 12px;">
+                                                    <button class="btn btn-outline-secondary border-start-0 bg-body" type="button" @click="showPassword = !showPassword">
+                                                        <i class="bi" :class="showPassword ? 'bi-eye-slash' : 'bi-eye'"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-12 mt-3">
+                                                <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Bulk Customer ID *</label>
+                                                <input type="text" class="form-control form-control-sm fw-semibold" x-model="officeForm.bulk_customer_id" placeholder="Production customer ID from India Post" style="font-size: 12px;" required>
+                                            </div>
+                                            <div class="col-md-12 mt-2">
+                                                <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Webhook URL (For India Post)</label>
+                                                <div class="input-group input-group-sm">
+                                                    <span class="input-group-text bg-body text-muted border-end-0"><i class="bi bi-link-45deg"></i></span>
+                                                    <input type="text" class="form-control border-start-0 ps-0 fw-semibold bg-body text-success" readonly value="{{ url('/api/webhooks/indiapost') }}" style="font-size: 12px; cursor: text;">
+                                                </div>
+                                                <div class="form-text" style="font-size: 10px;"><i class="bi bi-info-circle"></i> Share this endpoint with India Post to receive real-time automated tracking updates.</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {{-- Contracts Card --}}
+                            <div class="col-12 position-relative">
+                                <div class="card mb-0 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary">
+                                    <div class="card-body p-3">
+                                        <div class="d-flex align-items-center gap-2 pb-2 mb-2 border-bottom">
+                                            <div class="bg-warning bg-opacity-10 text-warning rounded-2 d-flex align-items-center justify-content-center" style="width: 20px; height: 20px;">
+                                                <i class="bi bi-file-earmark-text" style="font-size: 10px;"></i>
+                                            </div>
+                                            <h6 class="mb-0 fw-bold text-uppercase text-body" style="font-size: 11px; letter-spacing: 1px;">Contract Details</h6>
+                                        </div>
+                                        
+                                        <div class="row g-2">
+                                            <div class="col-md-6">
+                                                <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Speed Post (Document)</label>
+                                                <input type="text" class="form-control form-control-sm fw-semibold" x-model="officeForm.contract_sp_doc" style="font-size: 12px;">
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Speed Post (Parcel)</label>
+                                                <input type="text" class="form-control form-control-sm fw-semibold" x-model="officeForm.contract_sp_parcel" style="font-size: 12px;">
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Business Parcel</label>
+                                                <input type="text" class="form-control form-control-sm fw-semibold" x-model="officeForm.contract_bp" style="font-size: 12px;">
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">24_SPEEDPOST_DOC</label>
+                                                <input type="text" class="form-control form-control-sm fw-semibold" x-model="officeForm.contract_24_sp_doc" style="font-size: 12px;">
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">24_SPP_PARSPL</label>
+                                                <input type="text" class="form-control form-control-sm fw-semibold" x-model="officeForm.contract_24_spp_parspl" style="font-size: 12px;">
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">48_SPEEDPOST_DOC</label>
+                                                <input type="text" class="form-control form-control-sm fw-semibold" x-model="officeForm.contract_48_sp_doc" style="font-size: 12px;">
+                                            </div>
+                                        </div>
+                                        <div class="form-text mt-2" style="font-size: 10px;">Use production contract IDs issued for this customer. Business Parcel is required by the current automatic booking flow; other contracts are needed only for products enabled for this account.</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer border-top-0 pt-3 bg-body-tertiary">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary px-4 shadow-sm" @click="saveOffice()" :disabled="saving">
+                        <span x-show="saving" class="spinner-border spinner-border-sm me-2" role="status"></span>
+                        <i x-show="!saving" class="bi bi-floppy me-2"></i> <span x-text="saving ? 'Saving...' : (isEditing ? 'Update Office' : 'Save Office')"></span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AWB Usage Logs Modal -->
+    <div class="modal fade" id="awbLogsModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header border-bottom-0 pb-0 bg-body-tertiary">
+                    <h5 class="modal-title fw-bold">AWB Usage & Tracking Logs</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body pt-3 bg-body-tertiary">
+                    <template x-if="activeAwbOffice">
+                        <div class="row g-3">
+                            <div class="col-12 mb-3">
+                                <div class="card bg-primary bg-opacity-10 border-primary border-opacity-25 shadow-sm">
+                                    <div class="card-body">
+                                        <div class="row text-center">
+                                            <div class="col-md-4 border-end border-primary border-opacity-25">
+                                                <h6 class="text-primary text-uppercase fw-bold" style="font-size:11px; letter-spacing:1px;">Total Capacity</h6>
+                                                <h3 class="mb-0 text-primary" x-text="activeAwbOffice.awb_stats?.total?.toLocaleString() || 0"></h3>
+                                            </div>
+                                            <div class="col-md-4 border-end border-primary border-opacity-25">
+                                                <h6 class="text-success text-uppercase fw-bold" style="font-size:11px; letter-spacing:1px;">AWBs Used</h6>
+                                                <h3 class="mb-0 text-success" x-text="activeAwbOffice.awb_stats?.used?.toLocaleString() || 0"></h3>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <h6 class="text-warning text-uppercase fw-bold" style="font-size:11px; letter-spacing:1px;">Remaining</h6>
+                                                <h3 class="mb-0 text-warning" x-text="activeAwbOffice.awb_stats?.remaining?.toLocaleString() || 0"></h3>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-12">
+                                <h6 class="mb-2 fw-bold text-uppercase text-body" style="font-size: 11px; letter-spacing: 1px;">Usage History</h6>
+                                <form class="row g-2 align-items-end mb-3" @submit.prevent="loadAwbLogs(1)">
+                                    <div class="col-12 col-md-8">
+                                        <label for="awb-log-search" class="form-label small">Search order or tracking ID</label>
+                                        <input id="awb-log-search" type="search" class="form-control" maxlength="120" placeholder="Order number, order ID or AWB barcode" x-model="awbLogSearch" @input.debounce.350ms="loadAwbLogs(1)">
+                                    </div>
+                                    <div class="col-8 col-md-3">
+                                        <label for="awb-log-per-page" class="form-label small">Records per page</label>
+                                        <select id="awb-log-per-page" class="form-select" x-model.number="awbLogPerPage" @change="loadAwbLogs(1)">
+                                            <option value="15">15</option><option value="25">25</option><option value="50">50</option><option value="100">100</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-4 col-md-1"><button type="submit" class="btn btn-primary w-100" aria-label="Search AWB logs"><i class="bi bi-search" aria-hidden="true"></i></button></div>
+                                </form>
+                                <div x-show="awbLogError" x-cloak class="alert alert-danger py-2 small" role="alert"><span x-text="awbLogError"></span> <button type="button" class="btn btn-sm btn-outline-danger" @click="loadAwbLogs(awbLogPagination.current_page)">Retry</button></div>
+                                <div class="table-responsive bg-body rounded shadow-sm border">
+                                    <table class="table table-hover align-middle mb-0 text-nowrap">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Barcode (AWB)</th>
+                                                <th>Order / ID</th>
+                                                <th>Status</th>
+                                                <th>Generated At</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr x-show="loadingAwbLogs">
+                                                <td colspan="4" class="text-center py-4 text-muted">
+                                                    <span class="spinner-border spinner-border-sm me-2"></span> Loading logs...
+                                                </td>
+                                            </tr>
+                                            <tr x-show="!loadingAwbLogs && !awbLogError && awbLogs.length === 0">
+                                                <td colspan="4" class="text-center py-4 text-muted">
+                                                    <i class="bi bi-inbox fs-4 d-block mb-2"></i> No tracking IDs have been used yet.
+                                                </td>
+                                            </tr>
+                                            <template x-for="log in awbLogs" :key="log.id">
+                                                <tr>
+                                                    <td class="fw-medium text-primary"><i class="bi bi-upc-scan me-2 text-muted"></i><span x-text="log.barcode"></span></td>
+                                                    <td>
+                                                        <span class="d-block fw-medium" x-show="log.order_no" x-text="log.order_no"></span>
+                                                        <span x-show="log.order_id" class="small text-body-secondary" x-text="'#' + log.order_id"></span>
+                                                        <span x-show="!log.order_id" class="text-muted fst-italic">Unknown</span>
+                                                    </td>
+                                                    <td>
+                                                        <span class="badge text-uppercase" :class="log.status === 'used' ? 'bg-success-subtle text-success' : (log.status === 'rejected_duplicate' ? 'bg-danger-subtle text-danger' : 'bg-secondary-subtle text-body-secondary')" style="font-size: 10px;" x-text="(log.status || 'unknown').replaceAll('_', ' ')"></span>
+                                                    </td>
+                                                    <td class="text-muted small" x-text="new Date(log.created_at).toLocaleString()"></td>
+                                                </tr>
+                                            </template>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-3" x-show="!loadingAwbLogs && !awbLogError">
+                                    <span class="small text-body-secondary" role="status" aria-live="polite" x-text="`Showing ${awbLogPagination.from || 0}–${awbLogPagination.to || 0} of ${awbLogPagination.total} records`"></span>
+                                    <nav aria-label="AWB log pages" x-show="awbLogPagination.total > 0">
+                                        <div class="d-flex flex-wrap gap-1">
+                                            <button type="button" class="btn btn-sm btn-outline-secondary" @click="loadAwbLogs(1)" :disabled="awbLogPagination.current_page <= 1" aria-label="First AWB log page">First</button>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary" @click="loadAwbLogs(awbLogPagination.current_page - 1)" :disabled="awbLogPagination.current_page <= 1" aria-label="Previous AWB log page">Previous</button>
+                                            <template x-for="page in awbLogPages" :key="page"><button type="button" class="btn btn-sm" :class="page === awbLogPagination.current_page ? 'btn-primary' : 'btn-outline-secondary'" :aria-current="page === awbLogPagination.current_page ? 'page' : null" @click="loadAwbLogs(page)" x-text="page"></button></template>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary" @click="loadAwbLogs(awbLogPagination.current_page + 1)" :disabled="awbLogPagination.current_page >= awbLogPagination.last_page" aria-label="Next AWB log page">Next</button>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary" @click="loadAwbLogs(awbLogPagination.last_page)" :disabled="awbLogPagination.current_page >= awbLogPagination.last_page" aria-label="Last AWB log page">Last</button>
+                                        </div>
+                                    </nav>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+                <div class="modal-footer border-top-0 pt-3 bg-body-tertiary">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Manage Ranges Modal -->
+    <div class="modal fade" id="manageRangesModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header border-bottom-0 pb-0 bg-body-tertiary">
+                    <h5 class="modal-title fw-bold">Manage Barcode Ranges</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body pt-3 bg-body-tertiary">
+                    <template x-if="activeRangeOffice">
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <div class="card mb-0 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary">
+                                    <div class="card-body p-3">
+                                        <h6 class="mb-3 fw-bold text-uppercase text-body" style="font-size: 11px; letter-spacing: 1px;">
+                                            <i class="bi bi-pencil-square text-primary me-2" x-show="isEditingRange"></i>
+                                            <i class="bi bi-plus-circle text-primary me-2" x-show="!isEditingRange"></i>
+                                            <span x-text="isEditingRange ? 'Edit Range' : 'Add New Range'"></span>
+                                        </h6>
+                                        <div class="alert alert-warning py-2 px-3 small mb-3" role="note">For production, enter only an AWB range assigned by India Post to this customer account. Prefix must be two letters; start and end sequence must be within 0–99,999,999.</div>
+                                        <form @submit.prevent="saveNewRange()" class="row g-2 align-items-end">
+                                            <div class="col-md-2">
+                                                <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Prefix *</label>
+                                                <input type="text" class="form-control form-control-sm fw-semibold text-uppercase" x-model="newRangeForm.prefix" placeholder="e.g. EA" style="font-size: 12px;" maxlength="2" required>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">Start Sequence *</label>
+                                                <input type="number" class="form-control form-control-sm fw-semibold" x-model.number="newRangeForm.start_sequence" placeholder="0–99,999,999" min="0" max="99999999" step="1" style="font-size: 12px;" required>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label mb-1 fw-bold text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.1em;">End Sequence *</label>
+                                                <input type="number" class="form-control form-control-sm fw-semibold" x-model.number="newRangeForm.end_sequence" placeholder="0–99,999,999" min="0" max="99999999" step="1" style="font-size: 12px;" required>
+                                            </div>
+                                            <div class="col-md-4 d-flex gap-2">
+                                                <button type="submit" class="btn btn-primary btn-sm flex-grow-1" style="height: 31px;" :disabled="savingRange">
+                                                    <span x-show="!savingRange" x-text="isEditingRange ? 'Save Changes' : 'Add Range'"></span>
+                                                    <span x-show="savingRange"><span class="spinner-border spinner-border-sm me-1"></span>Saving...</span>
+                                                </button>
+                                                <button type="button" class="btn btn-outline-secondary btn-sm" style="height: 31px;" x-show="isEditingRange" @click="cancelEditRange()">
+                                                    Cancel
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-12">
+                                <div class="card mb-0 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary">
+                                    <div class="card-body p-3">
+                                        <h6 class="mb-3 fw-bold text-uppercase text-body" style="font-size: 11px; letter-spacing: 1px;"><i class="bi bi-clock-history text-info me-2"></i>Range History</h6>
+                                <div class="table-responsive bg-body rounded shadow-sm border">
+                                    <table class="table table-hover align-middle mb-0 text-nowrap">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Prefix</th>
+                                                <th>Start</th>
+                                                <th>End</th>
+                                                <th>Current</th>
+                                                <th>Usage</th>
+                                                <th>Status</th>
+                                                <th>Timestamps</th>
+                                                <th class="text-end">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr x-show="loadingRanges">
+                                                <td colspan="8" class="text-center py-4 text-muted">
+                                                    <span class="spinner-border spinner-border-sm me-2"></span> Loading ranges...
+                                                </td>
+                                            </tr>
+                                            <tr x-show="!loadingRanges && officeRanges.length === 0">
+                                                <td colspan="8" class="text-center py-4 text-muted">
+                                                    <i class="bi bi-inbox fs-4 d-block mb-2"></i> No ranges have been added yet.
+                                                </td>
+                                            </tr>
+                                            <template x-for="r in officeRanges" :key="r.id">
+                                                <tr>
+                                                    <td class="fw-bold text-uppercase" x-text="r.prefix"></td>
+                                                    <td class="font-monospace" x-text="r.start_sequence"></td>
+                                                    <td class="font-monospace" x-text="r.end_sequence"></td>
+                                                    <td class="font-monospace text-primary fw-medium" x-text="r.current_sequence"></td>
+                                                    <td class="small" style="font-size: 11px;">
+                                                        <div><span class="text-muted">Total:</span> <span class="fw-bold text-body" x-text="Math.max(0, r.end_sequence - r.start_sequence + 1).toLocaleString('en-IN')"></span></div>
+                                                        <div><span class="text-muted">Used:</span> <span class="fw-bold text-info" x-text="Math.max(0, r.current_sequence - r.start_sequence).toLocaleString('en-IN')"></span></div>
+                                                        <div><span class="text-muted">Left:</span> <span class="fw-bold text-success" x-text="Math.max(0, r.end_sequence - r.current_sequence + 1).toLocaleString('en-IN')"></span></div>
+                                                    </td>
+                                                    <td>
+                                                        <span class="badge" 
+                                                              :class="{
+                                                                  'bg-success-subtle text-success': r.status === 'active' && !r.deleted_at,
+                                                                  'bg-warning-subtle text-warning': r.status === 'queued' && !r.deleted_at,
+                                                                  'bg-secondary-subtle text-secondary': r.status === 'exhausted' && !r.deleted_at,
+                                                                  'bg-danger-subtle text-danger': !!r.deleted_at
+                                                              }"
+                                                              x-text="r.deleted_at ? 'DELETED' : r.status.toUpperCase()"></span>
+                                                    </td>
+                                                    <td class="text-muted" style="font-size: 11px;">
+                                                        <div><span class="fw-bold">Added:</span> <span x-text="new Date(r.created_at).toLocaleString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })"></span></div>
+                                                        <div><span class="fw-bold">Updated:</span> <span x-text="new Date(r.updated_at).toLocaleString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })"></span></div>
+                                                        <div x-show="r.deleted_at" class="text-danger"><span class="fw-bold">Deleted:</span> <span x-text="r.deleted_at ? new Date(r.deleted_at).toLocaleString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''"></span></div>
+                                                    </td>
+                                                    <td class="text-end">
+                                                        <div class="d-flex gap-1 justify-content-end">
+                                                            <button type="button" class="btn btn-sm btn-outline-success py-0 px-2" style="font-size: 11px;" 
+                                                                    x-show="r.status !== 'active' && r.status !== 'exhausted' && r.current_sequence <= r.end_sequence && !r.deleted_at" 
+                                                                    @click="activateRange(r.id)">
+                                                                Set Active
+                                                            </button>
+                                                            <button type="button" class="btn btn-sm btn-outline-primary py-0 px-2" style="font-size: 11px;" 
+                                                                    x-show="!r.deleted_at" 
+                                                                    @click="startEditRange(r)">
+                                                                <i class="bi bi-pencil-square"></i>
+                                                            </button>
+                                                            <button type="button" class="btn btn-sm btn-outline-danger py-0 px-2" style="font-size: 11px;"  
+                                                                    x-show="r.status !== 'active' && !r.deleted_at" 
+                                                                    @click="deleteRange(r.id)">
+                                                                <i class="bi bi-trash"></i>
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            </template>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+                <div class="modal-footer border-top-0 pt-3 bg-body-tertiary">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Alpine JS Logic -->
+<script>
+document.addEventListener('alpine:init', () => {
+    Alpine.data('shippingSettings', () => ({
+        form: {
+            india_post_offices: @js($offices),
+        },
+        isProduction: @js($isProduction),
+        defaultApiBaseUrl: @js($defaultIndiaPostBaseUrl),
+        showPassword: false,
+        saving: false,
+        
+        searchQuery: '',
+        statusFilter: '',
+        selectedOffices: [],
+        itemsPerPage: 10,
+        currentPage: 1,
+        
+        isEditing: false,
+        officeViewData: null,
+        viewModalInstance: null,
+        activeAwbOffice: null,
+        awbLogsModalInstance: null,
+        awbLogs: [],
+        loadingAwbLogs: false,
+        awbLogSearch: '',
+        awbLogPerPage: 15,
+        awbLogError: '',
+        awbLogRequestVersion: 0,
+        awbLogPagination: {current_page: 1, last_page: 1, total: 0, from: null, to: null},
+        get awbLogPages() {
+            const last = this.awbLogPagination.last_page || 1;
+            const start = Math.max(1, Math.min(this.awbLogPagination.current_page - 2, last - 4));
+            return Array.from({length: Math.min(5, last)}, (_, index) => start + index);
+        },
+        officeForm: {
+            id: '',
+            pickup_dropoff_office_id: '',
+            drop_off_pincode: '',
+            booking_office_name: '',
+            booking_office_pin: '',
+            status: 'active',
+            is_default: false,
+            api_base_url: '',
+            api_username: '',
+            api_password: '',
+            bulk_customer_id: '',
+            contract_sp_doc: '',
+            contract_sp_parcel: '',
+            contract_bp: '',
+            contract_24_sp_doc: '',
+            contract_24_spp_parspl: '',
+            contract_48_sp_doc: ''
+        },
+        
+        activeRangeOffice: null,
+        manageRangesModalInstance: null,
+        officeRanges: [],
+        loadingRanges: false,
+        savingRange: false,
+        isEditingRange: false,
+        editingRangeId: null,
+        newRangeForm: {
+            prefix: '',
+            start_sequence: '',
+            end_sequence: ''
+        },
+        modalInstance: null,
+
+        init() {
+            if (typeof this.form.india_post_offices === 'string') {
+                try {
+                    this.form.india_post_offices = JSON.parse(this.form.india_post_offices);
+                } catch(e) {
+                    this.form.india_post_offices = [];
+                }
+            }
+            if (!Array.isArray(this.form.india_post_offices)) {
+                this.form.india_post_offices = [];
+            }
+            
+            this.$watch('searchQuery', () => {
+                this.currentPage = 1;
+            });
+            this.$watch('statusFilter', () => {
+                this.currentPage = 1;
+            });
+        },
+
+        get filteredOffices() {
+            let result = this.form.india_post_offices;
+            
+            if (this.searchQuery) {
+                const q = this.searchQuery.toLowerCase();
+                result = result.filter(o => 
+                    (o.booking_office_name || '').toLowerCase().includes(q) ||
+                    (o.pickup_dropoff_office_id || '').toLowerCase().includes(q) ||
+                    (o.api_username || '').toLowerCase().includes(q)
+                );
+            }
+            if (this.statusFilter) {
+                result = result.filter(o => o.status === this.statusFilter);
+            }
+            
+            return result;
+        },
+
+        get paginatedOffices() {
+            const start = (this.currentPage - 1) * this.itemsPerPage;
+            const end = start + this.itemsPerPage;
+            return this.filteredOffices.slice(start, end);
+        },
+
+        get totalPages() {
+            return Math.ceil(this.filteredOffices.length / this.itemsPerPage) || 1;
+        },
+
+        toggleAll(checked) {
+            if (checked) {
+                this.selectedOffices = this.filteredOffices.map(o => o.id);
+            } else {
+                this.selectedOffices = [];
+            }
+        },
+        previousPage() {
+            this.currentPage = Math.max(1, this.currentPage - 1);
+        },
+        nextPage() {
+            this.currentPage = Math.min(this.totalPages, this.currentPage + 1);
+        },
+
+        toggleOffice(id) {
+            if (this.selectedOffices.includes(id)) {
+                this.selectedOffices = this.selectedOffices.filter(i => i !== id);
+            } else {
+                this.selectedOffices.push(id);
+            }
+        },
+
+        async bulkAction(action) {
+            if (action === 'delete') {
+                if(confirm('Are you sure you want to delete selected offices?')) {
+                    this.form.india_post_offices = this.form.india_post_offices.filter(o => !this.selectedOffices.includes(o.id));
+                    await this.saveSettings('Selected offices deleted.');
+                }
+            } else if (action === 'active' || action === 'inactive') {
+                this.form.india_post_offices = this.form.india_post_offices.map(o => {
+                    if (this.selectedOffices.includes(o.id)) o.status = action;
+                    return o;
+                });
+                await this.saveSettings('Offices status updated.');
+            }
+            this.selectedOffices = [];
+        },
+        
+        getViewModal() {
+            if (!this.viewModalInstance) {
+                this.viewModalInstance = new bootstrap.Modal(document.getElementById('viewOfficeModal'));
+            }
+            return this.viewModalInstance;
+        },
+        viewOffice(office) {
+            this.officeViewData = office;
+            this.getViewModal().show();
+        },
+        getModal() {
+            if (!this.modalInstance) {
+                this.modalInstance = new bootstrap.Modal(document.getElementById('officeModal'));
+            }
+            return this.modalInstance;
+        },
+        getAwbLogsModal() {
+            if (!this.awbLogsModalInstance) {
+                this.awbLogsModalInstance = new bootstrap.Modal(document.getElementById('awbLogsModal'));
+            }
+            return this.awbLogsModalInstance;
+        },
+        async viewAwbLogs(office) {
+            this.activeAwbOffice = office;
+            this.awbLogs = [];
+            this.awbLogSearch = '';
+            this.awbLogError = '';
+            this.awbLogPagination = {current_page: 1, last_page: 1, total: 0, from: null, to: null};
+            this.getAwbLogsModal().show();
+            await this.loadAwbLogs(1);
+        },
+        async loadAwbLogs(page = 1) {
+            if (!this.activeAwbOffice) return;
+            const version = ++this.awbLogRequestVersion;
+            const officeId = this.activeAwbOffice.id;
+            const params = new URLSearchParams({q: this.awbLogSearch.trim(), per_page: this.awbLogPerPage, page});
+            this.loadingAwbLogs = true;
+            this.awbLogError = '';
+            this.awbLogs = [];
+            try {
+                const res = await fetch(`/api/shipping/awb-logs/${encodeURIComponent(officeId)}?${params}`, {
+                    headers: {'Accept': 'application/json'}
+                });
+                const data = await res.json().catch(() => { throw new Error('Unable to load AWB logs. Refresh the page and try again.'); });
+                if (version !== this.awbLogRequestVersion) return;
+                if (!res.ok || !data.success || !Array.isArray(data.logs?.data)) throw new Error(data.message || 'Unable to load AWB logs.');
+                if (page > data.logs.last_page) return await this.loadAwbLogs(data.logs.last_page);
+                this.awbLogs = data.logs.data;
+                this.awbLogPagination = data.logs;
+            } catch (error) {
+                if (version === this.awbLogRequestVersion) this.awbLogError = error.message || 'Unable to load AWB logs. Please try again.';
+            } finally {
+                if (version === this.awbLogRequestVersion) this.loadingAwbLogs = false;
+            }
+        },
+
+        getManageRangesModal() {
+            if (!this.manageRangesModalInstance) {
+                this.manageRangesModalInstance = new bootstrap.Modal(document.getElementById('manageRangesModal'));
+            }
+            return this.manageRangesModalInstance;
+        },
+        async manageRanges(office) {
+            this.activeRangeOffice = office;
+            this.officeRanges = [];
+            this.cancelEditRange();
+            this.loadingRanges = true;
+            this.getManageRangesModal().show();
+            
+            await this.fetchRanges(office.id);
+        },
+        startEditRange(range) {
+            this.isEditingRange = true;
+            this.editingRangeId = range.id;
+            this.newRangeForm = {
+                prefix: range.prefix,
+                start_sequence: range.start_sequence,
+                end_sequence: range.end_sequence
+            };
+        },
+        cancelEditRange() {
+            this.isEditingRange = false;
+            this.editingRangeId = null;
+            this.newRangeForm = { prefix: '', start_sequence: '', end_sequence: '' };
+        },
+        async fetchRanges(officeId) {
+            this.loadingRanges = true;
+            try {
+                const res = await fetch(`/api/shipping/offices/${officeId}/ranges`, {
+                    headers: { 'Accept': 'application/json' }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    this.officeRanges = data.ranges;
+                }
+            } catch (error) {
+                console.error('Failed to load ranges', error);
+            } finally {
+                this.loadingRanges = false;
+            }
+        },
+        async saveNewRange() {
+            this.savingRange = true;
+            try {
+                this.newRangeForm.prefix = String(this.newRangeForm.prefix || '').trim().toUpperCase();
+                const start = Number(this.newRangeForm.start_sequence);
+                const end = Number(this.newRangeForm.end_sequence);
+                if (!/^[A-Z]{2}$/.test(this.newRangeForm.prefix)
+                    || !Number.isInteger(start) || !Number.isInteger(end)
+                    || start < 0 || end > 99999999 || end <= start) {
+                    throw new Error('Enter a two-letter prefix and a valid increasing sequence from 0 to 99,999,999.');
+                }
+                let url = `/api/shipping/offices/${this.activeRangeOffice.id}/ranges`;
+                let method = 'POST';
+                if (this.isEditingRange) {
+                    url = `/api/shipping/ranges/${this.editingRangeId}`;
+                    method = 'PUT';
+                }
+
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(this.newRangeForm)
+                });
+                
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.message || 'Failed to save range.');
+                
+                this.showToast(this.isEditingRange ? 'Barcode range updated successfully.' : 'Barcode range added successfully.', 'success');
+                this.cancelEditRange();
+                await this.fetchRanges(this.activeRangeOffice.id);
+            } catch (error) {
+                this.showToast(error.message, 'danger');
+            } finally {
+                this.savingRange = false;
+            }
+        },
+        async activateRange(rangeId) {
+            try {
+                const response = await fetch(`/api/shipping/ranges/${rangeId}/activate`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.message || 'Failed to activate range.');
+                
+                this.showToast('Range activated successfully.', 'success');
+                await this.fetchRanges(this.activeRangeOffice.id);
+            } catch (error) {
+                this.showToast(error.message, 'danger');
+            }
+        },
+        async deleteRange(rangeId) {
+            if (!confirm('Are you sure you want to delete this range?')) return;
+            
+            try {
+                const response = await fetch(`/api/shipping/ranges/${rangeId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'Accept': 'application/json',
+                    }
+                });
+                
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.message || 'Failed to delete range.');
+                
+                this.showToast('Range deleted successfully.', 'success');
+                await this.fetchRanges(this.activeRangeOffice.id);
+            } catch (error) {
+                this.showToast(error.message, 'danger');
+            }
+        },
+
+        openOfficeModal() {
+            this.isEditing = false;
+            this.showPassword = false;
+            this.officeForm = {
+                id: Date.now().toString(),
+                pickup_dropoff_office_id: '',
+                drop_off_pincode: '',
+                booking_office_name: '',
+                booking_office_pin: '',
+                status: 'active',
+                is_default: false,
+                api_base_url: this.defaultApiBaseUrl,
+                api_username: '',
+                api_password: '',
+                bulk_customer_id: '',
+                contract_sp_doc: '',
+                contract_sp_parcel: '',
+                contract_bp: '',
+                contract_24_sp_doc: '',
+                contract_24_spp_parspl: '',
+                contract_48_sp_doc: ''
+            };
+            this.getModal().show();
+        },
+
+        editOffice(office) {
+            this.isEditing = true;
+            this.showPassword = false;
+            this.officeForm = { ...office };
+            this.getModal().show();
+        },
+
+        async deleteOffice(id) {
+            if(confirm('Are you sure you want to delete this office?')) {
+                this.form.india_post_offices = this.form.india_post_offices.filter(o => o.id !== id);
+                await this.saveSettings('Office deleted successfully.');
+            }
+        },
+
+        async saveOffice() {
+            const officeId = String(this.officeForm.pickup_dropoff_office_id || '').trim();
+            const customerId = String(this.officeForm.bulk_customer_id || '').trim();
+            const contractId = String(this.officeForm.contract_bp || '').trim();
+            const validPin = value => /^[1-9][0-9]{5}$/.test(String(value || '').trim());
+            if (!this.officeForm.booking_office_name?.trim()
+                || !this.officeForm.api_username?.trim()
+                || !this.officeForm.api_base_url?.trim()
+                || !customerId
+                || !contractId
+                || !/^[0-9]{8}$/.test(officeId)
+                || !/^[0-9]{10}$/.test(customerId)
+                || !/^[0-9]{8}$/.test(contractId)
+                || !validPin(this.officeForm.booking_office_pin)
+                || !validPin(this.officeForm.drop_off_pincode)
+                || (!this.isEditing && !this.officeForm.api_password?.trim())) {
+                alert('Enter the office name, valid 8-digit facility ID, 6-digit booking and drop-off PINs, 10-digit customer ID, 8-digit Business Parcel contract ID, API username and URL. A password is required for a new office.');
+                return;
+            }
+            try {
+                const parsedUrl = new URL(this.officeForm.api_base_url);
+                if (parsedUrl.protocol !== 'https:') throw new Error('HTTPS is required.');
+                if (this.isProduction && parsedUrl.hostname === 'test.cept.gov.in') {
+                    alert('Production offices cannot use the India Post UAT host. Enter the approved production API URL.');
+                    return;
+                }
+            } catch (error) {
+                alert('Enter a valid HTTPS India Post API base URL.');
+                return;
+            }
+            
+            // Handle Default uniqueness
+            if (this.officeForm.is_default) {
+                this.form.india_post_offices.forEach(o => o.is_default = false);
+            }
+            
+            // Remove stats calculation from here since ranges are managed in DB now
+            
+            if (this.isEditing) {
+                const index = this.form.india_post_offices.findIndex(o => o.id === this.officeForm.id);
+                if (index !== -1) {
+                    this.form.india_post_offices[index] = { ...this.officeForm };
+                }
+            } else {
+                this.form.india_post_offices.unshift({ ...this.officeForm });
+            }
+            
+            this.getModal().hide();
+            await this.saveSettings('Office saved successfully.');
+        },
+
+        async saveSettings(customMessage = null) {
+            this.saving = true;
+            try {
+                const response = await fetch('/api/shipping/settings', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(this.form)
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.message || data.error || 'Failed to save settings.');
+                }
+                
+                this.showToast(customMessage || data.message || 'Settings updated successfully.', 'success');
+                this.currentPage = Math.min(this.currentPage, this.totalPages);
+                this.selectedOffices = [];
+                
+                // Clear all passwords from frontend state so they don't resend it next time
+                this.form.india_post_offices.forEach(o => o.api_password = '');
+                
+            } catch (error) {
+                this.showToast(error.message, 'error');
+            } finally {
+                this.saving = false;
+            }
+        },
+        
+        showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            if (!container) return;
+            
+            const iconMap = {
+                success: 'bi-check-circle-fill',
+                error: 'bi-x-circle-fill',
+                warning: 'bi-exclamation-triangle-fill'
+            };
+            
+            const toast = document.createElement('div');
+            toast.className = `toast align-items-center text-bg-${type === 'error' ? 'danger' : type} border-0 show mb-2`;
+            toast.setAttribute('role', 'alert');
+            const row = document.createElement('div');
+            row.className = 'd-flex';
+            const body = document.createElement('div');
+            body.className = 'toast-body';
+            const icon = document.createElement('i');
+            icon.className = 'bi ' + (iconMap[type] || 'bi-info-circle-fill') + ' me-2';
+            const text = document.createElement('span');
+            text.textContent = String(message ?? '');
+            body.append(icon, text);
+            const close = document.createElement('button');
+            close.type = 'button';
+            close.className = 'btn-close me-2 m-auto';
+            close.setAttribute('data-bs-dismiss', 'toast');
+            row.append(body, close);
+            toast.appendChild(row);
+                
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 4000);
+        }
+    }));
+});
+</script>
+@endsection
+ 

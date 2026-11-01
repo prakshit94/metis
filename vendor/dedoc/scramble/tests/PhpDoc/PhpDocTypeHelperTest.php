@@ -1,5 +1,6 @@
 <?php
 
+use Composer\InstalledVersions;
 use Dedoc\Scramble\Infer\Services\FileNameResolver;
 use Dedoc\Scramble\PhpDoc\PhpDocTypeHelper;
 use Dedoc\Scramble\Support\PhpDoc;
@@ -81,7 +82,31 @@ it('parses integers', function (string $phpDocType, string $expectedTypeString) 
     ['/** @var int<min, 10> */', 'int<min, 10>'],
     ['/** @var int<max, 10> */', 'int'],
     ['/** @var int<10, min> */', 'int'],
+    ['/** @var int<0x10, 0xFF> */', 'int<16, 255>'],
+    ['/** @var int<-0b11, 0o17> */', 'int<-3, 15>'],
+    ['/** @var 42 */', 'int(42)'],
+    ['/** @var -42 */', 'int(-42)'],
+    ['/** @var 0x1F */', 'int(31)'],
+    ['/** @var -0x1F */', 'int(-31)'],
+    ['/** @var 0x7FFFFFFFFFFFFFFF */', 'int(9223372036854775807)'],
+    ['/** @var 0x8000000000000000 */', 'int'],
+    ['/** @var 0xFFFFFFFFFFFFFFFF */', 'int'],
+    ['/** @var 0x000000008000000000000000 */', 'int'],
+    ['/** @var -0x8000000000000000 */', 'int(-9223372036854775808)'],
+    ['/** @var -0x8000000000000001 */', 'int'],
+    ['/** @var 0b101 */', 'int(5)'],
+    ['/** @var 0o17 */', 'int(15)'],
+    ['/** @var 017 */', 'int(15)'],
+    ['/** @var 0 */', 'int(0)'],
+    ['/** @var 0x01|0x02 */', 'int(1)|int(2)'],
 ]);
+
+it('parses integers with digit separators', function () {
+    expect(getPhpTypeFromDoc_Copy('/** @var 1_000 */')->toString())->toBe('int(1000)');
+})->skip(
+    fn () => version_compare(InstalledVersions::getVersion('phpstan/phpdoc-parser') ?? '0', '1.21.0', '<'),
+    'phpdoc-parser reads digit separators since 1.21.0',
+);
 
 it('parses strings', function (string $phpDocType, string $expectedTypeString) {
     expect(

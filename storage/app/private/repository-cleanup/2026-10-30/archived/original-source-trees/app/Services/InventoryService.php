@@ -1,0 +1,1708 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Services;
+
+use App\Models\ReferralProgram;
+use App\Modules\Catalog\Models\Product;
+use App\Modules\Customers\Models\Party;
+use App\Modules\Customers\Models\WalletTransaction;
+use App\Modules\Inventory\Models\InventoryAdjustment;
+use App\Modules\Inventory\Models\Stock;
+use App\Modules\Inventory\Models\StockBatch;
+use App\Modules\Inventory\Models\StockMovement;
+use App\Modules\Inventory\Models\StockReservation;
+use App\Modules\Inventory\Models\StockTransfer;
+use App\Modules\Orders\Models\Coupon;
+use App\Modules\Orders\Models\Order;
+use App\Modules\Orders\Models\OrderReturn;
+use App\Modules\Orders\Models\Shipment;
+use App\Notifications\LowStockNotification;
+use App\Services\Shipping\ShippingManager;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
+
+/**
+ * InventoryService – SINGLE SOURCE OF TRUTH for all stock mutations.
+ */
+class InventoryService
+{
+    // ─────────────────────────────────────────────────────────────────────────
+    //  Internal helpers (must only be called inside an active transaction)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Merge any duplicate stock rows for a product/warehouse pair.
+     */
+    private function mergeDuplicateStocks(int $productId, int $warehouseId): void
+    {
+        $stocks = Stock::where('warehouse_id', $warehouseId)
+            ->where('product_id', $productId)
+            ->orderBy('id')
+            ->get();
+
+        if ($stocks->count() <= 1) {
+            return;
+        }
+
+        $primary = $stocks->first();
+        $primary->quantity = $stocks->sum('quantity');
+        $primary->reserved_qty = $stocks->sum('reserved_qty');
+        $primary->committed_qty = $stocks->sum('committed_qty');
+        $primary->in_transit_qty = $stocks->sum('in_transit_qty');
+        $primary->save();
+
+        DB::table('stocks')
+            ->whereIn('id', $stocks->skip(1)->pluck('id')->all())
+            ->delete();
+    }
+
+    /**
+     * Fetch (or create) the stock row with a write-lock.
+     */
+    private function getStockForUpdate(int $productId, int $warehouseId): Stock
+    {
+        // Merge duplicates first (within the same transaction)
+        $this->mergeDuplicateStocks($productId, $warehouseId);
+
+        $stock = Stock::withTrashed()
+            ->where('warehouse_id', $warehouseId)
+            ->where('product_id', $productId)
+            ->lockForUpdate()
+            ->first();
+
+        if ($stock) {
+            if ($stock->trashed()) {
+                $stock->restore();
+            }
+
+            return $stock;
+        }
+
+        // A missing product/warehouse row means zero stock at this warehouse. Product::total_stock
+        // is aggregated across warehouses, so using it here would copy stock between locations.
+        return Stock::create([
+            'warehouse_id' => $warehouseId,
+            'product_id' => $productId,
+            'quantity' => 0,
+            'reserved_qty' => 0,
+            'dispatched_qty' => 0,
+            'committed_qty' => 0,
+            'in_transit_qty' => 0,
+        ]);
+    }
+
+    /**
+     * Write a StockMovement audit record.
+     */
+    private function logMovement(
+        int $productId,
+        int $warehouseId,
+        float $quantity,
+        string $type,
+        ?string $referenceType = null,
+        ?int $referenceId = null,
+        ?int $performedBy = null,
+        ?string $batchNumber = null
+    ): void {
+        StockMovement::create([
+            'product_id' => $productId,
+            'warehouse_id' => $warehouseId,
+            'quantity' => $quantity,
+            'type' => $type,
+            'reference_type' => $referenceType,
+            'reference_id' => $referenceId,
+            'status' => 'active',
+            'batch_number' => $batchNumber,
+            // Prefer explicitly passed value; fall back to HTTP auth; use NULL for system activity
+            'performed_by' => $performedBy ?? auth()->id(),
+        ]);
+    }
+
+    private function ensurePositive(float $quantity, string $field = 'quantity'): void
+    {
+        if ($quantity <= 0) {
+            throw ValidationException::withMessages([
+                $field => 'Quantity must be greater than zero.',
+            ]);
+        }
+    }
+
+    /**
+     * Synchronize product status based on aggregate inventory levels.
+     */
+    private function syncProductStatus(int $productId): void
+    {
+        $product = Product::find($productId);
+        if (! $product) {
+            return;
+        }
+
+        // Never auto-activate a draft product
+        if ($product->status === 'draft') {
+            $product->saveQuietly();
+
+            return;
+        }
+
+        $totalAvailable = (float) Stock::where('product_id', $productId)->sum(DB::raw('quantity - reserved_qty'));
+
+        $newStatus = $product->status;
+
+        $canOversell = $product->allow_overselling || Stock::where('product_id', $productId)->where('allow_overselling', true)->exists();
+
+        if ($totalAvailable <= 0 && ! $canOversell) {
+            $newStatus = 'out_of_stock';
+        } else {
+            // If it was out of stock but now has stock or overselling is enabled, activate it
+            if ($product->status === 'out_of_stock') {
+                $newStatus = 'published';
+            }
+        }
+
+        if ($newStatus !== $product->status) {
+            $product->status = $newStatus;
+        }
+
+        $product->saveQuietly();
+    }
+
+    /**
+     * Update in-transit quantity for a product/warehouse pair.
+     */
+    private function adjustInTransitQuantity(int $productId, int $warehouseId, float $quantityDelta): Stock
+    {
+        $stock = $this->getStockForUpdate($productId, $warehouseId);
+        $stock->in_transit_qty = max(0.0, (float) $stock->in_transit_qty + $quantityDelta);
+        $stock->save();
+
+        return $stock->refresh();
+    }
+
+    public function ensureWarehouseStockCoverage(int $warehouseId): void
+    {
+        DB::transaction(function () use ($warehouseId) {
+            $productIds = Product::where('status', '!=', 'draft')->pluck('id');
+
+            $existingStocks = Stock::withTrashed()
+                ->where('warehouse_id', $warehouseId)
+                ->whereIn('product_id', $productIds)
+                ->get(['id', 'product_id', 'deleted_at']);
+
+            $existingProductIds = $existingStocks->pluck('product_id')->toArray();
+            $trashedStocks = $existingStocks->filter(fn ($s) => $s->trashed());
+
+            if ($trashedStocks->isNotEmpty()) {
+                Stock::withTrashed()->whereIn('id', $trashedStocks->pluck('id'))->restore();
+            }
+
+            $missingIds = array_diff($productIds->toArray(), $existingProductIds);
+
+            if (! empty($missingIds)) {
+                $now = now();
+                $insertData = [];
+                foreach ($missingIds as $productId) {
+                    $insertData[] = [
+                        'product_id' => $productId,
+                        'warehouse_id' => $warehouseId,
+                        'quantity' => 0,
+                        'reserved_qty' => 0,
+                        'dispatched_qty' => 0,
+                        'committed_qty' => 0,
+                        'in_transit_qty' => 0,
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ];
+                }
+
+                foreach (array_chunk($insertData, 500) as $chunk) {
+                    Stock::insert($chunk);
+                }
+            }
+        }, 3);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    //  Public read helpers
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Get (or create) a stock record – safe for read-only use.
+     */
+    public function getStock(int $productId, int $warehouseId): Stock
+    {
+        return DB::transaction(function () use ($productId, $warehouseId) {
+            return $this->getStockForUpdate($productId, $warehouseId);
+        }, 3);
+    }
+
+    /**
+     * Available qty = total qty − reserved qty.
+     */
+    public function getAvailableQty(int $productId, int $warehouseId): float
+    {
+        $stock = Stock::where('product_id', $productId)
+            ->where('warehouse_id', $warehouseId)
+            ->first();
+
+        if (! $stock) {
+            return 0.0;
+        }
+
+        return max(0.0, (float) $stock->quantity - (float) $stock->reserved_qty);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    //  Stock mutations (each owns its own transaction)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Hard-set a stock quantity (used by adjustments & imports).
+     */
+    public function setStock(int $productId, int $warehouseId, float $newQuantity, ?float $newDamagedQuantity = null): Stock
+    {
+        if ($newQuantity < 0) {
+            throw ValidationException::withMessages([
+                'quantity' => 'Stock quantity cannot be negative.',
+            ]);
+        }
+
+        if ($newDamagedQuantity !== null && $newDamagedQuantity < 0) {
+            throw ValidationException::withMessages([
+                'damaged_qty' => 'Damaged quantity cannot be negative.',
+            ]);
+        }
+
+        return DB::transaction(function () use ($productId, $warehouseId, $newQuantity, $newDamagedQuantity) {
+            $stock = $this->getStockForUpdate($productId, $warehouseId);
+
+            if ($stock->reserved_qty > $newQuantity) {
+                throw ValidationException::withMessages([
+                    'quantity' => 'New quantity cannot be lower than reserved stock.',
+                ]);
+            }
+
+            $diff = $newQuantity - (float) $stock->quantity;
+            $stock->quantity = $newQuantity;
+
+            if ($newDamagedQuantity !== null) {
+                $diffDamaged = $newDamagedQuantity - (float) $stock->damaged_qty;
+                $stock->damaged_qty = $newDamagedQuantity;
+
+                if ($diffDamaged != 0) {
+                    $this->logMovement(
+                        $productId,
+                        $warehouseId,
+                        abs($diffDamaged),
+                        $diffDamaged > 0 ? 'damage_in' : 'damage_out'
+                    );
+                }
+            }
+
+            $stock->save();
+
+            if ($diff != 0) {
+                $this->logMovement(
+                    $productId,
+                    $warehouseId,
+                    abs($diff),
+                    $diff > 0 ? 'adjustment_in' : 'adjustment_out'
+                );
+            }
+
+            $this->syncProductStatus($productId);
+
+            return $stock->refresh();
+        }, 3);
+    }
+
+    /**
+     * Add stock (e.g. purchase received, transfer in).
+     */
+    public function addStock(
+        int $productId,
+        int $warehouseId,
+        float $quantity,
+        ?string $referenceType = null,
+        ?int $referenceId = null,
+        ?string $batchNumber = null,
+        ?string $expiryDate = null
+    ): Stock {
+        $this->ensurePositive($quantity);
+
+        return DB::transaction(function () use ($productId, $warehouseId, $quantity, $referenceType, $referenceId, $batchNumber, $expiryDate) {
+            $stock = $this->getStockForUpdate($productId, $warehouseId);
+            $stock->quantity = (float) $stock->quantity + $quantity;
+            $stock->save();
+
+            if ($batchNumber) {
+                $batch = StockBatch::firstOrCreate([
+                    'product_id' => $productId,
+                    'warehouse_id' => $warehouseId,
+                    'batch_number' => $batchNumber,
+                ], [
+                    'quantity' => 0,
+                    'expiry_date' => $expiryDate,
+                    'status' => 'active',
+                ]);
+                $batch->quantity = (float) $batch->quantity + $quantity;
+                $batch->save();
+            }
+
+            $this->logMovement($productId, $warehouseId, $quantity, 'in', $referenceType, $referenceId, null, $batchNumber);
+
+            $this->syncProductStatus($productId);
+
+            return $stock->refresh();
+        }, 3);
+    }
+
+    /**
+     * Deduct stock (e.g. sale dispatched, transfer out).
+     */
+    public function deductStock(
+        int $productId,
+        int $warehouseId,
+        float $quantity,
+        ?string $referenceType = null,
+        ?int $referenceId = null,
+        ?string $batchNumber = null
+    ): Stock {
+        $this->ensurePositive($quantity);
+
+        return DB::transaction(function () use ($productId, $warehouseId, $quantity, $referenceType, $referenceId, $batchNumber) {
+            $stock = $this->getStockForUpdate($productId, $warehouseId);
+
+            if ((float) $stock->quantity < $quantity) {
+                throw ValidationException::withMessages([
+                    'quantity' => 'Insufficient stock quantity.',
+                ]);
+            }
+
+            $newQty = (float) $stock->quantity - $quantity;
+
+            if ($stock->reserved_qty > $newQty) {
+                throw ValidationException::withMessages([
+                    'quantity' => 'Cannot deduct below reserved stock.',
+                ]);
+            }
+
+            $stock->quantity = $newQty;
+            $stock->save();
+
+            if ($batchNumber) {
+                $batch = StockBatch::where([
+                    'product_id' => $productId,
+                    'warehouse_id' => $warehouseId,
+                    'batch_number' => $batchNumber,
+                ])->first();
+                if ($batch) {
+                    $batch->quantity = max(0.0, (float) $batch->quantity - $quantity);
+                    $batch->save();
+                }
+            }
+
+            $this->logMovement($productId, $warehouseId, $quantity, 'out', $referenceType, $referenceId, null, $batchNumber);
+
+            $this->syncProductStatus($productId);
+
+            // Dispatch Low Stock Notification if quantity is below threshold (fail-safe)
+            if ($newQty <= 5) {
+                try {
+                    $admins = app(NotificationRecipients::class)->forRoles(['Admin', 'Super Admin', 'Inventory Manager']);
+                    $productName = $stock->product->name ?? 'Unknown Product';
+                    $warehouseName = $stock->warehouse?->name ?? 'Unknown Warehouse';
+                    Notification::send($admins, new LowStockNotification($productName, (int) $newQty, $warehouseName));
+                } catch (\Throwable) {
+                    // Silently fail — notification delivery is non-critical
+                }
+            }
+
+            return $stock->refresh();
+        }, 3);
+    }
+
+    /**
+     * Reserve stock for a confirmed sale order.
+     */
+    public function reserveStock(
+        int $productId,
+        int $warehouseId,
+        float $quantity,
+        ?int $orderId = null
+    ): Stock {
+        $this->ensurePositive($quantity);
+
+        return DB::transaction(function () use ($productId, $warehouseId, $quantity, $orderId) {
+            $stock = $this->getStockForUpdate($productId, $warehouseId);
+            $rawAvailable = (float) $stock->quantity - (float) $stock->reserved_qty;
+            $maxReservable = $rawAvailable;
+
+            if ($maxReservable < $quantity) {
+                $productName = Product::where('id', $productId)->value('name') ?? "ID: {$productId}";
+                throw ValidationException::withMessages([
+                    'quantity' => "Not enough stock for product '{$productName}'. Available: {$maxReservable}, Requested: {$quantity}.",
+                ]);
+            }
+
+            $stock->reserved_qty = (float) $stock->reserved_qty + $quantity;
+            $stock->save();
+
+            // Write a reservation record
+            StockReservation::create([
+                'product_id' => $productId,
+                'warehouse_id' => $warehouseId,
+                'order_id' => $orderId,
+                'quantity' => $quantity,
+                'status' => 'active',
+            ]);
+
+            $this->logMovement($productId, $warehouseId, $quantity, 'reserve', Order::class, $orderId);
+
+            $this->syncProductStatus($productId);
+
+            return $stock->refresh();
+        }, 3);
+    }
+
+    /**
+     * Release a reservation.
+     */
+    public function releaseReservedStock(
+        int $productId,
+        int $warehouseId,
+        float $quantity,
+        ?int $orderId = null,
+        string $reason = 'cancelled'
+    ): Stock {
+        $this->ensurePositive($quantity);
+
+        return DB::transaction(function () use ($productId, $warehouseId, $quantity, $orderId, $reason) {
+            $stock = $this->getStockForUpdate($productId, $warehouseId);
+
+            if ((float) $stock->reserved_qty < $quantity) {
+                throw ValidationException::withMessages([
+                    'quantity' => 'Reserved stock cannot go below zero.',
+                ]);
+            }
+
+            $stock->reserved_qty = (float) $stock->reserved_qty - $quantity;
+            $stock->save();
+
+            // Mark the linked reservation record
+            if ($orderId) {
+                StockReservation::where('order_id', $orderId)
+                    ->where('product_id', $productId)
+                    ->where('warehouse_id', $warehouseId)
+                    ->where('status', 'active')
+                    ->orderBy('id')
+                    ->first()
+                    ?->update(['status' => $reason === 'used' ? 'used' : 'cancelled']);
+            }
+
+            $this->logMovement($productId, $warehouseId, $quantity, 'release', Order::class, $orderId);
+
+            $this->syncProductStatus($productId);
+
+            return $stock->refresh();
+        }, 3);
+    }
+
+    /**
+     * Inner work of a transfer.
+     */
+    private function _executeTransfer(
+        int $productId,
+        int $fromWarehouseId,
+        int $toWarehouseId,
+        float $quantity,
+        ?int $transferId = null
+    ): void {
+        // Lock both rows in deterministic order to prevent deadlocks
+        $ids = [$fromWarehouseId, $toWarehouseId];
+        sort($ids);
+        $lockedStocks = [];
+        foreach ($ids as $wid) {
+            $lockedStocks[$wid] = $this->getStockForUpdate($productId, $wid);
+        }
+
+        $from = $lockedStocks[$fromWarehouseId];
+        if ((float) $from->quantity < $quantity) {
+            throw ValidationException::withMessages([
+                'quantity' => 'Insufficient stock to transfer.',
+            ]);
+        }
+        $from->quantity = (float) $from->quantity - $quantity;
+        $from->save();
+
+        $to = $this->getStockForUpdate($productId, $toWarehouseId);
+        $to->quantity = (float) $to->quantity + $quantity;
+        $to->save();
+
+        $this->logMovement($productId, $fromWarehouseId, $quantity, 'out', StockTransfer::class, $transferId);
+        $this->logMovement($productId, $toWarehouseId, $quantity, 'in', StockTransfer::class, $transferId);
+        $this->syncProductStatus($productId);
+    }
+
+    /**
+     * Transfer stock between two warehouses atomically.
+     */
+    public function transferStock(
+        int $productId,
+        int $fromWarehouseId,
+        int $toWarehouseId,
+        float $quantity,
+        ?int $transferId = null
+    ): void {
+        $this->ensurePositive($quantity);
+
+        DB::transaction(function () use ($productId, $fromWarehouseId, $toWarehouseId, $quantity, $transferId) {
+            $this->_executeTransfer($productId, $fromWarehouseId, $toWarehouseId, $quantity, $transferId);
+        }, 3);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    //  High-level order lifecycle
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Confirm a pending sale order.
+     */
+    public function confirmOrder(Order $order): void
+    {
+        DB::transaction(function () use ($order) {
+            $order = Order::with('items')->lockForUpdate()->findOrFail($order->id);
+
+            if (! in_array($order->status, ['pending', 'pending_confirmation'])) {
+                throw ValidationException::withMessages([
+                    'status' => 'Only active pending orders can be confirmed. Future orders must become pending first.',
+                ]);
+            }
+
+            if (! $order->warehouse_id) {
+                throw ValidationException::withMessages([
+                    'warehouse_id' => 'Order must have a warehouse assigned before confirmation.',
+                ]);
+            }
+
+            if ($order->type === 'sale') {
+                foreach ($order->items as $item) {
+                    $this->reserveStock(
+                        (int) $item->product_id,
+                        (int) $order->warehouse_id,
+                        (float) $item->quantity,
+                        $order->id
+                    );
+                }
+            }
+
+            $order->update(['status' => 'confirmed', 'updated_by' => auth()->id()]);
+
+        }, 3);
+    }
+
+    /**
+     * Cancel an order.
+     */
+    public function cancelOrder(Order $order): void
+    {
+        DB::transaction(function () use ($order) {
+            $order = Order::with(['items'])->lockForUpdate()->findOrFail($order->id);
+
+            if (in_array($order->status, array_merge(Order::inTransitStatuses(), ['delivered', 'cancelled']), true)) {
+                throw ValidationException::withMessages([
+                    'status' => 'This order cannot be cancelled.',
+                ]);
+            }
+
+            if (in_array($order->status, ['confirmed', 'processing', 'ready_to_ship'], true)
+                && $order->type === 'sale'
+                && $order->warehouse_id) {
+                foreach ($order->items as $item) {
+                    $productId = (int) $item->product_id;
+                    $warehouseId = (int) $order->warehouse_id;
+                    $qty = (float) $item->quantity;
+
+                    $stock = $this->getStockForUpdate($productId, $warehouseId);
+                    $releaseQty = min($qty, (float) $stock->reserved_qty);
+
+                    if ($releaseQty > 0) {
+                        $stock->reserved_qty = (float) $stock->reserved_qty - $releaseQty;
+                        $stock->save();
+
+                        StockReservation::where('order_id', $order->id)
+                            ->where('product_id', $productId)
+                            ->where('warehouse_id', $warehouseId)
+                            ->where('status', 'active')
+                            ->orderBy('id')
+                            ->first()
+                            ?->update(['status' => 'cancelled']);
+
+                        $this->logMovement($productId, $warehouseId, $releaseQty, 'release', Order::class, $order->id);
+                    }
+                }
+            }
+
+            $this->refundOrderWalletUsage($order);
+            $order->update(['status' => 'cancelled', 'updated_by' => auth()->id()]);
+
+            $invoice = $order->invoices()->latest()->first();
+            if ($invoice && $invoice->status !== 'cancelled') {
+                $invoice->update(['status' => 'cancelled']);
+            }
+
+            $shipment = $order->shipments()->latest()->first();
+            if ($shipment && $shipment->status !== 'cancelled') {
+                $shipment->update(['status' => 'cancelled']);
+            }
+
+            foreach ($order->items as $item) {
+                $this->syncProductStatus((int) $item->product_id);
+            }
+        }, 3);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    //  Adjustment & Transfer lifecycle
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Apply an approved stock adjustment.
+     */
+    public function applyAdjustment(InventoryAdjustment $adjustment): void
+    {
+        DB::transaction(function () use ($adjustment) {
+            $adjustment = InventoryAdjustment::with('items')
+                ->lockForUpdate()
+                ->findOrFail($adjustment->id);
+
+            if ($adjustment->status !== 'pending') {
+                throw ValidationException::withMessages([
+                    'status' => 'Only pending adjustments can be approved.',
+                ]);
+            }
+
+            foreach ($adjustment->items as $item) {
+                $productId = (int) $item->product_id;
+                $warehouseId = (int) $adjustment->warehouse_id;
+                $newQty = (float) $item->new_qty;
+
+                $stock = $this->getStockForUpdate($productId, $warehouseId);
+
+                if ($stock->reserved_qty > $newQty) {
+                    throw ValidationException::withMessages([
+                        'quantity' => "New qty for product ID {$productId} is below reserved qty.",
+                    ]);
+                }
+
+                $diff = $newQty - (float) $stock->quantity;
+                $stock->quantity = $newQty;
+                $stock->save();
+
+                if ($diff != 0) {
+                    $this->logMovement(
+                        $productId,
+                        $warehouseId,
+                        abs($diff),
+                        $diff > 0 ? 'adjustment_in' : 'adjustment_out',
+                        InventoryAdjustment::class,
+                        $adjustment->id
+                    );
+                }
+            }
+
+            $adjustment->update(['status' => 'approved']);
+
+            foreach ($adjustment->items as $item) {
+                $this->syncProductStatus((int) $item->product_id);
+            }
+        }, 3);
+    }
+
+    /**
+     * Mark a stock transfer as sent and move the transferred quantity into transit.
+     */
+    public function sendTransfer(StockTransfer $transfer): void
+    {
+        DB::transaction(function () use ($transfer) {
+            $transfer = StockTransfer::with('items')
+                ->lockForUpdate()
+                ->findOrFail($transfer->id);
+
+            if ($transfer->status !== 'draft') {
+                throw ValidationException::withMessages([
+                    'status' => 'Only draft transfers can be sent.',
+                ]);
+            }
+
+            foreach ($transfer->items as $item) {
+                $productId = (int) $item->product_id;
+                $warehouseId = (int) $transfer->from_warehouse_id;
+                $qty = (float) $item->quantity;
+
+                $stock = $this->getStockForUpdate($productId, $warehouseId);
+
+                // Validate sufficient physical stock before sending
+                if ((float) $stock->quantity - (float) $stock->reserved_qty < $qty) {
+                    throw ValidationException::withMessages([
+                        'quantity' => "Insufficient stock for product ID {$productId} in source warehouse.",
+                    ]);
+                }
+
+                // Deduct from source warehouse quantity immediately on dispatch
+                $stock->quantity = max(0.0, (float) $stock->quantity - $qty);
+                $stock->in_transit_qty = (float) $stock->in_transit_qty + $qty;
+                $stock->save();
+
+                $this->logMovement($productId, $warehouseId, $qty, 'out', StockTransfer::class, $transfer->id);
+                $this->syncProductStatus($productId);
+            }
+
+            $transfer->update([
+                'status' => 'sent',
+                'sent_at' => now(),
+            ]);
+        }, 3);
+    }
+
+    /**
+     * Receive a stock transfer.
+     */
+    public function receiveTransfer(StockTransfer $transfer): void
+    {
+        DB::transaction(function () use ($transfer) {
+            $transfer = StockTransfer::with('items')
+                ->lockForUpdate()
+                ->findOrFail($transfer->id);
+
+            if ($transfer->status !== 'sent') {
+                throw ValidationException::withMessages([
+                    'status' => 'Only sent transfers can be received.',
+                ]);
+            }
+
+            foreach ($transfer->items as $item) {
+                $productId = (int) $item->product_id;
+                $fromWh = (int) $transfer->from_warehouse_id;
+                $toWh = (int) $transfer->to_warehouse_id;
+                $qty = (float) $item->quantity;
+
+                // Clear in_transit from source (quantity was already deducted in sendTransfer)
+                $fromStock = $this->getStockForUpdate($productId, $fromWh);
+                $fromStock->in_transit_qty = max(0.0, (float) $fromStock->in_transit_qty - $qty);
+                $fromStock->save();
+
+                // Add to destination warehouse
+                $toStock = $this->getStockForUpdate($productId, $toWh);
+                $toStock->quantity = (float) $toStock->quantity + $qty;
+                $toStock->save();
+
+                $this->logMovement($productId, $toWh, $qty, 'in', StockTransfer::class, $transfer->id);
+                $this->syncProductStatus($productId);
+            }
+
+            $transfer->update([
+                'status' => 'received',
+                'received_at' => now(),
+            ]);
+        }, 3);
+    }
+
+    /**
+     * Cancel a stock transfer.
+     */
+    public function cancelSentTransfer(StockTransfer $transfer): void
+    {
+        DB::transaction(function () use ($transfer) {
+            $transfer = StockTransfer::with('items')
+                ->lockForUpdate()
+                ->findOrFail($transfer->id);
+
+            if ($transfer->status === 'draft') {
+                // Draft: nothing was deducted yet, just cancel
+                $transfer->update(['status' => 'cancelled']);
+
+                return;
+            }
+
+            if ($transfer->status !== 'sent') {
+                throw ValidationException::withMessages([
+                    'status' => 'Only draft or sent transfers can be cancelled.',
+                ]);
+            }
+
+            // Sent: source quantity was deducted in sendTransfer — restore it
+            foreach ($transfer->items as $item) {
+                $productId = (int) $item->product_id;
+                $warehouseId = (int) $transfer->from_warehouse_id;
+                $qty = (float) $item->quantity;
+
+                $stock = $this->getStockForUpdate($productId, $warehouseId);
+                $stock->quantity = (float) $stock->quantity + $qty;
+                $stock->in_transit_qty = max(0.0, (float) $stock->in_transit_qty - $qty);
+                $stock->save();
+
+                $this->logMovement($productId, $warehouseId, $qty, 'in', StockTransfer::class, $transfer->id);
+                $this->syncProductStatus($productId);
+            }
+
+            $transfer->update(['status' => 'cancelled']);
+        }, 3);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    //  Revert transitions
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Revert a confirmed/processing sale order back to pending.
+     */
+    public function revertOrderToPending(Order $order): void
+    {
+        DB::transaction(function () use ($order) {
+            $order = Order::with(['items'])->lockForUpdate()->findOrFail($order->id);
+
+            if (! in_array($order->status, ['confirmed', 'processing', 'cancelled', 'ready_to_ship'], true)) {
+                throw ValidationException::withMessages([
+                    'status' => 'Cannot revert this order to pending.',
+                ]);
+            }
+
+            if (in_array($order->status, ['confirmed', 'processing', 'ready_to_ship'], true)
+                && $order->type === 'sale'
+                && $order->warehouse_id) {
+                foreach ($order->items as $item) {
+                    $productId = (int) $item->product_id;
+                    $warehouseId = (int) $order->warehouse_id;
+                    $qty = (float) $item->quantity;
+
+                    $stock = $this->getStockForUpdate($productId, $warehouseId);
+                    $releaseQty = min($qty, (float) $stock->reserved_qty);
+
+                    if ($releaseQty > 0) {
+                        $stock->reserved_qty = (float) $stock->reserved_qty - $releaseQty;
+                        $stock->save();
+
+                        StockReservation::where('order_id', $order->id)
+                            ->where('product_id', $productId)
+                            ->where('warehouse_id', $warehouseId)
+                            ->where('status', 'active')
+                            ->orderBy('id')
+                            ->first()
+                            ?->update(['status' => 'cancelled']);
+
+                        $this->logMovement($productId, $warehouseId, $releaseQty, 'release', Order::class, $order->id);
+                        $this->syncProductStatus($productId);
+                    }
+                }
+            }
+
+            if ($order->status === 'cancelled') {
+                $this->restoreCancelledOrderWalletUsage($order);
+
+                $invoice = $order->invoices()->latest('id')->first();
+                if ($invoice && $invoice->status === 'cancelled') {
+                    $paidAmount = (float) $invoice->payments()->where('status', 'completed')->sum('amount');
+                    $invoice->update([
+                        'status' => $paidAmount >= (float) $invoice->net_amount
+                            ? 'paid'
+                            : ($paidAmount > 0 ? 'partially_paid' : 'unpaid'),
+                    ]);
+                }
+
+                $shipment = $order->shipments()->latest('id')->first();
+                if ($shipment && $shipment->status === 'cancelled') {
+                    $shipment->update([
+                        'status' => 'pending',
+                        'shipped_at' => null,
+                        'delivered_at' => null,
+                        'delivered_by' => null,
+                    ]);
+                }
+            }
+
+            $order->update(['status' => 'pending', 'updated_by' => auth()->id()]);
+        }, 3);
+    }
+
+    /** Restore a wallet redemption that was refunded when the order was cancelled. */
+    private function restoreCancelledOrderWalletUsage(Order $order): void
+    {
+        $refunded = (float) WalletTransaction::query()
+            ->where('reference_type', 'order_refund')
+            ->where('reference_id', $order->id)
+            ->where('type', 'credit')
+            ->sum('amount');
+        $reversed = (float) WalletTransaction::query()
+            ->where('reference_type', 'order_refund_reversal')
+            ->where('reference_id', $order->id)
+            ->where('type', 'debit')
+            ->sum('amount');
+        $amount = round(max(0, $refunded - $reversed), 2);
+
+        if ($amount <= 0) {
+            return;
+        }
+
+        if (! $order->party_id) {
+            throw ValidationException::withMessages([
+                'wallet' => 'The customer wallet cannot be restored because the customer no longer exists.',
+            ]);
+        }
+
+        $party = Party::query()->lockForUpdate()->find($order->party_id);
+        if (! $party) {
+            throw ValidationException::withMessages([
+                'wallet' => 'The customer wallet cannot be restored because the customer no longer exists.',
+            ]);
+        }
+
+        $balanceBefore = (float) $party->wallet_balance;
+        if ($balanceBefore < $amount) {
+            throw ValidationException::withMessages([
+                'wallet' => 'The customer wallet balance is too low to revert this cancellation.',
+            ]);
+        }
+
+        $balanceAfter = round($balanceBefore - $amount, 2);
+        $party->wallet_balance = $balanceAfter;
+        $party->save();
+
+        WalletTransaction::create([
+            'party_id' => $party->id,
+            'amount' => $amount,
+            'type' => 'debit',
+            'reference_type' => 'order_refund_reversal',
+            'reference_id' => $order->id,
+            'description' => 'Cancellation refund reversed for order #'.$order->order_no,
+            'created_by' => auth()->id() ?? $order->created_by,
+            'balance_before' => $balanceBefore,
+            'balance_after' => $balanceAfter,
+        ]);
+
+        $order->wallet_amount_used = round((float) $order->wallet_amount_used + $amount, 2);
+        $order->saveQuietly();
+    }
+
+    /**
+     * Revert a dispatched order back to processing.
+     */
+    public function revertOrderToProcessing(Order $order): void
+    {
+        DB::transaction(function () use ($order) {
+            $order = Order::with(['items'])->lockForUpdate()->findOrFail($order->id);
+
+            if (! in_array($order->status, array_merge(Order::inTransitStatuses(), ['ready_to_ship']), true)) {
+                throw ValidationException::withMessages([
+                    'status' => 'Only dispatched or ready to ship orders can be reverted.',
+                ]);
+            }
+
+            $statusWasPhysical = in_array($order->status, Order::inTransitStatuses(), true);
+            $revertToStatus = $statusWasPhysical ? 'ready_to_ship' : 'processing';
+
+            if ($statusWasPhysical) {
+                if ($order->type === 'sale' && $order->warehouse_id) {
+                    foreach ($order->items as $item) {
+                        $productId = (int) $item->product_id;
+                        $warehouseId = (int) $order->warehouse_id;
+                        $qty = (float) $item->quantity;
+
+                        $stock = $this->getStockForUpdate($productId, $warehouseId);
+                        $stock->quantity = (float) $stock->quantity + $qty;
+                        $stock->reserved_qty = (float) $stock->reserved_qty + $qty;
+                        $stock->dispatched_qty = max(0.0, (float) $stock->dispatched_qty - $qty);
+                        $stock->save();
+
+                        StockReservation::where('order_id', $order->id)
+                            ->where('product_id', $productId)
+                            ->where('warehouse_id', $warehouseId)
+                            ->update(['status' => 'active']);
+
+                        $this->logMovement($productId, $warehouseId, $qty, 'in', Order::class, $order->id);
+                        $this->syncProductStatus($productId);
+                    }
+                } elseif ($order->type === 'purchase' && $order->warehouse_id) {
+                    foreach ($order->items as $item) {
+                        $productId = (int) $item->product_id;
+                        $warehouseId = (int) $order->warehouse_id;
+                        $qty = (float) $item->quantity;
+
+                        $stock = $this->getStockForUpdate($productId, $warehouseId);
+                        $stock->quantity = max(0.0, (float) $stock->quantity - $qty);
+                        $stock->save();
+
+                        $this->logMovement($productId, $warehouseId, $qty, 'out', Order::class, $order->id);
+                        $this->syncProductStatus($productId);
+                    }
+                }
+            }
+
+            $order->update(['status' => $revertToStatus, 'updated_by' => auth()->id()]);
+
+            $shipment = $order->shipments()->first();
+            if ($shipment) {
+                if ($revertToStatus === 'ready_to_ship') {
+                    $shipment->update([
+                        'status' => 'pending',
+                        'shipped_at' => null,
+                    ]);
+                } else {
+                    $shipment->update([
+                        'status' => 'pending',
+                        'shipped_at' => null,
+                    ]);
+                }
+            }
+        }, 3);
+    }
+
+    /**
+     * Mark order as ready to ship.
+     */
+    public function readyToShipOrder(Order $order, ?string $carrierName = null, ?string $trackingNo = null, ?int $serviceProviderId = null): void
+    {
+        // India Post booking is an external side effect inside this transaction.
+        // Keep its successful response across Laravel's deadlock retries so a
+        // retry only repeats the database writes, not the carrier booking.
+        $indiaPostBooking = null;
+
+        DB::transaction(function () use ($order, $carrierName, &$trackingNo, $serviceProviderId, &$indiaPostBooking) {
+            $order = Order::lockForUpdate()->findOrFail($order->id);
+
+            if ($order->status !== 'processing') {
+                throw ValidationException::withMessages([
+                    'status' => 'Only processing orders can be marked as ready to ship.',
+                ]);
+            }
+
+            $order->update(['status' => 'ready_to_ship', 'updated_by' => auth()->id()]);
+
+            $shipment = $order->shipments()->first();
+            if (! $shipment) {
+                $shipment = new Shipment([
+                    'shipment_no' => Shipment::generateShipmentNo(),
+                    'order_id' => $order->id,
+                ]);
+            }
+            $shipmentDataArr = [];
+            if ($carrierName === 'India Post' && (empty($trackingNo) || $indiaPostBooking !== null)) {
+                if ($indiaPostBooking === null) {
+                    $shippingManager = app(ShippingManager::class);
+                    try {
+                        $provider = $shippingManager->driver('india_post');
+                        $indiaPostBooking = $provider->createShipment($order);
+                        if (empty($indiaPostBooking['tracking_number'])) {
+                            throw new \UnexpectedValueException('India Post returned no tracking number for the booking.');
+                        }
+                    } catch (\Exception $e) {
+                        throw ValidationException::withMessages([
+                            'tracking_no' => 'Failed to create shipment with India Post: '.$e->getMessage(),
+                        ]);
+                    }
+                }
+
+                $shipmentDataArr = $indiaPostBooking;
+                $trackingNo = $shipmentDataArr['tracking_number'];
+            }
+
+            $shipment->fill([
+                'carrier_name' => $carrierName,
+                'service_provider_id' => $serviceProviderId,
+                'tracking_no' => $trackingNo,
+                'status' => 'pending',
+                'actual_weight_g' => $shipmentDataArr['actual_weight_g'] ?? null,
+                'length_cm' => $shipmentDataArr['length_cm'] ?? null,
+                'width_cm' => $shipmentDataArr['width_cm'] ?? null,
+                'height_cm' => $shipmentDataArr['height_cm'] ?? null,
+                'shipping_cost' => $shipmentDataArr['shipping_cost'] ?? null,
+                'provider_response' => $shipmentDataArr['provider_response'] ?? null,
+                'article_type' => $shipmentDataArr['article_type'] ?? null,
+                'tax_components' => $shipmentDataArr['tax_components'] ?? null,
+                'booking_data' => $shipmentDataArr['booking_data'] ?? null,
+                'estimated_delivery_date' => $shipmentDataArr['estimated_delivery_date'] ?? null,
+            ]);
+            $shipment->save();
+        }, 3);
+    }
+
+    /**
+     * Dispatch the order.
+     */
+    public function dispatchOrder(Order $order): void
+    {
+        DB::transaction(function () use ($order) {
+            $order = Order::with(['items'])->lockForUpdate()->findOrFail($order->id);
+
+            if ($order->status !== 'ready_to_ship') {
+                throw ValidationException::withMessages([
+                    'status' => 'Only orders in ready to ship status can be dispatched.',
+                ]);
+            }
+
+            if (! $order->warehouse_id) {
+                throw ValidationException::withMessages([
+                    'warehouse_id' => 'Order must have a warehouse assigned.',
+                ]);
+            }
+
+            foreach ($order->items as $item) {
+                $productId = (int) $item->product_id;
+                $warehouseId = (int) $order->warehouse_id;
+                $qty = (float) $item->quantity;
+
+                if ($order->type === 'sale') {
+                    $stock = $this->getStockForUpdate($productId, $warehouseId);
+
+                    if ((float) $stock->reserved_qty < $qty) {
+                        throw ValidationException::withMessages([
+                            'quantity' => "Reserved stock mismatch for product ID {$productId}.",
+                        ]);
+                    }
+
+                    $product = Product::find($productId);
+                    if (! $product?->allow_overselling && (float) $stock->quantity < $qty) {
+                        throw ValidationException::withMessages([
+                            'quantity' => "Insufficient physical stock for product ID {$productId}.",
+                        ]);
+                    }
+
+                    $stock->reserved_qty = (float) $stock->reserved_qty - $qty;
+                    $stock->quantity = (float) $stock->quantity - $qty;
+                    $stock->dispatched_qty = (float) $stock->dispatched_qty + $qty;
+                    $stock->save();
+
+                    StockReservation::where('order_id', $order->id)
+                        ->where('product_id', $productId)
+                        ->where('warehouse_id', $warehouseId)
+                        ->where('status', 'active')
+                        ->orderBy('id')
+                        ->first()
+                        ?->update(['status' => 'used']);
+
+                    $this->logMovement($productId, $warehouseId, $qty, 'out', Order::class, $order->id);
+
+                } else {
+                    $stock = $this->getStockForUpdate($productId, $warehouseId);
+                    $stock->quantity = (float) $stock->quantity + $qty;
+                    $stock->save();
+
+                    $this->logMovement($productId, $warehouseId, $qty, 'in', Order::class, $order->id);
+                }
+            }
+
+            $order->update(['status' => 'dispatched', 'updated_by' => auth()->id()]);
+
+            $shipment = $order->shipments()->first();
+            if ($shipment) {
+                $shipment->update([
+                    'status' => 'in_transit',
+                    'shipped_at' => now(),
+                ]);
+            }
+
+            foreach ($order->items as $item) {
+                $this->syncProductStatus((int) $item->product_id);
+            }
+        }, 3);
+    }
+
+    /**
+     * Deliver Order.
+     */
+    public function deliverOrder(Order $order): void
+    {
+        $orderId = $order->id;
+
+        DB::transaction(function () use ($orderId) {
+            // Serialize repeated delivery callbacks so stock, cashback, and
+            // referral rewards are applied only once per order transition.
+            $order = Order::with('items')->lockForUpdate()->findOrFail($orderId);
+            if ($order->status === 'delivered') {
+                return;
+            }
+            if (! in_array($order->status, Order::inTransitStatuses(), true)) {
+                throw ValidationException::withMessages([
+                    'status' => 'Only dispatched orders can be marked as delivered.',
+                ]);
+            }
+
+            $wasPhysical = $order->type === 'sale'
+                && in_array($order->status, Order::inTransitStatuses(), true);
+
+            if ($wasPhysical) {
+                $order->loadMissing('items');
+
+                foreach ($order->items as $item) {
+                    $productId = (int) $item->product_id;
+                    $warehouseId = (int) $order->warehouse_id;
+                    $qty = (float) $item->quantity;
+
+                    $stock = $this->getStockForUpdate($productId, $warehouseId);
+
+                    $stock->dispatched_qty = max(0.0, (float) $stock->dispatched_qty - $qty);
+                    $stock->save();
+                }
+            }
+
+            $order->update(['status' => 'delivered', 'updated_by' => auth()->id()]);
+            $this->creditOrderCashback($order);
+
+            // Advanced Referral Reward Logic
+            $party = $order->party_id
+                ? Party::whereKey($order->party_id)->lockForUpdate()->first()
+                : null;
+            if ($party && $party->referred_by) {
+                // If it's 1, it means the current one is the only delivered order.
+                $deliveredCount = Order::where('party_id', $party->id)->where('status', 'delivered')->count();
+                if ($deliveredCount === 1) {
+                    $alreadyRewarded = DB::table('referral_rewards')
+                        ->where('referred_id', $party->id)
+                        ->where('status', '!=', 'revoked')
+                        ->exists();
+                    if (! $alreadyRewarded) {
+                        // Different referred customers can be delivered at the
+                        // same time. Lock their shared referrer's wallet before
+                        // calculating milestones and applying wallet rewards.
+                        $referrer = Party::whereKey($party->referred_by)->lockForUpdate()->first();
+
+                        if ($referrer) {
+                            // Calculate referrer's total successful referrals
+                            // A successful referral is someone they referred who has at least one delivered order.
+                            $successfulReferrals = Party::where('referred_by', $referrer->id)
+                                ->whereHas('orders', function ($q) {
+                                    $q->where('status', 'delivered');
+                                })->count();
+
+                            // Find Active Program
+                            $activeProgram = ReferralProgram::with('milestones')
+                                ->where('is_active', true)
+                                ->where(function ($q) {
+                                    $q->whereNull('start_date')->orWhereDate('start_date', '<=', today());
+                                })
+                                ->where(function ($q) {
+                                    // Referral dates are configured as calendar dates. Treat the end date
+                                    // as inclusive for the full day instead of expiring at midnight.
+                                    $q->whereNull('end_date')->orWhereDate('end_date', '>=', today());
+                                })->first();
+
+                            $rewardGranted = false;
+
+                            if ($activeProgram) {
+                                // Find base milestone (0 = every referral) and specific milestone for current count
+                                $baseMilestone = $activeProgram->milestones->where('required_referrals', 0)->first();
+                                $specificMilestone = $activeProgram->milestones->where('required_referrals', $successfulReferrals)->first();
+
+                                $milestonesToReward = array_filter([$baseMilestone, $specificMilestone]);
+
+                                foreach ($milestonesToReward as $milestone) {
+                                    $rewardAmount = $milestone->reward_type === 'wallet' ? (float) $milestone->reward_value : 0;
+
+                                    // Insert reward record first as 'pending' to allow atomic wallet update
+                                    $rewardId = DB::table('referral_rewards')->insertGetId([
+                                        'referrer_id' => $referrer->id,
+                                        'referred_id' => $party->id,
+                                        'order_id' => $order->id,
+                                        'referral_program_id' => $activeProgram->id,
+                                        'milestone_id' => $milestone->id,
+                                        'reward_type' => $milestone->reward_type,
+                                        'reward_amount' => $rewardAmount,
+                                        'reward_value' => $milestone->reward_type !== 'wallet' ? $milestone->reward_value : null,
+                                        'status' => 'pending',
+                                        'created_at' => now(),
+                                        'updated_at' => now(),
+                                    ]);
+
+                                    if ($milestone->reward_type === 'wallet') {
+                                        $balanceBefore = (float) $referrer->wallet_balance;
+                                        $balanceAfter = $balanceBefore + $rewardAmount;
+                                        $referrer->wallet_balance = $balanceAfter;
+                                        $referrer->save();
+
+                                        WalletTransaction::create([
+                                            'party_id' => $referrer->id,
+                                            'amount' => $rewardAmount,
+                                            'type' => 'credit',
+                                            'reference_type' => 'referral_reward',
+                                            'reference_id' => $rewardId,
+                                            'description' => 'Referral reward for referring customer '.trim($party->firstname.' '.$party->lastname),
+                                            'created_by' => auth()->id() ?? $order->created_by,
+                                            'balance_before' => $balanceBefore,
+                                            'balance_after' => $balanceAfter,
+                                        ]);
+                                    } elseif ($milestone->reward_type === 'coupon') {
+                                        $couponCode = 'REF-'.strtoupper(Str::random(8));
+                                        Coupon::create([
+                                            'code' => $couponCode,
+                                            'type' => 'fixed',
+                                            'value' => (float) $milestone->reward_value,
+                                            'usage_limit' => 1,
+                                            'expiry_date' => now()->addMonths(6), // Referral coupons expire in 6 months
+                                            'is_active' => true,
+                                            'status' => 'active',
+                                        ]);
+                                        DB::table('referral_rewards')->where('id', $rewardId)->update([
+                                            'coupon_code' => $couponCode,
+                                            'updated_at' => now(),
+                                        ]);
+                                    } elseif ($milestone->reward_type === 'product') {
+                                        $couponCode = 'GIFT-'.strtoupper(Str::random(8));
+                                        Coupon::create([
+                                            'code' => $couponCode,
+                                            'type' => 'percentage',
+                                            'value' => 100.00,
+                                            'usage_limit' => 1,
+                                            'expiry_date' => now()->addMonths(6),
+                                            'applicable_products' => [$milestone->reward_value],
+                                            'is_active' => true,
+                                            'status' => 'active',
+                                        ]);
+                                        DB::table('referral_rewards')->where('id', $rewardId)->update([
+                                            'coupon_code' => $couponCode,
+                                            'updated_at' => now(),
+                                        ]);
+                                    }
+
+                                    // Mark as completed only after all side-effects succeed
+                                    DB::table('referral_rewards')->where('id', $rewardId)->update([
+                                        'status' => 'completed',
+                                        'updated_at' => now(),
+                                    ]);
+
+                                    $rewardGranted = true;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            $shipment = $order->shipments()->first();
+            if ($shipment) {
+                $shipment->update([
+                    'status' => 'delivered',
+                    'delivered_at' => now(),
+                    'delivered_by' => auth()->user()?->name ?? 'System',
+                ]);
+            }
+        }, 3);
+
+        $order->refresh();
+    }
+
+    /**
+     * Undo deliverOrder.
+     */
+    public function revertDeliveredToDispatched(Order $order): void
+    {
+        DB::transaction(function () use ($order) {
+            $order = Order::with(['items'])->lockForUpdate()->findOrFail($order->id);
+
+            if ($order->status !== 'delivered') {
+                throw ValidationException::withMessages([
+                    'status' => 'Only delivered orders can be reverted to dispatched.',
+                ]);
+            }
+
+            if ($order->type === 'sale' && $order->warehouse_id) {
+                $order->loadMissing('items');
+                foreach ($order->items as $item) {
+                    $productId = (int) $item->product_id;
+                    $warehouseId = (int) $order->warehouse_id;
+                    $qty = (float) $item->quantity;
+
+                    $stock = $this->getStockForUpdate($productId, $warehouseId);
+                    $stock->dispatched_qty = (float) $stock->dispatched_qty + $qty;
+                    $stock->save();
+
+                    $this->syncProductStatus($productId);
+                }
+            }
+
+            $order->update(['status' => 'dispatched', 'updated_by' => auth()->id()]);
+
+            $this->revokeReferralReward($order);
+            $this->revokeOrderCashback($order);
+
+            $shipment = $order->shipments()->first();
+            if ($shipment) {
+                $shipment->update([
+                    'status' => 'in_transit',
+                    'delivered_at' => null,
+                    'delivered_by' => null,
+                ]);
+            }
+        }, 3);
+    }
+
+    /**
+     * Return a delivered or dispatched order.
+     */
+    public function returnOrder(Order $order): void
+    {
+        DB::transaction(function () use ($order) {
+            $order = Order::with(['items'])->lockForUpdate()->findOrFail($order->id);
+
+            if (! in_array($order->status, ['delivered', 'dispatched'], true)) {
+                throw ValidationException::withMessages([
+                    'status' => 'Only delivered or dispatched orders can be marked as returned.',
+                ]);
+            }
+
+            if ($order->type === 'sale' && $order->warehouse_id) {
+                // Determine already restocked items via completed RMAs to prevent double-restocking
+                $alreadyRestocked = DB::table('order_return_items')
+                    ->join('order_returns', 'order_return_items.order_return_id', '=', 'order_returns.id')
+                    ->where('order_returns.order_id', $order->id)
+                    ->where('order_returns.status', 'completed')
+                    ->select('order_return_items.product_id', DB::raw('SUM(order_return_items.restocked_qty + order_return_items.damaged_qty) as total_restocked'))
+                    ->groupBy('order_return_items.product_id')
+                    ->pluck('total_restocked', 'product_id');
+
+                foreach ($order->items as $item) {
+                    $productId = (int) $item->product_id;
+                    $warehouseId = (int) $order->warehouse_id;
+                    $qty = (float) $item->quantity;
+
+                    $previouslyRestocked = (float) ($alreadyRestocked[$productId] ?? 0);
+                    $qtyToRestock = max(0.0, $qty - $previouslyRestocked);
+
+                    $stock = $this->getStockForUpdate($productId, $warehouseId);
+
+                    if ($qtyToRestock > 0) {
+                        $stock->quantity = (float) $stock->quantity + $qtyToRestock;
+                        $this->logMovement($productId, $warehouseId, $qtyToRestock, 'in', Order::class, $order->id);
+                    }
+
+                    if (in_array($order->status, Order::inTransitStatuses(), true)) {
+                        $stock->dispatched_qty = max(0.0, (float) $stock->dispatched_qty - $qty);
+                    }
+
+                    $stock->save();
+
+                    $this->syncProductStatus($productId);
+                }
+            }
+
+            $order->update(['status' => 'returned', 'updated_by' => auth()->id()]);
+
+            $this->revokeReferralReward($order);
+            $this->revokeOrderCashback($order);
+
+            $invoice = $order->invoices()->latest()->first();
+            if ($invoice && $invoice->status !== 'cancelled') {
+                $invoice->update(['status' => 'cancelled']);
+            }
+
+            $shipment = $order->shipments()->first();
+            if ($shipment) {
+                $shipment->update([
+                    'status' => 'returned',
+                ]);
+            }
+        }, 3);
+    }
+
+    /**
+     * Process a return item after Quality Check (QC).
+     */
+    public function processReturnItem(
+        int $productId,
+        int $warehouseId,
+        float $restockQty,
+        float $damageQty,
+        ?int $orderReturnId = null
+    ): void {
+        DB::transaction(function () use ($productId, $warehouseId, $restockQty, $damageQty, $orderReturnId) {
+            if ($restockQty > 0 || $damageQty > 0) {
+                $stock = $this->getStockForUpdate($productId, $warehouseId);
+
+                if ($restockQty > 0) {
+                    $stock->quantity = (float) $stock->quantity + $restockQty;
+                    $this->logMovement($productId, $warehouseId, $restockQty, 'in', OrderReturn::class, $orderReturnId);
+                }
+
+                if ($damageQty > 0) {
+                    $stock->damaged_qty = (float) $stock->damaged_qty + $damageQty;
+                    $this->logMovement($productId, $warehouseId, $damageQty, 'damage_in', OrderReturn::class, $orderReturnId);
+                }
+
+                $stock->save();
+                $this->syncProductStatus($productId);
+            }
+        }, 3);
+    }
+
+    /**
+     * Revoke a referral reward if the order is returned or reverted.
+     */
+    protected function revokeReferralReward(Order $order): void
+    {
+        $rewards = DB::table('referral_rewards')
+            ->where('order_id', $order->id)
+            ->where('status', 'completed')
+            ->get();
+
+        foreach ($rewards as $reward) {
+            if ($reward->reward_type === 'wallet') {
+                $referrer = Party::whereKey($reward->referrer_id)->lockForUpdate()->first();
+                if ($referrer) {
+                    $balanceBefore = (float) $referrer->wallet_balance;
+                    $balanceAfter = max(0, $balanceBefore - $reward->reward_amount);
+                    $referrer->wallet_balance = $balanceAfter;
+                    $referrer->save();
+
+                    WalletTransaction::create([
+                        'party_id' => $referrer->id,
+                        'amount' => $reward->reward_amount,
+                        'type' => 'debit',
+                        'reference_type' => 'referral_revoked',
+                        'reference_id' => $reward->id,
+                        'description' => 'Referral reward revoked due to order return/revert',
+                        'created_by' => auth()->id() ?? $order->created_by,
+                        'balance_before' => $balanceBefore,
+                        'balance_after' => $balanceAfter,
+                    ]);
+                }
+            } elseif (in_array($reward->reward_type, ['coupon', 'product'])) {
+                // Revoke only the coupon issued for this specific reward.
+                // Older rows have no linked code; leave unrelated coupons active.
+                if (! empty($reward->coupon_code)) {
+                    Coupon::where('code', $reward->coupon_code)
+                        ->where('used_count', 0)
+                        ->update(['is_active' => false, 'status' => 'inactive']);
+                }
+            }
+
+            DB::table('referral_rewards')->where('id', $reward->id)->update([
+                'status' => 'revoked',
+                'updated_at' => now(),
+            ]);
+        }
+    }
+
+    /**
+     * Refund the wallet amount used for an order when it is cancelled.
+     */
+    protected function refundOrderWalletUsage(Order $order): void
+    {
+        if ($order->wallet_amount_used > 0 && $order->party_id) {
+            $party = Party::whereKey($order->party_id)->lockForUpdate()->first();
+            if ($party) {
+                $balanceBefore = (float) $party->wallet_balance;
+                $balanceAfter = $balanceBefore + (float) $order->wallet_amount_used;
+                $party->increment('wallet_balance', (float) $order->wallet_amount_used);
+
+                WalletTransaction::create([
+                    'party_id' => $party->id,
+                    'amount' => $order->wallet_amount_used,
+                    'type' => 'credit',
+                    'reference_type' => 'order_refund',
+                    'reference_id' => $order->id,
+                    'description' => 'Wallet balance refunded due to order #'.$order->order_no.' cancellation',
+                    'created_by' => auth()->id() ?? $order->created_by,
+                    'balance_before' => $balanceBefore,
+                    'balance_after' => $balanceAfter,
+                ]);
+
+                $order->wallet_amount_used = 0;
+                $order->saveQuietly();
+            }
+        }
+    }
+
+    /**
+     * Credit the cashback earned from an order when it is successfully delivered.
+     */
+    public function creditOrderCashback(Order $order): void
+    {
+        if ($order->cashback_earned > 0 && $order->party_id) {
+            $credits = WalletTransaction::where('reference_type', 'cashback_earned')
+                ->where('reference_id', $order->id)
+                ->where('type', 'credit')
+                ->sum('amount');
+
+            $debits = WalletTransaction::where('reference_type', 'cashback_revoked')
+                ->where('reference_id', $order->id)
+                ->where('type', 'debit')
+                ->sum('amount');
+
+            $netCredited = $credits - $debits;
+            $amountToCredit = $order->cashback_earned - $netCredited;
+
+            if ($amountToCredit > 0) {
+                $party = Party::whereKey($order->party_id)->lockForUpdate()->first();
+                if ($party) {
+                    $balanceBefore = (float) $party->wallet_balance;
+                    $balanceAfter = $balanceBefore + $amountToCredit;
+                    $party->wallet_balance = $balanceAfter;
+                    $party->save();
+
+                    WalletTransaction::create([
+                        'party_id' => $party->id,
+                        'amount' => $amountToCredit,
+                        'type' => 'credit',
+                        'reference_type' => 'cashback_earned',
+                        'reference_id' => $order->id,
+                        'description' => 'Cashback earned from delivered order #'.$order->order_no,
+                        'created_by' => auth()->id() ?? $order->created_by,
+                        'balance_before' => $balanceBefore,
+                        'balance_after' => $balanceAfter,
+                    ]);
+                }
+            }
+        }
+    }
+
+    /**
+     * Revoke the cashback earned from an order if it is returned or reverted from delivered status.
+     */
+    public function revokeOrderCashback(Order $order): void
+    {
+        if ($order->cashback_earned > 0 && $order->party_id) {
+            $credits = WalletTransaction::where('reference_type', 'cashback_earned')
+                ->where('reference_id', $order->id)
+                ->where('type', 'credit')
+                ->sum('amount');
+
+            $debits = WalletTransaction::where('reference_type', 'cashback_revoked')
+                ->where('reference_id', $order->id)
+                ->where('type', 'debit')
+                ->sum('amount');
+
+            $netCredited = $credits - $debits;
+
+            if ($netCredited > 0) {
+                $party = Party::whereKey($order->party_id)->lockForUpdate()->first();
+                if ($party) {
+                    // Prevent negative balance, cap at 0
+                    $clawbackAmount = min((float) $party->wallet_balance, (float) $netCredited);
+
+                    $balanceBefore = (float) $party->wallet_balance;
+                    $balanceAfter = max(0, $balanceBefore - $netCredited);
+                    $party->wallet_balance = $balanceAfter;
+                    $party->save();
+
+                    if ($clawbackAmount > 0) {
+                        WalletTransaction::create([
+                            'party_id' => $party->id,
+                            'amount' => $clawbackAmount,
+                            'type' => 'debit',
+                            'reference_type' => 'cashback_revoked',
+                            'reference_id' => $order->id,
+                            'description' => 'Cashback revoked due to order #'.$order->order_no.' return/revert',
+                            'created_by' => auth()->id() ?? $order->created_by,
+                            'balance_before' => $balanceBefore,
+                            'balance_after' => $balanceAfter,
+                        ]);
+                    }
+
+                    // DO NOT mutate $order->cashback_earned to 0! This allows safe re-delivery crediting later.
+                }
+            }
+        }
+    }
+}

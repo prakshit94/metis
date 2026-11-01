@@ -5,7 +5,10 @@ namespace Dedoc\Scramble\Support\OperationExtensions\RulesEvaluator;
 use Dedoc\Scramble\Diagnostics\DiagnosticsCollector;
 use Dedoc\Scramble\Exceptions\RulesEvaluationException;
 use Dedoc\Scramble\Infer\Reflector\ClassReflector;
+use Dedoc\Scramble\Infer\Services\ReferenceTypeResolver;
 use Dedoc\Scramble\Support\RouteInfo;
+use Dedoc\Scramble\Support\Type\ObjectType;
+use Dedoc\Scramble\Support\Type\Reference\MethodCallReferenceType;
 use PhpParser\Node\Expr\Array_;
 use PhpParser\Node\Stmt\Return_;
 use PhpParser\NodeFinder;
@@ -23,6 +26,15 @@ class ComposedFormRequestRulesEvaluator implements RulesEvaluator
 
     public function handle(): array
     {
+        // Temporarily use inferred types only, keeping runtime evaluators below for comparison.
+        //        $type = ReferenceTypeResolver::getInstance()->resolve(
+        //            $this->routeInfo->getScope(),
+        //            new MethodCallReferenceType(new ObjectType($this->classReflector->className), 'rules', []),
+        //        );
+        //        $rules = (new TypeToRules)->evaluate($type);
+        //
+        //        return is_array($rules) ? $rules : [];
+
         $rulesMethod = $this->classReflector->getMethod('rules');
         $rulesMethodNode = $rulesMethod->getAstNode();
 
@@ -33,18 +45,35 @@ class ComposedFormRequestRulesEvaluator implements RulesEvaluator
         );
         $returnNode = $returnNodeStatement?->expr ?? null;
 
+        $formRequestDiagnostics = new DiagnosticsCollector;
+        $nodeDiagnostics = new DiagnosticsCollector;
+
         $evaluators = [
-            new FormRequestRulesEvaluator($this->classReflector, $this->method, $this->diagnostics),
-            new NodeRulesEvaluator($this->printer, $rulesMethodNode, $returnNode, $this->method, $this->classReflector->className, $rulesMethod->getFunctionLikeDefinition()->getScope(), $this->diagnostics, $this->routeInfo),
+            [new FormRequestRulesEvaluator($this->classReflector, $this->method, $formRequestDiagnostics), $formRequestDiagnostics],
+            [new NodeRulesEvaluator($this->printer, $rulesMethodNode, $returnNode, $this->method, $this->classReflector->className, $rulesMethod->getFunctionLikeDefinition()->getScope(), $nodeDiagnostics, $this->routeInfo), $nodeDiagnostics],
         ];
 
         $exceptions = [];
 
-        foreach ($evaluators as $evaluator) {
+        foreach ($evaluators as [$evaluator, $diagnostics]) {
             try {
-                return $evaluator->handle();
+                $rules = $evaluator->handle();
             } catch (\Throwable $e) {
                 $exceptions[$evaluator::class] = $e;
+
+                continue;
+            }
+
+            foreach ($diagnostics->all() as $diagnostic) {
+                $this->diagnostics->reportOnce($diagnostic);
+            }
+
+            return $rules;
+        }
+
+        foreach ($evaluators as [, $diagnostics]) {
+            foreach ($diagnostics->all() as $diagnostic) {
+                $this->diagnostics->reportOnce($diagnostic);
             }
         }
 

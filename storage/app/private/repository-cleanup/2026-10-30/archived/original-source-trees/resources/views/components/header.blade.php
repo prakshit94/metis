@@ -1,0 +1,1369 @@
+<!-- Header -->
+@php
+    $brandLogo = $brandLogo ?? \App\Services\BrandLogo::resolve(\App\Models\SystemSetting::where('key', 'default_image_logo_png')->value('value'));
+    $logoImage = $brandLogo['src'];
+    $headerAvatarFallback = ($defaultAvatarUrl ?? '') ?: asset(Auth::user()?->gender === 'Male' ? 'assets/images/default_male.png' : (Auth::user()?->gender === 'Female' ? 'assets/images/default_female.png' : 'assets/images/default_avatar.jpeg'));
+    $headerPhoto = Auth::user()?->photo;
+    $headerPhotoUrl = $headerPhoto ? (str_starts_with($headerPhoto, 'http') || str_starts_with($headerPhoto, '/') ? $headerPhoto : asset('storage/'.$headerPhoto)) : $headerAvatarFallback;
+@endphp
+<header class="admin-header border-bottom shadow-sm sticky-top" role="banner" style="z-index: 1040; min-height: 70px;">
+    <nav class="navbar admin-navbar navbar-expand h-100 py-0" aria-label="Main navigation">
+        <div class="container-fluid align-items-center h-100 px-3 px-md-4 d-flex justify-content-between">
+
+            {{-- ── LEFT SECTION (Brand & Toggle) ────────────────── --}}
+            <div class="header-left-section d-flex align-items-center gap-2 gap-md-4 flex-shrink-0" style="min-width: 0;">
+                
+                {{-- SIDEBAR TOGGLE --}}
+                @if(!isset($hideSidebar) || !$hideSidebar)
+                <button class="header-icon-control btn btn-outline-secondary border-0 shadow-sm bg-body rounded-circle p-2 d-flex align-items-center justify-content-center transition-all hover-scale"
+                        style="width: 42px; height: 42px;"
+                        type="button"
+                        data-sidebar-toggle
+                        aria-label="Toggle sidebar"
+                        aria-controls="admin-sidebar"
+                        aria-expanded="false">
+                    <i class="bi bi-list fs-4 text-body-emphasis" aria-hidden="true"></i>
+                </button>
+                @endif
+
+                {{-- BRAND --}}
+                <a class="navbar-brand d-flex align-items-center gap-3 m-0 py-2" href="{{ route('dashboard') }}" aria-label="Ecommerce Admin — go to dashboard">
+                    <div class="brand-logo-container rounded-3 bg-white d-flex align-items-center justify-content-center flex-shrink-0 transition-all hover-rotate" style="width: 42px; height: 42px;">
+                        <img src="{{ $logoImage }}" data-header-logo data-fallback-src="{{ $brandLogo['fallback'] }}" onerror="this.onerror=null;this.src=this.dataset.fallbackSrc;" alt="Ecommerce Admin logo" width="36" height="36" class="d-block object-fit-contain rounded-2" style="max-width: 100%; max-height: 100%;">
+                    </div>
+                    <div class="d-none d-xl-flex flex-column lh-1 text-truncate">
+                        <span class="fw-black text-body-emphasis fs-5 tracking-tight mb-1" style="letter-spacing: -0.5px;">Ecommerce</span>
+                        <span class="text-primary fw-bold text-uppercase" style="font-size: 10px; letter-spacing: 2.5px;">Admin Portal</span>
+                    </div>
+                </a>
+            </div>
+
+            {{-- ── CENTER SECTION (Search) ──────────────────────── --}}
+            @php
+                $hasSearchPermission = auth()->check() && (auth()->user()->hasRole('Super Admin') || auth()->user()->can('search-view'));
+            @endphp
+            @if($hasSearchPermission)
+            <div class="d-none d-md-flex justify-content-center px-4 flex-grow-1" style="max-width: 600px;">
+                <div class="position-relative w-100" x-data="{
+                    searchQuery: '',
+                    items: [
+                        @can('dashboard-view')
+                        { name: 'Dashboard', path: '{{ route('dashboard') }}', icon: 'bi bi-grid-1x2-fill', group: 'Main' },
+                        @endcan
+                        @can('warehouse-dashboard-view')
+                        { name: 'Command Center', path: '{{ route('inventory.dashboard') }}', icon: 'bi bi-buildings', group: 'Main' },
+                        @endcan
+                        @can('analytics-view')
+                        { name: 'Analytics', path: '{{ route('analytics') }}', icon: 'bi bi-bar-chart-line-fill', group: 'Main' },
+                        @endcan
+                        @can('reports-view')
+                        { name: 'Reports', path: '{{ route('reports') }}', icon: 'bi bi-file-earmark-bar-graph-fill', group: 'Main' },
+                        @endcan
+                        @canany(['target-view', 'target-view-all'])
+                        { name: 'Targets & Achv.', path: '{{ route('targets.index') }}', icon: 'bi bi-award-fill', group: 'Main' },
+                        @endcanany
+                        
+                        @can('orders.view')
+                        { name: 'Orders', path: '{{ route('orders') }}', icon: 'bi bi-bag-check-fill', group: 'Sales & Marketing' },
+                        @endcan
+                        @can('complaints.view')
+                        { name: 'Complaints', path: '{{ route('complaints.index') }}', icon: 'bi bi-headset', group: 'Sales & Marketing' },
+                        @endcan
+                        @can('coupon-view')
+                        { name: 'Coupon Codes', path: '{{ route('promotions.coupons') }}', icon: 'bi bi-ticket-perforated-fill', group: 'Sales & Marketing' },
+                        @endcan
+                        @can('promotions-view')
+                        { name: 'Offers & Deals', path: '{{ route('promotions.offers') }}', icon: 'bi bi-star-fill', group: 'Sales & Marketing' },
+                        { name: 'Referral Programs', path: '{{ route('referrals.programs.index') }}', icon: 'bi bi-diagram-3-fill', group: 'Sales & Marketing' },
+                        @endcan
+                        
+                        @can('invoices.view')
+                        { name: 'Invoices', path: '{{ route('invoices.index') }}', icon: 'bi bi-receipt', group: 'Billing & Payments' },
+                        @endcan
+                        @can('payments.view')
+                        { name: 'Payments', path: '{{ route('payments.index') }}', icon: 'bi bi-credit-card', group: 'Billing & Payments' },
+                        @endcan
+                        @can('refunds.view')
+                        { name: 'Refunds', path: '{{ route('refunds.index') }}', icon: 'bi bi-cash-coin', group: 'Billing & Payments' },
+                        @endcan
+                        @can('returns.view')
+                        { name: 'Returns', path: '{{ route('returns.index') }}', icon: 'bi bi-arrow-return-left', group: 'Billing & Payments' },
+                        @endcan
+                        @can('credit-notes.view')
+                        { name: 'Credit Notes', path: '{{ route('credit-notes.index') }}', icon: 'bi bi-receipt-cutoff', group: 'Billing & Payments' },
+                        @endcan
+                        
+                        @can('shipping-view')
+                        { name: 'Shipments & Tracking', path: '{{ route('shipping.shipments') }}', icon: 'bi bi-geo-alt-fill', group: 'Logistics & Warehouses' },
+                        { name: 'Shipping Services', path: '{{ route('shipping.services') }}', icon: 'bi bi-gear-wide-connected', group: 'Logistics & Warehouses' },
+                        { name: 'Shipping Settings', path: '{{ route('shipping.settings') }}', icon: 'bi bi-sliders', group: 'Logistics & Warehouses' },
+                        @endcan
+                        @can('warehouse-view')
+                        { name: 'Warehouses', path: '{{ route('catalog.warehouses') }}', icon: 'bi bi-buildings-fill', group: 'Logistics & Warehouses' },
+                        @endcan
+                        
+                        @can('stockmanagement-view')
+                        { name: 'Stock Levels', path: '{{ route('inventory.stock-management') }}', icon: 'bi bi-box-seam-fill', group: 'Inventory & Stock' },
+                        @endcan
+                        @can('stocktransfer-view')
+                        { name: 'Stock Transfers', path: '{{ route('inventory.stock-transfers') }}', icon: 'bi bi-arrow-left-right', group: 'Inventory & Stock' },
+                        @endcan
+                        @can('inventoryadjustment-view')
+                        { name: 'Adjustments', path: '{{ route('inventory.adjustments') }}', icon: 'bi bi-sliders2', group: 'Inventory & Stock' },
+                        @endcan
+                        
+                        @can('supplier-view')
+                        { name: 'Suppliers', path: '{{ route('procurement.suppliers.index') }}', icon: 'bi bi-truck-flatbed', group: 'Procurement' },
+                        @endcan
+                        @can('purchaseorder-view')
+                        { name: 'Purchase Orders', path: '{{ route('procurement.purchase-orders.index') }}', icon: 'bi bi-receipt', group: 'Procurement' },
+                        @endcan
+                        @can('goodsreceipt-view')
+                        { name: 'Goods Receipts', path: '{{ route('procurement.goods-receipts.index') }}', icon: 'bi bi-clipboard-check', group: 'Procurement' },
+                        @endcan
+                        
+                        @can('product-view')
+                        { name: 'Products', path: '{{ route('catalog.products') }}', icon: 'bi bi-box-seam-fill', group: 'Catalog Management' },
+                        @endcan
+                        @can('category-view')
+                        { name: 'Categories', path: '{{ route('catalog.categories') }}', icon: 'bi bi-diagram-3-fill', group: 'Catalog Management' },
+                        @endcan
+                        @can('brand-view')
+                        { name: 'Brands', path: '{{ route('catalog.brands') }}', icon: 'bi bi-patch-check-fill', group: 'Catalog Management' },
+                        @endcan
+                        @can('productattribute-view')
+                        { name: 'Attributes', path: '{{ route('catalog.attributes') }}', icon: 'bi bi-sliders2', group: 'Catalog Management' },
+                        @endcan
+                        @can('unitofmeasure-view')
+                        { name: 'Units of Measure', path: '{{ route('catalog.uom') }}', icon: 'bi bi-rulers', group: 'Catalog Management' },
+                        @endcan
+                        @can('taxrate-view')
+                        { name: 'Tax Rates', path: '{{ route('catalog.tax-rates') }}', icon: 'bi bi-percent', group: 'Catalog Management' },
+                        @endcan
+                        @can('hsncode-view')
+                        { name: 'HSN Codes', path: '{{ route('catalog.hsn-codes') }}', icon: 'bi bi-upc-scan', group: 'Catalog Management' },
+                        @endcan
+                        
+                        @can('user-view')
+                        { name: 'Users', path: '{{ route('users') }}', icon: 'bi bi-person-fill-gear', group: 'User & Customer Admin' },
+                        @endcan
+                        @can('role-view')
+                        { name: 'Roles & Permissions', path: '{{ route('roles-permissions') }}', icon: 'bi bi-shield-lock-fill', group: 'User & Customer Admin' },
+                        @endcan
+                        @can('team-view')
+                        { name: 'States & Offices', path: '{{ route('teams') }}', icon: 'bi bi-buildings-fill', group: 'User & Customer Admin' },
+                        @endcan
+                        @role('Super Admin')
+                        { name: 'Customers', path: '{{ route('customers') }}', icon: 'bi bi-person-lines-fill', group: 'User & Customer Admin' },
+                        { name: 'Customer Settings', path: '{{ route('customer-settings.index') }}', icon: 'bi bi-gear-wide-connected', group: 'User & Customer Admin' },
+                        @endrole
+                        @can('department-view')
+                        { name: 'Departments', path: '{{ route('departments') }}', icon: 'bi bi-diagram-3-fill', group: 'User & Customer Admin' },
+                        @endcan
+                        
+                        @can('attendance-view')
+                        { name: 'Attendances', path: '{{ route('attendances') }}', icon: 'bi bi-calendar-check-fill', group: 'Time Management' },
+                        @endcan
+                        @can('leave-view')
+                        { name: 'Leave Management', path: '{{ route('leaves') }}', icon: 'bi bi-calendar-minus-fill', group: 'Time Management' },
+                        @endcan
+                        
+                        @can('village-view')
+                        { name: 'Villages', path: '{{ route('villages') }}', icon: 'bi bi-geo-alt-fill', group: 'System Settings' },
+                        @endcan
+                        @can('orderreason-view')
+                        { name: 'Order Reasons', path: '{{ route('order.reasons') }}', icon: 'bi bi-list-task', group: 'System Settings' },
+                        @endcan
+                        @can('calltag-view')
+                        { name: 'Call Tags', path: '{{ route('call-tags.index') }}', icon: 'bi bi-tags', group: 'System Settings' },
+                        @endcan
+                        
+                        @can('chat-view')
+                        { name: 'Team Chat', path: '{{ route('chat.index') }}', icon: 'bi bi-chat-text-fill', group: 'Utilities & Tools' },
+                        @endcan
+                        @role('Super Admin')
+                        { name: 'Messages', path: '{{ route('messages') }}', icon: 'bi bi-chat-dots-fill', group: 'Utilities & Tools' },
+                        { name: 'Calendar', path: '{{ route('calendar') }}', icon: 'bi bi-calendar-week-fill', group: 'Utilities & Tools' },
+                        @endrole
+                        @can('files-view')
+                        { name: 'Files', path: '{{ route('files') }}', icon: 'bi bi-folder2-open', group: 'Utilities & Tools' },
+                        @endcan
+                        @role('Super Admin')
+                        { name: 'Forms', path: '{{ route('forms') }}', icon: 'bi bi-ui-checks-grid', group: 'Utilities & Tools' },
+                        @endrole
+                        @can('settings-view')
+                        { name: 'UI Elements', path: '{{ route('elements') }}', icon: 'bi bi-puzzle-fill', group: 'Utilities & Tools' },
+                        @endcan
+                        @role('Super Admin')
+                        { name: 'Security', path: '{{ route('security') }}', icon: 'bi bi-shield-fill-check', group: 'Utilities & Tools' },
+                        { name: 'Audit Logs', path: '{{ route('admin.audit-logs.index') }}', icon: 'bi bi-journal-medical', group: 'Utilities & Tools' },
+                        { name: 'Help & Support', path: '{{ route('help') }}', icon: 'bi bi-question-circle-fill', group: 'Utilities & Tools' },
+                        { name: 'API Documentation', path: '/docs/api', icon: 'bi bi-file-earmark-code-fill', group: 'Utilities & Tools' }
+                        @endrole
+                    ],
+                    selectedIndex: -1,
+                    get filteredItems() {
+                        if (!this.searchQuery) return [];
+                        return this.items.filter(item => 
+                            item.name.toLowerCase().includes(this.searchQuery.toLowerCase()) || 
+                            item.group.toLowerCase().includes(this.searchQuery.toLowerCase())
+                        );
+                    },
+                    clearSearch() {
+                        this.searchQuery = '';
+                        this.selectedIndex = -1;
+                    },
+                    handleKeydown(e) {
+                        const items = this.filteredItems;
+                        if (!items.length) return;
+                        
+                        if (e.key === 'ArrowDown') {
+                            e.preventDefault();
+                            this.selectedIndex = this.selectedIndex < items.length - 1 ? this.selectedIndex + 1 : 0;
+                            this.$nextTick(() => this.scrollToSelected());
+                        } else if (e.key === 'ArrowUp') {
+                            e.preventDefault();
+                            this.selectedIndex = this.selectedIndex > 0 ? this.selectedIndex - 1 : items.length - 1;
+                            this.$nextTick(() => this.scrollToSelected());
+                        } else if (e.key === 'Enter') {
+                            e.preventDefault();
+                            if (this.selectedIndex >= 0 && this.selectedIndex < items.length) {
+                                window.location.href = items[this.selectedIndex].path;
+                            } else if (items.length > 0) {
+                                window.location.href = items[0].path;
+                            }
+                        }
+                    },
+                    scrollToSelected() {
+                        const container = this.$refs.resultsContainer;
+                        if (!container) return;
+                        const activeItem = container.children[this.selectedIndex];
+                        if (activeItem) {
+                            const offsetBottom = activeItem.offsetTop + activeItem.offsetHeight;
+                            if (offsetBottom > container.scrollTop + container.offsetHeight) {
+                                container.scrollTop = offsetBottom - container.offsetHeight;
+                            } else if (activeItem.offsetTop < container.scrollTop) {
+                                container.scrollTop = activeItem.offsetTop;
+                            }
+                        }
+                    }
+                }"
+                @click.outside="clearSearch()"
+                x-init="$watch('searchQuery', value => { selectedIndex = -1; })">
+                    <div class="position-relative d-flex align-items-center">
+                        <div class="position-absolute start-0 ps-3 text-muted d-flex align-items-center" style="z-index: 10;">
+                            <i class="bi bi-search fs-5 text-primary" aria-hidden="true"></i>
+                        </div>
+                        
+                        <input type="text"
+                               x-ref="searchInput"
+                               class="form-control form-control-lg bg-body-secondary bg-opacity-50 border-0 rounded-pill shadow-none fw-semibold w-100 transition-all focus-ring focus-ring-primary"
+                               style="font-size: 14px; letter-spacing: 0.5px; padding-left: 3rem !important; padding-right: 4rem !important;"
+                               placeholder="Search or jump to..."
+                               x-model="searchQuery"
+                               @keydown.window.meta.k="if ($refs.searchInput.getClientRects().length) { $event.preventDefault(); $refs.searchInput.focus(); }"
+                               @keydown.window.ctrl.k="if ($refs.searchInput.getClientRects().length) { $event.preventDefault(); $refs.searchInput.focus(); }"
+                               @keydown="handleKeydown($event)"
+                               @keydown.escape="clearSearch()"
+                               aria-label="Search pages">
+                               
+                        <div class="position-absolute end-0 pe-2 d-flex align-items-center gap-1" style="z-index: 10;">
+                            <span class="badge bg-body-tertiary text-body border shadow-sm rounded-2 px-2 py-1 d-none d-lg-block" style="font-size: 10px;" x-show="searchQuery.length === 0">⌘K</span>
+                            <button type="button" class="btn btn-sm btn-link text-muted p-1 text-decoration-none" aria-label="Clear page search" @click="clearSearch()" x-show="searchQuery.length > 0" x-cloak>
+                                <i class="bi bi-x-circle-fill"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Search Results Overlay -->
+                    <div x-show="searchQuery && filteredItems.length > 0" 
+                         x-ref="resultsContainer"
+                         class="position-absolute bg-body border rounded shadow-lg p-2 mt-2 w-100" 
+                         style="z-index: 1050; left: 0; right: 0; max-height: 350px; overflow-y: auto;"
+                         x-cloak>
+                        <template x-for="(item, index) in filteredItems" :key="item.path">
+                            <a :href="item.path" 
+                               class="dropdown-item py-2 px-3 rounded d-flex align-items-center gap-2"
+                               :class="{'bg-primary-subtle text-primary fw-bold': selectedIndex === index}"
+                               style="font-size: 0.875rem; transition: background-color 0.15s ease;"
+                               @mouseenter="selectedIndex = index"
+                               @click="clearSearch()">
+                                <i :class="item.icon" class="text-primary fs-6"></i>
+                                <span class="fw-semibold" x-text="item.name"></span>
+                                <span class="badge ms-auto" :class="selectedIndex === index ? 'text-bg-primary' : 'text-bg-secondary'" style="font-size: 0.65rem;" x-text="item.group"></span>
+                            </a>
+                        </template>
+                    </div>
+                    <div x-show="searchQuery && filteredItems.length === 0" 
+                         class="position-absolute bg-body border rounded shadow p-3 mt-2 w-100 text-center text-muted small" 
+                         style="z-index: 1050; left: 0; right: 0;"
+                         x-cloak>
+                        No pages found matching "<span x-text="searchQuery" class="fw-bold"></span>"
+                    </div>
+                </div>
+            </div>
+            @endif
+            {{-- ── RIGHT ACTIONS ─────────────────────────────────── --}}
+            <div class="header-right-actions d-flex align-items-center justify-content-end gap-2 gap-sm-3 h-100 flex-shrink-0">
+
+{{-- Theme Toggle --}}
+                <div x-data="themeSwitch" class="h-100 d-flex align-items-center">
+                    <button class="header-icon-control btn btn-outline-secondary border-0 shadow-sm bg-body rounded-circle p-2 d-flex align-items-center justify-content-center transition-all hover-scale"
+                            style="width: 42px; height: 42px;"
+                            type="button"
+                            @click="toggle()"
+                            data-bs-toggle="tooltip"
+                            data-bs-placement="bottom"
+                            :title="currentTheme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'"
+                            aria-label="Toggle theme">
+                        <i class="bi bi-sun-fill fs-5 text-warning" x-show="currentTheme === 'light'" aria-hidden="true"></i>
+                        <i class="bi bi-moon-stars-fill fs-5 text-primary" x-show="currentTheme === 'dark'" aria-hidden="true" x-cloak></i>
+                    </button>
+                </div>
+
+{{-- Fullscreen Toggle --}}
+                <button class="header-icon-control btn btn-outline-secondary border-0 shadow-sm bg-body rounded-circle p-2 d-flex align-items-center justify-content-center transition-all hover-scale d-none d-lg-flex"
+                        style="width: 42px; height: 42px;"
+                        type="button"
+                        data-fullscreen-toggle
+                        data-bs-toggle="tooltip"
+                        data-bs-placement="bottom"
+                        title="Toggle fullscreen"
+                        aria-label="Toggle fullscreen">
+                    <i class="bi bi-arrows-fullscreen fs-5 text-secondary" aria-hidden="true"></i>
+                </button>
+
+@php
+                                        $webApps = [
+['route' => 'dashboard', 'icon' => 'bi-grid-1x2-fill', 'color' => 'primary', 'name' => 'Dashboard', 'permission' => 'dashboard-view'],
+    ['route' => 'inventory.dashboard', 'icon' => 'bi-buildings', 'color' => 'success', 'name' => 'Command Center', 'permission' => 'warehouse-dashboard-view'],
+    ['route' => 'analytics', 'icon' => 'bi-bar-chart-line-fill', 'color' => 'info', 'name' => 'Analytics', 'permission' => 'analytics-view'],
+    ['route' => 'reports', 'icon' => 'bi-file-earmark-bar-graph-fill', 'color' => 'warning', 'name' => 'Reports', 'permission' => 'reports-view'],
+    ['route' => 'targets.index', 'icon' => 'bi-award-fill', 'color' => 'danger', 'name' => 'Targets & Achv.', 'permissions' => ['target-view', 'target-view-all']],
+    ['route' => 'orders', 'icon' => 'bi-bag-check-fill', 'color' => 'secondary', 'name' => 'Orders', 'permission' => 'orders.view'],
+    ['route' => 'complaints.index', 'icon' => 'bi-headset', 'color' => 'dark', 'name' => 'Complaints', 'permission' => 'complaints.view'],
+    ['route' => 'promotions.coupons', 'icon' => 'bi-ticket-perforated-fill', 'color' => 'primary', 'name' => 'Coupon Codes', 'permission' => 'coupon-view'],
+    ['route' => 'promotions.offers', 'icon' => 'bi-star-fill', 'color' => 'success', 'name' => 'Offers & Deals', 'permission' => 'promotions-view'],
+    ['route' => 'referrals.programs.index', 'icon' => 'bi-diagram-3-fill', 'color' => 'info', 'name' => 'Referral Programs', 'permission' => 'promotions-view'],
+    ['route' => 'invoices.index', 'icon' => 'bi-receipt', 'color' => 'warning', 'name' => 'Invoices', 'permission' => 'invoices.view'],
+    ['route' => 'payments.index', 'icon' => 'bi-credit-card', 'color' => 'danger', 'name' => 'Payments', 'permission' => 'payments.view'],
+    ['route' => 'refunds.index', 'icon' => 'bi-cash-coin', 'color' => 'secondary', 'name' => 'Refunds', 'permission' => 'refunds.view'],
+    ['route' => 'returns.index', 'icon' => 'bi-arrow-return-left', 'color' => 'dark', 'name' => 'Returns', 'permission' => 'returns.view'],
+    ['route' => 'credit-notes.index', 'icon' => 'bi-receipt-cutoff', 'color' => 'primary', 'name' => 'Credit Notes', 'permission' => 'credit-notes.view'],
+    ['route' => 'shipping.shipments', 'icon' => 'bi-geo-alt-fill', 'color' => 'success', 'name' => 'Shipments & Tracking', 'permission' => 'shipping-view'],
+    ['route' => 'shipping.services', 'icon' => 'bi-gear-wide-connected', 'color' => 'info', 'name' => 'Shipping Services', 'permission' => 'shipping-view'],
+    ['route' => 'shipping.settings', 'icon' => 'bi-sliders', 'color' => 'warning', 'name' => 'Shipping Settings', 'permission' => 'shipping-view'],
+    ['route' => 'catalog.warehouses', 'icon' => 'bi-buildings-fill', 'color' => 'danger', 'name' => 'Warehouses', 'permission' => 'warehouse-view'],
+    ['route' => 'inventory.stock-management', 'icon' => 'bi-box-seam-fill', 'color' => 'secondary', 'name' => 'Stock Levels', 'permission' => 'stockmanagement-view'],
+    ['route' => 'inventory.stock-transfers', 'icon' => 'bi-arrow-left-right', 'color' => 'dark', 'name' => 'Stock Transfers', 'permission' => 'stocktransfer-view'],
+    ['route' => 'inventory.adjustments', 'icon' => 'bi-sliders2', 'color' => 'primary', 'name' => 'Adjustments', 'permission' => 'inventoryadjustment-view'],
+    ['route' => 'procurement.suppliers.index', 'icon' => 'bi-truck-flatbed', 'color' => 'success', 'name' => 'Suppliers', 'permission' => 'supplier-view'],
+    ['route' => 'procurement.purchase-orders.index', 'icon' => 'bi-receipt', 'color' => 'info', 'name' => 'Purchase Orders', 'permission' => 'purchaseorder-view'],
+    ['route' => 'procurement.goods-receipts.index', 'icon' => 'bi-clipboard-check', 'color' => 'warning', 'name' => 'Goods Receipts', 'permission' => 'goodsreceipt-view'],
+    ['route' => 'catalog.products', 'icon' => 'bi-box-seam-fill', 'color' => 'danger', 'name' => 'Products', 'permission' => 'product-view'],
+    ['route' => 'catalog.categories', 'icon' => 'bi-diagram-3-fill', 'color' => 'secondary', 'name' => 'Categories', 'permission' => 'category-view'],
+    ['route' => 'catalog.brands', 'icon' => 'bi-patch-check-fill', 'color' => 'dark', 'name' => 'Brands', 'permission' => 'brand-view'],
+    ['route' => 'catalog.attributes', 'icon' => 'bi-sliders2', 'color' => 'primary', 'name' => 'Attributes', 'permission' => 'productattribute-view'],
+    ['route' => 'catalog.uom', 'icon' => 'bi-rulers', 'color' => 'success', 'name' => 'Units of Measure', 'permission' => 'unitofmeasure-view'],
+    ['route' => 'catalog.tax-rates', 'icon' => 'bi-percent', 'color' => 'info', 'name' => 'Tax Rates', 'permission' => 'taxrate-view'],
+    ['route' => 'catalog.hsn-codes', 'icon' => 'bi-upc-scan', 'color' => 'warning', 'name' => 'HSN Codes', 'permission' => 'hsncode-view'],
+    ['route' => 'users', 'icon' => 'bi-person-fill-gear', 'color' => 'danger', 'name' => 'Users', 'permission' => 'user-view'],
+    ['route' => 'roles-permissions', 'icon' => 'bi-shield-lock-fill', 'color' => 'secondary', 'name' => 'Roles & Permissions', 'permission' => 'role-view'],
+    ['route' => 'teams', 'icon' => 'bi-buildings-fill', 'color' => 'dark', 'name' => 'States & Offices', 'permission' => 'team-view'],
+    ['route' => 'customers', 'icon' => 'bi-person-lines-fill', 'color' => 'primary', 'name' => 'Customers', 'super_admin_only' => true],
+    ['route' => 'customer-settings.index', 'icon' => 'bi-gear-wide-connected', 'color' => 'success', 'name' => 'Customer Settings', 'super_admin_only' => true],
+    ['route' => 'departments', 'icon' => 'bi-diagram-3-fill', 'color' => 'info', 'name' => 'Departments', 'permission' => 'department-view'],
+    ['route' => 'attendances', 'icon' => 'bi-calendar-check-fill', 'color' => 'warning', 'name' => 'Attendances', 'permission' => 'attendance-view'],
+    ['route' => 'leaves', 'icon' => 'bi-calendar-minus-fill', 'color' => 'danger', 'name' => 'Leave Management', 'permission' => 'leave-view'],
+    ['route' => 'villages', 'icon' => 'bi-geo-alt-fill', 'color' => 'secondary', 'name' => 'Villages', 'permission' => 'village-view'],
+    ['route' => 'order.reasons', 'icon' => 'bi-list-task', 'color' => 'dark', 'name' => 'Order Reasons', 'permission' => 'orderreason-view'],
+    ['route' => 'call-tags.index', 'icon' => 'bi-tags', 'color' => 'primary', 'name' => 'Call Tags', 'permission' => 'settings-view'],
+    ['route' => 'chat.index', 'icon' => 'bi-chat-text-fill', 'color' => 'success', 'name' => 'Team Chat', 'permission' => 'chat-view'],
+    ['route' => 'messages', 'icon' => 'bi-chat-dots-fill', 'color' => 'info', 'name' => 'Messages', 'super_admin_only' => true],
+    ['route' => 'calendar', 'icon' => 'bi-calendar-week-fill', 'color' => 'warning', 'name' => 'Calendar', 'super_admin_only' => true],
+    ['route' => 'files', 'icon' => 'bi-folder2-open', 'color' => 'danger', 'name' => 'Files', 'permission' => 'files-view'],
+    ['route' => 'forms', 'icon' => 'bi-ui-checks-grid', 'color' => 'secondary', 'name' => 'Forms', 'super_admin_only' => true],
+    ['route' => 'elements', 'icon' => 'bi-puzzle-fill', 'color' => 'dark', 'name' => 'UI Elements', 'permission' => 'settings-view'],
+    ['route' => 'security', 'icon' => 'bi-shield-fill-check', 'color' => 'primary', 'name' => 'Security', 'super_admin_only' => true],
+    ['route' => 'admin.audit-logs.index', 'icon' => 'bi-journal-medical', 'color' => 'success', 'name' => 'Audit Logs', 'super_admin_only' => true],
+    ['route' => 'help', 'icon' => 'bi-question-circle-fill', 'color' => 'info', 'name' => 'Help & Support', 'super_admin_only' => true],
+                    ];
+                    $availableWebApps = [];
+                    if (auth()->check()) {
+                        $isSuperAdmin = auth()->user()->hasRole('Super Admin');
+                        foreach ($webApps as $app) {
+                            $isSuperAdminOnly = $app['super_admin_only'] ?? false;
+                            if ($isSuperAdmin) {
+                                $availableWebApps[] = $app;
+                            } elseif (!$isSuperAdminOnly && (isset($app['permissions']) ? auth()->user()->canAny($app['permissions']) : (!isset($app['permission']) || auth()->user()->can($app['permission'])))) {
+                                $availableWebApps[] = $app;
+                            }
+                        }
+                    }
+                @endphp
+                @if(count($availableWebApps) > 0)
+                {{-- Web Apps Dropdown --}}
+                <div class="dropdown h-100 d-flex align-items-center">
+                    <button class="header-icon-control btn btn-outline-secondary border-0 shadow-sm bg-body rounded-circle p-2 d-flex align-items-center justify-content-center transition-all hover-scale"
+                            style="width: 42px; height: 42px;"
+                            type="button"
+                            id="webAppsMenuBtn"
+                            data-bs-toggle="dropdown"
+                            data-bs-display="static"
+                            aria-expanded="false"
+                            aria-label="Quick Links">
+                        <i class="bi bi-grid-3x3-gap-fill fs-5 text-secondary" aria-hidden="true"></i>
+                    </button>
+                    <div class="dropdown-menu header-floating-menu dropdown-menu-end p-0 shadow-lg border-0 rounded-4 mt-3" aria-labelledby="webAppsMenuBtn" style="width: min(320px, calc(100vw - 1rem));">
+                        <div class="p-3 border-bottom bg-body-secondary bg-opacity-50 rounded-top-4">
+                            <h6 class="m-0 fw-bold text-body text-uppercase" style="font-size: 11px; letter-spacing: 1px;">Quick Links</h6>
+                        </div>
+
+                        <div class="p-3">
+                            <div class="row g-3 text-center custom-scrollbar" style="max-height: 400px; overflow-y: auto; overflow-x: hidden;">
+                                @foreach($availableWebApps as $app)
+                                <div class="col-4">
+                                    <a class="dropdown-item p-2 rounded-3 d-flex flex-column align-items-center gap-2 hover-bg-secondary" href="{{ route($app['route']) }}">
+                                        <div class="{{ $app['color'] === 'dark' ? 'bg-body-secondary text-body' : 'bg-'.$app['color'].' bg-opacity-10 text-'.$app['color'] }} rounded-circle d-flex justify-content-center align-items-center" style="width: 36px; height: 36px;">
+                                            <i class="bi {{ $app['icon'] }} fs-5"></i>
+                                        </div>
+                                        <span class="fw-semibold text-muted" style="font-size: 11px;">{{ $app['name'] }}</span>
+                                    </a>
+                                </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                @endif
+
+{{-- Shopping Cart Dropdown --}}
+                @if(request()->routeIs('orders.create', 'promotions.coupons', 'promotions.offers'))
+                <div class="dropdown h-100 d-flex align-items-center" x-data="headerCart">
+                    <button class="header-icon-control btn btn-outline-secondary border-0 shadow-sm bg-body rounded-circle p-2 d-flex align-items-center justify-content-center transition-all hover-scale position-relative"
+                            style="width: 42px; height: 42px;"
+                            type="button"
+                            id="cartMenuBtn"
+                            data-bs-toggle="dropdown"
+                            data-bs-auto-close="outside"
+                            data-bs-display="static"
+                            aria-expanded="false"
+                            aria-label="Shopping cart">
+                        <i class="bi bi-bag-fill fs-5 text-secondary" aria-hidden="true"></i>
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary border border-2 border-body shadow-sm" style="font-size: 10px; margin-top: 8px; margin-left: -12px;" x-text="items.length" x-show="items.length > 0" x-cloak></span>
+                    </button>
+                    <div class="dropdown-menu header-floating-menu dropdown-menu-end p-0 shadow-lg border-0 rounded-4 mt-3" aria-labelledby="cartMenuBtn" style="width: min(350px, calc(100vw - 1rem));">
+                        <div class="p-3 border-bottom bg-body-secondary bg-opacity-50 rounded-top-4">
+                            <div class="row align-items-center">
+                                <div class="col">
+                                    <h6 class="m-0 fw-bold text-body text-uppercase" style="font-size: 11px; letter-spacing: 1px;">My Cart</h6>
+                                </div>
+                                <div class="col-auto">
+                                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill fw-bold" style="font-size: 10px;"><span x-text="items.length"></span> Items</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div style="max-height: 320px; overflow-y: auto;" class="custom-scrollbar">
+                            <template x-if="items.length === 0">
+                                <div class="p-5 text-center d-flex flex-column align-items-center opacity-75">
+                                    <div class="bg-secondary bg-opacity-10 text-secondary rounded-circle d-flex align-items-center justify-content-center mb-3" style="width: 64px; height: 64px;">
+                                        <i class="bi bi-bag-x fs-2"></i>
+                                    </div>
+                                    <h6 class="fw-bold text-body mb-1">Your cart is empty</h6>
+                                    <p class="text-muted small mb-0">Browse products to add items</p>
+                                </div>
+                            </template>
+                            <div x-show="items.length > 0" x-cloak>
+                                <template x-for="(item, idx) in items" :key="idx">
+                                    <div class="d-flex align-items-center px-3 py-3 border-bottom position-relative hover-bg-secondary transition-all">
+                                        <div class="bg-body-secondary border rounded-3 d-flex align-items-center justify-content-center overflow-hidden me-3 flex-shrink-0" style="width: 48px; height: 48px;">
+                                            <img :src="item.image_url || '{{ asset('assets/images/product-placeholder.svg') }}'" class="header-cart-product-image w-100 h-100 object-fit-contain bg-body-secondary" alt="Product" x-on:error="$el.src='{{ asset('assets/images/product-placeholder.svg') }}'">
+                                        </div>
+                                        <div class="flex-grow-1" style="min-width: 0;">
+                                            <h6 class="mb-1 fw-bold text-body text-truncate fs-6" x-text="item.name"></h6>
+                                            <div class="d-flex align-items-center gap-1 flex-wrap mb-0 text-muted fw-semibold" style="font-size: 11px;">
+                                                <template x-if="item.is_gift"><span class="badge text-bg-success-subtle text-success-emphasis">Free</span></template>
+                                                <template x-if="!item.is_gift"><span>Qty: <span x-text="item.quantity"></span> × ₹ <span x-text="Number(item.price || 0).toFixed(2)"></span></span></template>
+                                            </div>
+                                        </div>
+                                        <div class="text-end ms-2">
+                                            <h6 class="mb-1 fw-black text-success" x-text="'₹ ' + lineTotal(item).toFixed(2)"></h6>
+                                            <template x-if="!item.is_gift">
+                                                <button type="button" class="btn btn-sm btn-link text-danger p-0 text-decoration-none" style="font-size: 11px;" @click="removeItem(idx)">Remove</button>
+                                            </template>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                        <div class="p-3 border-top bg-body-secondary bg-opacity-50 rounded-bottom-4" x-show="items.length > 0" x-cloak>
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h6 class="m-0 text-muted fw-bold text-uppercase" style="font-size: 10px; letter-spacing: 1px;">Grand Total</h6>
+                                <h5 class="m-0 fw-black text-primary" x-text="'₹ ' + cartGrandTotal.toFixed(2)"></h5>
+                            </div>
+                            <button type="button" @click="handleCartClick" class="btn btn-primary w-100 rounded-pill fw-bold text-uppercase shadow-sm d-flex align-items-center justify-content-center gap-2" style="font-size: 11px; letter-spacing: 1px;">
+                                <i class="bi bi-cart-check"></i> View Cart For Checkout
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                @endif
+
+@php
+    $notificationUser = auth()->user();
+    $canViewActivities = $notificationUser
+        && ($notificationUser->can('audit-log-view') || $notificationUser->hasAnyRole(['Super Admin', 'Admin']));
+    $initialActivities = collect();
+    $initialUnreadCount = 0;
+    if ($canViewActivities) {
+        $activitySnapshot = app(\App\Services\ActivityFeedService::class)->snapshot($notificationUser);
+        $activityRecords = $activitySnapshot['activities'];
+        $initialReadIds = $activitySnapshot['readIds'];
+        $initialUnreadCount = $activitySnapshot['count'];
+        $initialActivities = $activityRecords->map(function ($a) use ($initialReadIds) {
+            $causer = $a->causer;
+            $formattedDescription = \App\Http\Controllers\AuditLogController::formatActivityDescription($a);
+            return [
+                'id' => $a->id,
+                'formatted_description' => $formattedDescription,
+                'plain_description' => \App\Http\Controllers\AuditLogController::plainActivityDescription($formattedDescription),
+                'causer_name' => $causer?->name ?? 'System',
+                'causer_photo' => $causer?->photo,
+                'time_ago' => $a->created_at?->diffForHumans() ?? '',
+                'is_read' => in_array($a->id, $initialReadIds, true),
+            ];
+        });
+
+    }
+
+    // -- Alerts Logic --
+    $systemAlerts = collect();
+
+    // 1. Low Stock Products
+    if (auth()->check() && auth()->user()->can('stockmanagement-view') && \Illuminate\Support\Facades\Schema::hasTable('products') && \Illuminate\Support\Facades\Schema::hasTable('stocks')) {
+        try {
+            $lowStocks = \App\Modules\Catalog\Models\Product::where('manage_stock', true)
+                ->where('min_stock_level', '>', 0)
+                ->withSum('stocks', 'quantity')
+                ->havingRaw('COALESCE(stocks_sum_quantity, 0) <= min_stock_level')
+                ->limit(5)
+                ->get();
+            foreach ($lowStocks as $product) {
+                $qty = floatval($product->stocks_sum_quantity ?? 0);
+                $systemAlerts->push((object)[
+                    'id' => 'stock_' . $product->id,
+                    'type' => 'warning',
+                    'icon' => 'bi-box-seam',
+                    'title' => 'Low Stock Alert',
+                    'message' => '<b>'.e($product->name).'</b> is low on stock (<b>'.$qty.'</b> left).',
+                    'time_ago' => null,
+                    'link' => route('catalog.products', ['search' => $product->sku])
+                ]);
+            }
+        } catch (\Exception $e) {}
+    }
+
+    // 2. Open Complaints
+    if (auth()->check() && auth()->user()->can('complaints.view') && \Illuminate\Support\Facades\Schema::hasTable('order_complaints')) {
+        try {
+            $openComplaints = \App\Modules\Orders\Models\OrderComplaint::where('status', 'open')
+                ->latest()
+                ->limit(5)
+                ->get();
+            foreach ($openComplaints as $complaint) {
+                $systemAlerts->push((object)[
+                    'id' => 'complaint_' . $complaint->id,
+                    'type' => 'danger',
+                    'icon' => 'bi-exclamation-triangle',
+                    'title' => 'Open Complaint',
+                    'message' => 'Complaint <b>'.e($complaint->complaint_number).'</b> requires attention.',
+                    'time_ago' => $complaint->created_at ? $complaint->created_at->diffForHumans() : null,
+                    'link' => '#'
+                ]);
+            }
+        } catch (\Exception $e) {}
+    }
+
+    // 3. Pending Leaves
+    if (auth()->check() && auth()->user()->can('leave-view') && \Illuminate\Support\Facades\Schema::hasTable('leaves')) {
+        try {
+            $pendingLeaves = \App\Modules\Users\Models\Leave::with('user')->where('status', 'Pending')
+                ->latest()
+                ->limit(5)
+                ->get();
+            foreach ($pendingLeaves as $leave) {
+                $systemAlerts->push((object)[
+                    'id' => 'leave_' . $leave->id,
+                    'type' => 'info',
+                    'icon' => 'bi-calendar-event',
+                    'title' => 'Pending Leave Request',
+                    'message' => '<b>'.e($leave->user?->name ?? 'A user').'</b> applied for leave.',
+                    'time_ago' => $leave->created_at ? $leave->created_at->diffForHumans() : null,
+                    'link' => route('leaves')
+                ]);
+            }
+        } catch (\Exception $e) {}
+    }
+
+    // 4. Pending Orders
+    if (\Illuminate\Support\Facades\Schema::hasTable('orders') && auth()->check() && (auth()->user()->can('orders.view') || auth()->user()->can('orders.view.pending_confirmation'))) {
+        try {
+            $pendingOrders = \App\Modules\Orders\Models\Order::where('status', 'pending_confirmation')
+                ->latest()
+                ->limit(5)
+                ->get();
+            foreach ($pendingOrders as $order) {
+                $systemAlerts->push((object)[
+                    'id' => 'order_' . $order->id,
+                    'type' => 'primary',
+                    'icon' => 'bi-cart-check',
+                    'title' => 'Pending Order Confirmation',
+                    'message' => 'Order <b>'.e($order->order_no).'</b> is awaiting confirmation.',
+                    'time_ago' => $order->created_at ? $order->created_at->diffForHumans() : null,
+                    'link' => '/orders'
+                ]);
+            }
+        } catch (\Exception $e) {}
+    }
+
+    // 5. Overdue Invoices
+    if (auth()->check() && auth()->user()->can('invoices.view') && \Illuminate\Support\Facades\Schema::hasColumn('invoices', 'due_date')) {
+        try {
+            $overdueInvoices = \App\Modules\Orders\Models\Invoice::where('status', 'unpaid')
+                ->whereNotNull('due_date')
+                ->where('due_date', '<', now())
+                ->latest()
+                ->limit(5)
+                ->get();
+            foreach ($overdueInvoices as $invoice) {
+                $systemAlerts->push((object)[
+                    'id' => 'invoice_' . $invoice->id,
+                    'type' => 'danger',
+                    'icon' => 'bi-receipt',
+                    'title' => 'Overdue Invoice',
+                    'message' => 'Invoice <b>'.e($invoice->invoice_no).'</b> is overdue.',
+                    'time_ago' => $invoice->due_date ? \Carbon\Carbon::parse($invoice->due_date)->diffForHumans() : null,
+                    'link' => '/invoices'
+                ]);
+            }
+        } catch (\Exception $e) {}
+    }
+
+    // 6. Pending Order Returns
+    if (auth()->check() && auth()->user()->can('returns.view') && \Illuminate\Support\Facades\Schema::hasTable('order_returns')) {
+        try {
+            $pendingReturns = \App\Modules\Orders\Models\OrderReturn::where('status', 'pending')
+                ->latest()
+                ->limit(5)
+                ->get();
+            foreach ($pendingReturns as $returnRequest) {
+                $systemAlerts->push((object)[
+                    'id' => 'return_' . $returnRequest->id,
+                    'type' => 'warning',
+                    'icon' => 'bi-arrow-return-left',
+                    'title' => 'Pending Return Request',
+                    'message' => 'Return <b>'.e($returnRequest->return_no).'</b> is awaiting approval.',
+                    'time_ago' => $returnRequest->created_at ? $returnRequest->created_at->diffForHumans() : null,
+                    'link' => '/returns'
+                ]);
+            }
+        } catch (\Exception $e) {}
+    }
+
+    // 7. Pending Refunds
+    if (auth()->check() && auth()->user()->can('refunds.view') && \Illuminate\Support\Facades\Schema::hasTable('refunds')) {
+        try {
+            $pendingRefunds = \App\Modules\Orders\Models\Refund::where('status', 'pending')
+                ->latest()
+                ->limit(5)
+                ->get();
+            foreach ($pendingRefunds as $refund) {
+                $systemAlerts->push((object)[
+                    'id' => 'refund_' . $refund->id,
+                    'type' => 'danger',
+                    'icon' => 'bi-cash-coin',
+                    'title' => 'Pending Refund',
+                    'message' => 'Refund <b>'.e($refund->refund_no).'</b> requires processing.',
+                    'time_ago' => $refund->created_at ? $refund->created_at->diffForHumans() : null,
+                    'link' => '/refunds'
+                ]);
+            }
+        } catch (\Exception $e) {}
+    }
+
+    // 8. Failed Shipments
+    if (auth()->check() && auth()->user()->can('shipping-view') && \Illuminate\Support\Facades\Schema::hasTable('shipments')) {
+        try {
+            $failedShipments = \App\Modules\Orders\Models\Shipment::where('status', 'failed')
+                ->latest()
+                ->limit(5)
+                ->get();
+            foreach ($failedShipments as $shipment) {
+                $systemAlerts->push((object)[
+                    'id' => 'shipment_' . $shipment->id,
+                    'type' => 'danger',
+                    'icon' => 'bi-truck',
+                    'title' => 'Failed Shipment',
+                    'message' => 'Shipment <b>'.e($shipment->shipment_no).'</b> has failed delivery.',
+                    'time_ago' => $shipment->updated_at ? $shipment->updated_at->diffForHumans() : null,
+                    'link' => '/shipping'
+                ]);
+            }
+        } catch (\Exception $e) {}
+    }
+
+    // 9. Pending Stock Adjustments
+    if (auth()->check() && auth()->user()->can('inventoryadjustment-view') && \Illuminate\Support\Facades\Schema::hasTable('inventory_adjustments')) {
+        try {
+            $pendingAdjustments = \App\Modules\Inventory\Models\InventoryAdjustment::where('status', 'pending')
+                ->latest()
+                ->limit(5)
+                ->get();
+            foreach ($pendingAdjustments as $adj) {
+                $systemAlerts->push((object)[
+                    'id' => 'adj_' . $adj->id,
+                    'type' => 'info',
+                    'icon' => 'bi-sliders',
+                    'title' => 'Pending Stock Adjustment',
+                    'message' => 'Adjustment <b>'.e($adj->reference_no).'</b> awaits approval.',
+                    'time_ago' => $adj->created_at ? $adj->created_at->diffForHumans() : null,
+                    'link' => '/inventory/adjustments'
+                ]);
+            }
+        } catch (\Exception $e) {}
+    }
+
+    // 10. Recently Added Products (Last 24 hours)
+    if (auth()->check() && auth()->user()->can('product-view') && \Illuminate\Support\Facades\Schema::hasTable('products')) {
+        try {
+            $newProducts = \App\Modules\Catalog\Models\Product::where('created_at', '>=', now()->subDay())
+                ->latest()
+                ->limit(5)
+                ->get();
+            foreach ($newProducts as $prod) {
+                $systemAlerts->push((object)[
+                    'id' => 'new_prod_' . $prod->id,
+                    'type' => 'success',
+                    'icon' => 'bi-box-seam-fill',
+                    'title' => 'New Product Catalogued',
+                    'message' => '<b>'.e($prod->name).'</b> was recently added.',
+                    'time_ago' => $prod->created_at ? $prod->created_at->diffForHumans() : null,
+                    'link' => route('catalog.products', ['search' => $prod->sku])
+                ]);
+            }
+        } catch (\Exception $e) {}
+    }
+
+    $unreadMessages = collect();
+    // Chat notifications are no longer loaded into the notification bell.
+    // They are handled exclusively by the dedicated chat button in the header.
+
+    // ── Team Chat unread count (for the header chat icon badge only) ──
+    $chatTotalUnread = 0;
+    if (config('chat.enabled', false) && auth()->check() && auth()->user()->can('chat-view')) {
+        try {
+            $chatTotalUnread = app(\App\Services\Chat\ChatService::class)->unreadCounts(auth()->user())['unread_messages'];
+        } catch (\Exception $e) {}
+    }
+
+    $otherAlertsCount = $systemAlerts->count() + $unreadMessages->count();
+    $totalInitialUnread = $initialUnreadCount + $otherAlertsCount;
+@endphp
+                @can('chat-view')
+                {{-- Team Chat quick-access with live unread badge --}}
+                <div class="h-100 d-flex align-items-center"
+                     x-data="headerChatUnread({{ (int) $chatTotalUnread }}, {{ (int) auth()->id() }}, @js((bool) config('chat.enabled', false)))">
+                    <a href="{{ route('chat.index') }}"
+                       class="header-icon-control btn btn-outline-secondary border-0 shadow-sm bg-body rounded-circle p-2 d-flex align-items-center justify-content-center transition-all hover-scale position-relative"
+                       style="width: 42px; height: 42px;"
+                       data-bs-toggle="tooltip"
+                       data-bs-placement="bottom"
+                       title="Team Chat"
+                       :aria-label="chatUnread > 0 ? `Team Chat, ${chatUnread} unread messages` : 'Team Chat'">
+                        <i class="bi bi-chat-dots-fill fs-5 text-secondary" aria-hidden="true"></i>
+                        {{-- Badge: hidden by default via d-none; Alpine shows it only when count > 0 --}}
+                        <span x-cloak
+                              class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger border border-2 border-body shadow-sm align-items-center justify-content-center"
+                              :class="chatUnread > 0 ? 'd-flex' : 'd-none'"
+                              style="font-size: 10px; min-width: 18px; height: 18px; margin-top: 8px; margin-left: -12px;"
+                              x-text="chatUnread > 99 ? '99+' : chatUnread"></span>
+                    </a>
+                </div>
+                @endcan
+
+                {{-- Notifications Dropdown --}}
+                <div class="dropdown h-100 d-flex align-items-center" x-data="notificationApp(@js($initialActivities), {{ $initialUnreadCount }}, {{ $otherAlertsCount }}, @js($canViewActivities))">
+                    <button class="header-icon-control btn btn-outline-secondary border-0 shadow-sm bg-body rounded-circle p-2 d-flex align-items-center justify-content-center transition-all hover-scale position-relative"
+                            style="width: 42px; height: 42px;"
+                            type="button"
+                            id="notificationsMenuBtn"
+                            data-bs-toggle="dropdown"
+                            data-bs-auto-close="outside"
+                            data-bs-display="static"
+                            @click="fetchActivities"
+                            aria-expanded="false"
+                            aria-label="Notifications">
+                        <i class="bi bi-bell-fill fs-5 text-secondary" aria-hidden="true"></i>
+                        <span x-cloak class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger border border-2 border-body shadow-sm align-items-center justify-content-center {{ $totalInitialUnread > 0 ? 'd-flex' : 'd-none' }}" :class="totalCount > 0 ? 'd-flex' : 'd-none'" style="font-size: 10px; min-width: 18px; height: 18px; margin-top: 8px; margin-left: -12px;"><span x-text="totalCount"></span></span>
+                    </button>
+                    <div class="dropdown-menu header-floating-menu dropdown-menu-end p-0 shadow-lg border-0 rounded-4 mt-3"
+                         aria-labelledby="notificationsMenuBtn"
+                         style="width: min(340px, calc(100vw - 1rem));">
+                        <div class="bg-primary rounded-top-4 p-3 text-white">
+                            <div class="d-flex align-items-center justify-content-between mb-3">
+                                <div>
+                                    <h6 class="m-0 fw-bold text-uppercase" style="font-size: 11px; letter-spacing: 1px;">Notifications / Activity</h6>
+                                    <button type="button" @click="markAsRead('all')" class="btn btn-sm btn-link text-white-50 text-decoration-none p-0 mt-1" style="font-size: 10px;">Mark all as read</button>
+                                </div>
+                                <span class="badge bg-body text-primary rounded-pill fw-bold" style="font-size: 10px;"><span x-text="totalCount"></span> Recent</span>
+                            </div>
+                            <ul class="nav nav-tabs nav-tabs-custom border-bottom-0" role="tablist">
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link active py-1 px-3 fs-12 text-white border-0 bg-transparent fw-semibold" data-bs-toggle="tab" data-bs-target="#all-noti-tab" type="button" role="tab" aria-controls="all-noti-tab" aria-selected="true" style="opacity: 0.8;">
+                                        All Activity
+                                        <span class="badge bg-danger rounded-pill ms-1" style="font-size: 10px;" x-show="count > 0" x-text="count"></span>
+                                    </button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link py-1 px-3 fs-12 text-white border-0 bg-transparent fw-semibold" data-bs-toggle="tab" data-bs-target="#alerts-noti-tab" type="button" role="tab" aria-controls="alerts-noti-tab" aria-selected="false" style="opacity: 0.8;">
+                                        Alerts
+                                        <span class="badge bg-danger rounded-pill ms-1" style="font-size: 10px;" x-show="!alertsRead && {{ $systemAlerts->count() }} > 0">{{ $systemAlerts->count() }}</span>
+                                    </button>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <div class="tab-content">
+                            <div class="tab-pane fade show active" id="all-noti-tab" role="tabpanel">
+                                <div style="max-height: 300px; overflow-y: auto;" class="custom-scrollbar">
+                                    <template x-if="activities.length === 0">
+                                        <div class="p-4 text-center opacity-75">
+                                            <i class="bi bi-bell-slash fs-2 text-muted mb-2 d-block"></i>
+                                            <p class="text-muted mb-0">No recent activity.</p>
+                                        </div>
+                                    </template>
+                                    <template x-for="activity in activities" :key="activity.id">
+                                        <a class="dropdown-item p-3 border-bottom d-flex align-items-start gap-3 text-wrap transition-all" href="#" @click.prevent="markAsRead(activity.id)" :class="{
+                                            'bg-primary bg-opacity-10 position-relative': !activity.is_read,
+                                            'hover-bg-secondary opacity-75': activity.is_read
+                                        }">
+                                            <!-- Unread Dot Indicator -->
+                                            <template x-if="!activity.is_read">
+                                                <div class="position-absolute top-50 start-0 translate-middle-y bg-primary rounded-circle ms-2 shadow-sm" style="width: 8px; height: 8px;"></div>
+                                            </template>
+                                            
+                                            <template x-if="activity.causer_photo">
+                                                <img :src="activity.causer_photo" class="rounded-circle flex-shrink-0 object-fit-cover ms-2" :class="!activity.is_read ? 'border border-2 border-primary border-opacity-25' : ''" alt="User" width="40" height="40" x-on:error="$el.src='{{ asset('assets/images/product-placeholder.svg') }}'">
+                                            </template>
+                                            <template x-if="!activity.causer_photo">
+                                                <div class="text-primary rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 ms-2" :class="!activity.is_read ? 'bg-primary bg-opacity-25 border border-2 border-primary border-opacity-25' : 'bg-secondary bg-opacity-10 text-secondary'" style="width: 40px; height: 40px;">
+                                                    <i class="bi bi-person-fill fs-5"></i>
+                                                </div>
+                                            </template>
+                                            <div class="flex-grow-1" style="min-width: 0; overflow-wrap: anywhere;">
+                                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                                    <h6 class="mb-0 fs-13" :class="!activity.is_read ? 'fw-bold text-primary' : 'fw-semibold text-body'" x-text="activity.causer_name"></h6>
+                                                    <template x-if="!activity.is_read">
+                                                        <span class="badge bg-primary rounded-pill shadow-sm" style="font-size: 9px;">New</span>
+                                                    </template>
+                                                </div>
+                                                <p class="mb-1 fs-13" :class="!activity.is_read ? 'text-body' : 'text-muted'" style="line-height: 1.4; overflow-wrap: anywhere;" x-text="activity.plain_description || activity.formatted_description"></p>
+                                                <p class="mb-0 small" :class="!activity.is_read ? 'text-primary text-opacity-75 fw-semibold' : 'text-muted'"><i class="bi bi-clock me-1"></i> <span x-text="activity.time_ago"></span></p>
+                                            </div>
+                                        </a>
+                                    </template>
+                                </div>
+                                <div class="p-2 bg-body-secondary bg-opacity-50 rounded-bottom-4 d-flex align-items-center justify-content-between px-3">
+                                    <button type="button" class="btn btn-sm btn-link text-primary fw-bold text-decoration-none p-0">View All Activity <i class="bi bi-arrow-right-short align-middle"></i></button>
+                                    <button type="button" @click="markAsRead('activities')" x-show="count > 0" class="btn btn-sm btn-link text-muted text-decoration-none p-0 fw-semibold" style="font-size: 11px;"><i class="bi bi-check2-all me-1"></i>Mark read</button>
+                                </div>
+                            </div>
+                            <div class="tab-pane fade" id="alerts-noti-tab" role="tabpanel">
+                                @if($systemAlerts->isEmpty())
+                                <div class="p-5 text-center">
+                                    <div class="bg-info bg-opacity-10 text-info rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3" style="width: 64px; height: 64px;">
+                                        <i class="bi bi-bell-slash fs-2"></i>
+                                    </div>
+                                    <h6 class="fw-bold text-muted mb-0">No new alerts yet!</h6>
+                                </div>
+                                @else
+                                <div style="max-height: 300px; overflow-y: auto;" class="custom-scrollbar">
+                                    @foreach($systemAlerts as $alert)
+                                    <a class="dropdown-item p-3 border-bottom d-flex align-items-start gap-3 text-wrap transition-all" href="{{ $alert->link }}"
+                                       :class="!alertsRead ? 'bg-{{ $alert->type }} bg-opacity-10 position-relative' : 'hover-bg-secondary opacity-75'">
+                                        <template x-if="!alertsRead">
+                                            <div class="position-absolute top-50 start-0 translate-middle-y bg-{{ $alert->type }} rounded-circle ms-2 shadow-sm" style="width: 8px; height: 8px;"></div>
+                                        </template>
+                                        <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 ms-2"
+                                             :class="!alertsRead ? 'bg-{{ $alert->type }} bg-opacity-25 text-{{ $alert->type }} border border-2 border-{{ $alert->type }} border-opacity-25' : 'bg-secondary bg-opacity-10 text-secondary'" style="width: 40px; height: 40px;">
+                                            <i class="bi {{ $alert->icon }} fs-5"></i>
+                                        </div>
+                                        <div class="flex-grow-1" style="min-width: 0; overflow-wrap: anywhere;">
+                                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                                <h6 class="mb-0 fs-13" :class="!alertsRead ? 'fw-bold text-{{ $alert->type }}' : 'fw-semibold text-body'">{{ $alert->title }}</h6>
+                                                <template x-if="!alertsRead">
+                                                    <span class="badge bg-{{ $alert->type }} rounded-pill shadow-sm" style="font-size: 9px;">New</span>
+                                                </template>
+                                            </div>
+                                            <p class="mb-1 fs-13" :class="!alertsRead ? 'text-body fw-bold' : 'text-muted'" style="overflow-wrap: anywhere;">{!! $alert->message !!}</p>
+                                            @if($alert->time_ago)
+                                            <p class="mb-0 small" :class="!alertsRead ? 'text-{{ $alert->type }} text-opacity-75 fw-semibold' : 'text-muted'"><i class="bi bi-clock me-1"></i> {{ $alert->time_ago }}</p>
+                                            @endif
+                                        </div>
+                                    </a>
+                                    @endforeach
+                                </div>
+                                <div class="p-2 bg-body-secondary bg-opacity-50 rounded-bottom-4 d-flex align-items-center justify-content-between px-3">
+                                    <button type="button" class="btn btn-sm btn-link text-primary fw-bold text-decoration-none p-0">View All Alerts <i class="bi bi-arrow-right-short align-middle"></i></button>
+                                    <button type="button" @click="markAsRead('alerts')" x-show="!alertsRead" class="btn btn-sm btn-link text-muted text-decoration-none p-0 fw-semibold" style="font-size: 11px;"><i class="bi bi-check2-all me-1"></i>Mark read</button>
+                                </div>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="vr mx-1 d-none d-md-block opacity-25"></div>
+
+                {{-- User Menu --}}
+                <div class="dropdown h-100 d-flex align-items-center">
+                    <button class="btn btn-outline-secondary border-0 shadow-sm bg-body p-1 pe-md-3 d-flex align-items-center gap-2 rounded-pill transition-all hover-scale"
+                            type="button"
+                            id="userMenuBtn"
+                            data-bs-toggle="dropdown"
+                            data-bs-display="static"
+                            aria-expanded="false"
+                            aria-label="User menu">
+                        <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center shadow-sm overflow-hidden" style="width: 38px; height: 38px;">
+                            <img data-profile-avatar data-profile-user-id="{{ Auth::id() }}" data-profile-photo="{{ Auth::user()?->photo ?? '' }}" data-profile-gender="{{ Auth::user()?->gender ?? '' }}" src="{{ $headerPhotoUrl }}" class="w-100 h-100 object-fit-cover" alt="User" onerror="if (window.ProfileImages) window.ProfileImages.handlePhotoError(event, {gender: this.dataset.profileGender});">
+                        </div>
+                        <span class="d-none d-md-flex flex-column text-start ms-1 lh-1">
+                            <span class="fw-bold text-body" style="font-size: 13px;">{{ Auth::user()?->name ?? 'User' }}</span>
+                            <span class="text-muted fw-semibold" style="font-size: 10px;">
+                                {{ Auth::user()?->roles->first()?->name ?? 'User' }}
+                                @if(Auth::user()?->lob_state_name)
+                                    &bull; {{ Auth::user()->lob_state_name }}
+                                @endif
+                            </span>
+                        </span>
+                        <i class="bi bi-chevron-down text-muted ms-1 d-none d-md-inline" style="font-size: 12px;"></i>
+                    </button>
+                    <ul class="dropdown-menu header-floating-menu dropdown-menu-end shadow-lg border-0 rounded-4 mt-3 py-2"
+                        aria-labelledby="userMenuBtn" style="width: min(280px, calc(100vw - 1rem)); min-width: min(240px, calc(100vw - 1rem));">
+                        
+                        <li class="px-4 py-3 d-flex align-items-center gap-3 border-bottom mb-2">
+                            <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center shadow-sm overflow-hidden" style="width: 48px; height: 48px;">
+                                <img data-profile-avatar data-profile-user-id="{{ Auth::id() }}" data-profile-photo="{{ Auth::user()?->photo ?? '' }}" data-profile-gender="{{ Auth::user()?->gender ?? '' }}" src="{{ $headerPhotoUrl }}" class="w-100 h-100 object-fit-cover" alt="User" onerror="if (window.ProfileImages) window.ProfileImages.handlePhotoError(event, {gender: this.dataset.profileGender});">
+                            </div>
+                            <div style="min-width: 0;">
+                                <h6 class="mb-1 fw-bold text-body text-truncate">{{ Auth::user()?->name ?? 'User' }}</h6>
+                                <p class="mb-0 text-muted small text-truncate">{{ Auth::user()?->email ?? 'admin@example.com' }}</p>
+                                <p class="mb-0 text-primary small fw-semibold text-truncate" style="font-size: 10px;">
+                                    {{ Auth::user()?->roles->first()?->name ?? 'User' }}
+                                    @if(Auth::user()?->lob_state_name)
+                                        &bull; {{ Auth::user()->lob_state_name }}
+                                    @endif
+                                </p>
+                            </div>
+                        </li>
+                        
+                        <li class="px-4 pb-2 border-bottom mb-2 text-center" x-data="{ uploadingHeaderPhoto: false }">
+                            <button type="button" class="btn btn-sm btn-link text-decoration-none fw-semibold" @click="$refs.headerPhotoInput.click()" :disabled="uploadingHeaderPhoto">
+                                <span x-show="!uploadingHeaderPhoto"><i class="bi bi-camera me-1"></i> Change Profile Photo</span>
+                                <span x-show="uploadingHeaderPhoto" x-cloak><span class="spinner-border spinner-border-sm me-1" role="status"></span> Uploading...</span>
+                            </button>
+                            <input type="file" x-ref="headerPhotoInput" class="d-none" accept="image/*" @change="
+                                const file = $event.target.files[0];
+                                if (!file) return;
+                                
+                                const confirmUpload = window.Swal 
+                                    ? Swal.fire({title: 'Update Profile Picture?', text: 'Are you sure you want to change your profile picture?', icon: 'question', showCancelButton: true, confirmButtonText: 'Yes, update it'})
+                                    : Promise.resolve({isConfirmed: confirm('Are you sure you want to change your profile picture?')});
+                                    
+                                confirmUpload.then((result) => {
+                                    if (result.isConfirmed) {
+                                        uploadingHeaderPhoto = true;
+                                        const formData = new FormData();
+                                        formData.append('photo_file', file);
+                                        const csrfToken = document.querySelector('meta[name=csrf-token]')?.content || '';
+                                        
+                                        fetch('/api/users/{{ Auth::id() }}/update-photo', {
+                                            method: 'POST',
+                                            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-TOKEN': csrfToken },
+                                            body: formData
+                                        }).then(async r => { const data = await r.json(); if (!r.ok) throw new Error(data.message || 'Upload failed'); return data; }).then(d => {
+                                            uploadingHeaderPhoto = false;
+                                            $event.target.value = '';
+                                            if(d.photo) {
+                                                window.ProfileImages.updateUserPhoto({id: {{ Auth::id() }}, photo:d.photo});
+                                                if(window.Swal) Swal.fire({icon:'success', title:'Success', text:'Photo updated', toast:true, position:'top-end', showConfirmButton:false, timer:3000});
+                                            } else if(d.message) {
+                                                if(window.Swal) Swal.fire('Error', d.message, 'error');
+                                            }
+                                        }).catch(e => {
+                                            uploadingHeaderPhoto = false;
+                                            $event.target.value = '';
+                                            if(window.Swal) Swal.fire('Error', 'Upload failed', 'error');
+                                        });
+                                    } else {
+                                        $event.target.value = '';
+                                    }
+                                });
+                            ">
+                        </li>
+                        
+                        @php
+                            $todayTargets = collect();
+                            if (Auth::check()) {
+                                $user = Auth::user();
+                                $todayTargets = \App\Models\Target::where('targetable_type', $user->getMorphClass())
+                                    ->where('targetable_id', $user->id)
+                                    ->where('period_type', 'daily')
+                                    ->whereDate('start_date', '<=', \Carbon\Carbon::today())
+                                    ->whereDate('end_date', '>=', \Carbon\Carbon::today())
+                                    ->get();
+                            }
+                        @endphp
+                        
+                        @if($todayTargets->isNotEmpty())
+                            <li class="px-4 py-2 border-bottom mb-2">
+                                <h6 class="mb-2 fw-bold text-uppercase text-muted" style="font-size: 10px; letter-spacing: 0.5px;">Today's Targets</h6>
+                                @foreach($todayTargets as $target)
+                                    @php
+                                        $remaining = max(0, $target->target_amount - $target->achieved_amount);
+                                        $percent = $target->target_amount > 0 ? min(100, round(($target->achieved_amount / $target->target_amount) * 100)) : 0;
+                                        $color = $percent >= 100 ? 'success' : ($percent >= 50 ? 'warning' : 'danger');
+                                        
+                                        $metricLabel = match($target->metric_type) {
+                                            'sales_revenue' => 'Sales Revenue',
+                                            'orders_count' => 'Orders',
+                                            'invoice_collection' => 'Invoice Collection',
+                                            'payment_collection' => 'Payment Collection',
+                                            'calls_made' => 'Calls Made',
+                                            default => ucwords(str_replace('_', ' ', $target->metric_type))
+                                        };
+                                        $prefix = in_array($target->metric_type, ['sales_revenue', 'invoice_collection', 'payment_collection']) ? '₹' : '';
+                                    @endphp
+                                    <div class="mb-3">
+                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                            <span class="small fw-semibold text-body">{{ $metricLabel }}</span>
+                                            <span class="small fw-bold text-{{ $color }}" style="font-size: 11px;">{{ $percent }}%</span>
+                                        </div>
+                                        <div class="progress rounded-pill bg-secondary bg-opacity-25" style="height: 6px;">
+                                            <div class="progress-bar rounded-pill bg-{{ $color }}" role="progressbar" style="width: {{ $percent }}%;" aria-valuenow="{{ $percent }}" aria-valuemin="0" aria-valuemax="100"></div>
+                                        </div>
+                                        <div class="d-flex justify-content-between mt-1 text-muted" style="font-size: 10px;">
+                                            <span>Achieved: <span class="fw-semibold text-body">{{ $prefix }}{{ number_format($target->achieved_amount, in_array($target->metric_type, ['sales_revenue', 'invoice_collection', 'payment_collection']) ? 2 : 0) }}</span></span>
+                                            <span>Target: <span class="fw-semibold text-body">{{ $prefix }}{{ number_format($target->target_amount, in_array($target->metric_type, ['sales_revenue', 'invoice_collection', 'payment_collection']) ? 2 : 0) }}</span></span>
+                                        </div>
+                                        @if($remaining > 0)
+                                            <div class="text-end text-muted mt-0" style="font-size: 10px;">
+                                                Remaining: <span class="fw-semibold text-danger">{{ $prefix }}{{ number_format($remaining, in_array($target->metric_type, ['sales_revenue', 'invoice_collection', 'payment_collection']) ? 2 : 0) }}</span>
+                                            </div>
+                                        @else
+                                            <div class="text-end text-success fw-bold mt-0" style="font-size: 10px;">
+                                                Target Completed! 🎉
+                                            </div>
+                                        @endif
+                                    </div>
+                                @endforeach
+                            </li>
+                        @endif
+                        <li>
+                            <a class="dropdown-item px-4 py-2 d-flex align-items-center gap-3 text-body fw-semibold hover-bg-secondary"
+                               href="#"
+                               onclick="event.preventDefault(); window.dispatchEvent(new CustomEvent('open-profile-modal', { detail: {{ auth()->id() }} }));">
+                                <i class="bi bi-person text-muted fs-5"></i> Profile
+                            </a>
+                        </li>
+
+                        <li>
+                            <a class="dropdown-item px-4 py-2 d-flex align-items-center gap-3 text-body fw-semibold hover-bg-secondary" href="#" data-bs-toggle="modal" data-bs-target="#changePasswordModal">
+                                <i class="bi bi-key text-muted fs-5"></i> Change Password
+                            </a>
+                        </li>
+
+                        
+                        <li><hr class="dropdown-divider opacity-10 my-2"></li>
+                        
+                        <li>
+                            <form method="POST" action="{{ route('logout') }}" class="m-0">
+                                @csrf
+                                <button type="submit" class="dropdown-item px-4 py-2 d-flex align-items-center gap-3 text-danger fw-bold hover-bg-danger-subtle">
+                                    <i class="bi bi-box-arrow-right fs-5"></i> Logout
+                                </button>
+                            </form>
+                        </li>
+                    </ul>
+                </div>
+
+            </div>{{-- /.d-flex ms-auto --}}
+        </div>
+    </nav>
+</header>
+
+<x-add-customer-modal />
+<x-change-password-modal />
+<x-profile-modal />
+
+<style>
+html[data-bs-theme="dark"] .header-cart-product-image[src$="/product-placeholder.svg"] { filter: invert(1) hue-rotate(180deg); }
+.hover-bg-secondary:hover { background-color: var(--bs-secondary-bg) !important; }
+.hover-bg-danger-subtle:hover { background-color: rgba(var(--bs-danger-rgb), 0.1) !important; }
+.hover-scale { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+.hover-scale:hover { transform: scale(1.05); box-shadow: var(--bs-box-shadow) !important; }
+.hover-rotate { transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+.hover-rotate:hover { transform: rotate(-10deg) scale(1.05); }
+.custom-scrollbar::-webkit-scrollbar { width: 4px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(var(--bs-body-color-rgb), 0.1); border-radius: 4px; }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(var(--bs-body-color-rgb), 0.2); }
+
+/* Fix Nav Tab Active States in dropdown */
+.nav-tabs-custom .nav-link.active {
+    opacity: 1 !important;
+    border-bottom: 2px solid white !important;
+}
+</style>
+
+@push('scripts')
+<script>
+document.addEventListener('alpine:init', () => {
+    Alpine.data('headerCart', () => ({
+        items: [],
+        cartGrandTotal: 0,
+        init() {
+            this.syncCustomerContext();
+            this.loadCart();
+            this.loadCartTotal();
+            window.addEventListener('storage', (e) => {
+                const customerId = localStorage.getItem('ecommerce_active_customer_id');
+                const cartKey = customerId ? `ecommerce_create_order_cart_${customerId}` : 'ecommerce_create_order_cart';
+                const totalKey = customerId ? `ecommerce_create_order_cart_total_${customerId}` : 'ecommerce_create_order_cart_total';
+                
+                if (e.key === cartKey || e.key === 'ecommerce_create_order_cart') this.loadCart();
+                if (e.key === totalKey || e.key === 'ecommerce_create_order_cart_total') this.loadCartTotal();
+            });
+            window.addEventListener('cart-updated', () => this.loadCart());
+            window.addEventListener('cart-total-updated', (e) => {
+                if (e.detail !== undefined) {
+                    this.cartGrandTotal = parseFloat(e.detail) || 0;
+                } else {
+                    this.loadCartTotal();
+                }
+            });
+        },
+        handleCartClick() {
+            if (document.querySelector('[x-data^="createOrderApp"]')) {
+                window.dispatchEvent(new CustomEvent('open-cart-sidebar'));
+                const btn = document.getElementById('cartMenuBtn');
+                if (btn && window.bootstrap && window.bootstrap.Dropdown) {
+                    const dropdown = window.bootstrap.Dropdown.getInstance(btn);
+                    if (dropdown) dropdown.hide();
+                }
+            } else {
+                window.location.href = this.checkoutHref();
+            }
+        },
+        syncCustomerContext() {
+            const match = window.location.pathname.match(/^\/customers\/(\d+)(?:\/|$)/);
+            const urlParams = new URLSearchParams(window.location.search);
+            const customerIdParam = urlParams.get('customer_id');
+            if (match && match[1]) {
+                localStorage.setItem('ecommerce_active_customer_id', match[1]);
+            } else if (customerIdParam) {
+                localStorage.setItem('ecommerce_active_customer_id', customerIdParam);
+            } else if (window.location.pathname.replace(/\/$/, '') === '/orders/create') {
+                localStorage.removeItem('ecommerce_active_customer_id');
+            }
+        },
+        loadCart() {
+            try {
+                const customerId = localStorage.getItem('ecommerce_active_customer_id');
+                const cartKey = customerId ? `ecommerce_create_order_cart_${customerId}` : 'ecommerce_create_order_cart';
+                this.items = JSON.parse(localStorage.getItem(cartKey)) || [];
+            } catch (e) {
+                this.items = [];
+            }
+        },
+        loadCartTotal() {
+            const customerId = localStorage.getItem('ecommerce_active_customer_id');
+            const totalKey = customerId ? `ecommerce_create_order_cart_total_${customerId}` : 'ecommerce_create_order_cart_total';
+            this.cartGrandTotal = parseFloat(localStorage.getItem(totalKey)) || 0;
+        },
+        lineTotal(item) {
+            if (!item || item.is_gift) return 0;
+            const base = (parseFloat(item.price) || 0) * (parseInt(item.quantity) || 0);
+            const discount = parseFloat(item.discountValue) || 0;
+            if (discount <= 0) return base;
+            const type = (item.discountType || '').toLowerCase();
+            const amount = ['flat', 'amount', 'fixed'].includes(type)
+                ? Math.min(discount * (parseInt(item.quantity) || 0), base)
+                : Math.min(base * (discount / 100), base);
+            return Math.max(0, base - amount);
+        },
+        checkoutHref() {
+            const pathMatch = window.location.pathname.match(/^\/customers\/(\d+)(?:\/|$)/);
+            const customerId = (pathMatch && pathMatch[1]) || localStorage.getItem('ecommerce_active_customer_id');
+            if (customerId) {
+                return `/orders/create?customer_id=${encodeURIComponent(customerId)}&step=review`;
+            }
+            return '{{ route('orders.create') }}';
+        },
+        removeItem(index) {
+            this.items.splice(index, 1);
+            const customerId = localStorage.getItem('ecommerce_active_customer_id');
+            const cartKey = customerId ? `ecommerce_create_order_cart_${customerId}` : 'ecommerce_create_order_cart';
+            localStorage.setItem(cartKey, JSON.stringify(this.items));
+            
+            const total = this.items.reduce((sum, item) => sum + this.lineTotal(item), 0);
+            const totalKey = customerId ? `ecommerce_create_order_cart_total_${customerId}` : 'ecommerce_create_order_cart_total';
+            localStorage.setItem(totalKey, total.toString());
+            this.cartGrandTotal = total;
+            
+            window.dispatchEvent(new CustomEvent('cart-updated'));
+            window.dispatchEvent(new CustomEvent('cart-total-updated', { detail: total }));
+        }
+    }));
+
+
+
+    window.notificationApp = function(initialActivities, initialCount, otherAlertsCount, canFetchActivities) {
+        // Build a localStorage key scoped to this user + the current alert snapshot count.
+        // When the count changes (new alerts arrive), the key changes → dismissed state resets.
+        const userId = document.querySelector('meta[name="user-id"]')?.getAttribute('content') || 'guest';
+        const alertsKey    = `metis_alerts_dismissed_${userId}_${otherAlertsCount}`;
+        const messagesKey  = `metis_messages_dismissed_${userId}_${otherAlertsCount}`;
+
+        return {
+            activities: initialActivities || [],
+            count: initialCount || 0,
+            otherCount: otherAlertsCount || 0,
+            canFetchActivities: Boolean(canFetchActivities),
+            activityTimer: null,
+            fetchingActivities: false,
+
+            // Restore persisted dismissed state from localStorage on init
+            alertsRead:   window.chatStorage.getItem(alertsKey)   === '1',
+            messagesRead: window.chatStorage.getItem(messagesKey) === '1',
+
+            get totalCount() {
+                // If alerts/messages have been dismissed client-side, remove their contribution
+                const effectiveOther = (this.alertsRead && this.messagesRead) ? 0
+                    : this.alertsRead ? this.otherCount - Math.max(0, {{ (int) $systemAlerts->count() }})
+                    : this.messagesRead ? this.otherCount - Math.max(0, {{ (int) $unreadMessages->count() }})
+                    : this.otherCount;
+                return this.count + Math.max(0, effectiveOther);
+            },
+
+            init() {
+                // Preserve the existing 30-second refresh without overlapping requests.
+                if (this.canFetchActivities) {
+                    this.activityTimer = setInterval(() => this.fetchActivities(), 30000);
+                }
+            },
+
+            destroy() {
+                clearInterval(this.activityTimer);
+                this.activityTimer = null;
+            },
+
+            fetchActivities() {
+                if (!this.canFetchActivities || this.fetchingActivities) return;
+                this.fetchingActivities = true;
+                fetch('/api/activities/recent', {
+                    headers: { 
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+                    },
+                    credentials: 'same-origin'
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data && data.activities) {
+                        this.activities = data.activities;
+                        this.count = data.count;
+                    }
+                })
+                .catch(err => console.error('Failed to fetch activities', err))
+                .finally(() => { this.fetchingActivities = false; });
+            },
+
+            markAsRead(id) {
+                if (id === 'all') {
+                    // Mark all activities read in UI
+                    this.activities.forEach(a => a.is_read = true);
+                    this.count = 0;
+                    this.otherCount = 0;
+                    this.alertsRead = true;
+                    this.messagesRead = true;
+
+                    // Persist dismissed state so it survives page refresh
+                    window.chatStorage.setItem(alertsKey, '1');
+                    window.chatStorage.setItem(messagesKey, '1');
+
+                } else if (id === 'alerts') {
+                    // Mark only alerts as read (Alerts tab "Mark all as read")
+                    this.alertsRead = true;
+                    this.otherCount = Math.max(0, this.otherCount - {{ $systemAlerts->count() }});
+
+                    // Persist so it survives refresh
+                    window.chatStorage.setItem(alertsKey, '1');
+
+                    // No API call needed — these are dynamic system alerts, not DB-stored notifications
+                    return;
+
+                } else if (id === 'messages') {
+                    // Mark only messages as read (Messages tab "Mark all as read")
+                    this.messagesRead = true;
+                    this.otherCount = Math.max(0, this.otherCount - {{ $unreadMessages->count() }});
+
+                    // Persist so it survives refresh
+                    window.chatStorage.setItem(messagesKey, '1');
+
+                    // Chat reads are handled in the chat workspace; this bell only dismisses its static alerts.
+                    return;
+
+                } else if (id === 'activities') {
+                    // Mark only activities as read
+                    this.activities.forEach(a => a.is_read = true);
+                    this.count = 0;
+                } else {
+                    // Mark single activity as read
+                    const activity = this.activities.find(a => a.id === id);
+                    if (activity && !activity.is_read) {
+                        activity.is_read = true;
+                        this.count = Math.max(0, this.count - 1);
+                    }
+                }
+                
+                // POST to API for activity read tracking
+                const apiId = (id === 'activities') ? 'all' : id;
+                fetch(`/api/activities/${apiId}/read`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    }
+                })
+                .then(res => res.ok ? res.json() : Promise.reject(res))
+                .then(data => {
+                    if (typeof data.count === 'number') this.count = data.count;
+                })
+                .catch(err => {
+                    console.error('Failed to mark as read', err);
+                    this.fetchActivities();
+                });
+            }
+        };
+    };
+});
+</script>
+@endpush
+ 
+ 
+ 
+ 
+ 

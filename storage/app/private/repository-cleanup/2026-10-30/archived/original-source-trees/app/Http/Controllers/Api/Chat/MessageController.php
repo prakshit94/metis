@@ -1,0 +1,150 @@
+<?php
+
+namespace App\Http\Controllers\Api\Chat;
+
+use App\Models\Chat\Conversation;
+use App\Models\Chat\Message;
+use App\Modules\Core\Controllers\Controller;
+use App\Services\Chat\ChatService;
+use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
+
+class MessageController extends Controller implements HasMiddleware
+{
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:chat-view'),
+            new Middleware('permission:messages-view'),
+            new Middleware('permission:messages-create', only: ['store', 'forward']),
+            new Middleware('permission:messages-edit', only: ['update']),
+            new Middleware('permission:messages-delete', only: ['destroy']),
+        ];
+    }
+
+    public function index(Request $request, Conversation $conversation, ChatService $chat)
+    {
+        abort_unless(config('chat.enabled'), 404);
+
+        $request->validate(['page' => ['sometimes', 'integer', 'min:1'], 'per_page' => ['sometimes', 'integer', 'min:1', 'max:100'], 'before_id' => ['sometimes', 'integer', 'min:1'], 'after_id' => ['sometimes', 'integer', 'min:1']]);
+
+        return response()->json([
+            'data' => $chat->messages($request->user(), $conversation, (int) $request->integer('per_page', 30), $request->filled('before_id') ? $request->integer('before_id') : null, $request->filled('after_id') ? $request->integer('after_id') : null),
+        ]);
+    }
+
+    public function store(Request $request, Conversation $conversation, ChatService $chat)
+    {
+        abort_unless(config('chat.enabled'), 404);
+
+        $data = $request->validate([
+            'type' => ['nullable', 'in:text,image,video,file,document,voice,link,emoji'],
+            'content' => ['nullable', 'string', 'max:10000'],
+            'parent_id' => ['nullable', 'integer', Rule::exists('chat_messages', 'id')->where('conversation_id', $conversation->id)],
+            'files' => ['nullable', 'array', 'max:10'],
+            'files.*' => ['file', 'max:'.config('chat.uploads.max_size_kb'), 'mimes:'.implode(',', config('chat.uploads.allowed_mimes'))],
+            'client_id' => ['nullable', 'string', 'max:120'],
+        ]);
+
+        // Reject non-members before any attachment is written to storage.
+        $chat->ensureMember($conversation, $request->user());
+
+        $uploadedAttachments = [];
+        try {
+            if ($request->hasFile('files')) {
+                $disk = config('chat.uploads.disk', 'public');
+
+                foreach ($request->file('files') as $file) {
+                    $path = $file->store('chat/attachments/'.now()->format('Y/m'), $disk);
+                    if (! $path) {
+                        throw new \RuntimeException('Unable to store attachment.');
+                    }
+                    $mime = $file->getMimeType() ?: $file->getClientMimeType();
+
+                    $uploadedAttachments[] = [
+                        'name' => $file->getClientOriginalName(),
+                        'path' => Storage::disk($disk)->url($path),
+                        'storage_path' => $path,
+                        'disk' => $disk,
+                        'mime' => $mime,
+                        'size' => $file->getSize(),
+                    ];
+                }
+            }
+
+            $data['attachments'] = array_values(array_filter($uploadedAttachments));
+            if (! empty($uploadedAttachments) && empty($data['type'])) {
+                $data['type'] = collect($uploadedAttachments)->every(fn ($attachment) => str_starts_with((string) $attachment['mime'], 'image/'))
+                    ? 'image'
+                    : 'file';
+            }
+
+            abort_if(blank($data['content'] ?? null) && empty($data['attachments']), 422, 'Message content or attachment is required.');
+
+            $message = $chat->sendMessage($request->user(), $conversation, $data);
+            $retained = collect($message->attachments ?? [])->pluck('storage_path')->all();
+            foreach ($uploadedAttachments as $attachment) {
+                if (! in_array($attachment['storage_path'], $retained, true)) {
+                    Storage::disk($attachment['disk'])->delete($attachment['storage_path']);
+                }
+            }
+
+            return response()->json(['data' => $message], 201);
+        } catch (\Throwable $error) {
+            foreach ($uploadedAttachments as $attachment) {
+                Storage::disk($attachment['disk'])->delete($attachment['storage_path']);
+            }
+            throw $error;
+        }
+    }
+
+    public function update(Request $request, Message $message, ChatService $chat)
+    {
+        abort_unless(config('chat.enabled'), 404);
+
+        $data = $request->validate(['content' => ['required', 'string', 'max:10000']]);
+
+        return response()->json(['data' => $chat->updateMessage($request->user(), $message, $data['content'])]);
+    }
+
+    public function destroy(Request $request, Message $message, ChatService $chat)
+    {
+        abort_unless(config('chat.enabled'), 404);
+
+        $chat->deleteMessage($request->user(), $message);
+
+        return response()->json(['message' => 'Message deleted.']);
+    }
+
+    public function markRead(Request $request, Conversation $conversation, ChatService $chat)
+    {
+        abort_unless(config('chat.enabled'), 404);
+
+        $data = $request->validate([
+            'message_id' => ['nullable', 'integer', Rule::exists('chat_messages', 'id')->where('conversation_id', $conversation->id)],
+        ]);
+        $chat->markRead($request->user(), $conversation, $data['message_id'] ?? null);
+
+        return response()->json(['message' => 'Messages marked read.']);
+    }
+
+    public function forward(Request $request, Message $message, ChatService $chat)
+    {
+        abort_unless(config('chat.enabled'), 404);
+
+        $chat->ensureMember($message->conversation, $request->user());
+
+        $data = $request->validate(['conversation_ids' => ['required', 'array', 'min:1', 'max:100'], 'conversation_ids.*' => ['integer', 'distinct', 'exists:chat_conversations,id']]);
+        $targets = Conversation::visibleTo($request->user())->whereIn('id', $data['conversation_ids'])->orderBy('id')->get();
+        abort_unless($targets->count() === count($data['conversation_ids']), 404);
+        $forwarded = DB::transaction(fn () => $targets->map(fn ($conversation) => $chat->sendMessage($request->user(), $conversation, [
+            'type' => $message->type, 'content' => $message->content, 'attachments' => $message->attachments, 'forwarded_from_id' => $message->id,
+        ])));
+
+        return response()->json(['data' => $forwarded], 201);
+    }
+}

@@ -1,0 +1,128 @@
+<?php
+
+namespace App\Modules\Orders\Requests;
+
+use App\Modules\Orders\Models\Order;
+use Illuminate\Contracts\Validation\ValidationRule;
+use Illuminate\Foundation\Http\FormRequest;
+
+class UpdateOrderRequest extends FormRequest
+{
+    /**
+     * Determine if the user is authorized to make this request.
+     */
+    public function authorize(): bool
+    {
+        return true;
+    }
+
+    /**
+     * Get the validation rules that apply to the request.
+     *
+     * @return array<string, ValidationRule|array<mixed>|string>
+     */
+    public function rules(): array
+    {
+        return [
+            'type' => 'required|string|in:sale,purchase',
+            'party_id' => [
+                'required',
+                'exists:parties,id',
+                function ($attribute, $value, $fail) {
+                    $orderPartyId = $this->existingOrderPartyId();
+                    if ($orderPartyId !== null && (int) $value !== $orderPartyId) {
+                        $fail('The customer on an existing order cannot be changed.');
+                    }
+                },
+            ],
+            'warehouse_id' => 'required|exists:warehouses,id',
+            'shipping_address_id' => [
+                'required',
+                'integer',
+                'exists:party_addresses,id',
+                function ($attribute, $value, $fail) {
+                    if (empty($value)) {
+                        $fail('A shipping address is required to place the order. Please add an address to the customer profile first.');
+                        return;
+                    }
+                    $address = \App\Modules\Customers\Models\PartyAddress::find($value);
+                    if (!$address) {
+                        $fail('The selected shipping address no longer exists. Please select a valid address.');
+                        return;
+                    }
+                    $expectedPartyId = $this->existingOrderPartyId() ?? (int) $this->input('party_id');
+                    if ((int) $address->party_id !== $expectedPartyId) {
+                        $fail('The selected shipping address does not belong to this customer.');
+                        return;
+                    }
+                    if (empty($address->village_id)) {
+                        $fail('The selected shipping address has an invalid or missing village. Please update the address to link it to our village database before placing the order.');
+                    }
+                },
+            ],
+            'billing_address_id' => [
+                'required',
+                'integer',
+                'exists:party_addresses,id',
+                function ($attribute, $value, $fail) {
+                    if (empty($value)) {
+                        $fail('A billing address is required to place the order. Please add an address to the customer profile first.');
+                        return;
+                    }
+                    $address = \App\Modules\Customers\Models\PartyAddress::find($value);
+                    if (!$address) {
+                        $fail('The selected billing address no longer exists. Please select a valid address.');
+                        return;
+                    }
+                    $expectedPartyId = $this->existingOrderPartyId() ?? (int) $this->input('party_id');
+                    if ((int) $address->party_id !== $expectedPartyId) {
+                        $fail('The selected billing address does not belong to this customer.');
+                        return;
+                    }
+                    if (empty($address->village_id)) {
+                        $fail('The selected billing address has an invalid or missing village. Please update the address to link it to our village database before placing the order.');
+                    }
+                },
+            ],
+            'order_date' => 'required|date',
+            'items' => 'required|array|min:1',
+            'items.*.product_id' => 'required|exists:products,id',
+            'items.*.product_variant_id' => 'nullable|integer',
+            'items.*.quantity' => 'required|numeric|gt:0',
+            'items.*.unit_price' => 'required|numeric|min:0',
+            'items.*.tax_rate' => 'nullable|numeric|min:0',
+            'items.*.discount_amount' => 'nullable|numeric|min:0',
+            'items.*.tax_amount' => 'nullable|numeric|min:0',
+            'items.*.total_amount' => 'nullable|numeric|min:0',
+            'items.*.is_gift' => 'nullable|boolean',
+            'items.*.gift_source' => 'nullable|string',
+            'status' => 'nullable|string|in:pending,future_order,pending_confirmation,confirmed,processing,ready_to_ship,dispatched,delivered,cancelled,return_requested,returned',
+            'future_order_date' => 'nullable|date',
+            'coupon_code' => 'nullable|string',
+            'applied_offer_id' => 'nullable|integer|exists:offers,id',
+            'selected_offer_id' => 'nullable|integer|exists:offers,id',
+            'applied_bogo_ids' => 'nullable|array',
+            'applied_bogo_ids.*' => 'integer|exists:offers,id',
+            'total_amount' => 'required|numeric',
+            'tax_amount' => 'required|numeric',
+            'discount_amount' => 'required|numeric',
+            'net_amount' => 'required|numeric',
+            'use_wallet_balance' => 'nullable|boolean',
+        ];
+    }
+
+    private function existingOrderPartyId(): ?int
+    {
+        $order = $this->route('order');
+        if ($order instanceof Order) {
+            return (int) $order->party_id;
+        }
+
+        if ($order !== null) {
+            $partyId = Order::whereKey($order)->value('party_id');
+            return $partyId === null ? null : (int) $partyId;
+        }
+
+        return null;
+    }
+}

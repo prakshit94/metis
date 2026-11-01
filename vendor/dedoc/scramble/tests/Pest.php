@@ -11,7 +11,9 @@ use Dedoc\Scramble\Infer\Services\FileParser;
 use Dedoc\Scramble\Infer\Services\ReferenceTypeResolver;
 use Dedoc\Scramble\Infer\TypeInferer;
 use Dedoc\Scramble\Infer\Visitors\PhpDocResolver;
+use Dedoc\Scramble\OpenApiVersion;
 use Dedoc\Scramble\Scramble;
+use Dedoc\Scramble\Support\Generator\Contracts\OpenApiSerializable;
 use Dedoc\Scramble\Support\Type\Type;
 use Dedoc\Scramble\Tests\TestCase;
 use Dedoc\Scramble\Tests\Utils\AnalysisResult;
@@ -33,6 +35,14 @@ class JsonSnapshotDriver extends \Spatie\Snapshots\Drivers\JsonDriver
             is_string($actual) ? $actual : json_encode($actual, JSON_THROW_ON_ERROR),
         );
     }
+}
+
+function serializeAsVersion(OpenApiSerializable $object, OpenApiVersion $version)
+{
+    return match ($version) {
+        OpenApiVersion::V3_1 => $object->serializeAs31(),
+        OpenApiVersion::V3_2 => $object->serializeAs32(),
+    };
 }
 
 function assertMatchesSnapshot(mixed $actual): void
@@ -281,7 +291,7 @@ dataset('extendableTemplateTypes', [
     ['callable', 'TA', 'TA is callable'],
 ]);
 
-function generateForRoute($param)
+function generateForRoute($param, bool $result = false)
 {
     $route = $param instanceof Route ? $param : $param(app(Router::class));
 
@@ -289,5 +299,7 @@ function generateForRoute($param)
         ->useConfig(config('scramble'))
         ->routes(fn (Route $r) => $r->uri === $route->uri);
 
-    return app()->make(\Dedoc\Scramble\Generator::class)($config);
+    $res = app()->make(\Dedoc\Scramble\Generator::class)->generate($config);
+
+    return $result ? $res : $res->spec(config('scramble.openapi_version'));
 }

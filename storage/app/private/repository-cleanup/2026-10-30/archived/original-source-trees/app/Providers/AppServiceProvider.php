@@ -1,0 +1,173 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Providers;
+
+use App\Models\Crop;
+use App\Models\IrrigationType;
+use App\Models\LandUnit;
+use App\Models\LeadSource;
+use Dedoc\Scramble\Scramble;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\Request;
+use Illuminate\Routing\Route;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\View;
+use Illuminate\Support\ServiceProvider;
+use Laravel\Sanctum\PersonalAccessToken;
+use Laravel\Sanctum\Sanctum;
+
+class AppServiceProvider extends ServiceProvider
+{
+    /**
+     * Register any application services.
+     */
+    public function register(): void
+    {
+        //
+    }
+
+    /**
+     * Bootstrap any application services.
+     */
+    public function boot(): void
+    {
+        \Illuminate\Support\Facades\Validator::resolver(
+            fn ($translator, $data, $rules, $messages, $attributes) => new \App\Validation\TypedValidator($translator, $data, $rules, $messages, $attributes)
+        );
+
+        // Enable strict modes but handle lazy loading gracefully to prevent app crashes
+        Model::preventSilentlyDiscardingAttributes(! app()->isProduction());
+        Model::preventAccessingMissingAttributes(! app()->isProduction());
+        
+        Model::preventLazyLoading(! app()->isProduction());
+        Model::handleLazyLoadingViolationUsing(function ($model, $relation) {
+            \Illuminate\Support\Facades\Log::warning(sprintf(
+                'N+1 Query Detected: Attempted to lazy load [%s] on model [%s].',
+                $relation, get_class($model)
+            ));
+        });
+
+        $this->configureSanctum();
+
+        if ($this->app->runningInConsole()) {
+            // Generate documentation during deployment instead of on each read.
+            $this->optimizes('scramble:cache', 'scramble:clear', 'api-docs');
+        }
+
+
+        RateLimiter::for('chat', function (Request $request) {
+            return Limit::perMinute(config('chat.rate_limits.requests_per_minute', 1200))
+                ->by($request->user()?->id ?: $request->ip());
+        });
+
+        RateLimiter::for('api', function (Request $request) {
+            return Limit::perMinute(10000)->by($request->user()?->id ?: $request->ip());
+        });
+
+        Gate::define('viewApiDocs', function ($user) {
+            return $user->hasAnyRole(['Super Admin', 'Admin']);
+        });
+
+        // Implicitly grant "Super Admin" role all permissions
+        Gate::before(function ($user, $ability) {
+            return $user->hasRole('Super Admin') ? true : null;
+        });
+
+        Scramble::configure()->withParametersExtractors(function ($extractors) {
+            $extractors->use(array_map(
+                fn ($extractor) => $extractor === \Dedoc\Scramble\Support\OperationExtensions\ParameterExtractor\ValidateCallParametersExtractor::class
+                    ? \App\Documentation\StaticValidationParametersExtractor::class
+                    : $extractor,
+                $extractors->all(),
+            ));
+        });
+
+        Scramble::routes(function (Route $route) {
+            $uri = $route->uri();
+            $name = $route->getName() ?? '';
+
+            // 1. Filter out pure HTML view endpoints and file downloads
+            if (preg_match('/(\.create|\.edit|\.pdf|export)$/', $name)) {
+                return false;
+            }
+
+            // 2. Include natively structured Sanctum API routes
+            if (str_starts_with($uri, 'api/')) {
+                return true;
+            }
+
+            // 3. Include Hybrid Modules (Orders, Inventory, Customers, etc.)
+            return preg_match('/^(orders|returns|refunds|payments|invoices|promotions|customers|catalog|inventory|shipping|villages|products)/', $uri);
+        });
+
+        View::composer('components.add-customer-modal', function ($view) {
+            static $dynamicCrops = null;
+            static $dynamicLeadSources = null;
+            static $dynamicIrrigationTypes = null;
+            static $dynamicLandUnits = null;
+
+            $dynamicCrops ??= Crop::where('is_active', true)->pluck('name');
+            $dynamicLeadSources ??= LeadSource::where('is_active', true)->pluck('name');
+            $dynamicIrrigationTypes ??= IrrigationType::where('is_active', true)->pluck('name');
+            $dynamicLandUnits ??= LandUnit::where('is_active', true)->pluck('name');
+
+            $view->with(compact('dynamicCrops', 'dynamicLeadSources', 'dynamicIrrigationTypes', 'dynamicLandUnits'));
+        });
+
+        \Illuminate\Database\Eloquent\Relations\Relation::morphMap([
+            'Order' => \App\Modules\Orders\Models\Order::class,
+            'return' => \App\Modules\Orders\Models\OrderReturn::class,
+            'adjustment' => \App\Modules\Inventory\Models\InventoryAdjustment::class,
+            'receipt' => \App\Modules\Inventory\Models\GoodsReceipt::class,
+            'purchase_order' => \App\Modules\Inventory\Models\PurchaseOrder::class,
+            'transfer' => \App\Modules\Inventory\Models\StockTransfer::class,
+            'opening' => \App\Modules\Inventory\Models\StockMovement::class,
+        ]);
+    }
+
+    // ─── Private ──────────────────────────────────────────────────────────────
+
+    /**
+     * Set global Sanctum token expiration to 30 days.
+     *
+     * Individual tokens may still be created with a
+     * shorter expiry by passing an explicit `expiresAt` to createToken().
+     */
+    private function configureSanctum(): void
+    {
+        Sanctum::usePersonalAccessTokenModel(
+            PersonalAccessToken::class,
+        );
+    }
+}
+
+class ScrambleGroupingExtension extends \Dedoc\Scramble\Extensions\OperationExtension
+{
+    public function handle(\Dedoc\Scramble\Support\Generator\Operation $operation, \Dedoc\Scramble\Support\RouteInfo $routeInfo)
+    {
+        $className = $routeInfo->className();
+
+        if ($className) {
+            // Group by App\Modules\{Module}
+            if (\Illuminate\Support\Str::startsWith($className, 'App\\Modules\\')) {
+                $parts = explode('\\', $className);
+                if (isset($parts[2])) {
+                    $operation->setTags([$parts[2]]);
+                    return;
+                }
+            }
+            
+            // Group by App\Http\Controllers
+            if (\Illuminate\Support\Str::startsWith($className, 'App\\Http\\Controllers\\')) {
+                $operation->setTags(['General']);
+                return;
+            }
+        }
+    }
+}
+

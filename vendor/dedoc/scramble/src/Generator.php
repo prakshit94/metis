@@ -3,11 +3,9 @@
 namespace Dedoc\Scramble;
 
 use Closure;
-use Dedoc\Scramble\Attributes\Api;
-use Dedoc\Scramble\Attributes\ExcludeAllRoutesFromDocs;
-use Dedoc\Scramble\Attributes\ExcludeRouteFromDocs;
 use Dedoc\Scramble\Configuration\SecurityDocumentationContext;
 use Dedoc\Scramble\Contracts\DocumentTransformer;
+use Dedoc\Scramble\Contracts\RouteProvider;
 use Dedoc\Scramble\Diagnostics\DiagnosticsCollector;
 use Dedoc\Scramble\Exceptions\RouteAware;
 use Dedoc\Scramble\OpenApiVisitor\SchemaEnforceVisitor;
@@ -28,12 +26,7 @@ use Dedoc\Scramble\Support\OperationBuilder;
 use Dedoc\Scramble\Support\ServerFactory;
 use Illuminate\Routing\Route;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Route as RouteFacade;
-use Illuminate\Support\Str;
 use InvalidArgumentException;
-use LogicException;
-use ReflectionException;
-use ReflectionMethod;
 use Throwable;
 
 class Generator
@@ -42,6 +35,7 @@ class Generator
 
     public function __construct(
         private OperationBuilder $operationBuilder,
+        private RouteProvider $routeProvider,
     ) {}
 
     public function setThrowExceptions(bool $throwExceptions): static
@@ -63,7 +57,7 @@ class Generator
 
     public function generate(GeneratorConfig $config): GeneratorResult
     {
-        $routes = $this->getRoutes($config);
+        $routes = $this->routeProvider->get($config);
         $config = $this->configureSecurityStrategy($routes, $config);
 
         $openApi = $this->makeOpenApi($config);
@@ -74,7 +68,7 @@ class Generator
         $this->configureInference($context->diagnostics);
         $typeTransformer = $this->buildTypeTransformer($context);
 
-        $operations = $this->generateOperations($context, $typeTransformer);
+        $operations = $this->generateOperations($routes, $context, $typeTransformer);
 
         $this->setUniqueOperationId($operations);
         $operations->each(fn (Operation $operation) => $openApi->addPath(
@@ -91,14 +85,20 @@ class Generator
 
     public function __invoke(?GeneratorConfig $config = null)
     {
+        $config ??= Scramble::getGeneratorConfig(Scramble::DEFAULT_API);
+
         return $this
-            ->generate($config ?? Scramble::getGeneratorConfig(Scramble::DEFAULT_API))
-            ->spec();
+            ->generate($config)
+            ->spec($config->openApiVersion());
     }
 
-    private function generateOperations(OpenApiContext $context, TypeTransformer $typeTransformer): Collection
+    /**
+     * @param  Collection<int, Route>  $routes
+     * @return Collection<int, Operation>
+     */
+    private function generateOperations(Collection $routes, OpenApiContext $context, TypeTransformer $typeTransformer): Collection
     {
-        return $this->getRoutes($context->config)
+        return $routes
             ->flatMap(function (Route $route, int $index) use ($context, $typeTransformer) {
                 try {
                     $operations = $this->routeToOperations($context, $route, $typeTransformer);
@@ -163,7 +163,7 @@ class Generator
 
     private function makeOpenApi(GeneratorConfig $config)
     {
-        $openApi = OpenApi::make('3.1.0')
+        $openApi = OpenApi::make()
             ->setComponents(new Components)
             ->setInfo(
                 InfoObject::make($config->get('ui.title', $default = config('app.name')) ?: $default)
@@ -212,110 +212,6 @@ class Generator
         }
     }
 
-    /**
-     * @return Collection<int, Route>
-     */
-    private function getRoutes(GeneratorConfig $config): Collection
-    {
-        return collect(RouteFacade::getRoutes())
-            ->pipe(function (Collection $c) {
-                $onlyRoutes = $c->filter(function (Route $route) {
-
-                    if (! is_string($route->getAction('controller'))) {
-                        return false;
-                    }
-
-                    if (! is_string($route->getAction('uses'))) {
-                        return false;
-                    }
-
-                    try {
-                        $reflection = new ReflectionMethod(...explode('@', $route->getAction('uses')));
-
-                        if (str_contains($reflection->getDocComment() ?: '', '@only-docs')) {
-                            return true;
-                        }
-                    } catch (Throwable) {
-                    }
-
-                    return false;
-                });
-
-                return $onlyRoutes->count() ? $onlyRoutes : $c;
-            })
-            ->filter(function (Route $route) {
-                return ! ($name = $route->getAction('as')) || ! Str::startsWith($name, 'scramble');
-            })
-            ->filter($config->routes())
-            ->filter(function (Route $route) use ($config) {
-                if (! is_string($route->getAction('uses'))) {
-                    return true;
-                }
-
-                try {
-                    $reflection = new ReflectionMethod(...explode('@', $route->getAction('uses')));
-                } catch (ReflectionException) {
-                    /*
-                     * If route is registered but route method doesn't exist, it will not be included
-                     * in the resulting documentation.
-                     */
-                    return false;
-                }
-
-                if (count($reflection->getAttributes(ExcludeRouteFromDocs::class))) {
-                    return false;
-                }
-
-                if (count($reflection->getDeclaringClass()->getAttributes(ExcludeAllRoutesFromDocs::class))) {
-                    return false;
-                }
-
-                $apiNames = $this->getApiAttributeNames($reflection);
-                if ($apiNames !== null && ! in_array($config->name, $apiNames, true)) {
-                    return false;
-                }
-
-                return true;
-            })
-            ->values();
-    }
-
-    /**
-     * @return list<string>|null `null` when the route has no #[Api] restriction
-     */
-    private function getApiAttributeNames(ReflectionMethod $reflection): ?array
-    {
-        $attributes = $reflection->getAttributes(Api::class);
-
-        if (! count($attributes)) {
-            $attributes = $reflection->getDeclaringClass()->getAttributes(Api::class);
-        }
-
-        if (! count($attributes)) {
-            return null;
-        }
-
-        $apiNames = $attributes[0]->newInstance()->only;
-
-        $this->ensureRegisteredApiNames($apiNames);
-
-        return $apiNames;
-    }
-
-    /**
-     * @param  list<string>  $apiNames
-     */
-    private function ensureRegisteredApiNames(array $apiNames): void
-    {
-        $registeredApis = array_keys(Scramble::getConfigurationsInstance()->all());
-
-        foreach ($apiNames as $apiName) {
-            if (! in_array($apiName, $registeredApis, true)) {
-                throw new LogicException("$apiName API is not registered. Register the API using `Scramble::registerApi` first.");
-            }
-        }
-    }
-
     private function buildTypeTransformer(OpenApiContext $context): TypeTransformer
     {
         return app()->make(TypeTransformer::class, [
@@ -348,6 +244,10 @@ class Generator
 
         /** @var Reference $ref */
         foreach ($references as $ref) {
+            if ($ref->uri !== null) {
+                continue;
+            }
+
             if ($resolvedType = $ref->resolve()) {
                 $traverser->traverse($resolvedType, ['', 'components', $ref->referenceType, $ref->getUniqueName()]);
             }

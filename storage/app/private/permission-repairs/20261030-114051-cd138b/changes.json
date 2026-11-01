@@ -1,0 +1,1198 @@
+{
+    "roles_and_memberships_unchanged": true,
+    "changes": {
+        "permissions": {
+            "added": [],
+            "removed": []
+        },
+        "role_has_permissions": {
+            "added": [
+                {
+                    "permission_id": 215,
+                    "role_id": 4
+                },
+                {
+                    "permission_id": 215,
+                    "role_id": 6
+                },
+                {
+                    "permission_id": 215,
+                    "role_id": 7
+                },
+                {
+                    "permission_id": 217,
+                    "role_id": 3
+                },
+                {
+                    "permission_id": 221,
+                    "role_id": 4
+                },
+                {
+                    "permission_id": 221,
+                    "role_id": 6
+                },
+                {
+                    "permission_id": 221,
+                    "role_id": 7
+                },
+                {
+                    "permission_id": 222,
+                    "role_id": 3
+                },
+                {
+                    "permission_id": 223,
+                    "role_id": 3
+                },
+                {
+                    "permission_id": 224,
+                    "role_id": 2
+                },
+                {
+                    "permission_id": 224,
+                    "role_id": 3
+                },
+                {
+                    "permission_id": 224,
+                    "role_id": 5
+                },
+                {
+                    "permission_id": 227,
+                    "role_id": 4
+                },
+                {
+                    "permission_id": 227,
+                    "role_id": 6
+                },
+                {
+                    "permission_id": 227,
+                    "role_id": 7
+                },
+                {
+                    "permission_id": 229,
+                    "role_id": 3
+                },
+                {
+                    "permission_id": 229,
+                    "role_id": 4
+                },
+                {
+                    "permission_id": 229,
+                    "role_id": 6
+                },
+                {
+                    "permission_id": 229,
+                    "role_id": 7
+                },
+                {
+                    "permission_id": 233,
+                    "role_id": 4
+                },
+                {
+                    "permission_id": 233,
+                    "role_id": 6
+                },
+                {
+                    "permission_id": 233,
+                    "role_id": 7
+                },
+                {
+                    "permission_id": 234,
+                    "role_id": 3
+                },
+                {
+                    "permission_id": 239,
+                    "role_id": 4
+                },
+                {
+                    "permission_id": 239,
+                    "role_id": 6
+                },
+                {
+                    "permission_id": 239,
+                    "role_id": 7
+                },
+                {
+                    "permission_id": 240,
+                    "role_id": 3
+                },
+                {
+                    "permission_id": 241,
+                    "role_id": 3
+                },
+                {
+                    "permission_id": 242,
+                    "role_id": 2
+                },
+                {
+                    "permission_id": 242,
+                    "role_id": 3
+                },
+                {
+                    "permission_id": 242,
+                    "role_id": 5
+                },
+                {
+                    "permission_id": 313,
+                    "role_id": 3
+                },
+                {
+                    "permission_id": 314,
+                    "role_id": 3
+                },
+                {
+                    "permission_id": 315,
+                    "role_id": 3
+                },
+                {
+                    "permission_id": 316,
+                    "role_id": 2
+                },
+                {
+                    "permission_id": 316,
+                    "role_id": 3
+                },
+                {
+                    "permission_id": 426,
+                    "role_id": 1
+                },
+                {
+                    "permission_id": 426,
+                    "role_id": 2
+                },
+                {
+                    "permission_id": 426,
+                    "role_id": 3
+                },
+                {
+                    "permission_id": 427,
+                    "role_id": 1
+                },
+                {
+                    "permission_id": 427,
+                    "role_id": 2
+                },
+                {
+                    "permission_id": 427,
+                    "role_id": 3
+                },
+                {
+                    "permission_id": 428,
+                    "role_id": 1
+                },
+                {
+                    "permission_id": 428,
+                    "role_id": 2
+                },
+                {
+                    "permission_id": 428,
+                    "role_id": 3
+                },
+                {
+                    "permission_id": 429,
+                    "role_id": 1
+                },
+                {
+                    "permission_id": 430,
+                    "role_id": 1
+                },
+                {
+                    "permission_id": 430,
+                    "role_id": 2
+                },
+                {
+                    "permission_id": 430,
+                    "role_id": 3
+                },
+                {
+                    "permission_id": 430,
+                    "role_id": 4
+                },
+                {
+                    "permission_id": 430,
+                    "role_id": 6
+                },
+                {
+                    "permission_id": 430,
+                    "role_id": 7
+                },
+                {
+                    "permission_id": 431,
+                    "role_id": 1
+                },
+                {
+                    "permission_id": 431,
+                    "role_id": 2
+                },
+                {
+                    "permission_id": 431,
+                    "role_id": 3
+                },
+                {
+                    "permission_id": 431,
+                    "role_id": 4
+                },
+                {
+                    "permission_id": 431,
+                    "role_id": 6
+                },
+                {
+                    "permission_id": 431,
+                    "role_id": 7
+                },
+                {
+                    "permission_id": 432,
+                    "role_id": 1
+                },
+                {
+                    "permission_id": 432,
+                    "role_id": 2
+                },
+                {
+                    "permission_id": 432,
+                    "role_id": 3
+                },
+                {
+                    "permission_id": 432,
+                    "role_id": 4
+                },
+                {
+                    "permission_id": 432,
+                    "role_id": 5
+                },
+                {
+                    "permission_id": 433,
+                    "role_id": 1
+                },
+                {
+                    "permission_id": 433,
+                    "role_id": 2
+                },
+                {
+                    "permission_id": 433,
+                    "role_id": 3
+                },
+                {
+                    "permission_id": 433,
+                    "role_id": 6
+                },
+                {
+                    "permission_id": 434,
+                    "role_id": 1
+                },
+                {
+                    "permission_id": 434,
+                    "role_id": 2
+                },
+                {
+                    "permission_id": 434,
+                    "role_id": 3
+                },
+                {
+                    "permission_id": 434,
+                    "role_id": 6
+                },
+                {
+                    "permission_id": 435,
+                    "role_id": 1
+                },
+                {
+                    "permission_id": 435,
+                    "role_id": 2
+                },
+                {
+                    "permission_id": 435,
+                    "role_id": 3
+                },
+                {
+                    "permission_id": 436,
+                    "role_id": 1
+                },
+                {
+                    "permission_id": 436,
+                    "role_id": 2
+                },
+                {
+                    "permission_id": 436,
+                    "role_id": 3
+                },
+                {
+                    "permission_id": 437,
+                    "role_id": 1
+                },
+                {
+                    "permission_id": 437,
+                    "role_id": 2
+                },
+                {
+                    "permission_id": 437,
+                    "role_id": 3
+                },
+                {
+                    "permission_id": 438,
+                    "role_id": 1
+                },
+                {
+                    "permission_id": 438,
+                    "role_id": 2
+                },
+                {
+                    "permission_id": 438,
+                    "role_id": 3
+                },
+                {
+                    "permission_id": 439,
+                    "role_id": 1
+                },
+                {
+                    "permission_id": 439,
+                    "role_id": 2
+                },
+                {
+                    "permission_id": 439,
+                    "role_id": 3
+                },
+                {
+                    "permission_id": 440,
+                    "role_id": 1
+                },
+                {
+                    "permission_id": 440,
+                    "role_id": 2
+                },
+                {
+                    "permission_id": 440,
+                    "role_id": 3
+                },
+                {
+                    "permission_id": 440,
+                    "role_id": 4
+                },
+                {
+                    "permission_id": 440,
+                    "role_id": 5
+                },
+                {
+                    "permission_id": 440,
+                    "role_id": 6
+                },
+                {
+                    "permission_id": 440,
+                    "role_id": 7
+                },
+                {
+                    "permission_id": 441,
+                    "role_id": 1
+                },
+                {
+                    "permission_id": 441,
+                    "role_id": 2
+                },
+                {
+                    "permission_id": 442,
+                    "role_id": 1
+                },
+                {
+                    "permission_id": 442,
+                    "role_id": 2
+                },
+                {
+                    "permission_id": 443,
+                    "role_id": 1
+                },
+                {
+                    "permission_id": 443,
+                    "role_id": 2
+                },
+                {
+                    "permission_id": 444,
+                    "role_id": 1
+                },
+                {
+                    "permission_id": 445,
+                    "role_id": 1
+                },
+                {
+                    "permission_id": 445,
+                    "role_id": 2
+                },
+                {
+                    "permission_id": 446,
+                    "role_id": 1
+                },
+                {
+                    "permission_id": 446,
+                    "role_id": 2
+                },
+                {
+                    "permission_id": 447,
+                    "role_id": 1
+                },
+                {
+                    "permission_id": 447,
+                    "role_id": 2
+                },
+                {
+                    "permission_id": 448,
+                    "role_id": 1
+                },
+                {
+                    "permission_id": 449,
+                    "role_id": 1
+                },
+                {
+                    "permission_id": 449,
+                    "role_id": 2
+                },
+                {
+                    "permission_id": 450,
+                    "role_id": 1
+                },
+                {
+                    "permission_id": 450,
+                    "role_id": 2
+                },
+                {
+                    "permission_id": 451,
+                    "role_id": 1
+                },
+                {
+                    "permission_id": 451,
+                    "role_id": 2
+                },
+                {
+                    "permission_id": 452,
+                    "role_id": 1
+                },
+                {
+                    "permission_id": 453,
+                    "role_id": 1
+                },
+                {
+                    "permission_id": 453,
+                    "role_id": 2
+                },
+                {
+                    "permission_id": 454,
+                    "role_id": 1
+                },
+                {
+                    "permission_id": 454,
+                    "role_id": 2
+                },
+                {
+                    "permission_id": 455,
+                    "role_id": 1
+                },
+                {
+                    "permission_id": 455,
+                    "role_id": 2
+                },
+                {
+                    "permission_id": 456,
+                    "role_id": 1
+                },
+                {
+                    "permission_id": 456,
+                    "role_id": 2
+                },
+                {
+                    "permission_id": 457,
+                    "role_id": 1
+                },
+                {
+                    "permission_id": 457,
+                    "role_id": 2
+                },
+                {
+                    "permission_id": 458,
+                    "role_id": 1
+                },
+                {
+                    "permission_id": 458,
+                    "role_id": 2
+                },
+                {
+                    "permission_id": 459,
+                    "role_id": 1
+                },
+                {
+                    "permission_id": 459,
+                    "role_id": 2
+                },
+                {
+                    "permission_id": 459,
+                    "role_id": 3
+                },
+                {
+                    "permission_id": 459,
+                    "role_id": 4
+                },
+                {
+                    "permission_id": 459,
+                    "role_id": 5
+                },
+                {
+                    "permission_id": 459,
+                    "role_id": 6
+                },
+                {
+                    "permission_id": 459,
+                    "role_id": 7
+                },
+                {
+                    "permission_id": 460,
+                    "role_id": 1
+                },
+                {
+                    "permission_id": 460,
+                    "role_id": 2
+                },
+                {
+                    "permission_id": 460,
+                    "role_id": 3
+                },
+                {
+                    "permission_id": 460,
+                    "role_id": 4
+                },
+                {
+                    "permission_id": 460,
+                    "role_id": 5
+                },
+                {
+                    "permission_id": 460,
+                    "role_id": 6
+                },
+                {
+                    "permission_id": 460,
+                    "role_id": 7
+                },
+                {
+                    "permission_id": 461,
+                    "role_id": 1
+                },
+                {
+                    "permission_id": 461,
+                    "role_id": 2
+                },
+                {
+                    "permission_id": 461,
+                    "role_id": 3
+                },
+                {
+                    "permission_id": 461,
+                    "role_id": 5
+                },
+                {
+                    "permission_id": 462,
+                    "role_id": 1
+                },
+                {
+                    "permission_id": 462,
+                    "role_id": 2
+                },
+                {
+                    "permission_id": 462,
+                    "role_id": 3
+                },
+                {
+                    "permission_id": 462,
+                    "role_id": 5
+                },
+                {
+                    "permission_id": 463,
+                    "role_id": 1
+                },
+                {
+                    "permission_id": 463,
+                    "role_id": 2
+                },
+                {
+                    "permission_id": 463,
+                    "role_id": 3
+                },
+                {
+                    "permission_id": 463,
+                    "role_id": 4
+                },
+                {
+                    "permission_id": 463,
+                    "role_id": 5
+                },
+                {
+                    "permission_id": 463,
+                    "role_id": 6
+                },
+                {
+                    "permission_id": 463,
+                    "role_id": 7
+                },
+                {
+                    "permission_id": 464,
+                    "role_id": 1
+                },
+                {
+                    "permission_id": 464,
+                    "role_id": 2
+                },
+                {
+                    "permission_id": 464,
+                    "role_id": 3
+                },
+                {
+                    "permission_id": 464,
+                    "role_id": 5
+                },
+                {
+                    "permission_id": 465,
+                    "role_id": 1
+                },
+                {
+                    "permission_id": 465,
+                    "role_id": 2
+                },
+                {
+                    "permission_id": 465,
+                    "role_id": 3
+                },
+                {
+                    "permission_id": 465,
+                    "role_id": 5
+                },
+                {
+                    "permission_id": 466,
+                    "role_id": 1
+                },
+                {
+                    "permission_id": 466,
+                    "role_id": 2
+                },
+                {
+                    "permission_id": 466,
+                    "role_id": 3
+                },
+                {
+                    "permission_id": 466,
+                    "role_id": 5
+                },
+                {
+                    "permission_id": 467,
+                    "role_id": 1
+                },
+                {
+                    "permission_id": 467,
+                    "role_id": 2
+                },
+                {
+                    "permission_id": 467,
+                    "role_id": 3
+                },
+                {
+                    "permission_id": 467,
+                    "role_id": 5
+                },
+                {
+                    "permission_id": 468,
+                    "role_id": 1
+                },
+                {
+                    "permission_id": 468,
+                    "role_id": 2
+                },
+                {
+                    "permission_id": 468,
+                    "role_id": 3
+                },
+                {
+                    "permission_id": 468,
+                    "role_id": 5
+                },
+                {
+                    "permission_id": 470,
+                    "role_id": 1
+                },
+                {
+                    "permission_id": 470,
+                    "role_id": 2
+                },
+                {
+                    "permission_id": 471,
+                    "role_id": 1
+                },
+                {
+                    "permission_id": 471,
+                    "role_id": 2
+                },
+                {
+                    "permission_id": 472,
+                    "role_id": 1
+                },
+                {
+                    "permission_id": 472,
+                    "role_id": 2
+                },
+                {
+                    "permission_id": 473,
+                    "role_id": 1
+                },
+                {
+                    "permission_id": 473,
+                    "role_id": 2
+                },
+                {
+                    "permission_id": 474,
+                    "role_id": 1
+                },
+                {
+                    "permission_id": 474,
+                    "role_id": 2
+                },
+                {
+                    "permission_id": 474,
+                    "role_id": 3
+                },
+                {
+                    "permission_id": 474,
+                    "role_id": 4
+                },
+                {
+                    "permission_id": 474,
+                    "role_id": 5
+                },
+                {
+                    "permission_id": 475,
+                    "role_id": 1
+                },
+                {
+                    "permission_id": 475,
+                    "role_id": 2
+                },
+                {
+                    "permission_id": 475,
+                    "role_id": 3
+                },
+                {
+                    "permission_id": 475,
+                    "role_id": 4
+                },
+                {
+                    "permission_id": 475,
+                    "role_id": 5
+                },
+                {
+                    "permission_id": 476,
+                    "role_id": 1
+                },
+                {
+                    "permission_id": 476,
+                    "role_id": 2
+                },
+                {
+                    "permission_id": 476,
+                    "role_id": 3
+                },
+                {
+                    "permission_id": 476,
+                    "role_id": 4
+                },
+                {
+                    "permission_id": 476,
+                    "role_id": 5
+                },
+                {
+                    "permission_id": 477,
+                    "role_id": 1
+                },
+                {
+                    "permission_id": 477,
+                    "role_id": 2
+                },
+                {
+                    "permission_id": 477,
+                    "role_id": 3
+                },
+                {
+                    "permission_id": 477,
+                    "role_id": 4
+                },
+                {
+                    "permission_id": 477,
+                    "role_id": 5
+                },
+                {
+                    "permission_id": 478,
+                    "role_id": 1
+                },
+                {
+                    "permission_id": 478,
+                    "role_id": 2
+                },
+                {
+                    "permission_id": 478,
+                    "role_id": 3
+                },
+                {
+                    "permission_id": 478,
+                    "role_id": 4
+                },
+                {
+                    "permission_id": 478,
+                    "role_id": 5
+                },
+                {
+                    "permission_id": 479,
+                    "role_id": 1
+                },
+                {
+                    "permission_id": 479,
+                    "role_id": 2
+                },
+                {
+                    "permission_id": 479,
+                    "role_id": 3
+                },
+                {
+                    "permission_id": 479,
+                    "role_id": 4
+                },
+                {
+                    "permission_id": 479,
+                    "role_id": 5
+                },
+                {
+                    "permission_id": 480,
+                    "role_id": 1
+                },
+                {
+                    "permission_id": 480,
+                    "role_id": 2
+                },
+                {
+                    "permission_id": 480,
+                    "role_id": 3
+                },
+                {
+                    "permission_id": 480,
+                    "role_id": 4
+                },
+                {
+                    "permission_id": 480,
+                    "role_id": 5
+                },
+                {
+                    "permission_id": 481,
+                    "role_id": 1
+                },
+                {
+                    "permission_id": 481,
+                    "role_id": 2
+                },
+                {
+                    "permission_id": 481,
+                    "role_id": 3
+                },
+                {
+                    "permission_id": 481,
+                    "role_id": 4
+                },
+                {
+                    "permission_id": 481,
+                    "role_id": 5
+                },
+                {
+                    "permission_id": 482,
+                    "role_id": 1
+                },
+                {
+                    "permission_id": 482,
+                    "role_id": 2
+                },
+                {
+                    "permission_id": 482,
+                    "role_id": 3
+                },
+                {
+                    "permission_id": 482,
+                    "role_id": 6
+                },
+                {
+                    "permission_id": 483,
+                    "role_id": 1
+                },
+                {
+                    "permission_id": 483,
+                    "role_id": 2
+                },
+                {
+                    "permission_id": 483,
+                    "role_id": 3
+                },
+                {
+                    "permission_id": 483,
+                    "role_id": 6
+                },
+                {
+                    "permission_id": 484,
+                    "role_id": 1
+                },
+                {
+                    "permission_id": 484,
+                    "role_id": 2
+                },
+                {
+                    "permission_id": 484,
+                    "role_id": 3
+                },
+                {
+                    "permission_id": 484,
+                    "role_id": 6
+                },
+                {
+                    "permission_id": 485,
+                    "role_id": 1
+                },
+                {
+                    "permission_id": 485,
+                    "role_id": 2
+                },
+                {
+                    "permission_id": 485,
+                    "role_id": 3
+                },
+                {
+                    "permission_id": 485,
+                    "role_id": 6
+                },
+                {
+                    "permission_id": 486,
+                    "role_id": 1
+                },
+                {
+                    "permission_id": 486,
+                    "role_id": 2
+                },
+                {
+                    "permission_id": 486,
+                    "role_id": 3
+                },
+                {
+                    "permission_id": 486,
+                    "role_id": 6
+                },
+                {
+                    "permission_id": 487,
+                    "role_id": 1
+                },
+                {
+                    "permission_id": 487,
+                    "role_id": 2
+                },
+                {
+                    "permission_id": 487,
+                    "role_id": 3
+                },
+                {
+                    "permission_id": 487,
+                    "role_id": 6
+                },
+                {
+                    "permission_id": 488,
+                    "role_id": 1
+                },
+                {
+                    "permission_id": 488,
+                    "role_id": 2
+                },
+                {
+                    "permission_id": 488,
+                    "role_id": 3
+                },
+                {
+                    "permission_id": 488,
+                    "role_id": 6
+                },
+                {
+                    "permission_id": 489,
+                    "role_id": 1
+                },
+                {
+                    "permission_id": 489,
+                    "role_id": 2
+                },
+                {
+                    "permission_id": 489,
+                    "role_id": 3
+                },
+                {
+                    "permission_id": 489,
+                    "role_id": 6
+                },
+                {
+                    "permission_id": 490,
+                    "role_id": 1
+                },
+                {
+                    "permission_id": 490,
+                    "role_id": 2
+                },
+                {
+                    "permission_id": 490,
+                    "role_id": 3
+                },
+                {
+                    "permission_id": 490,
+                    "role_id": 6
+                },
+                {
+                    "permission_id": 491,
+                    "role_id": 1
+                },
+                {
+                    "permission_id": 491,
+                    "role_id": 2
+                },
+                {
+                    "permission_id": 491,
+                    "role_id": 3
+                },
+                {
+                    "permission_id": 491,
+                    "role_id": 6
+                },
+                {
+                    "permission_id": 492,
+                    "role_id": 1
+                },
+                {
+                    "permission_id": 492,
+                    "role_id": 2
+                },
+                {
+                    "permission_id": 492,
+                    "role_id": 3
+                },
+                {
+                    "permission_id": 492,
+                    "role_id": 6
+                },
+                {
+                    "permission_id": 493,
+                    "role_id": 1
+                },
+                {
+                    "permission_id": 493,
+                    "role_id": 2
+                },
+                {
+                    "permission_id": 493,
+                    "role_id": 3
+                },
+                {
+                    "permission_id": 493,
+                    "role_id": 6
+                },
+                {
+                    "permission_id": 494,
+                    "role_id": 1
+                },
+                {
+                    "permission_id": 494,
+                    "role_id": 2
+                },
+                {
+                    "permission_id": 494,
+                    "role_id": 3
+                },
+                {
+                    "permission_id": 494,
+                    "role_id": 6
+                },
+                {
+                    "permission_id": 495,
+                    "role_id": 1
+                },
+                {
+                    "permission_id": 495,
+                    "role_id": 2
+                },
+                {
+                    "permission_id": 495,
+                    "role_id": 3
+                },
+                {
+                    "permission_id": 495,
+                    "role_id": 6
+                },
+                {
+                    "permission_id": 496,
+                    "role_id": 1
+                },
+                {
+                    "permission_id": 496,
+                    "role_id": 2
+                },
+                {
+                    "permission_id": 496,
+                    "role_id": 3
+                },
+                {
+                    "permission_id": 496,
+                    "role_id": 6
+                },
+                {
+                    "permission_id": 497,
+                    "role_id": 1
+                },
+                {
+                    "permission_id": 497,
+                    "role_id": 2
+                },
+                {
+                    "permission_id": 497,
+                    "role_id": 3
+                },
+                {
+                    "permission_id": 497,
+                    "role_id": 6
+                },
+                {
+                    "permission_id": 498,
+                    "role_id": 1
+                },
+                {
+                    "permission_id": 498,
+                    "role_id": 2
+                },
+                {
+                    "permission_id": 498,
+                    "role_id": 3
+                },
+                {
+                    "permission_id": 498,
+                    "role_id": 6
+                },
+                {
+                    "permission_id": 50,
+                    "role_id": 4
+                },
+                {
+                    "permission_id": 50,
+                    "role_id": 5
+                },
+                {
+                    "permission_id": 50,
+                    "role_id": 6
+                },
+                {
+                    "permission_id": 50,
+                    "role_id": 7
+                }
+            ],
+            "removed": []
+        },
+        "model_has_permissions": {
+            "added": [],
+            "removed": []
+        }
+    }
+}

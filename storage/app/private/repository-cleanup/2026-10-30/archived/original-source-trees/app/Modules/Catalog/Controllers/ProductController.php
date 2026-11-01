@@ -1,0 +1,1763 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Modules\Catalog\Controllers;
+
+use App\Modules\Catalog\Models\Brand;
+use App\Modules\Catalog\Models\Category;
+use App\Modules\Catalog\Models\HsnCode;
+use App\Modules\Catalog\Models\Product;
+use App\Modules\Catalog\Models\ProductAttribute;
+use App\Modules\Catalog\Models\ProductAttributeValue;
+use App\Modules\Catalog\Models\TaxRate;
+use App\Modules\Catalog\Models\UnitOfMeasure;
+use App\Modules\Catalog\Models\Warehouse;
+use App\Modules\Core\Controllers\Controller;
+use App\Modules\Inventory\Models\Stock;
+use App\Modules\Inventory\Models\Supplier;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpFoundation\StreamedResponse;
+
+class ProductController extends Controller
+{
+    public function index(Request $request): JsonResponse
+    {
+        abort_unless($request->user()?->can('product-view'), 403);
+        $request->validate(['q'=>'nullable|string|max:100','category_id'=>'nullable|integer|min:1','status'=>'nullable|string|max:50','storefront'=>'nullable|in:listed,hidden,blocked']);
+        $this->assertWarehouseAccess($request);
+
+        $stockScope = function ($q) use ($request) {
+            if ($request->filled('warehouse_id')) {
+                $q->where('warehouse_id', $request->warehouse_id);
+            } elseif ($lobState = $request->user()?->lob_state_name) {
+                $q->whereHas('warehouse', function ($wq) use ($lobState) {
+                    $wq->where('state', $lobState);
+                });
+            }
+        };
+
+        $pendingOrderScope = function ($q) use ($request) {
+            if ($request->filled('warehouse_id')) {
+                $q->whereHas('order', function ($oq) use ($request) {
+                    $oq->where('warehouse_id', $request->warehouse_id);
+                });
+            } elseif ($lobState = $request->user()?->lob_state_name) {
+                $q->whereHas('order.warehouse', function ($wq) use ($lobState) {
+                    $wq->where('state', $lobState);
+                });
+            }
+        };
+
+        $eagerLoads = $request->boolean('summary')
+            ? [
+                'category:id,name,slug,parent_id',
+                'brand:id,name',
+                'taxRate:id,name,rate',
+                'uom:id,name',
+                'warehouse:id,name',
+                'stocks' => function ($q) use ($request) {
+                    $q->with('warehouse:id,name')->withSum('pendingOrderItems as pending_qty', 'quantity');
+                    if ($request->filled('warehouse_id')) {
+                        $q->where('warehouse_id', $request->integer('warehouse_id'));
+                    } elseif ($lobState = $request->user()?->lob_state_name) {
+                        $q->whereHas('warehouse', fn ($wq) => $wq->where('state', $lobState));
+                    }
+                },
+            ]
+            : $this->getEagerLoads($request);
+
+        $query = Product::query()
+            ->with($eagerLoads)
+            ->withSum(['stocks as stocks_sum_quantity' => $stockScope], 'quantity')
+            ->withSum(['stocks as stocks_sum_reserved_qty' => $stockScope], 'reserved_qty')
+            ->withSum(['stocks as stocks_sum_dispatched_qty' => $stockScope], 'dispatched_qty')
+            ->withSum(['pendingOrderItems as pending_orders_qty' => $pendingOrderScope], 'quantity');
+
+        // Optional server-side pre-filters to reduce payload (used when catalog is loaded with URL params)
+        if ($request->filled('q')) {
+            $q = $request->q;
+            $query->where(function ($qb) use ($q) {
+                $qb->where('name', 'like', "%{$q}%")
+                   ->orWhere('sku', 'like', "%{$q}%");
+            });
+        }
+        if ($request->filled('category_id')) {
+            $query->where('category_id', $request->category_id);
+        }
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+        if ($request->input('storefront') === 'listed') $query->storefrontAvailable();
+        if ($request->input('storefront') === 'hidden') $query->where('storefront_visible', false);
+        if ($request->input('storefront') === 'blocked') $query->where('storefront_visible', true)->whereNot(fn ($q) => $q->storefrontAvailable());
+        if ($request->boolean('trashed')) {
+            $query->onlyTrashed();
+        }
+
+        $products = $query
+            ->latest()
+            ->get()
+            ->map(fn (Product $product) => $request->boolean('summary')
+                ? $this->transformForIndex($product)
+                : $this->transform($product))
+            ->values();
+
+        $response = [
+            'data'    => $products,
+            'stats'   => $this->stats($products),
+        ];
+
+        if (! $request->boolean('without_options')) {
+            $response['options'] = $this->catalogOptions($request);
+        }
+
+        return response()->json($response);
+    }
+
+
+    public function show(Request $request, Product $product): JsonResponse
+    {
+        abort_unless($request->user()?->can('product-view'), 403);
+        $this->assertWarehouseAccess($request);
+        $excludeFutureOrders = $request->boolean('exclude_future_orders');
+
+        $stockScope = function ($q) use ($request) {
+            if ($request->filled('warehouse_id')) {
+                $q->where('warehouse_id', $request->warehouse_id);
+            } elseif ($lobState = $request->user()?->lob_state_name) {
+                $q->whereHas('warehouse', function ($wq) use ($lobState) {
+                    $wq->where('state', $lobState);
+                });
+            }
+        };
+
+        $pendingOrderScope = function ($q) use ($request, $excludeFutureOrders) {
+            if ($request->filled('warehouse_id')) {
+                $q->whereHas('order', function ($oq) use ($request, $excludeFutureOrders) {
+                    $oq->where('warehouse_id', $request->warehouse_id);
+                    if ($excludeFutureOrders) {
+                        $oq->whereIn('status', ['pending', 'pending_confirmation']);
+                    }
+                });
+            } elseif ($lobState = $request->user()?->lob_state_name) {
+                $q->whereHas('order.warehouse', function ($wq) use ($lobState) {
+                    $wq->where('state', $lobState);
+                });
+                if ($excludeFutureOrders) {
+                    $q->whereHas('order', fn ($oq) => $oq->whereIn('status', ['pending', 'pending_confirmation']));
+                }
+            } elseif ($excludeFutureOrders) {
+                $q->whereHas('order', fn ($oq) => $oq->whereIn('status', ['pending', 'pending_confirmation']));
+            }
+        };
+
+        $product->load($this->getEagerLoads($request));
+        $product->loadSum(['stocks as stocks_sum_quantity' => $stockScope], 'quantity');
+        $product->loadSum(['stocks as stocks_sum_reserved_qty' => $stockScope], 'reserved_qty');
+        $product->loadSum(['stocks as stocks_sum_dispatched_qty' => $stockScope], 'dispatched_qty');
+        $product->loadSum(['pendingOrderItems as pending_orders_qty' => $pendingOrderScope], 'quantity');
+
+        $response = [
+            'data' => $this->transform($product),
+        ];
+
+        if (! $request->boolean('without_options')) {
+            $response['options'] = $this->catalogOptions($request);
+        }
+
+        return response()->json($response);
+    }
+
+    public function store(Request $request): JsonResponse
+    {
+        abort_unless($request->user()?->can('product-create'), 403);
+
+        $data = $this->validatePayload($request);
+
+        $product = new Product;
+        $this->persistProduct($product, $data, $request);
+
+        $stockScope = function ($q) use ($request) {
+            if ($lobState = $request->user()?->lob_state_name) {
+                $q->whereHas('warehouse', function ($wq) use ($lobState) {
+                    $wq->where('state', $lobState);
+                });
+            }
+        };
+        
+        $pendingOrderScope = function ($q) use ($request) {
+            if ($lobState = $request->user()?->lob_state_name) {
+                $q->whereHas('order.warehouse', function ($wq) use ($lobState) {
+                    $wq->where('state', $lobState);
+                });
+            }
+        };
+
+        return response()->json([
+            'message' => 'Product created successfully.',
+            'data' => $this->transform($product->fresh($this->getEagerLoads($request))
+                ->loadSum(['stocks as stocks_sum_quantity' => $stockScope], 'quantity')
+                ->loadSum(['stocks as stocks_sum_reserved_qty' => $stockScope], 'reserved_qty')
+                ->loadSum(['stocks as stocks_sum_dispatched_qty' => $stockScope], 'dispatched_qty')
+                ->loadSum(['pendingOrderItems as pending_orders_qty' => $pendingOrderScope], 'quantity')),
+        ], 201);
+    }
+
+    public function update(Request $request, Product $product): JsonResponse
+    {
+        abort_unless($request->user()?->can('product-edit'), 403);
+
+        $data = $this->validatePayload($request, $product);
+        $this->persistProduct($product, $data, $request);
+
+        $stockScope = function ($q) use ($request) {
+            if ($lobState = $request->user()?->lob_state_name) {
+                $q->whereHas('warehouse', function ($wq) use ($lobState) {
+                    $wq->where('state', $lobState);
+                });
+            }
+        };
+        
+        $pendingOrderScope = function ($q) use ($request) {
+            if ($lobState = $request->user()?->lob_state_name) {
+                $q->whereHas('order.warehouse', function ($wq) use ($lobState) {
+                    $wq->where('state', $lobState);
+                });
+            }
+        };
+
+        return response()->json([
+            'message' => 'Product updated successfully.',
+            'data' => $this->transform($product->fresh($this->getEagerLoads($request))
+                ->loadSum(['stocks as stocks_sum_quantity' => $stockScope], 'quantity')
+                ->loadSum(['stocks as stocks_sum_reserved_qty' => $stockScope], 'reserved_qty')
+                ->loadSum(['stocks as stocks_sum_dispatched_qty' => $stockScope], 'dispatched_qty')
+                ->loadSum(['pendingOrderItems as pending_orders_qty' => $pendingOrderScope], 'quantity')),
+        ]);
+    }
+
+    public function destroy(Request $request, Product $product): JsonResponse
+    {
+        abort_unless($request->user()?->can('product-delete'), 403);
+
+        $product->delete();
+
+        return response()->json([
+            'message' => 'Product moved to trash.',
+        ]);
+    }
+
+    public function bulkDelete(Request $request): JsonResponse
+    {
+        abort_unless($request->user()?->can('product-delete'), 403);
+
+        $ids = $this->extractIds($request->input('ids'));
+
+        if (empty($ids)) {
+            return response()->json(['message' => 'No products selected.'], 422);
+        }
+
+        $deletedCount = Product::whereIn('id', $ids)->delete();
+
+        return response()->json([
+            'message' => $deletedCount.' product(s) moved to deleted products.',
+            'deleted_count' => $deletedCount,
+        ]);
+    }
+
+    public function bulkRestore(Request $request): JsonResponse
+    {
+        abort_unless($request->user()?->can('product-restore'), 403);
+
+        $ids = $this->extractIds($request->input('ids'));
+        if (empty($ids)) {
+            return response()->json(['message' => 'No products selected.'], 422);
+        }
+
+        $restored = [];
+        $failed = [];
+        $products = Product::withTrashed()->whereIn('id', $ids)->get();
+
+        foreach ($ids as $id) {
+            $product = $products->firstWhere('id', $id);
+            if (! $product || ! $product->trashed()) {
+                $failed[] = ['id' => $id, 'reason' => 'Product is unavailable or is not deleted.'];
+                continue;
+            }
+            if (Product::query()->where('sku', $product->sku)->where('id', '<>', $product->id)->exists()) {
+                $failed[] = ['id' => $id, 'reason' => 'Another active product is using this SKU.'];
+                continue;
+            }
+
+            $product->restore();
+            $restored[] = $id;
+        }
+
+        return response()->json([
+            'message' => count($restored).' product(s) restored; '.count($failed).' could not be restored.',
+            'restored_ids' => $restored,
+            'failed' => $failed,
+        ]);
+    }
+
+    public function bulkForceDelete(Request $request): JsonResponse
+    {
+        abort_unless($request->user()?->can('product-permanent-delete'), 403);
+
+        $ids = $this->extractIds($request->input('ids'));
+        if (empty($ids)) {
+            return response()->json(['message' => 'No products selected.'], 422);
+        }
+
+        $deleted = [];
+        $failed = [];
+        $products = Product::withTrashed()->whereIn('id', $ids)->get();
+
+        foreach ($ids as $id) {
+            $product = $products->firstWhere('id', $id);
+            if (! $product || ! $product->trashed()) {
+                $failed[] = ['id' => $id, 'reason' => 'Product is unavailable or is not deleted.'];
+                continue;
+            }
+
+            $reason = $this->permanentDeleteBlockReason($product);
+            if ($reason !== null) {
+                $failed[] = ['id' => $id, 'reason' => $reason];
+                continue;
+            }
+
+            $imagePath = $product->image_path;
+            DB::transaction(fn () => $product->forceDelete());
+            if ($imagePath) {
+                $this->deleteUnusedImage($imagePath);
+            }
+            $deleted[] = $id;
+        }
+
+        return response()->json([
+            'message' => count($deleted).' product(s) permanently deleted; '.count($failed).' could not be deleted.',
+            'deleted_ids' => $deleted,
+            'failed' => $failed,
+        ]);
+    }
+
+    public function bulkStatus(Request $request): JsonResponse
+    {
+        abort_unless($request->user()?->can('product-edit'), 403);
+
+        $data = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer', 'exists:products,id'],
+            'status' => ['required', 'in:published,draft'],
+        ]);
+
+        $status = $this->normalizeStatus((string) $data['status']);
+        Product::whereIn('id', $data['ids'])->update([
+            'status' => $status,
+            'is_active' => in_array($status, ['published', 'active'], true),
+        ]);
+
+        return response()->json([
+            'message' => 'Selected products updated successfully.',
+        ]);
+    }
+
+    public function bulkStorefront(Request $request): JsonResponse
+    {
+        abort_unless($request->user()?->can('product-edit'), 403);
+        $data = $request->validate([
+            'ids' => ['required', 'array', 'min:1', 'max:1000'],
+            'ids.*' => ['required', 'integer', 'distinct', \Illuminate\Validation\Rule::exists('products', 'id')->whereNull('deleted_at')],
+            'storefront_visible' => ['required', 'boolean'],
+        ]);
+        DB::transaction(function () use ($data) {
+            foreach (Product::whereIn('id', $data['ids'])->orderBy('id')->lockForUpdate()->get() as $product) {
+                $product->update(['storefront_visible' => $data['storefront_visible']]);
+            }
+        });
+        return response()->json(['message' => 'Shop visibility updated. Draft, inactive or SKU-disabled products remain unavailable until their existing requirements are met.']);
+    }
+
+    public function bulkDisableSku(Request $request): JsonResponse
+    {
+        abort_unless($request->user()?->can('product-edit'), 403);
+
+        $data = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer', 'exists:products,id'],
+            'warehouse_id' => [
+                'nullable',
+                'integer',
+                'exists:warehouses,id',
+                function ($attribute, $value, $fail) use ($request) {
+                    if ($lobState = $request->user()?->lob_state_name) {
+                        $wh = Warehouse::find($value);
+                        if ($wh && $wh->state !== $lobState) {
+                            $fail('Unauthorized warehouse selection.');
+                        }
+                    }
+                }
+            ],
+        ]);
+
+        if (!empty($data['warehouse_id'])) {
+            DB::transaction(function () use ($data): void {
+                foreach (Product::whereIn('id', $data['ids'])->get() as $product) {
+                    $this->syncStockConfig($product, ['is_sku_enabled' => false], (int) $data['warehouse_id']);
+                }
+            });
+        } else {
+            Product::whereIn('id', $data['ids'])->update([
+                'is_sku_enabled' => false,
+            ]);
+        }
+
+        return response()->json([
+            'message' => 'SKUs disabled for selected products.',
+        ]);
+    }
+
+    public function bulkEnableSku(Request $request): JsonResponse
+    {
+        abort_unless($request->user()?->can('product-edit'), 403);
+
+        $data = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer', 'exists:products,id'],
+            'warehouse_id' => [
+                'nullable',
+                'integer',
+                'exists:warehouses,id',
+                function ($attribute, $value, $fail) use ($request) {
+                    if ($lobState = $request->user()?->lob_state_name) {
+                        $wh = Warehouse::find($value);
+                        if ($wh && $wh->state !== $lobState) {
+                            $fail('Unauthorized warehouse selection.');
+                        }
+                    }
+                }
+            ],
+        ]);
+
+        if (!empty($data['warehouse_id'])) {
+            DB::transaction(function () use ($data): void {
+                foreach (Product::whereIn('id', $data['ids'])->get() as $product) {
+                    $this->syncStockConfig($product, ['is_sku_enabled' => true], (int) $data['warehouse_id']);
+                }
+            });
+        } else {
+            Product::whereIn('id', $data['ids'])->update([
+                'is_sku_enabled' => true,
+            ]);
+        }
+
+        return response()->json([
+            'message' => 'SKUs enabled for selected products.',
+        ]);
+    }
+
+    public function restore(Request $request, string $product): JsonResponse
+    {
+        abort_unless($request->user()?->can('product-restore'), 403);
+
+        $product = Product::withTrashed()->findOrFail($product);
+        if (! $product->trashed()) {
+            return response()->json(['message' => 'This product is not in the deleted products list.'], 409);
+        }
+
+        if (Product::query()->where('sku', $product->sku)->where('id', '<>', $product->id)->exists()) {
+            return response()->json([
+                'message' => 'This product cannot be restored because another active product is using its SKU.',
+            ], 409);
+        }
+
+        $product->restore();
+
+        $stockScope = function ($q) use ($request) {
+            if ($lobState = $request->user()?->lob_state_name) {
+                $q->whereHas('warehouse', function ($wq) use ($lobState) {
+                    $wq->where('state', $lobState);
+                });
+            }
+        };
+        
+        $pendingOrderScope = function ($q) use ($request) {
+            if ($lobState = $request->user()?->lob_state_name) {
+                $q->whereHas('order.warehouse', function ($wq) use ($lobState) {
+                    $wq->where('state', $lobState);
+                });
+            }
+        };
+
+        return response()->json([
+            'message' => 'Product restored successfully.',
+            'data' => $this->transform($product->fresh($this->getEagerLoads($request))
+                ->loadSum(['stocks as stocks_sum_quantity' => $stockScope], 'quantity')
+                ->loadSum(['stocks as stocks_sum_reserved_qty' => $stockScope], 'reserved_qty')
+                ->loadSum(['stocks as stocks_sum_dispatched_qty' => $stockScope], 'dispatched_qty')
+                ->loadSum(['pendingOrderItems as pending_orders_qty' => $pendingOrderScope], 'quantity')),
+        ]);
+    }
+
+    public function forceDelete(Request $request, string $product): JsonResponse
+    {
+        abort_unless($request->user()?->can('product-permanent-delete'), 403);
+
+        $product = Product::withTrashed()->findOrFail($product);
+        if (! $product->trashed()) {
+            return response()->json(['message' => 'Only deleted products can be permanently deleted.'], 409);
+        }
+
+        $reason = $this->permanentDeleteBlockReason($product);
+        if ($reason !== null) {
+            return response()->json(['message' => $reason], 409);
+        }
+
+        $imagePath = $product->image_path;
+        DB::transaction(fn () => $product->forceDelete());
+        if ($imagePath) {
+            $this->deleteUnusedImage($imagePath);
+        }
+
+        return response()->json([
+            'message' => 'Product permanently deleted.',
+        ]);
+    }
+
+    public function searchApi(Request $request): JsonResponse
+    {
+        $this->assertWarehouseAccess($request);
+        $excludeFutureOrders = $request->boolean('exclude_future_orders');
+        $stockScope = function ($q) use ($request) {
+            if ($request->filled('warehouse_id')) {
+                $q->where('warehouse_id', $request->warehouse_id);
+            } elseif ($lobState = $request->user()?->lob_state_name) {
+                $q->whereHas('warehouse', function ($wq) use ($lobState) {
+                    $wq->where('state', $lobState);
+                });
+            }
+        };
+
+        $pendingOrderScope = function ($q) use ($request, $excludeFutureOrders) {
+            if ($request->filled('warehouse_id')) {
+                $q->whereHas('order', function ($oq) use ($request, $excludeFutureOrders) {
+                    $oq->where('warehouse_id', $request->warehouse_id);
+                    if ($excludeFutureOrders) {
+                        $oq->whereIn('status', ['pending', 'pending_confirmation']);
+                    }
+                });
+            } elseif ($lobState = $request->user()?->lob_state_name) {
+                $q->whereHas('order.warehouse', function ($wq) use ($lobState) {
+                    $wq->where('state', $lobState);
+                });
+                if ($excludeFutureOrders) {
+                    $q->whereHas('order', fn ($oq) => $oq->whereIn('status', ['pending', 'pending_confirmation']));
+                }
+            } elseif ($excludeFutureOrders) {
+                $q->whereHas('order', fn ($oq) => $oq->whereIn('status', ['pending', 'pending_confirmation']));
+            }
+        };
+
+        $query = Product::query()
+            ->with(['category', 'brand', 'taxRate', 'uom', 'stocks' => function ($q) use ($request, $excludeFutureOrders) {
+                $q->with('warehouse')->withSum([
+                    'pendingOrderItems as pending_qty' => function ($pendingItems) use ($excludeFutureOrders) {
+                        if ($excludeFutureOrders) {
+                            $pendingItems->whereHas('order', fn ($order) => $order->whereIn('status', ['pending', 'pending_confirmation']));
+                        }
+                    },
+                ], 'quantity');
+                if ($request->filled('warehouse_id')) {
+                    $q->where('warehouse_id', $request->warehouse_id);
+                } elseif ($lobState = $request->user()?->lob_state_name) {
+                    $q->whereHas('warehouse', function ($wq) use ($lobState) {
+                        $wq->where('state', $lobState);
+                    });
+                }
+            }])
+            ->withSum(['stocks as stocks_sum_quantity' => $stockScope], 'quantity')
+            ->withSum(['stocks as stocks_sum_reserved_qty' => $stockScope], 'reserved_qty')
+            ->withSum(['stocks as stocks_sum_dispatched_qty' => $stockScope], 'dispatched_qty')
+            ->withMax(['stocks as stocks_max_allow_overselling' => $stockScope], 'allow_overselling')
+            ->withSum(['pendingOrderItems as pending_orders_qty' => $pendingOrderScope], 'quantity');
+
+        if ($request->filled('q')) {
+            $q = $request->q;
+            $query->where(function ($qb) use ($q) {
+                $qb->where('name', 'like', "%{$q}%")
+                    ->orWhere('sku', 'like', "%{$q}%");
+            });
+        }
+
+        $query->where('status', '!=', 'draft');
+
+        if ($request->filled('category')) {
+            $query->where('category_id', $request->category);
+        }
+
+        if ($request->filled('ids')) {
+            $ids = is_array($request->ids) ? $request->ids : explode(',', $request->ids);
+            $query->whereIn('id', $ids);
+        }
+
+        if ($request->filled('stock')) {
+            if ($request->stock === 'available' || $request->stock === 'in-stock') {
+                $query->havingRaw('((COALESCE(stocks_sum_quantity, 0) - COALESCE(stocks_sum_reserved_qty, 0) - COALESCE(pending_orders_qty, 0)) > 0 OR `products`.`allow_overselling` = 1 OR stocks_max_allow_overselling = 1)');
+            } elseif ($request->stock === 'low-stock' || $request->stock === 'low_stock') {
+                $query->havingRaw('((COALESCE(stocks_sum_quantity, 0) - COALESCE(stocks_sum_reserved_qty, 0) - COALESCE(pending_orders_qty, 0)) > 0 AND (COALESCE(stocks_sum_quantity, 0) - COALESCE(stocks_sum_reserved_qty, 0) - COALESCE(pending_orders_qty, 0)) <= COALESCE(min_stock_level, 0))');
+            } elseif ($request->stock === 'out_of_stock' || $request->stock === 'out-of-stock') {
+                $query->havingRaw('((COALESCE(stocks_sum_quantity, 0) - COALESCE(stocks_sum_reserved_qty, 0) - COALESCE(pending_orders_qty, 0)) <= 0 AND (`products`.`allow_overselling` = 0 OR `products`.`allow_overselling` IS NULL) AND (stocks_max_allow_overselling = 0 OR stocks_max_allow_overselling IS NULL))');
+            }
+        }
+
+        // Exclude products where SKU is explicitly disabled at the product level
+        $query->where('products.is_sku_enabled', true);
+
+        $perPage = max(1, min(100, (int) $request->input('perPage', 12)));
+        $paginator = $query->latest()->paginate($perPage);
+
+        $data = $paginator->through(function (Product $p) {
+            $totalQty = (float) ($p->stocks_sum_quantity ?? 0);
+            $reservedQty = (float) ($p->stocks_sum_reserved_qty ?? 0);
+            $dispatchedQty = (float) ($p->stocks_sum_dispatched_qty ?? 0);
+            $pendingQty = (float) ($p->pending_orders_qty ?? 0);
+
+            $rawAvailable = $totalQty - $reservedQty - $pendingQty;
+            $netAvailable = max(0.0, $rawAvailable);
+
+            $maxAllowedQty = $this->availableStockFor($p, $rawAvailable);
+
+            return [
+                'id' => $p->id,
+                'warehouse_stocks' => $p->stocks->map(fn ($s) => [
+                    'warehouse_id' => $s->warehouse_id,
+                    'warehouse_name' => $s->warehouse?->name ?? 'Unknown',
+                    'quantity' => $s->quantity,
+                    'reserved_qty' => (float) $s->reserved_qty,
+                    'pending_qty' => (float) ($s->pending_qty ?? 0),
+                    'available' => $s->quantity - $s->reserved_qty - (float) ($s->pending_qty ?? 0),
+                    'allow_overselling' => $s->allow_overselling !== null ? (bool) $s->allow_overselling : null,
+                    'overselling_qty' => $s->overselling_qty !== null ? (int) $s->overselling_qty : null,
+                    'is_sku_enabled' => $s->is_sku_enabled !== null ? (bool) $s->is_sku_enabled : null,
+                ])->values()->toArray(),
+                'name' => $p->name,
+                'sku' => $p->sku,
+                'barcode' => $p->barcode,
+                'selling_price' => (float) $p->selling_price,
+                'purchase_price' => (float) $p->purchase_price,
+                'mrp' => (float) $p->mrp,
+                'image_url' => $p->image_url,
+                'stock_qty' => $totalQty,
+                'reserved_qty' => $reservedQty,
+                'pending_qty' => $pendingQty,
+                'dispatched_qty' => $dispatchedQty,
+                'available_stock' => $maxAllowedQty,
+                'physical_available' => $netAvailable,
+                'overselling_qty' => (int) ($p->overselling_qty ?? 0),
+                'allow_overselling' => (bool) $p->allow_overselling,
+                'status' => $p->status,
+                'category' => $p->category?->name,
+                'category_id' => $p->category_id,
+                'brand' => $p->brand?->name,
+                'tax_rate' => (float) ($p->taxRate?->rate ?? 0),
+                'tax_label' => $p->taxRate?->name,
+                'min_stock_level' => $p->min_stock_level ?? 0,
+                'weight_g' => (float) $p->weight_g,
+                'is_sku_enabled' => (bool) $p->is_sku_enabled,
+                'default_discount' => (float) ($p->default_discount ?? 0),
+                'default_discount_type' => in_array($p->default_discount_type, ['fixed', 'amount']) ? 'flat' : ($p->default_discount_type === 'percentage' ? 'percent' : ($p->default_discount_type ?? 'percent')),
+                'grade' => $p->grade,
+                'uom' => $p->uom?->name,
+                'uom_id' => $p->uom_id,
+                'batch_tracking' => (bool) $p->batch_tracking,
+                'expiry_tracking' => (bool) $p->expiry_tracking,
+                'manage_stock' => (bool) $p->manage_stock,
+            ];
+        });
+
+        return response()->json([
+            'data' => $data->items(),
+            'current_page' => $paginator->currentPage(),
+            'last_page' => $paginator->lastPage(),
+            'per_page' => $paginator->perPage(),
+            'total' => $paginator->total(),
+            'from' => $paginator->firstItem(),
+            'to' => $paginator->lastItem(),
+        ]);
+    }
+
+    public function duplicate(Request $request, Product $product): JsonResponse
+    {
+        abort_unless($request->user()?->can('product-create'), 403);
+
+        $clone = $product->replicate([
+            'sku',
+            'slug',
+            'created_at',
+            'updated_at',
+            'deleted_at',
+        ]);
+        $clone->name = $product->name.' (Copy)';
+        $clone->sku = $this->generateUniqueSku($product->sku);
+        $clone->slug = $this->generateUniqueSlug($clone->name);
+        $clone->storefront_visible = false;
+        $clone->is_featured = false;
+        $clone->status = 'draft';
+        $clone->is_active = false;
+        $clone->save();
+        $clone->attributeValues()->sync($product->attributeValues->pluck('id')->all());
+
+        $stockScope = function ($q) use ($request) {
+            if ($request->filled('warehouse_id')) {
+                $q->where('warehouse_id', $request->warehouse_id);
+            } elseif ($lobState = $request->user()?->lob_state_name) {
+                $q->whereHas('warehouse', function ($wq) use ($lobState) {
+                    $wq->where('state', $lobState);
+                });
+            }
+        };
+
+        $pendingOrderScope = function ($q) use ($request) {
+            if ($request->filled('warehouse_id')) {
+                $q->whereHas('order', function ($oq) use ($request) {
+                    $oq->where('warehouse_id', $request->warehouse_id);
+                });
+            } elseif ($lobState = $request->user()?->lob_state_name) {
+                $q->whereHas('order.warehouse', function ($wq) use ($lobState) {
+                    $wq->where('state', $lobState);
+                });
+            }
+        };
+
+        return response()->json([
+            'message' => 'Product duplicated successfully.',
+            'data' => $this->transform($clone->fresh($this->getEagerLoads($request))
+                ->loadSum(['stocks as stocks_sum_quantity' => $stockScope], 'quantity')
+                ->loadSum(['stocks as stocks_sum_reserved_qty' => $stockScope], 'reserved_qty')
+                ->loadSum(['stocks as stocks_sum_dispatched_qty' => $stockScope], 'dispatched_qty')
+                ->loadSum(['pendingOrderItems as pending_orders_qty' => $pendingOrderScope], 'quantity')),
+        ], 201);
+    }
+
+    public function import(Request $request): JsonResponse
+    {
+        abort_unless($request->user()?->can('product-import'), 403);
+
+        $data = $request->validate([
+            'file' => ['required', 'file', 'mimes:csv,txt', 'max:10240'],
+            'import_mode' => ['nullable', 'in:overwrite,increment'],
+        ]);
+
+        $importMode = $data['import_mode'] ?? 'overwrite';
+
+        $handle = fopen($data['file']->getRealPath(), 'r');
+        if ($handle === false) {
+            return response()->json(['message' => 'Unable to read import file.'], 422);
+        }
+
+        $errors = [];
+        $imported = 0;
+        $rowNum = 0;
+
+        while (($row = fgetcsv($handle)) !== false) {
+            $rowNum++;
+            if (empty($headers)) {
+                $headers = array_map(
+                    fn ($value) => Str::of((string) $value)->trim()->lower()->toString(),
+                    $row,
+                );
+
+                $headers[0] = ltrim($headers[0], "\xEF\xBB\xBF");
+                if (count(array_unique($headers)) !== count($headers)) {
+                    fclose($handle);
+                    throw ValidationException::withMessages(['file'=>'CSV column names must be unique.']);
+                }
+                continue;
+            }
+
+            if (count($row) !== count($headers)) {
+                $errors[] = "Row {$rowNum}: Column count mismatch.";
+
+                continue;
+            }
+
+            $record = array_combine($headers, $row);
+            if (! is_array($record)) {
+                $errors[] = "Row {$rowNum}: Invalid record format.";
+
+                continue;
+            }
+
+            $rules = ['name'=>'required|string|max:255','sku'=>'required|string|max:255'];
+            foreach (['purchase_price','mrp','selling_price','price','weight_g','weight','overselling_qty','min_stock_level','default_discount'] as $field) $rules[$field] = 'sometimes|nullable|numeric|min:0';
+            $rules['selling_price_including_tax'] = 'sometimes|nullable|numeric|min:0|max:9999999999999.99|decimal:0,2';
+            foreach (['stock','stock_quantity'] as $field) $rules[$field] = 'sometimes|nullable|integer|min:0';
+            foreach (['brand_id'=>'brands','uom_id'=>'units_of_measure','tax_rate_id'=>'tax_rates','hsn_code_id'=>'hsn_codes','default_warehouse_id'=>'warehouses'] as $field=>$table) $rules[$field] = 'sometimes|nullable|integer|exists:'.$table.',id';
+            foreach (['storefront_visible','is_featured'] as $field) $rules[$field] = 'sometimes|boolean';
+            foreach (['min_order_qty','max_order_qty'] as $field) $rules[$field] = 'sometimes|integer|min:1|max:1000';
+            $validator = \Illuminate\Support\Facades\Validator::make($record, $rules);
+            if ($validator->fails()) {
+                $errors[] = "Row {$rowNum}: ".implode(' ', $validator->errors()->all());
+                continue;
+            }
+            if (!empty($record['default_warehouse_id']) && ($state=$request->user()?->lob_state_name)
+                && Warehouse::find($record['default_warehouse_id'])?->state !== $state) {
+                $errors[] = "Row {$rowNum}: Unauthorized warehouse selection.";
+                continue;
+            }
+
+            $payload = [
+                'name' => trim((string) ($record['name'] ?? '')),
+                'sku' => trim((string) ($record['sku'] ?? '')),
+                'category_id' => $this->resolveCategoryId($record['category_id'] ?? $record['category'] ?? null),
+                'brand_id' => $this->resolveId($record['brand_id'] ?? null),
+                'uom_id' => $this->resolveId($record['uom_id'] ?? null),
+                'tax_rate_id' => $this->resolveId($record['tax_rate_id'] ?? null),
+                'hsn_code_id' => $this->resolveId($record['hsn_code_id'] ?? null),
+                'default_warehouse_id' => $this->resolveId($record['default_warehouse_id'] ?? null),
+                'barcode' => $this->nullableString($record['barcode'] ?? null),
+                'weight_g' => (float) ($record['weight_g'] ?? $record['weight'] ?? 0),
+                'purchase_price' => (float) ($record['purchase_price'] ?? 0),
+                'mrp' => (float) ($record['mrp'] ?? 0),
+                'selling_price' => (float) ($record['selling_price'] ?? $record['price'] ?? 0),
+                'stock' => (int) ($record['stock'] ?? $record['stock_quantity'] ?? 0),
+                'min_stock_level' => (int) ($record['min_stock_level'] ?? 0),
+                'allow_overselling' => filter_var($record['allow_overselling'] ?? false, FILTER_VALIDATE_BOOL),
+                'manage_stock' => filter_var($record['manage_stock'] ?? true, FILTER_VALIDATE_BOOL),
+                'batch_tracking' => filter_var($record['batch_tracking'] ?? false, FILTER_VALIDATE_BOOL),
+                'expiry_tracking' => filter_var($record['expiry_tracking'] ?? false, FILTER_VALIDATE_BOOL),
+                'application_instructions' => $this->nullableString($record['application_instructions'] ?? null),
+                'status' => (string) ($record['status'] ?? 'draft'),
+                'description' => trim((string) ($record['description'] ?? '')),
+                'overselling_qty' => (int) ($record['overselling_qty'] ?? 0),
+                'default_discount' => (float) ($record['default_discount'] ?? 0),
+                'default_discount_type' => (string) ($record['default_discount_type'] ?? 'percent'),
+                'grade' => $this->nullableString($record['grade'] ?? null),
+                'is_sku_enabled' => filter_var($record['is_sku_enabled'] ?? true, FILTER_VALIDATE_BOOL),
+            ];
+
+            if ($payload['name'] === '') {
+                $errors[] = "Row {$rowNum}: Missing product name.";
+
+                continue;
+            }
+            if ($payload['sku'] === '') {
+                $errors[] = "Row {$rowNum}: Missing SKU for product '{$payload['name']}'.";
+
+                continue;
+            }
+            if (! $payload['category_id']) {
+                $errors[] = "Row {$rowNum}: Invalid or missing category for SKU '{$payload['sku']}'.";
+
+                continue;
+            }
+
+            foreach (['storefront_visible','is_featured','min_order_qty','max_order_qty','selling_price_including_tax'] as $field) {
+                if (array_key_exists($field, $record)) $payload[$field] = $record[$field];
+            }
+            try {
+                DB::transaction(function () use ($payload, $importMode) {
+                    $product = Product::withTrashed()->firstOrNew(['sku' => $payload['sku']]);
+                    if ((int)($payload['max_order_qty'] ?? $product->max_order_qty ?? 1000) < (int)($payload['min_order_qty'] ?? $product->min_order_qty ?? 1)) {
+                        throw ValidationException::withMessages(['max_order_qty'=>'Maximum order quantity must be at least the minimum.']);
+                    }
+                    if (($payload['default_discount_type'] ?? 'percent') === 'percent' && $payload['default_discount'] > 100) {
+                        throw ValidationException::withMessages(['default_discount'=>'Percentage discount cannot exceed 100%.']);
+                    }
+                    $this->fillProduct($product, $payload, null);
+                    $product->save();
+                    $this->syncStock($product, (int)$payload['stock'], $importMode);
+                    if ($product->trashed()) $product->restore();
+                });
+                $imported++;
+            } catch (ValidationException $error) {
+                $errors[] = "Row {$rowNum}: ".implode(' ', $error->validator->errors()->all());
+            } catch (\Throwable $error) {
+                report($error);
+                $errors[] = "Row {$rowNum}: Could not save this product. Check reference IDs and numeric field limits.";
+            }
+        }
+
+        fclose($handle);
+
+        return response()->json([
+            'message' => "Imported {$imported} products successfully.",
+            'imported' => $imported,
+            'errors' => $errors,
+        ]);
+    }
+
+    public function export(Request $request): StreamedResponse
+    {
+        abort_unless($request->user()?->can('product-export'), 403);
+
+        $filename = 'products-'.now()->format('Y-m-d-His').'.csv';
+
+        return response()->streamDownload(function () use ($request) {
+            $handle = fopen('php://output', 'w');
+            fputcsv($handle, [
+                'name',
+                'sku',
+                'category_id',
+                'brand_id',
+                'uom_id',
+                'tax_rate_id',
+                'hsn_code_id',
+                'price',
+                'purchase_price',
+                'mrp',
+                'stock',
+                'min_stock_level',
+                'default_discount',
+                'default_discount_type',
+                'status',
+                'grade',
+                'description',
+                'batch_tracking',
+                'expiry_tracking',
+                'allow_overselling',
+                'overselling_qty',
+                'storefront_visible', 'is_featured', 'min_order_qty', 'max_order_qty', 'selling_price_including_tax',
+            ]);
+
+            $stockScope = function ($q) use ($request) {
+                if ($lobState = $request->user()?->lob_state_name) {
+                    $q->whereHas('warehouse', function ($wq) use ($lobState) {
+                        $wq->where('state', $lobState);
+                    });
+                }
+            };
+
+            Product::query()
+                ->with(['category', 'brand', 'uom', 'taxRate', 'hsnCode'])
+                ->withSum(['stocks as stocks_sum_quantity' => $stockScope], 'quantity')
+                ->latest()
+                ->chunk(100, function ($products) use ($handle): void {
+                    foreach ($products as $product) {
+                        fputcsv($handle, [
+                            $product->name,
+                            $product->sku,
+                            $product->category_id,
+                            $product->brand_id,
+                            $product->uom_id,
+                            $product->tax_rate_id,
+                            $product->hsn_code_id,
+                            $product->selling_price,
+                            $product->purchase_price,
+                            $product->mrp,
+                            $product->stocks_sum_quantity ?? 0,
+                            $product->min_stock_level,
+                            $product->default_discount,
+                            $product->default_discount_type,
+                            $product->status,
+                            $product->grade,
+                            $product->description,
+                            $product->batch_tracking ? '1' : '0',
+                            $product->expiry_tracking ? '1' : '0',
+                            $product->allow_overselling ? '1' : '0',
+                            $product->overselling_qty,
+                            $product->storefront_visible ? '1' : '0', $product->is_featured ? '1' : '0',
+                            $product->min_order_qty, $product->max_order_qty, $product->selling_price_including_tax,
+                        ]);
+                    }
+                });
+
+            fclose($handle);
+        }, $filename, ['Content-Type' => 'text/csv']);
+    }
+
+    private function validatePayload(Request $request, ?Product $product = null): array
+    {
+        $validated = $request->validate([
+            'storefront_visible' => ['sometimes', 'boolean'],
+            'is_featured' => ['sometimes', 'boolean'],
+            'min_order_qty' => ['sometimes', 'integer', 'min:1', 'max:1000'],
+            'max_order_qty' => ['sometimes', 'integer', 'min:1', 'max:1000'],
+            'name' => ['required', 'string', 'max:255'],
+            'sku' => ['required', 'string', 'max:255', 'unique:products,sku'.($product ? ','.$product->id : '')],
+            'category_id' => ['required', 'integer', 'exists:categories,id'],
+            'brand_id' => ['nullable', 'integer', 'exists:brands,id'],
+            'uom_id' => ['required', 'integer', 'exists:units_of_measure,id'],
+            'supplier_id' => ['nullable', 'integer', 'exists:suppliers,id'],
+            'default_warehouse_id' => [
+                'required',
+                'integer',
+                'exists:warehouses,id',
+                function ($attribute, $value, $fail) use ($request, $product) {
+                    // Keeping the existing default does not assign a new warehouse.
+                    if ($product && (int) $value === (int) $product->default_warehouse_id) {
+                        return;
+                    }
+                    if ($lobState = $request->user()?->lob_state_name) {
+                        $wh = Warehouse::find($value);
+                        if ($wh && $wh->state !== $lobState) {
+                            $fail('Unauthorized warehouse selection.');
+                        }
+                    }
+                }
+            ],
+            'tax_rate_id' => ['required', 'integer', 'exists:tax_rates,id'],
+            'hsn_code_id' => ['required', 'integer', 'exists:hsn_codes,id'],
+            'barcode' => ['nullable', 'string', 'max:255'],
+            'purchase_price' => ['required', 'numeric', 'min:0'],
+            'mrp' => ['nullable', 'numeric', 'min:0'],
+            'selling_price' => ['required', 'numeric', 'min:0'],
+            'selling_price_including_tax' => ['sometimes', 'nullable', 'numeric', 'min:0', 'max:9999999999999.99', 'decimal:0,2'],
+            // stock / stock_quantity are accepted interchangeably
+            'stock' => ['nullable', 'integer', 'min:0'],
+            'stock_quantity' => ['nullable', 'integer', 'min:0'],
+            'min_stock_level' => ['required', 'integer', 'min:0'],
+            'status' => ['required', 'in:published,draft'],
+            'allow_overselling' => ['nullable', 'boolean'],
+            'manage_stock' => ['nullable', 'boolean'],
+            'is_sku_enabled' => ['nullable', 'boolean'],
+            'batch_tracking' => ['nullable', 'boolean'],
+            'expiry_tracking' => ['nullable', 'boolean'],
+            'application_instructions' => ['nullable', 'string'],
+            'description' => ['nullable', 'string'],
+            'image' => ['nullable', 'image', 'max:5120'],
+            'attributes' => ['nullable', 'array'],
+            'attributes.*' => ['integer', 'exists:product_attribute_values,id'],
+            'overselling_qty' => ['nullable', 'integer', 'min:0'],
+            'default_discount' => ['nullable', 'numeric', 'min:0'],
+            'default_discount_type' => ['nullable', 'in:percent,flat'],
+            'grade' => ['nullable', 'in:A,B,C,D'],
+            'weight_g' => ['nullable', 'numeric', 'min:0'],
+            'length_cm' => ['nullable', 'numeric', 'min:0'],
+            'width_cm' => ['nullable', 'numeric', 'min:0'],
+            'height_cm' => ['nullable', 'numeric', 'min:0'],
+            'warehouse_config_id' => [
+                'nullable', 'integer', 'exists:warehouses,id',
+                function ($attribute, $value, $fail) use ($request) {
+                    if ($state = $request->user()?->lob_state_name) {
+                        if (Warehouse::find($value)?->state !== $state) {
+                            $fail('Unauthorized warehouse selection.');
+                        }
+                    }
+                },
+            ],
+            'warehouse_allow_overselling' => ['nullable', 'boolean'],
+            'warehouse_overselling_qty' => ['nullable', 'integer', 'min:0'],
+            'warehouse_is_sku_enabled' => ['nullable', 'boolean'],
+        ]);
+
+        if ((int) ($validated['max_order_qty'] ?? $product?->max_order_qty ?? 1000) < (int) ($validated['min_order_qty'] ?? $product?->min_order_qty ?? 1)) {
+            throw \Illuminate\Validation\ValidationException::withMessages(['max_order_qty' => 'Maximum order quantity must be at least the minimum.']);
+        }
+if (($validated['default_discount_type'] ?? $product?->default_discount_type ?? 'percent') === 'percent'
+            && (float)($validated['default_discount'] ?? $product?->default_discount ?? 0) > 100) {
+            throw ValidationException::withMessages(['default_discount' => 'Percentage discount cannot exceed 100%.']);
+        }
+        $validated['attributes'] = $validated['attributes'] ?? null;
+
+        return $validated;
+    }
+
+    private function fillProduct(Product $product, array $data, ?Request $request): void
+    {
+        foreach (['storefront_visible', 'is_featured', 'min_order_qty', 'max_order_qty'] as $field) {
+            if (array_key_exists($field, $data)) {
+                $product->{$field} = $data[$field];
+            }
+        }
+        $product->name = trim((string) $data['name']);
+        $product->sku = trim((string) $data['sku']);
+        if (!$product->exists || !$product->slug) {
+            $product->slug = $this->generateUniqueSlug($product->name, $product->exists ? $product->id : null);
+        }
+        $product->category_id = (int) $data['category_id'];
+        $product->brand_id = $this->resolveId($data['brand_id'] ?? null);
+        $product->uom_id = $this->resolveId($data['uom_id'] ?? null);
+        $product->supplier_id = $this->resolveId($data['supplier_id'] ?? null);
+        $product->default_warehouse_id = $this->resolveId($data['default_warehouse_id'] ?? null);
+        $product->tax_rate_id = $this->resolveId($data['tax_rate_id'] ?? null);
+        $product->hsn_code_id = $this->resolveId($data['hsn_code_id'] ?? null);
+        $product->barcode = $this->nullableString($data['barcode'] ?? null);
+        $product->weight_g = isset($data['weight_g']) ? (float) $data['weight_g'] : 0;
+        $product->length_cm = isset($data['length_cm']) ? (float) $data['length_cm'] : null;
+        $product->width_cm = isset($data['width_cm']) ? (float) $data['width_cm'] : null;
+        $product->height_cm = isset($data['height_cm']) ? (float) $data['height_cm'] : null;
+        $product->purchase_price = (float) $data['purchase_price'];
+        $product->selling_price = (float) $data['selling_price'];
+        if (isset($data['selling_price_including_tax']) && $data['selling_price_including_tax'] !== '') {
+            $product->selling_price_including_tax = $data['selling_price_including_tax'];
+        }
+
+        $taxRateValue = 0;
+        if ($product->tax_rate_id) {
+            $taxRate = \App\Modules\Catalog\Models\TaxRate::find($product->tax_rate_id);
+            $taxRateValue = $taxRate ? $taxRate->rate : 0;
+        }
+        if (isset($data['selling_price_including_tax']) && $data['selling_price_including_tax'] !== '') {
+            // Inclusive input is authoritative; do not trust a separately submitted base price.
+            $product->selling_price = round((float) $data['selling_price_including_tax'] / (1 + $taxRateValue / 100), 2);
+            $product->selling_price_including_tax = $data['selling_price_including_tax'];
+        }
+        $sellingPriceIncGst = $product->selling_price_including_tax !== null ? (float) $product->selling_price_including_tax : $product->selling_price * (1 + $taxRateValue / 100);
+        $product->mrp = isset($data['mrp']) && $data['mrp'] !== '' ? (float) $data['mrp'] : $sellingPriceIncGst;
+
+        $product->min_stock_level = (int) ($data['min_stock_level'] ?? 0);
+        $product->batch_tracking = filter_var($data['batch_tracking'] ?? false, FILTER_VALIDATE_BOOL);
+        $product->expiry_tracking = filter_var($data['expiry_tracking'] ?? false, FILTER_VALIDATE_BOOL);
+        $product->allow_overselling = filter_var($data['allow_overselling'] ?? false, FILTER_VALIDATE_BOOL);
+        $product->overselling_qty = (int) ($data['overselling_qty'] ?? 0);
+        $product->manage_stock = filter_var($data['manage_stock'] ?? true, FILTER_VALIDATE_BOOL);
+        $product->is_sku_enabled = filter_var($data['is_sku_enabled'] ?? true, FILTER_VALIDATE_BOOL);
+        $product->application_instructions = $this->nullableString($data['application_instructions'] ?? null);
+        $product->status = $this->normalizeStatus((string) $data['status']);
+        $product->is_active = in_array($product->status, ['published', 'active'], true);
+        $product->description = $this->nullableString($data['description'] ?? null);
+        $product->default_discount = (float) ($data['default_discount'] ?? 0);
+        $product->default_discount_type = (string) ($data['default_discount_type'] ?? 'percent');
+        $product->grade = $this->nullableString($data['grade'] ?? null);
+
+        if ($request?->hasFile('image')) {
+            $file = $request->file('image');
+            $extension = $file->extension() ?: 'jpg';
+            $filename = Str::slug($product->sku).'-'.Str::uuid().'.'.$extension;
+            $disk = Storage::disk('public');
+            if (! $disk->directoryExists('products') && ! $disk->makeDirectory('products')) {
+                Log::error('Unable to create product image storage directory.', [
+                    'disk' => config('filesystems.disks.public.driver'),
+                    'directory' => storage_path('app/public/products'),
+                    'directory_exists' => is_dir(storage_path('app/public/products')),
+                    'directory_writable' => is_writable(storage_path('app/public')),
+                ]);
+
+                throw ValidationException::withMessages([
+                    'image' => 'Product image storage is unavailable. Please contact support.',
+                ]);
+            }
+            $imagePath = $file->storeAs('products', $filename, 'public');
+
+            // Some production filesystem adapters return false on write failure instead
+            // of throwing. Do not report a successful product save with a broken image URL.
+            if (! $imagePath || ! $disk->exists($imagePath)) {
+                Log::error('Unable to persist uploaded product image.', [
+                    'disk' => config('filesystems.disks.public.driver'),
+                    'directory' => storage_path('app/public/products'),
+                    'directory_exists' => is_dir(storage_path('app/public/products')),
+                    'directory_writable' => is_writable(storage_path('app/public/products')),
+                    'returned_path' => $imagePath,
+                    'file_exists_on_disk' => $imagePath ? $disk->exists($imagePath) : false,
+                ]);
+
+                if ($imagePath) {
+                    $disk->delete($imagePath);
+                }
+
+                throw ValidationException::withMessages([
+                    'image' => 'The image could not be saved to product storage. Please try again or contact support.',
+                ]);
+            }
+
+            $product->image_path = $imagePath;
+        }
+    }
+
+    private function getEagerLoads(?Request $request = null): array
+    {
+        return [
+            'category.parent',
+            'brand',
+            'taxRate',
+            'hsnCode',
+            'uom',
+            'warehouse',
+            'attributeValues.attribute',
+            'supplier',
+            'stocks' => function ($q) use ($request) {
+                $q->with('warehouse')->withSum([
+                    'pendingOrderItems as pending_qty' => function ($pendingItems) use ($request) {
+                        if ($request?->boolean('exclude_future_orders')) {
+                            $pendingItems->whereHas('order', fn ($order) => $order->whereIn('status', ['pending', 'pending_confirmation']));
+                        }
+                    },
+                ], 'quantity');
+                if ($request && $request->filled('warehouse_id')) {
+                    $q->where('warehouse_id', $request->integer('warehouse_id'));
+                } elseif ($request && $lobState = $request->user()?->lob_state_name) {
+                    $q->whereHas('warehouse', function ($wq) use ($lobState) {
+                        $wq->where('state', $lobState);
+                    });
+                }
+            },
+        ];
+    }
+
+    private function assertWarehouseAccess(Request $request): void
+    {
+        if (! $request->filled('warehouse_id')) {
+            return;
+        }
+
+        abort_unless(Warehouse::query()
+            ->whereKey($request->integer('warehouse_id'))
+            ->where('status', 'active')
+            ->when($request->user()?->lob_state_name, fn ($query, $state) => $query->where('state', $state))
+            ->exists(), 403);
+    }
+
+    private function availableStockFor(Product $product, float $rawAvailable): float
+    {
+        $availableQty = max(0.0, $rawAvailable);
+        $maxAllowedQty = 0.0;
+        if ($product->stocks->isNotEmpty()) {
+            foreach ($product->stocks as $stock) {
+                $stockAvailable = (float) $stock->quantity - (float) $stock->reserved_qty - (float) ($stock->pending_qty ?? 0);
+                $allowOverselling = $stock->allow_overselling !== null
+                    ? (bool) $stock->allow_overselling
+                    : (bool) $product->allow_overselling;
+                $limit = $stock->overselling_qty !== null
+                    ? (float) $stock->overselling_qty
+                    : (float) ($product->overselling_qty ?: 999);
+                $maxAllowedQty += $allowOverselling
+                    ? max(0.0, $stockAvailable + $limit)
+                    : max(0.0, $stockAvailable);
+            }
+        } else {
+            $limit = (float) ($product->overselling_qty ?: 999);
+            $maxAllowedQty = $product->allow_overselling
+                ? max(0.0, $rawAvailable + $limit)
+                : $availableQty;
+        }
+
+        return $maxAllowedQty;
+    }
+
+    private function transformForIndex(Product $product): array
+    {
+        $totalQty = (float) ($product->stocks_sum_quantity ?? 0);
+        $reservedQty = (float) ($product->stocks_sum_reserved_qty ?? 0);
+        $dispatchedQty = (float) ($product->stocks_sum_dispatched_qty ?? 0);
+        $pendingQty = (float) ($product->pending_orders_qty ?? 0);
+        $rawAvailable = $totalQty - $reservedQty - $pendingQty;
+        $availableQty = max(0.0, $rawAvailable);
+        $maxAllowedQty = $this->availableStockFor($product, $rawAvailable);
+
+        return [
+            'id' => $product->id,
+            'name' => $product->name,
+            'sku' => $product->sku,
+            'category' => $product->category?->slug ?? '',
+            'category_id' => $product->category_id,
+            'category_label' => $product->category?->name ?? 'Uncategorized',
+            'brand_id' => $product->brand_id,
+            'brand' => $product->brand?->name,
+            'uom_id' => $product->uom_id,
+            'uom' => $product->uom?->name,
+            'tax_rate_id' => $product->tax_rate_id,
+            'tax_rate' => $product->taxRate?->rate,
+            'tax_label' => $product->taxRate?->name,
+            'warehouse_id' => $product->default_warehouse_id,
+            'warehouse' => $product->warehouse?->name,
+            'weight_g' => $product->weight_g,
+            'length_cm' => $product->length_cm,
+            'width_cm' => $product->width_cm,
+            'height_cm' => $product->height_cm,
+            'price' => (float) $product->selling_price,
+            'selling_price' => (float) $product->selling_price,
+            'selling_price_including_tax' => $product->selling_price_including_tax,
+            'selling_price_inc_gst' => $product->selling_price_inc_gst,
+            'purchase_price' => (float) $product->purchase_price,
+            'mrp' => (float) $product->mrp,
+            'stock' => (int) $totalQty,
+            'stock_quantity' => (int) $totalQty,
+            'stock_qty' => $totalQty,
+            'reserved_qty' => $reservedQty,
+            'pending_qty' => $pendingQty,
+            'dispatched_qty' => $dispatchedQty,
+            'available_stock' => $maxAllowedQty,
+            'physical_available' => $availableQty,
+            'min_stock_level' => (int) $product->min_stock_level,
+            'allow_overselling' => (bool) $product->allow_overselling,
+            'manage_stock' => (bool) $product->manage_stock,
+            'batch_tracking' => (bool) $product->batch_tracking,
+            'expiry_tracking' => (bool) $product->expiry_tracking,
+            'overselling_qty' => (int) $product->overselling_qty,
+            'default_discount' => (float) $product->default_discount,
+            'default_discount_type' => in_array($product->default_discount_type, ['fixed', 'amount'])
+                ? 'flat'
+                : ($product->default_discount_type === 'percentage' ? 'percent' : ($product->default_discount_type ?? 'percent')),
+            'status' => $product->status,
+            'created' => optional($product->created_at)->toDateString(),
+            'image' => $product->image_url ?? '/assets/images/product-placeholder.svg',
+            'description' => $product->description,
+            'deleted_at' => optional($product->deleted_at)?->toDateTimeString(),
+            'slug' => $product->slug,
+            'storefront_available' => $product->isAvailableInStorefront(),
+            'storefront_url' => $product->isAvailableInStorefront() ? rtrim(config('storefront.url'), '/').'/shop/products/'.rawurlencode($product->slug) : null,
+            'storefront_visible' => (bool) $product->storefront_visible,
+            'is_featured' => (bool) $product->is_featured,
+            'min_order_qty' => (int) ($product->min_order_qty ?? 1),
+            'max_order_qty' => (int) ($product->max_order_qty ?? 1000),
+            'is_sku_enabled' => (bool) $product->is_sku_enabled,
+            'grade' => $product->grade,
+            'warehouse_stocks' => $product->stocks->map(fn ($stock) => [
+                'warehouse_id' => $stock->warehouse_id,
+                'warehouse_name' => $stock->warehouse?->name ?? 'Unknown',
+                'quantity' => $stock->quantity,
+                'reserved_qty' => (float) $stock->reserved_qty,
+                'pending_qty' => (float) ($stock->pending_qty ?? 0),
+                'available' => $stock->quantity - $stock->reserved_qty - (float) ($stock->pending_qty ?? 0),
+                'allow_overselling' => $stock->allow_overselling !== null ? (bool) $stock->allow_overselling : null,
+                'overselling_qty' => $stock->overselling_qty !== null ? (int) $stock->overselling_qty : null,
+                'is_sku_enabled' => $stock->is_sku_enabled !== null ? (bool) $stock->is_sku_enabled : null,
+            ])->values()->all(),
+        ];
+    }
+
+    private function transform(Product $product): array
+    {
+        $totalQty = (float) (array_key_exists('stocks_sum_quantity', $product->getAttributes()) ? $product->stocks_sum_quantity : $product->stock_quantity);
+        $reservedQty = (float) ($product->stocks_sum_reserved_qty ?? 0);
+        $dispatchedQty = (float) ($product->stocks_sum_dispatched_qty ?? 0);
+        $pendingQty = (float) ($product->pending_orders_qty ?? 0);
+
+        $rawAvailable = $totalQty - $reservedQty - $pendingQty;
+        $netAvailable = max(0.0, $rawAvailable);
+
+        $maxAllowedQty = $this->availableStockFor($product, $rawAvailable);
+
+        return [
+            'id' => $product->id,
+            'warehouse_stocks' => $product->stocks ? $product->stocks->map(fn ($s) => [
+                'warehouse_id' => $s->warehouse_id,
+                'warehouse_name' => $s->warehouse?->name ?? 'Unknown',
+                'quantity' => $s->quantity,
+                'reserved_qty' => (float) $s->reserved_qty,
+                'pending_qty' => (float) ($s->pending_qty ?? 0),
+                'available' => $s->quantity - $s->reserved_qty - (float) ($s->pending_qty ?? 0),
+                'allow_overselling' => $s->allow_overselling !== null ? (bool) $s->allow_overselling : null,
+                'overselling_qty' => $s->overselling_qty !== null ? (int) $s->overselling_qty : null,
+                'is_sku_enabled' => $s->is_sku_enabled !== null ? (bool) $s->is_sku_enabled : null,
+            ])->values()->toArray() : [],
+            'name' => $product->name,
+            'sku' => $product->sku,
+            'category' => $product->category?->slug ?? '',
+            'category_id' => $product->category_id,
+            'category_label' => $product->category?->name ?? 'Uncategorized',
+            'category_data' => $product->category,
+            'brand_id' => $product->brand_id,
+            'brand' => $product->brand?->name,
+            'brand_data' => $product->brand,
+            'uom_id' => $product->uom_id,
+            'uom' => $product->uom?->name,
+            'uom_data' => $product->uom,
+            'supplier_id' => $product->supplier_id,
+            'supplier' => trim($product->supplier?->company_name ?: ($product->supplier?->firstname.' '.$product->supplier?->lastname)),
+            'supplier_data' => $product->supplier,
+            'tax_rate_id' => $product->tax_rate_id,
+            'tax_rate' => $product->taxRate?->rate,
+            'tax_label' => $product->taxRate?->name,
+            'tax_rate_data' => $product->taxRate,
+            'hsn_code_id' => $product->hsn_code_id,
+            'hsn_code' => $product->hsnCode?->code,
+            'hsn_code_data' => $product->hsnCode,
+            'warehouse_id' => $product->default_warehouse_id,
+            'warehouse' => $product->warehouse?->name,
+            'warehouse_data' => $product->warehouse,
+            'barcode' => $product->barcode,
+            'weight_g' => $product->weight_g,
+            'length_cm' => $product->length_cm,
+            'width_cm' => $product->width_cm,
+            'height_cm' => $product->height_cm,
+            'price' => (float) $product->selling_price,
+            'selling_price' => (float) $product->selling_price,
+            'selling_price_including_tax' => $product->selling_price_including_tax,
+            'selling_price_inc_gst' => $product->selling_price_inc_gst,
+            'purchase_price' => (float) $product->purchase_price,
+            'mrp' => (float) $product->mrp,
+            'stock' => (int) $totalQty,
+            'stock_quantity' => (int) $totalQty,
+            'stock_qty' => $totalQty,
+            'reserved_qty' => $reservedQty,
+            'pending_qty' => $pendingQty,
+            'dispatched_qty' => $dispatchedQty,
+            'available_stock' => $maxAllowedQty,
+            'physical_available' => $netAvailable,
+            'min_stock_level' => (int) $product->min_stock_level,
+            'allow_overselling' => (bool) $product->allow_overselling,
+            'manage_stock' => (bool) $product->manage_stock,
+            'batch_tracking' => (bool) $product->batch_tracking,
+            'expiry_tracking' => (bool) $product->expiry_tracking,
+            'application_instructions' => $product->application_instructions,
+            'overselling_qty' => (int) $product->overselling_qty,
+            'default_discount' => (float) $product->default_discount,
+            'default_discount_type' => in_array($product->default_discount_type, ['fixed', 'amount']) ? 'flat' : ($product->default_discount_type === 'percentage' ? 'percent' : ($product->default_discount_type ?? 'percent')),
+            'status' => $product->status,
+            'created' => optional($product->created_at)->toDateString(),
+            'image' => $product->image_url ?? '/assets/images/product-placeholder.svg',
+            'description' => $product->description,
+            'deleted_at' => optional($product->deleted_at)?->toDateTimeString(),
+            'slug' => $product->slug,
+            'storefront_available' => $product->isAvailableInStorefront(),
+            'storefront_url' => $product->isAvailableInStorefront() ? rtrim(config('storefront.url'), '/').'/shop/products/'.rawurlencode($product->slug) : null,
+            'storefront_visible' => (bool) $product->storefront_visible,
+            'is_featured' => (bool) $product->is_featured,
+            'min_order_qty' => (int) ($product->min_order_qty ?? 1),
+            'max_order_qty' => (int) ($product->max_order_qty ?? 1000),
+            'is_sku_enabled' => (bool) $product->is_sku_enabled,
+            'grade' => $product->grade,
+            'attributes' => $product->attributeValues->map(fn (ProductAttributeValue $value) => [
+                'id' => $value->id,
+                'attribute_id' => $value->product_attribute_id,
+                'attribute' => $value->attribute?->name,
+                'value' => $value->value,
+                'color_code' => $value->color_code,
+            ])->values(),
+        ];
+    }
+
+    private function stats(iterable $products): array
+    {
+        $products = collect($products);
+
+        return [
+            'total' => $products->count(),
+            'active' => $products->whereIn('status', ['published', 'active'])->count(),
+            'inStock' => $products->filter(fn (array $product) => $product['available_stock'] > 0)->count(),
+            'lowStock' => $products->filter(fn (array $product) => $product['available_stock'] > 0 && $product['available_stock'] <= ($product['min_stock_level'] ?? 10))->count(),
+            'outOfStock' => $products->filter(fn (array $product) => $product['available_stock'] <= 0)->count(),
+            'totalValue' => round($products->sum(fn (array $product) => (float) $product['price'] * max(0, (float) $product['physical_available'])), 2),
+        ];
+    }
+
+    private function catalogOptions(?Request $request = null): array
+    {
+        return [
+            'categories' => Category::query()
+                ->whereNull('parent_id')
+                ->with('children')
+                ->orderBy('name')
+                ->get()
+                ->map(fn (Category $category) => [
+                    'id' => $category->id,
+                    'name' => $category->name,
+                    'slug' => $category->slug,
+                    'children' => $category->children->map(fn (Category $child) => [
+                        'id' => $child->id,
+                        'name' => $child->name,
+                        'slug' => $child->slug,
+                    ])->values(),
+                ])->values(),
+            'brands' => Brand::query()->orderBy('name')->get(['id', 'name'])->values(),
+            'suppliers' => Supplier::query()->orderBy('company_name')->get(['id', 'company_name', 'firstname', 'lastname'])->values(),
+            'uoms' => UnitOfMeasure::query()->where('status', 'active')->orderBy('name')->get(['id', 'name', 'short_name'])->values(),
+            'taxRates' => TaxRate::query()->where('status', 'active')->orderBy('rate')->get(['id', 'name', 'rate'])->values(),
+            'hsnCodes' => HsnCode::query()->where('status', 'active')->orderBy('code')->get(['id', 'code', 'description'])->values(),
+            'warehouses' => Warehouse::query()->where('status', 'active')
+                ->when($request?->user()?->lob_state_name, function ($query, $state) {
+                    $query->where('state', $state);
+                })
+                ->orderBy('name')->get(['id', 'name'])->values(),
+            'attributes' => ProductAttribute::query()
+                ->where('status', 'active')
+                ->with(['values' => fn ($query) => $query->where('status', 'active')->orderBy('value')])
+                ->orderBy('name')
+                ->get()
+                ->map(fn (ProductAttribute $attribute) => [
+                    'id' => $attribute->id,
+                    'name' => $attribute->name,
+                    'type' => $attribute->type,
+                    'values' => $attribute->values->map(fn (ProductAttributeValue $value) => [
+                        'id' => $value->id,
+                        'value' => $value->value,
+                        'color_code' => $value->color_code,
+                    ])->values(),
+                ])->values(),
+            'statusList' => [
+                ['value' => 'published', 'label' => 'Published'],
+                ['value' => 'draft', 'label' => 'Draft'],
+            ],
+        ];
+    }
+
+    private function syncStockConfig(Product $product, array $extraData = [], ?int $warehouseId = null): void
+    {
+        $warehouseId ??= $product->default_warehouse_id;
+
+        if (! $warehouseId) {
+            $warehouseId = Warehouse::query()->where('status', 'active')
+                ->when(request()?->user()?->lob_state_name, function ($query, $state) {
+                    $query->where('state', $state);
+                })
+                ->value('id');
+            if ($warehouseId) {
+                $product->default_warehouse_id = $warehouseId;
+                $product->saveQuietly();
+            }
+        }
+
+        if (! $warehouseId) {
+            return;
+        }
+
+        $stock = Stock::withTrashed()->firstOrNew([
+            'product_id' => $product->id,
+            'warehouse_id' => $warehouseId,
+        ]);
+        
+        $dirty = false;
+
+        if (array_key_exists('allow_overselling', $extraData)) {
+            $stock->allow_overselling = $extraData['allow_overselling'] !== null ? filter_var($extraData['allow_overselling'], FILTER_VALIDATE_BOOL) : null;
+            $dirty = true;
+        }
+        if (array_key_exists('overselling_qty', $extraData)) {
+            $stock->overselling_qty = $extraData['overselling_qty'] !== null ? (int) $extraData['overselling_qty'] : null;
+            $dirty = true;
+        }
+        if (array_key_exists('is_sku_enabled', $extraData)) {
+            $stock->is_sku_enabled = $extraData['is_sku_enabled'] !== null ? filter_var($extraData['is_sku_enabled'], FILTER_VALIDATE_BOOL) : null;
+            $dirty = true;
+        }
+
+        if ($dirty || !$stock->exists) {
+            $stock->quantity = $stock->quantity ?? 0;
+            $stock->reserved_qty = $stock->reserved_qty ?? 0;
+            $stock->dispatched_qty = $stock->dispatched_qty ?? 0;
+            $stock->committed_qty = $stock->committed_qty ?? 0;
+            $stock->in_transit_qty = $stock->in_transit_qty ?? 0;
+            $stock->status = 'active';
+            $stock->deleted_at = null;
+            $stock->save();
+        }
+    }
+
+    private function syncAttributes(Product $product, ?array $attributeIds): void
+    {
+        if ($attributeIds === null) {
+            $product->attributeValues()->sync([]);
+            return;
+        }
+
+        $product->attributeValues()->sync(array_values(array_filter(array_map('intval', $attributeIds))));
+    }
+
+    /**
+     * Helper to insert or update the primary stock record when a product is saved.
+     * This ensures the InventoryService logic doesn't fail when no stock is registered.
+     */
+    private function syncStock(Product $product, int $qty, string $importMode = 'overwrite', array $extraData = []): void
+    {
+        // Determine the warehouse to assign stock to
+        $warehouseId = $product->default_warehouse_id;
+
+        // If no warehouse is assigned, try to use the first available warehouse
+        if (! $warehouseId) {
+            $warehouseId = Warehouse::query()->where('status', 'active')
+                ->when(request()?->user()?->lob_state_name, function ($query, $state) {
+                    $query->where('state', $state);
+                })
+                ->value('id');
+            if ($warehouseId) {
+                $product->default_warehouse_id = $warehouseId;
+                $product->saveQuietly();
+            }
+        }
+
+        if (! $warehouseId) {
+            // No warehouse exists — skip stock table entry
+            return;
+        }
+
+        $stock = Stock::withTrashed()->firstOrNew([
+            'product_id' => $product->id,
+            'warehouse_id' => $warehouseId,
+        ]);
+
+        if ($importMode === 'increment') {
+            $stock->quantity = ($stock->quantity ?? 0) + $qty;
+        } else {
+            $stock->quantity = $qty;
+        }
+
+        if (array_key_exists('allow_overselling', $extraData)) {
+            $stock->allow_overselling = $extraData['allow_overselling'] !== null ? filter_var($extraData['allow_overselling'], FILTER_VALIDATE_BOOL) : null;
+        }
+        if (array_key_exists('overselling_qty', $extraData)) {
+            $stock->overselling_qty = $extraData['overselling_qty'] !== null ? (int) $extraData['overselling_qty'] : null;
+        }
+        if (array_key_exists('is_sku_enabled', $extraData)) {
+            $stock->is_sku_enabled = $extraData['is_sku_enabled'] !== null ? filter_var($extraData['is_sku_enabled'], FILTER_VALIDATE_BOOL) : null;
+        }
+
+        $stock->reserved_qty = $stock->reserved_qty ?? 0;
+        $stock->dispatched_qty = $stock->dispatched_qty ?? 0;
+        $stock->committed_qty = $stock->committed_qty ?? 0;
+        $stock->in_transit_qty = $stock->in_transit_qty ?? 0;
+        $stock->status = 'active';
+        $stock->deleted_at = null;
+        $stock->save();
+    }
+
+    private function resolveCategoryId(mixed $value): ?int
+    {
+        if ($value === null || trim((string) $value) === '') {
+            $value = 'Uncategorized';
+        }
+
+        if (is_numeric($value)) {
+            return (int) $value;
+        }
+
+        $name = trim((string) $value);
+        $slug = Str::slug($name);
+
+        $category = Category::query()->where('slug', $slug)->first();
+        if (! $category) {
+            $category = Category::create([
+                'name' => $name,
+                'slug' => $slug,
+            ]);
+        }
+
+        return $category->id;
+    }
+
+    private function resolveId(mixed $value): ?int
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        return (int) $value;
+    }
+
+    private function normalizeStatus(string $status): string
+    {
+        $status = Str::of($status)->lower()->trim()->toString();
+
+        return match ($status) {
+            'published', 'active' => 'published',
+            default => 'draft',
+        };
+    }
+
+    private function generateUniqueSlug(string $name, ?int $ignoreId = null): string
+    {
+        $base = Str::limit(Str::slug($name), 235, '') ?: 'product';
+        $slug = $base;
+        $counter = 1;
+
+        while (
+            Product::withTrashed()
+                ->when($ignoreId, fn ($query) => $query->whereKeyNot($ignoreId))
+                ->where('slug', $slug)
+                ->exists()
+        ) {
+            $slug = $base.'-'.++$counter;
+        }
+
+        return $slug;
+    }
+
+    private function generateUniqueSku(string $sku): string
+    {
+        $base = Str::limit(Str::upper(Str::slug($sku)), 235, '') ?: 'PRODUCT';
+        $candidate = $base.'-COPY';
+        $counter = 1;
+
+        while (Product::withTrashed()->where('sku', $candidate)->exists()) {
+            $candidate = $base.'-COPY-'.$counter++;
+        }
+
+        return $candidate;
+    }
+
+    private function deleteUnusedImage(?string $path): void
+    {
+        if ($path && str_starts_with($path, 'products/')
+            && !Product::withTrashed()->where('image_path', $path)->exists()) {
+            Storage::disk('public')->delete($path);
+        }
+    }
+
+    private function persistProduct(Product $product, array $data, Request $request): void
+    {
+        $originalImage = $product->image_path;
+        try {
+            DB::transaction(function () use ($product, $data, $request, $originalImage) {
+                $this->fillProduct($product, $data, $request);
+                $product->save();
+                if (array_key_exists('attributes', $data)) $this->syncAttributes($product, $data['attributes']);
+                $stockConfig = [];
+                foreach (['allow_overselling', 'overselling_qty', 'is_sku_enabled'] as $field) {
+                    if (array_key_exists('warehouse_'.$field, $data)) $stockConfig[$field] = $data['warehouse_'.$field];
+                }
+                $this->syncStockConfig($product, $stockConfig, isset($data['warehouse_config_id']) ? (int)$data['warehouse_config_id'] : null);
+                if ($originalImage !== $product->image_path) DB::afterCommit(fn () => $this->deleteUnusedImage($originalImage));
+            });
+        } catch (\Throwable $error) {
+            if ($product->image_path !== $originalImage) $this->deleteUnusedImage($product->image_path);
+            throw $error;
+        }
+    }
+
+    private function permanentDeleteBlockReason(Product $product): ?string
+    {
+        // Keep transaction and inventory audit history intact. Some related tables
+        // cascade on product deletion, so check before allowing a hard delete.
+        $historyTables = [
+            'order_items',
+            'order_return_items',
+            'purchase_order_items',
+            'goods_receipt_items',
+            'stock_movements',
+            'stock_batches',
+            'stock_reservations',
+            'inventory_adjustment_items',
+            'stock_transfer_items',
+        ];
+
+        foreach ($historyTables as $table) {
+            if (Schema::hasTable($table)
+                && Schema::hasColumn($table, 'product_id')
+                && DB::table($table)->where('product_id', $product->id)->exists()) {
+                return 'This product has transaction or inventory history and cannot be permanently deleted. Restore it if it is needed again; its history must remain available for audit.';
+            }
+        }
+
+        if (Schema::hasTable('stocks') && Schema::hasColumn('stocks', 'product_id')) {
+            foreach (['quantity', 'reserved_qty', 'dispatched_qty'] as $quantityColumn) {
+                if (Schema::hasColumn('stocks', $quantityColumn)
+                    && DB::table('stocks')->where('product_id', $product->id)->where($quantityColumn, '<>', 0)->exists()) {
+                    return 'This product still has on-hand, reserved, or dispatched stock and cannot be permanently deleted. Clear or reconcile its stock before trying again.';
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private function nullableString(mixed $value): ?string
+    {
+        $value = trim((string) $value);
+
+        return $value === '' ? null : $value;
+    }
+
+    private function extractIds(mixed $value): array
+    {
+        if (is_string($value)) {
+            $decoded = json_decode($value, true);
+            $value = is_array($decoded) ? $decoded : [];
+        }
+
+        if (! is_array($value)) {
+            return [];
+        }
+
+        return array_values(array_filter(array_map('intval', $value), static fn (int $id): bool => $id > 0));
+    }
+}

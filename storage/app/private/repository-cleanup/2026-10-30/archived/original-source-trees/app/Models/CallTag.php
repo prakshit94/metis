@@ -1,0 +1,50 @@
+<?php
+
+namespace App\Models;
+
+use App\Concerns\LogsActivity;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use OwenIt\Auditing\Auditable as AuditableTrait;
+use OwenIt\Auditing\Contracts\Auditable;
+use Spatie\Activitylog\LogOptions;
+
+class CallTag extends Model implements Auditable
+{
+    use LogsActivity;
+    use AuditableTrait;
+    use SoftDeletes;
+
+    protected $fillable = [
+        'name',
+        'description',
+        'color',
+        'parent_id',
+        'level',
+        'sort_order',
+        'is_active',
+    ];
+
+    public function parent()
+    {
+        return $this->belongsTo(CallTag::class, 'parent_id');
+    }
+
+    public function children()
+    {
+        return $this->hasMany(CallTag::class, 'parent_id');
+    }
+
+    public function formFields()
+    {
+        return $this->hasMany(CallTagFormField::class);
+    }
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logFillable()
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs();
+    }
+}

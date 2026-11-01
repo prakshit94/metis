@@ -1,0 +1,15 @@
+{
+  "business_mobile_checks": 214,
+  "mail_configuration_checks": 40,
+  "email_otp_checks": 8,
+  "package_integration_checks": 19,
+  "routes_checked": 622,
+  "application_methods_checked": 1344,
+  "openapi_paths": 399,
+  "openapi_errors": 0,
+  "openapi_warnings": 0,
+  "composer_advisories": 0,
+  "production_install_and_both_apps_boot": true,
+  "vendor_untracking": "blocked_pending_explicit_approval",
+  "business_database_changed": false
+}

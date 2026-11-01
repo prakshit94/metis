@@ -1,0 +1,562 @@
+<?php
+
+namespace App\Modules\Users\Controllers;
+
+use App\Modules\Core\Controllers\Controller;
+use App\Modules\Users\Models\Attendance;
+use App\Modules\Users\Models\Leave;
+use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
+
+class AttendanceController extends Controller implements HasMiddleware
+{
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:attendance-view', only: ['index', 'show']),
+            new Middleware('permission:attendance-create', only: ['store']),
+            new Middleware('permission:attendance-edit', only: ['update']),
+            new Middleware('permission:attendance-delete', only: ['destroy']),
+            new Middleware('permission:attendance-restore', only: ['restore']),
+            new Middleware('permission:attendance-permanent-delete', only: ['forceDelete']),
+            new Middleware('permission:attendance-export', only: ['exportFiltered', 'exportSummary', 'exportDetailed']),
+        ];
+    }
+
+    public function index(Request $request): JsonResponse
+    {
+        abort_unless($request->user()?->can('attendance-view'), 403);
+
+        $request->validate([
+            'date' => 'nullable|date_format:Y-m-d',
+            'start_date' => 'nullable|date_format:Y-m-d',
+            'end_date' => ['nullable', 'date_format:Y-m-d', ...($request->filled('start_date') ? ['after_or_equal:start_date'] : [])],
+            'per_page' => 'nullable|integer',
+            'page' => 'nullable|integer|min:1',
+            'user_id' => 'nullable|integer',
+        ]);
+
+        $sortMap = [
+            'date' => 'date',
+            'user' => 'users.name',
+            'status' => 'status',
+            'check_in' => 'check_in',
+            'check_out' => 'check_out',
+        ];
+
+        $sortBy = $sortMap[$request->input('sort_by', 'date')] ?? 'date';
+        $sortDir = strtolower((string) $request->input('sort_dir', 'desc')) === 'asc' ? 'asc' : 'desc';
+
+        $requestedPerPage = (int) $request->input('per_page', 15);
+        $perPage = $requestedPerPage === -1 ? -1 : min(max($requestedPerPage, 1), 100);
+
+        $deletedFilter = $request->input('deleted');
+
+        $isGlobalView = $request->user() && ($request->user()->hasRole(['Super Admin', 'Admin']) || $request->user()->can('view-all-data'));
+        $filterUserId = $request->input('user_id');
+
+        // LOB scoping: resolve the team member IDs once.
+        // null = global user (no restriction), [] = LOB user with no team members, [ids] = restrict to these.
+        $lobTeamUserIds = $isGlobalView ? null : $request->user()?->getLobTeamUserIds();
+
+        $query = Attendance::query()
+            ->select('attendances.*')
+            ->join('users', 'attendances.user_id', '=', 'users.id')
+            ->when(
+                ! $isGlobalView && $lobTeamUserIds !== null,
+                // LOB user: show all team members' attendance (filtered further below)
+                fn ($q) => $q->whereIn('attendances.user_id', ! empty($lobTeamUserIds) ? $lobTeamUserIds : [0])
+            )
+            ->when($isGlobalView, function ($q) use ($request, $filterUserId) {
+                if ($filterUserId) {
+                    $q->where('attendances.user_id', $filterUserId);
+                } else {
+                    $q->where('attendances.user_id', $request->user()->id);
+                }
+            })
+            ->when(! $isGlobalView && $filterUserId, fn ($q) => $q->where('attendances.user_id', $filterUserId))
+            ->when($deletedFilter === 'with', fn ($q) => $q->withTrashed())
+            ->when($deletedFilter === 'only', fn ($q) => $q->onlyTrashed())
+            ->with(['user:id,name,employee_id,joining_date'])
+            ->when(
+                $request->filled('search'),
+                fn ($q) => $q->where(function ($inner) use ($request): void {
+                    $term = '%'.$request->input('search').'%';
+                    $inner->where('users.name', 'like', $term)
+                        ->orWhere('users.employee_id', 'like', $term);
+                })
+            )
+            ->when(
+                $request->filled('status'),
+                fn ($q) => $q->where('attendances.status', $request->input('status'))
+            )
+            ->when(
+                $request->filled('date'),
+                fn ($q) => $q->where('attendances.date', Carbon::parse($request->input('date'))->toDateString())
+            )
+            ->when(
+                $request->filled('start_date'),
+                fn ($q) => $q->where('attendances.date', '>=', $request->input('start_date'))
+            )
+            ->when(
+                $request->filled('end_date'),
+                fn ($q) => $q->where('attendances.date', '<=', $request->input('end_date'))
+            )
+            ->orderBy($sortBy, $sortDir)->orderBy('attendances.id', $sortDir);
+
+        // Read-only diagnostics for every matching record, independent of pagination.
+        $summary = (clone $query)->reorder()->toBase()->select([])->selectRaw(
+            "COUNT(*) as records, COUNT(DISTINCT CONCAT(attendances.user_id, ':', attendances.date)) as recorded_days,
+             COALESCE(SUM(check_in IS NOT NULL AND check_out IS NULL), 0) as open_sessions,
+             COALESCE(SUM(check_in IS NULL AND check_out IS NOT NULL), 0) as incomplete_sessions,
+             COALESCE(SUM(CASE WHEN check_in IS NOT NULL AND check_out IS NOT NULL THEN
+                FLOOR((TIME_TO_SEC(check_out) - TIME_TO_SEC(check_in) + IF(check_out < check_in, 86400, 0)) / 60)
+                ELSE 0 END), 0) as completed_minutes"
+        )->first();
+
+        if ($perPage === -1) {
+            $attendances = $query->get();
+            $responsePayload = [
+                'summary' => $summary,
+                'data' => $attendances,
+                'total' => $attendances->count(),
+                'per_page' => $attendances->count(),
+                'current_page' => 1,
+                'last_page' => 1,
+            ];
+
+            if ($request->filled('start_date') && $request->filled('end_date')) {
+                $startDate = $request->input('start_date');
+                $endDate = $request->input('end_date');
+
+                $leaves = Leave::when(
+                        ! $isGlobalView && $lobTeamUserIds !== null,
+                        fn ($q) => $q->whereIn('user_id', ! empty($lobTeamUserIds) ? $lobTeamUserIds : [0])
+                    )
+                    ->when($isGlobalView, function ($q) use ($request, $filterUserId) {
+                        if ($filterUserId) {
+                            $q->where('user_id', $filterUserId);
+                        } else {
+                            $q->where('user_id', $request->user()->id);
+                        }
+                    })
+                    ->when(! $isGlobalView && $filterUserId, fn ($q) => $q->where('user_id', $filterUserId))
+                    ->where(function ($q) use ($startDate, $endDate) {
+                        $q->whereBetween('start_date', [$startDate, $endDate])
+                            ->orWhereBetween('end_date', [$startDate, $endDate])
+                            ->orWhere(function ($q2) use ($startDate, $endDate) {
+                                $q2->where('start_date', '<', $startDate)
+                                    ->where('end_date', '>', $endDate);
+                            });
+                    })
+                    ->get();
+
+                $responsePayload['leaves'] = $leaves;
+                $responsePayload['rosters'] = \Illuminate\Support\Facades\DB::table('employee_rosters')
+                    ->when(!$isGlobalView && $lobTeamUserIds !== null, fn ($q) => $q->whereIn('user_id', $lobTeamUserIds ?: [0]))
+                    ->when($filterUserId, fn ($q) => $q->where('user_id', $filterUserId))
+                    ->when($isGlobalView && !$filterUserId, fn ($q) => $q->where('user_id', $request->user()->id))
+                    ->whereBetween('date', [$startDate, $endDate])->get();
+            }
+
+            return response()->json($responsePayload);
+        }
+
+        $attendances = $query->paginate($perPage);
+
+        $responsePayload = [
+            'summary' => $summary,
+            'data' => $attendances->items(),
+            'current_page' => $attendances->currentPage(),
+            'last_page' => $attendances->lastPage(),
+            'per_page' => $attendances->perPage(),
+            'total' => $attendances->total(),
+        ];
+
+        if ($request->filled('start_date') && $request->filled('end_date')) {
+            $startDate = $request->input('start_date');
+            $endDate = $request->input('end_date');
+
+            $leaves = Leave::when(
+                    ! $isGlobalView && $lobTeamUserIds !== null,
+                    fn ($q) => $q->whereIn('user_id', ! empty($lobTeamUserIds) ? $lobTeamUserIds : [0])
+                )
+                ->when($isGlobalView, function ($q) use ($request, $filterUserId) {
+                    if ($filterUserId) {
+                        $q->where('user_id', $filterUserId);
+                    } else {
+                        $q->where('user_id', $request->user()->id);
+                    }
+                })
+                ->when(! $isGlobalView && $filterUserId, fn ($q) => $q->where('user_id', $filterUserId))
+                    ->where(function ($q) use ($startDate, $endDate) {
+                    $q->whereBetween('start_date', [$startDate, $endDate])
+                        ->orWhereBetween('end_date', [$startDate, $endDate])
+                        ->orWhere(function ($q2) use ($startDate, $endDate) {
+                            $q2->where('start_date', '<', $startDate)
+                                ->where('end_date', '>', $endDate);
+                        });
+                })
+                ->get();
+
+            $responsePayload['leaves'] = $leaves;
+        }
+
+        return response()->json($responsePayload);
+    }
+
+    public function store(Request $request): JsonResponse
+    {
+        abort_unless($request->user()?->can('attendance-create'), 403);
+
+        $validated = $request->validate([
+            'user_id' => 'required|exists:users,id',
+            'date' => 'required|date',
+            'check_in_time' => 'nullable|date_format:Y-m-d\TH:i',
+            'check_out_time' => 'nullable|date_format:Y-m-d\TH:i|after:check_in_time',
+            'status' => 'required|in:Present,Absent,Half-Day,Late',
+            'notes' => 'nullable|string',
+        ]);
+
+        $isGlobalView = $request->user() && ($request->user()->hasRole(['Super Admin', 'Admin']) || $request->user()->can('view-all-data'));
+        if (! $isGlobalView) {
+            $validated['user_id'] = $request->user()->id;
+        }
+
+        $checkIn = ! empty($validated['check_in_time']) ? date('H:i:s', strtotime($validated['check_in_time'])) : null;
+        $checkOut = ! empty($validated['check_out_time']) ? date('H:i:s', strtotime($validated['check_out_time'])) : null;
+
+        $attendance = Attendance::create([
+            'user_id' => $validated['user_id'],
+            'date' => $validated['date'],
+            'check_in' => $checkIn,
+            'check_out' => $checkOut,
+            'status' => $validated['status'],
+            'notes' => $validated['notes'] ?? null,
+        ]);
+
+        return response()->json(['data' => $attendance, 'message' => 'Attendance recorded successfully.'], 200);
+    }
+
+    public function update(Request $request, int|string $id): JsonResponse
+    {
+        abort_unless($request->user()?->can('attendance-edit'), 403);
+
+        $attendance = Attendance::withTrashed()->findOrFail($id);
+
+        $isGlobalView = $request->user() && ($request->user()->hasRole(['Super Admin', 'Admin']) || $request->user()->can('view-all-data'));
+        if (! $isGlobalView && (int) $attendance->user_id !== (int) $request->user()->id) {
+            abort(403, 'Unauthorized to modify this attendance record.');
+        }
+
+        $validated = $request->validate([
+            'user_id' => 'required|exists:users,id',
+            'date' => 'required|date',
+            'check_in_time' => 'nullable|date_format:Y-m-d\TH:i',
+            'check_out_time' => 'nullable|date_format:Y-m-d\TH:i|after:check_in_time',
+            'status' => 'required|in:Present,Absent,Half-Day,Late',
+            'notes' => 'nullable|string',
+        ]);
+
+        if (! $isGlobalView) {
+            $validated['user_id'] = $request->user()->id;
+        }
+
+        $checkIn = ! empty($validated['check_in_time']) ? date('H:i:s', strtotime($validated['check_in_time'])) : null;
+        $checkOut = ! empty($validated['check_out_time']) ? date('H:i:s', strtotime($validated['check_out_time'])) : null;
+
+        $attendance->update([
+            'user_id' => $validated['user_id'],
+            'date' => $validated['date'],
+            'check_in' => $checkIn,
+            'check_out' => $checkOut,
+            'status' => $validated['status'],
+            'notes' => $validated['notes'] ?? null,
+        ]);
+
+        return response()->json(['data' => $attendance, 'message' => 'Attendance updated successfully.'], 200);
+    }
+
+    public function show(Request $request, int|string $id): JsonResponse
+    {
+        abort_unless($request->user()?->can('attendance-view'), 403);
+
+        $attendance = Attendance::withTrashed()->with('user')->findOrFail($id);
+
+        $isGlobalView = $request->user() && ($request->user()->hasRole(['Super Admin', 'Admin']) || $request->user()->can('view-all-data'));
+        if (! $isGlobalView && (int) $attendance->user_id !== (int) $request->user()->id) {
+            abort(403, 'Unauthorized to view this attendance record.');
+        }
+
+        return response()->json(['data' => $attendance]);
+    }
+
+    public function destroy(Request $request, int|string $id): JsonResponse
+    {
+        abort_unless($request->user()?->can('attendance-delete'), 403);
+
+        $attendance = Attendance::withTrashed()->findOrFail($id);
+
+        $isGlobalView = $request->user() && ($request->user()->hasRole(['Super Admin', 'Admin']) || $request->user()->can('view-all-data'));
+        if (! $isGlobalView && (int) $attendance->user_id !== (int) $request->user()->id) {
+            abort(403, 'Unauthorized to delete this attendance record.');
+        }
+
+        if ($attendance->trashed()) {
+            return response()->json([
+                'message' => 'Attendance record is already temporarily deleted.',
+            ], 400);
+        }
+
+        $attendance->delete();
+
+        return response()->json([
+            'message' => 'Attendance record deleted successfully.',
+        ]);
+    }
+
+    public function restore(Request $request, int|string $id): JsonResponse
+    {
+        abort_unless($request->user()?->can('attendance-restore'), 403);
+
+        $attendance = Attendance::withTrashed()->findOrFail($id);
+
+        $isGlobalView = $request->user() && ($request->user()->hasRole(['Super Admin', 'Admin']) || $request->user()->can('view-all-data'));
+        if (! $isGlobalView && (int) $attendance->user_id !== (int) $request->user()->id) {
+            abort(403, 'Unauthorized to restore this attendance record.');
+        }
+
+        if (! $attendance->trashed()) {
+            return response()->json([
+                'message' => 'Attendance record is not deleted.',
+            ], 400);
+        }
+
+        $attendance->restore();
+
+        return response()->json([
+            'message' => 'Attendance record restored successfully.',
+        ]);
+    }
+
+    public function forceDelete(Request $request, int|string $id): JsonResponse
+    {
+        abort_unless($request->user()?->can('attendance-permanent-delete'), 403);
+
+        $attendance = Attendance::withTrashed()->findOrFail($id);
+
+        $isGlobalView = $request->user() && ($request->user()->hasRole(['Super Admin', 'Admin']) || $request->user()->can('view-all-data'));
+        if (! $isGlobalView && (int) $attendance->user_id !== (int) $request->user()->id) {
+            abort(403, 'Unauthorized to permanently delete this attendance record.');
+        }
+
+        $attendance->forceDelete();
+
+        return response()->json([
+            'message' => 'Attendance record permanently deleted.',
+        ]);
+    }
+
+    public function exportFiltered(Request $request)
+    {
+        abort_unless($request->user()?->can('attendance-export') && $request->user()?->can('attendance-view'), 403);
+        $reportRequest = $request->duplicate();
+        $reportRequest->merge(['per_page' => -1, 'page' => 1]);
+        $rows = $this->index($reportRequest)->getData(true)['data'];
+        return response()->streamDownload(function () use ($rows) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, ['Employee', 'Employee ID', 'Date', 'Check In', 'Check Out', 'Total Time', 'Status', 'Notes']);
+            foreach ($rows as $row) {
+                $values = [$row['user']['name'] ?? '', $row['user']['employee_id'] ?? '', $row['date'], $row['check_in'], $row['check_out'], $row['total_time'], $row['status'], $row['notes']];
+                fputcsv($file, array_map(fn ($value) => is_string($value) && preg_match('/^[\s]*[=+@-]/u', $value) ? "'".$value : $value, $values));
+            }
+            fclose($file);
+        }, 'attendance-filtered-'.now()->format('Y-m-d').'.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
+    }
+
+    public function exportSummary(Request $request)
+    {
+        abort_unless($request->user()?->can('attendance-export') && $request->user()?->can('attendance-view'), 403);
+
+        $request->validate(['month' => 'nullable|date_format:Y-m', 'user_id' => 'nullable|integer']);
+        $month = $request->input('month', date('Y-m')); // 'YYYY-MM'
+        $year = (int) substr($month, 0, 4);
+        $m = (int) substr($month, 5, 2);
+
+        $daysInMonth = cal_days_in_month(CAL_GREGORIAN, $m, $year);
+
+        $isGlobalView = $request->user() && ($request->user()->hasRole(['Super Admin', 'Admin']) || $request->user()->can('view-all-data'));
+        $filterUserId = $request->input('user_id');
+
+        // LOB scoping: resolve team member IDs once (same pattern as index)
+        $lobTeamUserIds = $isGlobalView ? null : $request->user()?->getLobTeamUserIds();
+
+        $attendances = Attendance::with('user:id,name,employee_id,joining_date')
+            ->when(
+                ! $isGlobalView && $lobTeamUserIds !== null,
+                fn ($q) => $q->whereIn('user_id', ! empty($lobTeamUserIds) ? $lobTeamUserIds : [0])
+            )
+            ->when($filterUserId, fn ($q) => $q->where('user_id', $filterUserId))
+            ->when($isGlobalView && ! $filterUserId, fn ($q) => $q->where('user_id', $request->user()->id))
+            ->where('date', '>=', Carbon::create($year, $m, 1)->toDateString())
+            ->where('date', '<', Carbon::create($year, $m, 1)->addMonth()->toDateString())
+            ->get();
+
+        $groupedByUser = $attendances->groupBy('user_id');
+
+        $headers = [
+            'Content-type' => 'text/csv',
+            'Content-Disposition' => "attachment; filename=attendance_summary_{$month}.csv",
+            'Pragma' => 'no-cache',
+            'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires' => '0',
+        ];
+
+        $callback = function () use ($groupedByUser, $daysInMonth, $year, $m) {
+            $file = fopen('php://output', 'w');
+
+            $columns = ['Employee', 'Employee ID'];
+            for ($i = 1; $i <= $daysInMonth; $i++) {
+                $columns[] = $i;
+            }
+            fputcsv($file, $columns);
+
+            foreach ($groupedByUser as $userId => $userAttendances) {
+                $user = $userAttendances->first()->user;
+                $row = [$user->name ?? 'N/A', $user->employee_id ?? 'N/A'];
+
+                $groupedByDate = $userAttendances->groupBy(function ($item) {
+                    return Carbon::parse($item->date)->format('Y-m-d');
+                });
+
+                $joiningDate = $user?->joining_date ? Carbon::parse($user->joining_date)->format('Y-m-d') : null;
+
+                for ($i = 1; $i <= $daysInMonth; $i++) {
+                    $dateStr = sprintf('%04d-%02d-%02d', $year, $m, $i);
+
+                    if ($joiningDate && $dateStr < $joiningDate) {
+                        $row[] = '-';
+
+                        continue;
+                    }
+
+                    if (isset($groupedByDate[$dateStr])) {
+                        $dayAttendances = $groupedByDate[$dateStr];
+                        $status = 'A';
+                        foreach ($dayAttendances as $att) {
+                            if ($att->status !== 'Absent') {
+                                $status = substr($att->status, 0, 1);
+                            }
+                        }
+                        $row[] = $status;
+                    } else {
+                        $row[] = 'A';
+                    }
+                }
+
+                fputcsv($file, $row);
+            }
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    public function exportDetailed(Request $request)
+    {
+        abort_unless($request->user()?->can('attendance-export') && $request->user()?->can('attendance-view'), 403);
+
+        $request->validate(['month' => 'nullable|date_format:Y-m', 'user_id' => 'nullable|integer']);
+        $month = $request->input('month', date('Y-m')); // 'YYYY-MM'
+        $year = (int) substr($month, 0, 4);
+        $m = (int) substr($month, 5, 2);
+
+        $isGlobalView = $request->user() && ($request->user()->hasRole(['Super Admin', 'Admin']) || $request->user()->can('view-all-data'));
+        $filterUserId = $request->input('user_id');
+
+        // LOB scoping: resolve team member IDs once (same pattern as index)
+        $lobTeamUserIds = $isGlobalView ? null : $request->user()?->getLobTeamUserIds();
+
+        $attendances = Attendance::with('user:id,name,employee_id')
+            ->when(
+                ! $isGlobalView && $lobTeamUserIds !== null,
+                fn ($q) => $q->whereIn('user_id', ! empty($lobTeamUserIds) ? $lobTeamUserIds : [0])
+            )
+            ->when($filterUserId, fn ($q) => $q->where('user_id', $filterUserId))
+            ->when($isGlobalView && ! $filterUserId, fn ($q) => $q->where('user_id', $request->user()->id))
+            ->where('date', '>=', Carbon::create($year, $m, 1)->toDateString())
+            ->where('date', '<', Carbon::create($year, $m, 1)->addMonth()->toDateString())
+            ->orderBy('date', 'asc')
+            ->orderBy('check_in', 'asc')
+            ->get();
+
+        $headers = [
+            'Content-type' => 'text/csv',
+            'Content-Disposition' => "attachment; filename=attendance_detailed_{$month}.csv",
+            'Pragma' => 'no-cache',
+            'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires' => '0',
+        ];
+
+        $callback = function () use ($attendances) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, ['Employee', 'Employee ID', 'Date', 'Check In', 'Check Out', 'Total Time', 'Status', 'Notes']);
+
+            foreach ($attendances as $att) {
+                fputcsv($file, [
+                    $att->user->name ?? 'N/A',
+                    $att->user->employee_id ?? 'N/A',
+                    $att->date,
+                    $att->check_in,
+                    $att->check_out,
+                    $att->total_time,
+                    $att->status,
+                    $att->notes,
+                ]);
+            }
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    public function bulkAction(Request $request): JsonResponse
+    {
+        abort_unless($request->user()?->can($request->input('action') === 'force-delete' ? 'attendance-permanent-delete' : 'attendance-delete'), 403);
+
+        $validated = $request->validate([
+            'action' => 'required|in:delete,force-delete',
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'integer|distinct|exists:attendances,id',
+        ]);
+
+        $ids = $validated['ids'];
+        $action = $validated['action'];
+
+        $isGlobalView = $request->user() && ($request->user()->hasRole(['Super Admin', 'Admin']) || $request->user()->can('view-all-data'));
+
+        $query = Attendance::whereIn('id', $ids)
+            ->when($action === 'force-delete', fn ($q) => $q->withTrashed());
+        if (! $isGlobalView) {
+            $query->where('user_id', $request->user()->id);
+        }
+
+        if ($action === 'delete') {
+            $query->delete();
+
+            return response()->json(['message' => 'Selected records temporarily deleted.']);
+        }
+
+        if ($action === 'force-delete') {
+            $query->forceDelete();
+
+            return response()->json(['message' => 'Selected records permanently deleted.']);
+        }
+
+        return response()->json(['message' => 'Invalid action.'], 400);
+    }
+}

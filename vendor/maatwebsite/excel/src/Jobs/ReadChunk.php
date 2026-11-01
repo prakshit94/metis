@@ -2,7 +2,7 @@
 
 namespace Maatwebsite\Excel\Jobs;
 
-use DateTime;
+use DateTimeInterface;
 use Illuminate\Bus\Batchable;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -12,6 +12,7 @@ use Maatwebsite\Excel\Concerns\Import;
 use Maatwebsite\Excel\Concerns\WithChunkReading;
 use Maatwebsite\Excel\Concerns\WithCustomValueBinder;
 use Maatwebsite\Excel\Concerns\WithEvents;
+use Maatwebsite\Excel\Concerns\WithReadFilter;
 use Maatwebsite\Excel\Events\AfterChunk;
 use Maatwebsite\Excel\Events\ImportFailed;
 use Maatwebsite\Excel\Exceptions\SheetNotFoundException;
@@ -38,7 +39,10 @@ class ReadChunk implements ShouldQueue
 
     public ?int $maxExceptions;
 
-    public ?int $backoff;
+    /**
+     * @var array<int, int|DateTimeInterface>|int|DateTimeInterface|null
+     */
+    public array|int|DateTimeInterface|null $backoff;
 
     /**
      * @var ?string
@@ -97,7 +101,7 @@ class ReadChunk implements ShouldQueue
     /**
      * Determine the time at which the job should time out.
      */
-    public function retryUntil(): ?DateTime
+    public function retryUntil(): DateTimeInterface|int|null
     {
         return (method_exists($this->import, 'retryUntil')) ? $this->import->retryUntil() : null;
     }
@@ -131,7 +135,8 @@ class ReadChunk implements ShouldQueue
             $headingRow,
             $this->startRow,
             $this->chunkSize,
-            $this->sheetName
+            $this->sheetName,
+            $this->import instanceof WithReadFilter ? $this->import->readFilter() : null
         );
 
         // Only per-chunk state is set here. The reader carries the rest of its

@@ -1,0 +1,28 @@
+[
+  {
+    "source_tree": "app",
+    "verified_active_files": 229,
+    "removed_backup_directories": [
+      ".imports-original",
+      ".shipping-original"
+    ]
+  },
+  {
+    "source_tree": "resources/views",
+    "verified_active_files": 143,
+    "removed_backup_directories": [
+      ".teams.orig",
+      ".targets.orig"
+    ]
+  },
+  {
+    "archived_scratch": "migrationquery.text",
+    "bytes": 14421,
+    "sha256": "a095168072927a4088f39b86955da9dbdc64b71647cec75c8be4ec2d14add728"
+  },
+  {
+    "archived_scratch": "migrationscripts.txt",
+    "bytes": 1340982,
+    "sha256": "b03d68ede9baf442f8de1f4de7309484dd18b42f8796764a12af1841679a780f"
+  }
+]

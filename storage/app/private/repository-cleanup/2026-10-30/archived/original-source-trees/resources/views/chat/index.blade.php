@@ -1,0 +1,1683 @@
+@extends('layouts.app')
+
+@push('head')
+    <style>
+        [x-cloak] { display: none !important; }
+        /* Strip container padding and breadcrumb for full-height chat layout */
+        main.admin-main > .container-fluid { padding: 0 !important; margin: 0 !important; max-width: 100% !important; }
+        main.admin-main > .container-fluid > nav[aria-label="breadcrumb"] { display: none !important; }
+        /* Hide the page footer — chat fills the full viewport height */
+        .admin-footer { display: none !important; }
+    </style>
+
+@endpush
+
+@section('title', 'Chat')
+@section('page', 'chat')
+
+@section('content')
+    <div
+        class="chat-workspace"
+        x-data="chatWorkspace({
+            conversations: @js($conversations),
+            users: @js($users),
+            pollInterval: @js($pollInterval),
+            currentUserData: @js($currentUserData),
+            canManageGroups: @js(auth()->user()->can('chat-group-manage')),
+            canSend: @js(auth()->user()->can('messages-create') && auth()->user()->can('messages-view')),
+        })"
+    >
+        <div class="row g-0 h-100">
+            <!-- Left Sidebar: Conversations -->
+            <aside class="col-12 col-lg-4 col-xl-3 flex-column border-end bg-body-tertiary h-100"
+                   :class="activeConversation ? 'd-none d-lg-flex' : 'd-flex'">
+                <div class="p-3 border-bottom">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <div>
+                            <h5 class="mb-0 fw-bold">Messages</h5>
+                            <small class="text-muted" x-text="onlineLabel"></small>
+                        </div>
+                        <button type="button" class="btn btn-outline-secondary btn-sm d-xl-none" @click="showPeople=true">People</button>
+                        @can('chat-create-group')
+                        <button type="button" @click="showGroupModal = true; groupError = ''" class="btn btn-primary btn-sm d-flex align-items-center gap-1" title="Create group">
+                            <i class="bi bi-people-fill"></i>
+                            <span class="d-none d-xl-inline">New Group</span>
+                        </button>
+                        @endcan
+                    </div>
+                    <div class="position-relative">
+                        <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted" style="pointer-events:none;"></i>
+                        <input type="search" x-model.debounce.250ms="search" placeholder="Search chats or people..." class="form-control ps-5 rounded-pill">
+                    </div>
+                </div>
+
+                <div class="px-3 py-2 border-bottom">
+                    <div class="btn-group w-100 mb-2" role="group" aria-label="Conversation type">
+                        <button type="button" @click="conversationType = 'all'" :aria-pressed="conversationType === 'all'" :class="conversationType === 'all' ? 'btn-primary' : 'btn-outline-secondary'" class="btn btn-sm fw-semibold">All chats</button>
+                        <button type="button" @click="conversationType = 'direct'" :aria-pressed="conversationType === 'direct'" :class="conversationType === 'direct' ? 'btn-primary' : 'btn-outline-secondary'" class="btn btn-sm fw-semibold"><i class="bi bi-person me-1" aria-hidden="true"></i>Individuals</button>
+                        <button type="button" @click="conversationType = 'group'" :aria-pressed="conversationType === 'group'" :class="conversationType === 'group' ? 'btn-primary' : 'btn-outline-secondary'" class="btn btn-sm fw-semibold"><i class="bi bi-people me-1" aria-hidden="true"></i>Groups</button>
+                    </div>
+                    <div class="btn-group w-100" role="group" aria-label="Conversation status">
+                        <button type="button" @click="filter = 'all'" :class="filter === 'all' ? 'btn-primary' : 'btn-outline-secondary'" class="btn btn-sm fw-semibold">All</button>
+                        <button type="button" @click="filter = 'unread'" :class="filter === 'unread' ? 'btn-primary' : 'btn-outline-secondary'" class="btn btn-sm fw-semibold">Unread</button>
+                        <button type="button" @click="filter = 'pinned'" :class="filter === 'pinned' ? 'btn-primary' : 'btn-outline-secondary'" class="btn btn-sm fw-semibold">Pinned</button>
+                    </div>
+                </div>
+
+                <div class="flex-grow-1 overflow-y-auto chat-scroll-area">
+                    <!-- Search Results -->
+                    <template x-if="searchResults.users?.length">
+                        <div class="p-2 border-bottom">
+                            <small class="text-muted fw-bold text-uppercase px-2">People</small>
+                            <template x-for="user in searchResults.users" :key="user.id">
+                                <button type="button" @click="startDirect(user.id)" class="btn btn-outline-secondary text-start w-100 d-flex align-items-center gap-2 mb-1 p-2 border-0">
+                                    <div class="position-relative flex-shrink-0">
+                                        <img x-on:error="handlePhotoError($event, user)" data-profile-avatar :data-profile-photo="user?.photo || ''" :data-profile-gender="user?.gender || ''" :src="getUserPhotoUrl(user)" class="rounded-circle object-fit-cover shadow-sm" style="width: 36px; height: 36px;">
+                                        <span class="position-absolute bottom-0 end-0 rounded-circle border border-body" style="width: 10px; height: 10px;" :class="user.is_online ? 'bg-success' : 'bg-secondary'"></span>
+                                    </div>
+                                    <div class="min-w-0 flex-grow-1">
+                                        <div class="d-flex align-items-center mb-1 gap-1">
+                                            <span class="text-truncate fw-bold small mb-0" x-text="user.name"></span>
+                                        </div>
+                                        <div class="text-truncate text-muted mb-1" style="font-size: 10px;">
+                                            <template x-if="user.location || user.lob_team_name">
+                                                <span><i class="bi bi-geo-alt me-1 opacity-75"></i><span x-text="userDetailsLabel(user)"></span></span>
+                                            </template>
+                                        </div>
+                                        <div class="text-truncate text-muted small" style="font-size: 11px;" x-text="user.last_seen_label || user.email"></div>
+                                    </div>
+                                </button>
+                            </template>
+                        </div>
+                    </template>
+
+                    <div x-show="search && filteredConversations.length === 0 && searchResults.users.length === 0" x-cloak class="text-center p-4 text-muted" role="status">No chats or people found.</div>
+                    <button type="button" class="btn btn-outline-secondary m-2" x-show="hasMoreConversations" :disabled="polling" @click="conversationPages++; poll()">Load more conversations</button>
+                    <!-- Empty state -->
+                    <div x-show="filteredConversations.length === 0 && !search" class="text-center p-5 text-muted">
+                        <i class="bi bi-chat-dots fs-1 d-block mb-2 opacity-50"></i>
+                        <p class="small mb-0" x-text="conversationType === 'group' ? 'No groups match your filters' : (conversationType === 'direct' ? 'No individual chats match your filters' : 'No conversations match your filters')"></p>
+                        <p class="small" x-show="conversationType !== 'group'">Search for a person above to start a chat</p>
+                    </div>
+
+                    <!-- Conversation List -->
+                    <template x-for="conversation in filteredConversations" :key="conversation.id">
+                        <button type="button" @click="selectConversation(conversation)"
+                            class="btn text-start w-100 d-flex align-items-start gap-3 p-3 shadow-sm rounded-3 mb-2"
+                            :class="activeConversation?.id == conversation.id ? 'bg-primary bg-opacity-10 border-start border-3 border-primary' : 'bg-body border border-secondary border-opacity-10'"
+                            onmouseover="if(this.className.indexOf('bg-primary') === -1) this.style.backgroundColor = 'var(--bs-secondary-bg)'"
+                            onmouseout="if(this.className.indexOf('bg-primary') === -1) this.style.backgroundColor = ''">
+                            <div class="position-relative flex-shrink-0">
+                                <img x-on:error="handleConversationPhotoError($event, conversation)" :data-profile-avatar="conversation.type !== 'group' ? '' : null" :data-profile-photo="getConversationUser(conversation)?.photo || ''" :data-profile-gender="getConversationUser(conversation)?.gender || ''" :src="getConversationPhotoUrl(conversation)" class="rounded-circle object-fit-cover shadow-sm border border-2 border-body flex-shrink-0" style="width: 42px; height: 42px; " alt="">
+                                <span x-show="isOnline(conversation)"
+                                      class="position-absolute bottom-0 end-0 rounded-circle border-2 border-body bg-success"
+                                      style="width:11px;height:11px;"></span>
+                            </div>
+                            <div class="min-w-0 flex-grow-1">
+                                <div class="d-flex justify-content-between align-items-center mb-1 gap-2 min-w-0">
+                                    <div class="d-flex align-items-center flex-grow-1 min-w-0 gap-1">
+                                        <span class="text-truncate fw-semibold" style="font-size:.875rem;" x-text="conversationTitle(conversation)"></span>
+                                        <span class="badge rounded-pill text-bg-secondary-subtle text-secondary-emphasis flex-shrink-0" style="font-size:9px;" x-text="conversation.type === 'group' ? 'Group' : 'Individual'"></span>
+                                        <i x-show="conversation.is_pinned" class="bi bi-star-fill text-warning" style="font-size: 10px;" title="Pinned"></i>
+                                    </div>
+                                    <small class="text-muted flex-shrink-0 ms-2" style="font-size:10px;" x-text="lastTime(conversation)"></small>
+                                </div>
+                                <div class="text-truncate text-muted mb-1 min-w-0" style="font-size: 10px;" x-show="conversationLocation(conversation)">
+                                    <i class="bi bi-geo-alt me-1 opacity-75"></i><span class="text-truncate" x-text="conversationLocation(conversation)"></span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center gap-1 min-w-0">
+                                    <div class="d-flex align-items-center gap-1 text-truncate flex-grow-1 text-muted min-w-0" style="font-size:.78rem;">
+                                        <template x-if="getPreviewImageUrl(lastMessageObj(conversation))">
+                                            <img :src="getPreviewImageUrl(lastMessageObj(conversation))" class="rounded flex-shrink-0" style="width:16px; height:16px; object-fit:cover;">
+                                        </template>
+                                        <span class="text-truncate flex-grow-1 min-w-0" x-text="lastPreview(conversation)"></span>
+                                    </div>
+                                    <span x-show="conversation.unread_count > 0"
+                                          class="badge rounded-pill bg-primary flex-shrink-0 ms-1"
+                                          style="font-size:10px;" x-text="conversation.unread_count"></span>
+                                </div>
+                            </div>
+                        </button>
+                    </template>
+                </div>
+            </aside>
+
+            <!-- Center: Main Chat Area -->
+            <section class="col-12 col-lg-8 col-xl-6 flex-column h-100 position-relative bg-body"
+                     :class="activeConversation ? 'd-flex' : 'd-none d-lg-flex'">
+                <template x-if="activeConversation">
+                    <div class="d-flex flex-column h-100">
+                        <header class="d-flex align-items-center justify-content-between p-3 border-bottom shadow-sm z-1">
+                            <div class="d-flex align-items-center gap-2 min-w-0 flex-grow-1 overflow-hidden">
+                                <button type="button" class="btn btn-outline-secondary d-lg-none p-2 rounded-circle" @click="if (!sendingMessage) { conversationDrafts[activeConversation.id] = { draft, attachments: pendingAttachments }; activeConversation = null; replyTo = null; errorMessage = ''; }" aria-label="Back to conversations">
+                                    <i class="bi bi-arrow-left"></i>
+                                </button>
+                                <img x-on:error="handleConversationPhotoError($event, activeConversation)" :data-profile-avatar="activeConversation.type !== 'group' ? '' : null" :data-profile-photo="getConversationUser(activeConversation)?.photo || ''" :data-profile-gender="getConversationUser(activeConversation)?.gender || ''" :src="getConversationPhotoUrl(activeConversation)" class="rounded-circle object-fit-cover shadow-sm border border-2 border-body flex-shrink-0" style="width: 42px; height: 42px; " alt="">
+                                <div class="min-w-0 flex-grow-1">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <h6 class="mb-0 fw-bold text-truncate flex-grow-1" x-text="conversationTitle(activeConversation)"></h6>
+                                        <small class="text-muted d-none d-xl-block text-truncate" style="font-size:12px; max-width:160px;" x-show="conversationLocation(activeConversation)">
+                                            <i class="bi bi-geo-alt"></i> <span x-text="conversationLocation(activeConversation)"></span>
+                                        </small>
+                                    </div>
+                                    <small class="text-muted text-truncate d-block" x-text="conversationSubtitle(activeConversation)"></small>
+                                </div>
+                            </div>
+                            <div class="d-flex gap-1 flex-shrink-0 ms-2">
+                                <button type="button" @click="togglePin" class="btn btn-sm" :class="activeConversation.is_pinned ? 'btn-warning' : 'btn-outline-secondary'" :aria-label="activeConversation.is_pinned ? 'Unpin chat' : 'Pin chat'" :title="activeConversation.is_pinned ? 'Unpin chat' : 'Pin chat'">
+                                    <i class="bi" :class="activeConversation.is_pinned ? 'bi-star-fill text-white' : 'bi-star'"></i>
+                                </button>
+                                <button type="button" @click="toggleArchive" class="btn btn-sm" :class="activeConversation.is_archived ? 'btn-secondary' : 'btn-outline-secondary'" :aria-label="activeConversation.is_archived ? 'Unarchive chat' : 'Archive chat'" :title="activeConversation.is_archived ? 'Unarchive chat' : 'Archive chat'">
+                                    <i class="bi" :class="activeConversation.is_archived ? 'bi-archive-fill text-white' : 'bi-archive'"></i>
+                                </button>
+                                <button type="button" x-show="activeConversation?.type === 'group'" @click="openGroupSettings" class="btn btn-outline-secondary btn-sm" title="Group settings" aria-label="Group settings">
+                                    <i class="bi bi-gear-fill"></i>
+                                </button>
+                            </div>
+                        </header>
+
+                        <!-- Message List -->
+                        <div class="flex-grow-1 overflow-y-auto p-4 bg-body-tertiary d-flex flex-column gap-3 chat-scroll-area" x-ref="messageScroller">
+                            <button type="button" x-show="hasOlderMessages" :disabled="loadingOlder" @click="loadOlderMessages()" class="btn btn-sm btn-outline-secondary align-self-center" x-text="loadingOlder ? 'Loading…' : 'Load earlier messages'"></button>
+                            <template x-for="message in messages" :key="message.id">
+                                <div :data-chat-message-id="message.id" class="d-flex" :class="message.sender_id == currentUserId ? 'justify-content-end' : 'justify-content-start'">
+                                    <div style="max-width: 75%;">
+                                        <div class="d-flex align-items-center gap-2 mb-1 text-muted" style="font-size: 10px;" :class="message.sender_id == currentUserId ? 'justify-content-end' : 'justify-content-start'">
+                                            <template x-if="message.sender">
+                                                <img x-on:error="handlePhotoError($event, message.sender)" data-profile-avatar :data-profile-photo="message.sender?.photo || ''" :data-profile-gender="message.sender?.gender || ''" :src="getUserPhotoUrl(message.sender)" class="rounded-circle object-fit-cover shadow-sm" style="width:16px; height:16px;">
+                                            </template>
+                                            <strong class="text-uppercase" x-text="message.sender?.name || 'User'"></strong>
+                                            <span x-show="senderLocation(message)" class="opacity-75">
+                                                <i class="bi bi-geo-alt"></i> <span x-text="senderLocation(message)"></span>
+                                            </span>
+                                            <span x-text="lastTime(message)"></span>
+                                            <span x-show="message.edited_at" class="fst-italic">Edited</span>
+                                        </div>
+                                        
+
+                                        <div class="chat-bubble shadow-sm"
+                                             :class="message.sender_id == currentUserId ? 'chat-bubble-sent' : 'chat-bubble-received'">
+
+                                            <template x-if="message.parent">
+                                                <button type="button" @click="scrollToMessage(message.parent_id)"
+                                                    class="btn btn-sm w-100 text-start border-start border-3 rounded-0 ps-2 mb-2 p-0 opacity-75 d-flex align-items-center gap-2 overflow-hidden"
+                                                    :class="message.sender_id == currentUserId ? 'border-white text-white' : 'border-primary text-body'">
+                                                    <template x-if="getPreviewImageUrl(message.parent)">
+                                                        <img :src="getPreviewImageUrl(message.parent)" class="rounded flex-shrink-0" style="width: 36px; height: 36px; object-fit: cover;">
+                                                    </template>
+                                                    <div class="overflow-hidden w-100">
+                                                        <strong class="d-block text-truncate small" x-text="message.parent.sender?.name || 'Reply'"></strong>
+                                                        <span class="d-block text-truncate small" x-text="message.parent.content || (getPreviewImageUrl(message.parent) ? 'Photo' : 'Attachment')"></span>
+                                                    </div>
+                                                </button>
+                                            </template>
+
+                                            <template x-if="editingMessageId != message.id">
+                                                <p class="mb-0 text-break" style="white-space: pre-wrap;" x-text="message.content"></p>
+                                            </template>
+
+                                            <template x-if="editingMessageId == message.id">
+                                                <div class="d-flex flex-column gap-2">
+                                                    <textarea x-model="editingDraft" rows="2" class="form-control form-control-sm bg-body text-body"></textarea>
+                                                    <div class="d-flex justify-content-end gap-1">
+                                                        <button type="button" @click="cancelEdit" class="btn btn-sm btn-outline-secondary py-0" style="font-size: 10px;">Cancel</button>
+                                                        <button type="button" @click="saveEdit(message)" class="btn btn-sm btn-success py-0" style="font-size: 10px;">Save</button>
+                                                    </div>
+                                                </div>
+                                            </template>
+
+                                            <template x-if="message.attachments?.length">
+                                                <div class="mt-2 d-flex flex-column gap-1">
+                                                    <template x-for="attachment in message.attachments" :key="attachment.path || attachment.name">
+                                                        <div>
+                                                            <template x-if="isImageAttachment(attachment)">
+                                                                <a :href="formatAttachmentUrl(attachment.path)" target="_blank" class="d-block rounded overflow-hidden position-relative" x-data="{ previewFailed: false }" rel="noopener noreferrer" :aria-label="attachment.name || 'Open image attachment'">
+                                                                    <img x-show="!previewFailed" x-on:error="previewFailed = true" :src="formatAttachmentUrl(attachment.path)" :alt="attachment.name || 'Image attachment'" class="img-fluid" style="max-height: 200px; object-fit: cover; width: 100%;">
+                                                                    <span x-show="previewFailed" x-cloak class="d-block p-2 small text-break" :class="message.sender_id == currentUserId ? 'text-white' : 'text-body'">Preview unavailable. Open attachment</span>
+                                                                </a>
+                                                            </template>
+                                                            <template x-if="!isImageAttachment(attachment)">
+                                                                <a :href="formatAttachmentUrl(attachment.path)" target="_blank"
+                                                                   class="btn btn-sm d-flex align-items-center gap-2 text-start mt-1"
+                                                                   :class="message.sender_id == currentUserId ? 'btn-light bg-white bg-opacity-25 text-white border-0' : 'btn-outline-secondary'">
+                                                                    <i class="bi bi-file-earmark-text"></i>
+                                                                    <span class="text-truncate flex-grow-1" x-text="attachment.name || attachment.path"></span>
+                                                                    <i class="bi bi-download opacity-75"></i>
+                                                                </a>
+                                                            </template>
+                                                        </div>
+                                                    </template>
+                                                </div>
+                                            </template>
+                                        </div>
+
+                                        <div class="mt-1 d-flex gap-2" :class="message.sender_id == currentUserId ? 'justify-content-end' : 'justify-content-start'">
+                                            <button type="button" x-show="canSend" @click="setReply(message)" class="btn btn-link btn-sm p-0 text-muted text-decoration-none" style="font-size: 10px;">REPLY</button>
+                                            @can('messages-edit')
+                                            <button type="button" @click="startEdit(message)" x-show="message.sender_id == currentUserId" class="btn btn-link btn-sm p-0 text-muted text-decoration-none" style="font-size: 10px;">EDIT</button>
+                                            @endcan
+                                            @can('messages-delete')
+                                            <button type="button" @click="deleteMessage(message)" x-show="message.sender_id == currentUserId" :disabled="busyMessageId == message.id" class="btn btn-link btn-sm p-0 text-danger text-decoration-none" style="font-size: 10px;">DELETE</button>
+                                            @endcan
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
+                        </div><!-- end message list -->
+
+                        <!-- Composer -->
+                        <form @submit.prevent="sendMessage()" class="chat-composer">
+                            {{-- Error banner --}}
+                            <div :class="{'d-flex': errorMessage, 'd-none': !errorMessage}" x-cloak
+                                 class="alert alert-danger py-2 px-3 mb-2 small justify-content-between align-items-center rounded-3">
+                                <span x-text="errorMessage"></span>
+                                <button type="button" @click="errorMessage = ''" class="btn-close" style="font-size:10px;"></button>
+                            </div>
+
+                            {{-- Reply banner --}}
+                            <div :class="{'d-flex': replyTo, 'd-none': !replyTo}" x-cloak
+                                 class="chat-reply-banner mb-2 align-items-center justify-content-between small">
+                                <div class="d-flex align-items-center gap-2 overflow-hidden">
+                                    <template x-if="replyTo && getPreviewImageUrl(replyTo)">
+                                        <img :src="getPreviewImageUrl(replyTo)" class="rounded flex-shrink-0" style="width: 32px; height: 32px; object-fit: cover;">
+                                    </template>
+                                    <div class="text-truncate text-muted">
+                                        <strong x-text="replyTo ? '↩ ' + (replyTo.sender?.name || 'Unknown') : ''"></strong>
+                                        <span x-text="replyTo?.content ? ': ' + replyTo.content : (getPreviewImageUrl(replyTo) ? ' Photo' : ' Attachment')"></span>
+                                    </div>
+                                </div>
+                                <button type="button" @click="replyTo = null" class="btn-close ms-2 flex-shrink-0" style="font-size:10px;"></button>
+                            </div>
+
+                            {{-- Pending attachments preview --}}
+                            <div :class="{'d-flex': pendingAttachments.length, 'd-none': !pendingAttachments.length}" x-cloak class="flex-wrap gap-2 mb-2">
+                                <template x-for="(file, index) in pendingAttachments" :key="`${file.name}-${file.size}-${index}`">
+                                    <div class="chat-attachment-preview">
+                                        <template x-if="file.previewUrl">
+                                            <img :src="file.previewUrl" alt="">
+                                        </template>
+                                        <template x-if="!file.previewUrl">
+                                            <div class="d-flex align-items-center justify-content-center" style="height:70px;">
+                                                <i class="bi bi-file-earmark-text fs-3 text-muted"></i>
+                                            </div>
+                                        </template>
+                                        <div class="chat-attachment-size px-1 pb-1" x-text="formatFileSize(file.size)"></div>
+                                        <button type="button" @click="removePendingAttachment(index)"
+                                                class="btn-close position-absolute top-0 end-0 m-1 bg-body" style="font-size:8px;"></button>
+                                    </div>
+                                </template>
+                            </div>
+
+                            {{-- Input row --}}
+                            <div class="d-flex align-items-end gap-2">
+                                <input x-ref="attachmentInput" type="file" multiple class="d-none" @change="handleAttachmentSelection">
+                                <button type="button" @click="$refs.attachmentInput.click()"
+                                        class="btn btn-outline-secondary rounded-circle flex-shrink-0 d-flex align-items-center justify-content-center"
+                                        style="width:40px;height:40px;" title="Attach" aria-label="Attach files" :disabled="!canSend">
+                                    <i class="bi bi-paperclip"></i>
+                                </button>
+                                <textarea
+                                    :disabled="!canSend"
+                                    x-model="draft"
+                                    x-ref="composer"
+                                    rows="1"
+                                    @keydown.enter="if (!$event.shiftKey && !$event.isComposing) { $event.preventDefault(); sendMessage(); }"
+                                    @input="$el.style.height = 'auto'; $el.style.height = Math.min($el.scrollHeight, 120) + 'px'"
+                                    placeholder="Type a message…" aria-label="Message" title="Enter to send, Shift+Enter for a new line"
+                                    class="form-control flex-grow-1 chat-composer-textarea">
+                                </textarea>
+                                <button type="submit"
+                                        :disabled="!canSend || sendingMessage || (!(draft || '').trim() && !pendingAttachments.length)"
+                                        class="btn btn-primary rounded-circle flex-shrink-0 d-flex align-items-center justify-content-center shadow-sm"
+                                        style="width:40px;height:40px;" aria-label="Send message">
+                                    <span x-show="sendingMessage" class="spinner-border spinner-border-sm"></span>
+                                    <i x-show="!sendingMessage" class="bi bi-send"></i>
+                                </button>
+                            </div>
+                        </form>
+                    </div><!-- end d-flex flex-column h-100 -->
+                </template><!-- end x-if activeConversation -->
+
+                <template x-if="!activeConversation">
+                    <div class="d-flex flex-grow-1 align-items-center justify-content-center">
+                        <div class="text-center">
+                            <div class="rounded-circle bg-primary bg-opacity-10 d-inline-flex align-items-center justify-content-center mb-4" style="width:96px;height:96px;">
+                                <i class="bi bi-chat-dots-fill text-primary" style="font-size:2.5rem;"></i>
+                            </div>
+                            <h5 class="fw-bold mb-1">Your Messages</h5>
+                            <p class="text-muted small mb-3">Select a conversation or start a new one</p>
+                            @can('chat-create-group')
+                            <button type="button" @click="showGroupModal = true" class="btn btn-outline-primary btn-sm">
+                                <i class="bi bi-plus-circle me-1"></i>New Group
+                            </button>
+                            @endcan
+                        </div>
+                    </div>
+                </template>
+            </section>
+
+            <!-- Right Sidebar: Online Users -->
+            <aside class="chat-people-pane d-none d-xl-flex col-xl-3 flex-column border-start bg-body-tertiary h-100" :class="{'is-people-open':showPeople}" @keydown.escape="showPeople=false">
+                <div class="p-3 border-bottom">
+                    <button type="button" class="btn btn-sm btn-outline-secondary d-xl-none mb-3" @click="showPeople=false">Back to chat</button>
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <div>
+                            <h6 class="mb-0 fw-bold text-uppercase" style="font-size:0.75rem; letter-spacing:0.5px;">Online Users</h6>
+                            <p class="mb-0 text-muted" style="font-size: 11px;" x-text="`${onlineUsers.length} active, ${presenceUsers.length} available`"></p>
+                        </div>
+                        <div class="d-flex gap-1">
+                            @can('chat-export')
+                            <button type="button" @click="exportUsersToCSV" :disabled="exportingUsers" class="btn btn-outline-secondary btn-sm rounded-circle d-flex align-items-center justify-content-center border shadow-sm" style="width:28px;height:28px;" title="Export users who logged in today">
+                                <i class="bi bi-download"></i>
+                            </button>
+                            @endcan
+                            <button type="button" @click="fetchUsers" class="btn btn-outline-secondary btn-sm rounded-circle d-flex align-items-center justify-content-center border shadow-sm" style="width:28px;height:28px;" title="Refresh users">
+                                <i class="bi bi-arrow-clockwise"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="position-relative mb-3">
+                        <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted" style="pointer-events:none;"></i>
+                        <input type="search" x-model.debounce.300ms="userSearch" placeholder="Find users..." class="form-control form-control-sm ps-5 rounded-pill">
+                    </div>
+                    <div class="d-flex gap-2 mb-2">
+                        <button type="button" @click="userFilter = 'all'"
+                                :class="userFilter === 'all' ? 'btn-primary' : 'btn-outline-secondary'"
+                                class="btn btn-sm flex-fill fw-semibold py-1" style="font-size: 11px;">All</button>
+                        <button type="button" @click="userFilter = 'online'"
+                                :class="userFilter === 'online' ? 'btn-primary' : 'btn-outline-secondary'"
+                                class="btn btn-sm flex-fill fw-semibold py-1" style="font-size: 11px;">Online</button>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <select x-model="userSort" class="form-select form-select-sm bg-body text-body" style="font-size: 11px;">
+                            <option value="revenue_desc">Revenue: High to Low</option>
+                            <option value="revenue_asc">Revenue: Low to High</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="flex-grow-1 overflow-y-auto chat-scroll-area">
+                    <template x-for="user in visibleUsers" :key="user.id">
+                        <button type="button"
+                                @click="!user.isMe && startDirect(user.id)"
+                                class="btn border-0 text-start w-100 d-flex align-items-start gap-3 p-3 chat-user-item shadow-sm rounded-3 mb-2"
+                                :class="user.isMe
+                                    ? 'bg-primary bg-opacity-10 border-start border-3 border-primary'
+                                    : 'bg-body border border-secondary border-opacity-10'"
+                                :style="user.isMe ? 'cursor: default;' : ''"
+                                :disabled="startingUserId == user.id">
+                            <div class="position-relative flex-shrink-0 mt-1">
+                                <img x-on:error="handlePhotoError($event, user)" data-profile-avatar :data-profile-photo="user?.photo || ''" :data-profile-gender="user?.gender || ''" :src="getUserPhotoUrl(user)" class="rounded-circle object-fit-cover shadow-sm" style="width: 36px; height: 36px;"
+                                     :class="user.isMe ? 'border border-2 border-primary' : ''">
+                                <span class="position-absolute bottom-0 end-0 rounded-circle border border-2 border-body"
+                                      style="width: 12px; height: 12px;"
+                                      :class="user.is_online ? 'bg-success' : 'bg-secondary'"></span>
+                            </div>
+                            <div class="min-w-0 flex-grow-1">
+                                <!-- First Row: Name & Trophy/Rank + Badge -->
+                                <div class="d-flex justify-content-between align-items-center mb-1 gap-2">
+                                    <div class="d-flex align-items-center gap-1 flex-grow-1 min-w-0">
+                                        {{-- Trophy for top 3 — based on global rank, not filtered index --}}
+                                        <template x-if="userSort === 'revenue_desc' && user._globalRank === 0">
+                                            <span title="Top Earner" class="flex-shrink-0" style="font-size: 1.35rem; line-height: 1;">🥇</span>
+                                        </template>
+                                        <template x-if="userSort === 'revenue_desc' && user._globalRank === 1">
+                                            <span title="2nd Earner" class="flex-shrink-0" style="font-size: 1.35rem; line-height: 1;">🥈</span>
+                                        </template>
+                                        <template x-if="userSort === 'revenue_desc' && user._globalRank === 2">
+                                            <span title="3rd Earner" class="flex-shrink-0" style="font-size: 1.35rem; line-height: 1;">🥉</span>
+                                        </template>
+                                        {{-- Show rank number for non-top-3 when in revenue mode --}}
+                                        <template x-if="userSort === 'revenue_desc' && user._globalRank >= 3">
+                                            <span class="flex-shrink-0 fw-bold d-inline-flex align-items-center justify-content-center rounded"
+                                                  style="font-size: 11px; min-width: 22px; height: 22px; padding: 0 4px;
+                                                         background-color: var(--bs-secondary-bg);
+                                                         color: var(--bs-body-color);
+                                                         border: 1px solid var(--bs-border-color);"
+                                                  x-text="user._globalRank + 1"></span>
+                                        </template>
+                                        <span class="text-truncate fw-bold text-body" style="font-size: .875rem;" x-text="user.name + (user.isMe ? ' (You)' : '')"></span>
+                                    </div>
+                                    {{-- Self gets a primary "You" badge; others get Live/Away --}}
+                                    <template x-if="user.isMe">
+                                        <span class="badge rounded-pill fw-semibold flex-shrink-0"
+                                              style="font-size: 9px; padding: 0.25em 0.6em;
+                                                     background: rgba(var(--bs-primary-rgb), 0.15);
+                                                     color: var(--bs-primary);
+                                                     border: 1px solid rgba(var(--bs-primary-rgb), 0.35);">You</span>
+                                    </template>
+                                    <template x-if="!user.isMe">
+                                        <span class="badge rounded-pill fw-semibold flex-shrink-0"
+                                              style="font-size: 9px; padding: 0.25em 0.6em;"
+                                              :style="user.is_online
+                                                ? 'background: rgba(var(--bs-success-rgb), 0.15); color: var(--bs-success); border: 1px solid rgba(var(--bs-success-rgb), 0.35);'
+                                                : 'background: rgba(var(--bs-secondary-rgb), 0.15); color: var(--bs-secondary); border: 1px solid rgba(var(--bs-secondary-rgb), 0.3);'"
+                                              x-text="user.is_online ? 'Online' : 'Offline'"></span>
+                                    </template>
+                                </div>
+
+                                <!-- Second Row: Location or Email -->
+                                <div class="text-truncate text-muted mb-1 min-w-0" style="font-size: 11px;">
+                                    <template x-if="user.location || user.lob_team_name">
+                                        <span class="text-truncate"><i class="bi bi-geo-alt me-1 opacity-75"></i><span x-text="userDetailsLabel(user)"></span></span>
+                                    </template>
+                                    <template x-if="!user.location && !user.lob_team_name">
+                                        <span class="text-truncate"><i class="bi bi-envelope me-1 opacity-75"></i><span x-text="user.email"></span></span>
+                                    </template>
+                                </div>
+
+                                <!-- Third Row: Last Seen & Device (or "Your position" for self) -->
+                                <div class="d-flex justify-content-between align-items-center text-muted opacity-75 min-w-0" style="font-size: 10px;">
+                                    <template x-if="user.isMe">
+                                        <span class="text-primary fw-semibold opacity-100 text-truncate"
+                                              x-text="userSort === 'revenue_desc' ? 'Your rank: #' + (user._globalRank + 1) : 'Active now'"></span>
+                                    </template>
+                                    <template x-if="!user.isMe">
+                                        <span class="text-truncate flex-grow-1 min-w-0" x-text="user.last_seen_label"></span>
+                                    </template>
+                                    <span class="text-truncate ms-2 text-end flex-shrink-0" style="max-width: 50%;" x-show="user.active_device && !user.isMe" x-text="user.active_device"></span>
+                                </div>
+
+                                <!-- Fourth Row: Today's Stats -->
+                                <div class="d-flex gap-2 mt-2 flex-wrap">
+                                    <span class="badge fw-semibold" style="font-size: 9px; padding: 3px 6px;
+                                                 background: rgba(var(--bs-primary-rgb), 0.15);
+                                                 color: var(--bs-primary);
+                                                 border: 1px solid rgba(var(--bs-primary-rgb), 0.3);">
+                                        <i class="bi bi-box-seam me-1"></i> <span x-text="user.today_orders || 0"></span> Orders
+                                    </span>
+                                    <span class="badge fw-semibold" style="font-size: 9px; padding: 3px 6px;
+                                                 background: rgba(var(--bs-success-rgb), 0.15);
+                                                 color: var(--bs-success);
+                                                 border: 1px solid rgba(var(--bs-success-rgb), 0.3);">
+                                        <i class="bi bi-currency-rupee me-1"></i> <span x-text="'₹ ' + (user.today_revenue || 0).toLocaleString()"></span>
+                                    </span>
+                                </div>
+                            </div>
+                            <div x-show="startingUserId == user.id && !user.isMe" class="spinner-border spinner-border-sm text-primary ms-auto mt-1" role="status"></div>
+                        </button>
+                    </template>
+                    <div x-show="visibleUsers.length === 0" class="text-center p-5 text-muted">
+                        <i class="bi bi-people fs-2 d-block mb-2 opacity-50"></i>
+                        <p class="small mb-0">No users found.</p>
+                    </div>
+                </div>
+            </aside>
+        </div>
+
+        <div x-show="showGroupModal"
+             x-cloak
+             class="chat-modal-backdrop"
+             @keydown.escape.window="showGroupModal = false; groupError = ''">
+            <form @submit.prevent="createGroup()" class="bg-body rounded-4 shadow-lg w-100" style="max-width: 500px; max-height: 90vh; overflow-y: auto;">
+                <div class="d-flex align-items-center justify-content-between p-4 border-bottom">
+                    <h5 class="mb-0 fw-bold">New Group</h5>
+                    <button type="button" @click="showGroupModal = false; groupError = ''" class="btn-close"></button>
+                </div>
+                <div class="p-4">
+                    <div :class="{'d-flex': groupError, 'd-none': !groupError}" x-cloak class="alert alert-danger py-2 px-3 mb-3 small align-items-center gap-2">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                        <span x-text="groupError"></span>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small">Group Name <span class="text-danger">*</span></label>
+                        <input x-model="groupForm.name" class="form-control" placeholder="e.g. Sales Team" required autofocus>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small">Description</label>
+                        <textarea x-model="groupForm.description" class="form-control" placeholder="What's this group about?" rows="2"></textarea>
+                    </div>
+                    
+                    <div class="mb-1">
+                        <div class="d-flex justify-content-between align-items-end mb-2">
+                            <label class="form-label fw-bold small text-uppercase text-muted mb-0">Add Members</label>
+                            <button type="button" class="btn btn-sm btn-link text-decoration-none p-0" @click="groupForm.member_ids.length === filteredGroupUsers.length ? groupForm.member_ids = [] : groupForm.member_ids = filteredGroupUsers.map(u => u.id)" x-text="groupForm.member_ids.length === filteredGroupUsers.length && filteredGroupUsers.length > 0 ? 'Deselect All' : 'Select All'"></button>
+                        </div>
+                        <input x-model="groupCreateSearch" type="search" class="form-control form-control-sm mb-2" placeholder="Search users...">
+                        <div class="border rounded p-2 overflow-y-auto" style="max-height: 180px;">
+                            <template x-for="user in filteredGroupUsers" :key="user.id">
+                                <div class="d-flex align-items-center p-2 rounded mb-0" 
+                                     onmouseover="this.style.backgroundColor='var(--bs-secondary-bg)'" 
+                                     onmouseout="this.style.backgroundColor='transparent'">
+                                    
+                                    <input class="ms-0 mt-0 flex-shrink-0" 
+                                           type="checkbox" 
+                                           :value="user.id" 
+                                           x-model="groupForm.member_ids" 
+                                           :id="'newUserCheck_' + user.id"
+                                           style="width: 1.25em; height: 1.25em; cursor: pointer; margin-right: 0.75rem;">
+                                           
+                                    <label class="d-flex align-items-center gap-2 flex-grow-1 mb-0" 
+                                           :for="'newUserCheck_' + user.id" 
+                                           style="cursor: pointer;">
+                                        
+                                        <img x-on:error="handlePhotoError($event, user)" data-profile-avatar :data-profile-photo="user?.photo || ''" :data-profile-gender="user?.gender || ''" :src="getUserPhotoUrl(user)" class="rounded-circle object-fit-cover shadow-sm flex-shrink-0" style="width: 28px; height: 28px;">
+                                        
+                                        <div class="min-w-0 flex-grow-1 text-truncate">
+                                            <div class="d-flex align-items-center gap-2 mb-1">
+                                                <span class="small fw-semibold text-truncate flex-grow-1" x-text="user.name"></span>
+                                                <span class="badge rounded-pill flex-shrink-0"
+                                                      style="font-size: 9px; padding: 0.25em 0.6em;"
+                                                      :style="user.is_online
+                                                        ? 'background: rgba(var(--bs-success-rgb), 0.15); color: var(--bs-success); border: 1px solid rgba(var(--bs-success-rgb), 0.35);'
+                                                        : 'background: rgba(var(--bs-secondary-rgb), 0.15); color: var(--bs-secondary); border: 1px solid rgba(var(--bs-secondary-rgb), 0.3);'"
+                                                      x-text="user.is_online ? 'Online' : 'Offline'"></span>
+                                            </div>
+                                            <div class="text-muted text-truncate" style="font-size:10px;" x-show="user.location || user.lob_team_name">
+                                                <i class="bi bi-geo-alt me-1 opacity-75"></i><span x-text="userDetailsLabel(user)"></span>
+                                            </div>
+                                        </div>
+                                    </label>
+                                </div>
+                            </template>
+                            <div x-show="filteredGroupUsers.length === 0" class="text-center text-muted small p-3">No users found.</div>
+                        </div>
+                        <div class="small text-muted mt-1"><span x-text="groupForm.member_ids.length"></span> selected</div>
+                    </div>
+                </div>
+                <div class="d-flex justify-content-end gap-2 p-4 pt-0">
+                    <button type="button" @click="showGroupModal = false; groupError = ''" class="btn btn-outline-secondary fw-bold" :disabled="groupBusy">Cancel</button>
+                    @can('chat-create-group')
+                    <button type="submit" class="btn btn-primary fw-bold px-4" :disabled="groupBusy || !groupForm.name.trim()">
+                        <span x-show="groupBusy" class="spinner-border spinner-border-sm me-2"></span>
+                        <span x-text="groupBusy ? 'Creating...' : 'Create Group'"></span>
+                    </button>
+                    @endcan
+                </div>
+            </form>
+        </div>
+
+        <!-- Group Settings Modal -->
+        <div x-show="showGroupSettingsModal && activeConversation?.type === 'group'"
+             x-cloak
+             class="chat-modal-backdrop"
+             @keydown.escape.window="closeGroupSettings">
+            <div class="bg-body rounded-4 shadow-lg w-100 d-flex flex-column" style="max-width:800px; max-height:90vh;">
+                <div class="p-4 border-bottom d-flex align-items-center justify-content-between bg-primary text-white"
+                     style="border-top-left-radius:1rem; border-top-right-radius:1rem;">
+                    <div>
+                        <div class="d-flex align-items-center justify-content-center gap-2 mb-1">
+                            <h5 class="mb-0 fw-bold" x-text="conversationTitle(activeConversation)"></h5>
+                            <small class="text-white text-opacity-75" x-show="conversationLocation(activeConversation)">
+                                <i class="bi bi-geo-alt"></i> <span x-text="conversationLocation(activeConversation)"></span>
+                            </small>
+                        </div>
+                        <small class="opacity-75" x-text="conversationSubtitle(activeConversation)"></small>
+                    </div>
+                    <button type="button" @click="closeGroupSettings" class="btn-close btn-close-white"></button>
+                </div>
+                
+                <div class="p-4 overflow-y-auto">
+                    <div x-show="errorMessage" x-cloak class="alert alert-danger py-2 px-3 mb-4 small" x-text="errorMessage" style="display:none;"></div>
+                    
+                    <div class="row g-4">
+                        <!-- Settings -->
+                        <div class="col-md-6 border-end-md">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h6 class="fw-bold text-muted text-uppercase mb-0" style="font-size:0.75rem; letter-spacing:0.5px;">Group Details</h6>
+                                @can('chat-group-manage')
+                                <button type="button" x-show="canManageSettings" @click="updateGroup" :disabled="groupBusy" class="btn btn-primary btn-sm fw-semibold px-3 shadow-sm">Save</button>
+                                @endcan
+                            </div>
+                            <template x-if="canManageSettings">
+                                <div>
+                                    <div class="mb-3">
+                                        <label class="form-label small fw-semibold text-muted">Group Name</label>
+                                        <input x-model="groupSettingsForm.name" class="form-control" placeholder="Group name">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label small fw-semibold text-muted">Description</label>
+                                        <textarea x-model="groupSettingsForm.description" rows="3" class="form-control" placeholder="Description"></textarea>
+                                    </div>
+                                    
+                                </div>
+                            </template>
+                            <template x-if="!canManageSettings">
+                                <div class="bg-body-secondary rounded-3 p-4 mb-4 border">
+                                    <h6 class="fw-bold mb-2" x-text="activeConversation?.name"></h6>
+                                    <p class="small text-muted mb-3" x-text="activeConversation?.description || 'No description'"></p>
+                                    
+                                </div>
+                            </template>
+
+                            <hr class="my-4">
+                            
+                            <h6 class="fw-bold text-danger mb-3" style="font-size:0.75rem; letter-spacing:0.5px; text-transform:uppercase;">Danger Zone</h6>
+                            <button type="button" x-show="!isOwner" @click="leaveGroup" :disabled="groupBusy" class="btn btn-outline-danger w-100 fw-semibold">Leave Group</button>
+                            @can('chat-delete')
+                            <button type="button" x-show="isOwner" @click="deleteGroup" :disabled="groupBusy" class="btn btn-danger w-100 fw-semibold shadow-sm">Delete Group</button>
+                            @endcan
+                        </div>
+
+                        <!-- Members -->
+                        <div class="col-md-6 d-flex flex-column" style="max-height: 500px;">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h6 class="fw-bold text-muted text-uppercase mb-0" style="font-size:0.75rem; letter-spacing:0.5px;">Members (<span x-text="activeConversation?.active_members?.length"></span>)</h6>
+                                @can('chat-group-manage')
+                                <button type="button" x-show="canManageMembers" @click="showAddMember = !showAddMember" class="btn btn-outline-primary btn-sm fw-semibold px-3 border shadow-sm">
+                                    <i class="bi bi-person-plus-fill me-1"></i> Add
+                                </button>
+                                @endcan
+                            </div>
+
+                            <div x-show="showAddMember" x-cloak class="mb-3 bg-body-tertiary p-3 rounded-3 border">
+                                <input x-model="groupAddMemberSearch" type="search" class="form-control form-control-sm mb-3 rounded-pill" placeholder="Search to add...">
+                                <div class="overflow-y-auto rounded border bg-body" style="max-height: 160px;">
+                                    <template x-for="user in filteredAddMembers" :key="user.id">
+                                        <div class="d-flex align-items-center justify-content-between p-2 border-bottom"
+                                             style="transition: background 0.15s;"
+                                             onmouseover="this.style.backgroundColor='var(--bs-secondary-bg)'" 
+                                             onmouseout="this.style.backgroundColor='transparent'">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <img x-on:error="handlePhotoError($event, user)" data-profile-avatar :data-profile-photo="user?.photo || ''" :data-profile-gender="user?.gender || ''" :src="getUserPhotoUrl(user)" class="rounded-circle object-fit-cover shadow-sm" style="width: 28px; height: 28px;">
+                                                <div class="min-w-0 flex-grow-1 text-truncate" style="max-width: 140px;">
+                                                    <div class="d-flex align-items-center gap-1 text-truncate mb-1">
+                                                        <span class="small fw-semibold text-truncate flex-grow-1" x-text="user.name"></span>
+                                                    </div>
+                                                    <div class="text-muted text-truncate" style="font-size:9px;" x-show="user.location || user.lob_team_name">
+                                                        <i class="bi bi-geo-alt me-1 opacity-75"></i><span x-text="userDetailsLabel(user)"></span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <button type="button" @click="addGroupMember(user.id)" class="btn btn-primary btn-sm py-1 px-3 rounded-pill" style="font-size: 10px;" :disabled="groupBusy">Add</button>
+                                        </div>
+                                    </template>
+                                    <div x-show="filteredAddMembers.length === 0" class="text-muted small text-center p-3">No users found.</div>
+                                </div>
+                            </div>
+
+                            <div class="flex-grow-1 overflow-y-auto rounded-3 border bg-body-tertiary p-1">
+                                <template x-for="member in activeConversation?.active_members" :key="member.id">
+                                    <div class="d-flex align-items-center justify-content-between p-2 border-bottom last-border-0"
+                                         style="transition: background 0.15s;"
+                                         onmouseover="this.style.backgroundColor='var(--bs-body-bg)'" 
+                                         onmouseout="this.style.backgroundColor='transparent'">
+                                        <div class="d-flex align-items-center gap-3">
+                                            <div class="position-relative">
+                                                <img x-on:error="handlePhotoError($event, member.user)" data-profile-avatar :data-profile-photo="member.user?.photo || ''" :data-profile-gender="member.user?.gender || ''" :src="getUserPhotoUrl(member.user)" class="rounded-circle object-fit-cover shadow-sm" style="width: 36px; height: 36px;">
+                                                <span class="position-absolute bottom-0 end-0 rounded-circle border-2 border-body" style="width: 12px; height: 12px;" :class="member.user?.is_online ? 'bg-success' : 'bg-secondary'"></span>
+                                            </div>
+                                            <div class="min-w-0 flex-grow-1 text-truncate">
+                                                <div class="d-flex align-items-center gap-2 mb-1">
+                                                    <div class="small fw-semibold text-truncate flex-grow-1" x-text="member.user?.name"></div>
+                                                    <span class="badge flex-shrink-0" 
+                                                          style="font-size: 9px; padding: 0.25em 0.5em;"
+                                                          :class="member.role === 'owner' ? 'bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25' : (member.role === 'admin' ? 'bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25' : 'bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25')" 
+                                                          x-text="member.role"></span>
+                                                </div>
+                                                <div class="text-muted text-truncate" style="font-size:10px;" x-show="userLocation(member.user_id)">
+                                                    <i class="bi bi-geo-alt me-1 opacity-75"></i><span x-text="userLocation(member.user_id)"></span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        @can('chat-group-manage')
+                                        <div x-show="canManageMembers && member.user_id != currentUserId && member.role !== 'owner'" class="dropdown">
+                                            <button class="btn btn-outline-secondary btn-sm px-2 rounded-circle border shadow-sm d-flex align-items-center justify-content-center" style="width:28px;height:28px;" data-bs-toggle="dropdown"><i class="bi bi-three-dots-vertical" style="font-size:12px;"></i></button>
+                                            <ul class="dropdown-menu dropdown-menu-end shadow border-0 text-sm py-2">
+                                                <li x-show="canManageSettings"><button type="button" @click="updateGroupMemberRole(member, member.role === 'admin' ? 'member' : 'admin')" class="dropdown-item small" x-text="member.role === 'admin' ? 'Demote to Member' : 'Make Admin'"></button></li>
+                                                <li><hr class="dropdown-divider my-2"></li>
+                                                <li><button type="button" @click="removeGroupMember(member)" class="dropdown-item small text-danger fw-semibold">Remove from Group</button></li>
+                                            </ul>
+                                        </div>
+                                        @endcan
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Confirm Modal -->
+        <div x-show="confirmModal.show" x-cloak
+             class="chat-modal-backdrop"
+             style="z-index: 1065;"
+             @keydown.escape.window="closeConfirm()">
+            <div class="bg-body rounded-4 shadow-lg text-center p-4" style="max-width:360px;width:100%;">
+                <div class="rounded-circle bg-danger bg-opacity-10 d-inline-flex align-items-center justify-content-center mb-3" style="width:56px;height:56px;">
+                    <i class="bi bi-exclamation-triangle-fill text-danger fs-4"></i>
+                </div>
+                <h5 class="fw-bold mb-2" x-text="confirmModal.title"></h5>
+                <p class="text-muted small mb-4" x-text="confirmModal.message"></p>
+                <div class="d-flex gap-2">
+                    <button type="button" @click="closeConfirm()" class="btn btn-outline-secondary fw-semibold flex-grow-1" x-text="confirmModal.cancelText"></button>
+                    <button type="button" @click="confirmModal.onConfirm()" class="btn btn-danger fw-semibold flex-grow-1" x-text="confirmModal.confirmText"></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    function chatWorkspace(initial) {
+        return {
+            currentUserId: @js(auth()->id()),
+            conversations: initial.conversations || [],
+            users: initial.users || [],
+            pollInterval: Math.max(5000, Number(initial.pollInterval) || 15000),
+            stopped: false,
+            showPeople: false,
+            messagePage: 1,
+            hasOlderMessages: false,
+            loadingOlder: false,
+            pendingClientId: null,
+            canManageGroups: initial.canManageGroups === true,
+            canSend: initial.canSend === true,
+            retryAt: 0,
+            activeConversation: null,
+            messages: [],
+
+            conversationType: 'all',
+            search: '',
+            userSearch: '',
+            filter: window.chatStorage.getItem('metis_chat_filter_' + @js(auth()->id())) || 'all',
+            userFilter: 'online',
+            userSort: window.chatStorage.getItem('metis_chat_userSort_' + @js(auth()->id())) || 'revenue_desc',
+
+            // Logged-in user's own stats (injected server-side, refreshed on poll)
+            selfUser: initial.currentUserData && Object.keys(initial.currentUserData).length
+                ? { ...initial.currentUserData, isMe: true, is_online: true }
+                : null,
+
+            draft: '',
+            conversationDrafts: {},
+            replyTo: null,
+            editingMessageId: null,
+            editingDraft: '',
+            errorMessage: '',
+
+            pendingAttachments: [],
+            sendingMessage: false,
+            busyMessageId: null,
+            startingUserId: null,
+
+            showGroupModal: false,
+            groupForm: { name: '', description: '', privacy: 'private', member_ids: [] },
+            groupCreateSearch: '',
+            groupBusy: false,
+            groupError: '',
+
+            showGroupSettingsModal: false,
+            groupSettingsForm: { name: '', description: '', privacy: 'private' },
+            groupAddMemberSearch: '',
+            showAddMember: false,
+
+            confirmModal: {
+                show: false, title: '', message: '', cancelText: 'Cancel', confirmText: 'Confirm', onConfirm: () => {}
+            },
+
+            pollTimer: null,
+            polling: false,
+            conversationPages: 1,
+            hasMoreConversations: false,
+            initialized: false,
+            selectionVersion: 0,
+            messageVersion: 0,
+
+            destroy() {
+                clearInterval(this.pollTimer);
+                this.stopped = true;
+                this.selectionVersion++;
+                const attachments = new Set([
+                    ...this.pendingAttachments,
+                    ...Object.values(this.conversationDrafts).flatMap(value => value.attachments),
+                ]);
+                attachments.forEach(item => {
+                    if (item.previewUrl) URL.revokeObjectURL(item.previewUrl);
+                });
+            },
+
+            init() {
+                if (this.initialized) return;
+                this.initialized = true;
+                this.$watch('draft', () => this.$nextTick(() => {
+                    const composer = this.$refs.composer;
+                    if (composer) { composer.style.height = 'auto'; composer.style.height = Math.min(composer.scrollHeight, 120) + 'px'; }
+                }));
+                this.$watch('filter', val => window.chatStorage.setItem('metis_chat_filter_' + this.currentUserId, val));
+                this.$watch('userSort', val => window.chatStorage.setItem('metis_chat_userSort_' + this.currentUserId, val));
+
+                this.poll();
+                this.pollTimer = setInterval(() => this.poll(), this.pollInterval);
+
+                // Keep chat open after refresh
+                this.$watch('activeConversation', (val) => {
+                    const storeKey = 'metis_chat_id_' + this.currentUserId;
+                    if (val && val.id) {
+                        window.chatStorage.setItem(storeKey, val.id);
+                    } else {
+                        window.chatStorage.removeItem(storeKey);
+                    }
+                });
+
+                const storeKey = 'metis_chat_id_' + this.currentUserId;
+                const savedId = window.chatStorage.getItem(storeKey);
+                if (savedId) {
+                    const conv = this.conversations.find(c => c.id == savedId);
+                    if (conv) {
+                        this.selectConversation(conv);
+                    }
+                }
+            },
+
+            get presenceUsers() {
+                const users = this.users.filter(u => Number(u.id) !== Number(this.currentUserId));
+                if (this.selfUser) users.push(this.selfUser);
+                return users;
+            },
+
+            get onlineUsers() {
+                return this.presenceUsers.filter(u => u.is_online);
+            },
+
+            get onlineLabel() {
+                const count = this.onlineUsers.length;
+                return count + ' online now';
+            },
+
+            get filteredConversations() {
+                let filtered = Array.isArray(this.conversations) ? [...this.conversations] : [];
+
+                if (this.conversationType !== 'all') {
+                    filtered = filtered.filter(c => c.type === this.conversationType);
+                }
+
+                if (this.filter === 'unread') {
+                    filtered = filtered.filter(c => (c.unread_count || 0) > 0);
+                } else if (this.filter === 'pinned') {
+                    filtered = filtered.filter(c => c.is_pinned ||
+                        c.active_members?.some(m => m.user_id == this.currentUserId && m.pinned_at));
+                }
+
+                if (this.search) {
+                    const q = this.search.toLowerCase();
+                    filtered = filtered.filter(c => (this.conversationTitle(c) || '').toLowerCase().includes(q));
+                }
+
+                return filtered.sort((a, b) => {
+                    const aPinned = a.is_pinned || a.active_members?.some(m => m.user_id == this.currentUserId && m.pinned_at);
+                    const bPinned = b.is_pinned || b.active_members?.some(m => m.user_id == this.currentUserId && m.pinned_at);
+                    if (aPinned !== bPinned) return bPinned ? 1 : -1;
+                    return new Date(b.updated_at || 0) - new Date(a.updated_at || 0);
+                });
+            },
+
+            get searchResults() {
+                if (!this.search || this.conversationType === 'group') return { users: [] };
+                const q = this.search.toLowerCase();
+                return {
+                    users: this.users.filter(u => (u.name || '').toLowerCase().includes(q)).slice(0, 5)
+                };
+            },
+
+            get visibleUsers() {
+                // Build full list: other users + inject self (logged-in user)
+                let allUsers = [...this.presenceUsers];
+
+
+                // ── Compute global revenue rank on the FULL unsorted/unfiltered list ──
+                // Sort a clone by revenue desc to get the true global position
+                const ranked = [...allUsers].sort((a, b) => (b.today_revenue || 0) - (a.today_revenue || 0));
+                const rankMap = {};
+                ranked.forEach((u, i) => { rankMap[u.id] = i; }); // 0-based
+
+                // Attach global rank to every user object (non-mutating copy)
+                allUsers = allUsers.map(u => ({ ...u, _globalRank: rankMap[u.id] }));
+
+                // ── Apply filter ──
+                if (this.userFilter === 'online') {
+                    allUsers = allUsers.filter(u => u.is_online);
+                }
+
+                // ── Apply search ──
+                if (this.userSearch) {
+                    const q = this.userSearch.toLowerCase();
+                    allUsers = allUsers.filter(u => (u.name || '').toLowerCase().includes(q));
+                }
+
+                // ── Apply sort ──
+                if (this.userSort === 'revenue_desc') {
+                    allUsers.sort((a, b) => (b.today_revenue || 0) - (a.today_revenue || 0));
+                } else if (this.userSort === 'revenue_asc') {
+                    allUsers.sort((a, b) => (a.today_revenue || 0) - (b.today_revenue || 0));
+                }
+
+                return allUsers;
+            },
+
+            get filteredGroupUsers() {
+                let filtered = this.users;
+                if (this.groupCreateSearch) {
+                    const q = this.groupCreateSearch.toLowerCase();
+                    filtered = filtered.filter(u => u.name.toLowerCase().includes(q));
+                }
+                return filtered;
+            },
+            
+            get filteredAddMembers() {
+                if (!this.activeConversation) return [];
+                const existingIds = this.activeConversation.active_members?.map(m => m.user_id) || [];
+                let filtered = this.users.filter(u => !existingIds.includes(u.id));
+                
+                if (this.groupAddMemberSearch) {
+                    const q = this.groupAddMemberSearch.toLowerCase();
+                    filtered = filtered.filter(u => u.name.toLowerCase().includes(q));
+                }
+                return filtered;
+            },
+            
+            get canManageSettings() {
+                if (!this.canManageGroups || !this.activeConversation || this.activeConversation.type !== 'group') return false;
+                const member = this.activeConversation.active_members?.find(m => Number(m.user_id) === Number(this.currentUserId));
+                return member && ['owner', 'admin'].includes(member.role);
+            },
+
+            get canManageMembers() {
+                const member=this.activeConversation?.active_members?.find(m=>Number(m.user_id)===Number(this.currentUserId));
+                return this.canManageGroups && this.activeConversation?.type==='group' && ['owner','admin','moderator'].includes(member?.role);
+            },
+            get isOwner() {
+                if (!this.activeConversation) return false;
+                const member = this.activeConversation.active_members?.find(m => Number(m.user_id) === Number(this.currentUserId));
+                return member?.role === 'owner';
+            },
+            
+            async fetchConversationPages() {
+                const responses = await Promise.all(Array.from({ length: this.conversationPages }, (_, i) =>
+                    window.chatHttp.get('/api/chat/conversations', { params: { page: i + 1, per_page: 50 } })));
+                const unique = new Map();
+                responses.forEach(response => (response.data.data || []).forEach(conversation => unique.set(conversation.id, conversation)));
+                return { data: { data: [...unique.values()], meta: responses.at(-1)?.data.meta } };
+            },
+
+            async poll() {
+                if (this.polling || this.stopped || document.hidden || Date.now()<this.retryAt) return;
+                this.polling = true;
+                let messageContext=null;
+                try {
+                    const [convRes, userRes] = await Promise.all([
+                        this.fetchConversationPages(),
+                        window.chatHttp.get('/api/chat/users', {params:{include_self:1}}),
+                    ]);
+
+                    if(this.stopped || document.hidden) return;
+                    this.conversations = convRes.data.data || convRes.data.conversations || convRes.data || [];
+                    this.hasMoreConversations = !!convRes.data.meta?.has_more;
+                    const usersRaw = userRes.data.data || userRes.data.users || userRes.data || [];
+                    this.users = (Array.isArray(usersRaw) ? usersRaw : []).filter(u => Number(u.id)!==Number(this.currentUserId));
+                    const selfData = (Array.isArray(usersRaw) ? usersRaw : []).find(u => Number(u.id)===Number(this.currentUserId));
+                    if(selfData) this.selfUser = {...selfData,isMe:true,is_online:true};
+
+                    // ── Sync unread count to localStorage so the header badge updates live ──
+                    const totalUnread = convRes.data.meta?.unread_messages ?? this.conversations.reduce((sum, c) => sum + (c.unread_count || 0), 0);
+                    window.chatStorage.setItem('metis_chat_unread_' + this.currentUserId, totalUnread);
+                    window.dispatchEvent(new CustomEvent('metis:chat-unread', { detail: { count: totalUnread } }));
+
+                    if (this.activeConversation) {
+                        const updated = this.conversations.find(c => c.id == this.activeConversation.id);
+                        if (updated) this.activeConversation = updated;
+
+                        const conversationId = this.activeConversation.id;
+                        const selectionVersion = this.selectionVersion;
+                        const messageVersion = this.messageVersion;
+                        messageContext={id:conversationId,version:selectionVersion};
+                        const scroller = this.$refs.messageScroller;
+                        const nearBottom = !scroller || scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < 80;
+                        const msgRes = await window.chatHttp.get(`/api/chat/conversations/${conversationId}/messages`);
+                        if (this.activeConversation?.id != conversationId || this.selectionVersion !== selectionVersion || this.messageVersion !== messageVersion || this.sendingMessage) return;
+                        // Backend returns paginated: { data: { data: [...], current_page, ... } }
+                        const paginatedData = msgRes.data.data;
+                        const newMessages = (Array.isArray(paginatedData)
+                            ? paginatedData
+                            : (paginatedData?.data || [])).slice().reverse();
+                        const lastOldId = this.messages.at(-1)?.id;
+                        if(this.stopped || document.hidden) return;
+                        let missed=[];
+                        if (lastOldId && newMessages.length && this.compareMessages(newMessages[0],this.messages.at(-1))>0) {
+                            let page=1, hasMore=true;
+                            while(hasMore && page<=3) {
+                                const delta=await window.chatHttp.get(`/api/chat/conversations/${conversationId}/messages`,{params:{after_id:lastOldId,per_page:100,page}});
+                                missed.push(...delta.data.data.data);hasMore=!!delta.data.data.next_page_url;page++;
+                                if(this.selectionVersion!==selectionVersion || this.messageVersion!==messageVersion || this.stopped || document.hidden) return;
+                            }
+                            if(hasMore) {missed=[];this.messagePage=1;}
+                        }
+                        const oldest=newMessages[0]?.id;
+                        const history=this.messagePage>1?this.messages.filter(m=>oldest && this.compareMessages(m,newMessages[0])<0):[];
+                        this.messages=[...new Map([...history,...missed,...newMessages].map(m=>[Number(m.id),m])).values()].sort((a,b)=>this.compareMessages(a,b));
+                        if(this.messagePage===1) this.hasOlderMessages=!!paginatedData?.next_page_url;
+                        if(nearBottom && (this.activeConversation.unread_count || 0)>0 && this.messages.length && !this.showGroupSettingsModal) {
+                            try {
+                                await window.chatHttp.post(`/api/chat/conversations/${conversationId}/read`,{message_id:this.messages.at(-1).id});
+                                if(this.activeConversation?.id===conversationId) this.activeConversation.unread_count=0;
+                            } catch(readError) {
+                                if([401,403,419,429].includes(readError.response?.status))throw readError;
+                                // The boundary message may have been deleted after it was loaded.
+                                console.error('Unable to update read receipt:',readError);
+                            }
+                        }
+                        if (nearBottom && lastOldId != newMessages.at(-1)?.id) this.scrollToBottom();
+                    }
+
+                    // Mark ourselves online
+                    window.chatHttp.post('/api/chat/active-status', { status: 'online' }).catch(() => {});
+                } catch (e) {
+                    if(e.response?.status===429)this.retryAt=Date.now()+Math.max(5000,Math.min(600000,(Number(e.response?.headers?.['retry-after']) || 60)*1000));
+                    if(e.response?.status===403){this.stopped=true;this.errorMessage='Your chat access has changed. Refresh the page to continue.';}
+                    if([401,419].includes(e.response?.status)) {this.stopped=true;this.errorMessage='Your session expired. Refresh the page to sign in again.';}
+                    if(e.response?.status===404) {
+                        if(messageContext && (this.activeConversation?.id!==messageContext.id || this.selectionVersion!==messageContext.version))return;
+                        if(this.activeConversation)this.conversationDrafts[this.activeConversation.id]={draft:this.draft,attachments:this.pendingAttachments,clientId:this.pendingClientId};
+                        this.selectionVersion++;this.activeConversation=null;this.messages=[];this.showGroupSettingsModal=false;
+                    }
+                    console.error('Poll failed:', e);
+                } finally {
+                    this.polling = false;
+                }
+            },
+
+            async fetchUsers() {
+                try {
+                    const res = await window.chatHttp.get('/api/chat/users');
+                    const raw = res.data.data || res.data.users || res.data;
+                    this.users = Array.isArray(raw) ? raw : [];
+                } catch (e) {
+                    console.error('Failed to fetch users:', e);
+                }
+            },
+            
+            async selectConversation(conversation) {
+                // Keep an in-flight send and its attachments tied to their original chat.
+                if (this.sendingMessage) return;
+                const selectionVersion = ++this.selectionVersion;
+                if (this.activeConversation) {
+                    this.conversationDrafts[this.activeConversation.id] = { draft: this.draft, attachments: this.pendingAttachments, clientId: this.pendingClientId };
+                }
+                const savedDraft = this.conversationDrafts[conversation.id];
+                this.draft = savedDraft?.draft || '';
+                this.pendingAttachments = savedDraft?.attachments || [];
+                this.pendingClientId = savedDraft?.clientId || null;
+                this.messagePage=1;this.hasOlderMessages=false;this.showGroupSettingsModal=false;
+                this.activeConversation = conversation;
+                this.showPeople=false;
+                this.messages = [];
+                this.errorMessage = '';
+                this.replyTo = null;
+                this.cancelEdit();
+
+                try {
+                    const res = await window.chatHttp.get(`/api/chat/conversations/${conversation.id}/messages`);
+                    if (this.selectionVersion !== selectionVersion || this.activeConversation?.id != conversation.id) return;
+                    // Backend returns paginated LengthAwarePaginator inside data key
+                    const paginatedData = res.data.data;
+                    this.messages = (Array.isArray(paginatedData)
+                        ? paginatedData
+                        : (paginatedData?.data || [])).slice().reverse();
+                    this.hasOlderMessages=!!paginatedData?.next_page_url;
+                    this.scrollToBottom();
+
+                    if (!document.hidden && (conversation.unread_count || 0) > 0) {
+                        const lastMsg = this.messages[this.messages.length - 1];
+                        try {
+                            await window.chatHttp.post(`/api/chat/conversations/${conversation.id}/read`,
+                                lastMsg ? { message_id: lastMsg.id } : {});
+                            conversation.unread_count = 0;
+                        } catch (e) {
+                            // Messages are already loaded; retain unread state for a later retry.
+                            console.error('Failed to mark messages as read:', e);
+                        }
+                    }
+                } catch (e) {
+                    if (this.selectionVersion !== selectionVersion || this.activeConversation?.id != conversation.id) return;
+                    const status = e.response?.status;
+                    this.errorMessage = status === 401 || status === 419
+                        ? 'Your session has expired. Refresh the page and sign in again.'
+                        : status === 403
+                            ? 'You no longer have access to this conversation.'
+                            : status === 429
+                                ? 'Too many chat requests. Please wait a moment and try again.'
+                                : 'Failed to load messages. Please try again.';
+                    console.error(e);
+                }
+            },
+            
+            compareMessages(a,b) {
+                const time=value=>{const parsed=value?.created_at ? Date.parse(value.created_at) : NaN;return Number.isNaN(parsed)?-Infinity:parsed;};
+                const left=time(a),right=time(b);
+                return left===right ? Number(a.id)-Number(b.id) : (left<right ? -1 : 1);
+            },
+            async loadOlderMessages() {
+                if(!this.activeConversation || !this.hasOlderMessages || this.loadingOlder) return;
+                const id=this.activeConversation.id,version=this.selectionVersion;
+                const scroller=this.$refs.messageScroller,oldHeight=scroller?.scrollHeight || 0;
+                this.loadingOlder=true;
+                try {
+                    const response=await window.chatHttp.get(`/api/chat/conversations/${id}/messages`,{params:{before_id:this.messages[0]?.id}});
+                    if(this.selectionVersion!==version || this.stopped) return;
+                    this.messages=[...new Map([...response.data.data.data,...this.messages].map(m=>[Number(m.id),m])).values()].sort((a,b)=>this.compareMessages(a,b));
+                    this.messagePage++;this.hasOlderMessages=!!response.data.data.next_page_url;
+                    this.$nextTick(()=>{if(scroller && this.selectionVersion===version) scroller.scrollTop+=scroller.scrollHeight-oldHeight;});
+                } catch(e){if(this.selectionVersion===version)this.errorMessage=e.response?.data?.message || 'Unable to load earlier messages.';}
+                finally {this.loadingOlder=false;}
+            },
+            newClientId() {return window.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;},
+            async startDirect(userId) {
+                if (this.startingUserId || this.sendingMessage) return;
+                this.startingUserId = userId;
+                this.errorMessage = '';
+                try {
+                    // Backend expects 'user_id' for direct conversations
+                    const res = await window.chatHttp.post('/api/chat/conversations', {
+                        type: 'direct',
+                        user_id: userId
+                    });
+                    const conv = res.data.data || res.data.conversation || res.data;
+
+                    const existing = this.conversations.find(c => c.id === conv.id);
+                    if (!existing) {
+                        this.conversations.unshift(conv);
+                    }
+                    this.selectConversation(existing || conv);
+                } catch (e) {
+                    this.errorMessage = e.response?.data?.message || 'Failed to start conversation';
+                    console.error(e);
+                } finally {
+                    this.startingUserId = null;
+                }
+            },
+            
+            handleAttachmentSelection(event) {
+                const files = Array.from(event.target.files || []).slice(0, Math.max(0, 10 - this.pendingAttachments.length));
+                const processed = files.map(file => {
+                    let previewUrl = null;
+                    if (file.type.startsWith('image/')) {
+                        previewUrl = URL.createObjectURL(file);
+                    }
+                    return {
+                        file: file,
+                        clientKey: this.newClientId(),
+                        name: file.name,
+                        size: file.size,
+                        type: file.type,
+                        previewUrl: previewUrl
+                    };
+                });
+                this.pendingAttachments = [...this.pendingAttachments, ...processed].slice(0, 10);
+                event.target.value = '';
+            },
+
+            removePendingAttachment(index) {
+                const item = this.pendingAttachments[index];
+                if (item?.previewUrl) URL.revokeObjectURL(item.previewUrl);
+                this.pendingAttachments.splice(index, 1);
+            },
+
+            formatFileSize(bytes) {
+                if (!bytes) return '';
+                const units = ['B', 'KB', 'MB', 'GB'];
+                let i = 0;
+                while (bytes >= 1024 && i < units.length - 1) { bytes /= 1024; i++; }
+                return bytes.toFixed(1) + ' ' + units[i];
+            },
+            
+            async sendMessage() {
+                if (this.sendingMessage || this.stopped || !this.canSend) return;
+                const draftContent = (this.draft || '').trim();
+                if (!draftContent && !this.pendingAttachments.length) return;
+                if (!this.activeConversation) return;
+
+                const conversationId = this.activeConversation.id;
+                const submittedDraft = this.draft;
+                const submittedAttachments = [...this.pendingAttachments];
+                const submittedReply = this.replyTo;
+                this.sendingMessage = true;
+                this.errorMessage = '';
+
+                const formData = new FormData();
+                const fingerprint=JSON.stringify([conversationId,draftContent,submittedReply?.id,submittedAttachments.map(a=>[a.clientKey,a.name,a.size,a.file?.lastModified])]);
+                if(!this.pendingClientId || this.pendingClientId.fingerprint!==fingerprint) this.pendingClientId={fingerprint,id:this.newClientId()};
+                formData.append('client_id',this.pendingClientId.id);
+                if (draftContent) formData.append('content', draftContent);
+                if (this.replyTo?.id) formData.append('parent_id', this.replyTo.id);
+                submittedAttachments.forEach(item => {
+                    if (item && item.file) {
+                        formData.append('files[]', item.file);
+                    }
+                });
+
+                try {
+                    const res = await window.chatHttp.post(
+                        `/api/chat/conversations/${conversationId}/messages`,
+                        formData
+                    );
+                    const newMessage = res.data.data || res.data.message || res.data;
+                    this.messageVersion++;
+                    if (this.activeConversation?.id == conversationId && !this.messages.some(m => m.id == newMessage.id)) this.messages.push(newMessage);
+
+                    this.pendingClientId=null;
+                    // Cleanup
+                    if (this.draft === submittedDraft) this.draft = '';
+                    submittedAttachments.forEach(item => { if (item.previewUrl) URL.revokeObjectURL(item.previewUrl); });
+                    this.pendingAttachments = this.pendingAttachments.filter(item => !submittedAttachments.includes(item));
+                    delete this.conversationDrafts[conversationId];
+                    if (this.$refs.attachmentInput) this.$refs.attachmentInput.value = '';
+                    if (this.replyTo === submittedReply) this.replyTo = null;
+                    this.scrollToBottom();
+
+                    // Update conversation's last message in sidebar
+                    const conv = this.conversations.find(c => c.id == conversationId);
+                    if (conv) { conv.updated_at = newMessage.created_at; conv.last_message = newMessage; }
+                } catch (e) {
+                    this.errorMessage = e.response?.data?.message || 'Failed to send message.';
+                    console.error(e);
+                } finally {
+                    this.sendingMessage = false;
+                }
+            },
+            
+            startEdit(message) {
+                this.editingMessageId = message.id;
+                this.editingDraft = message.content;
+            },
+            
+            cancelEdit() {
+                this.editingMessageId = null;
+                this.editingDraft = '';
+            },
+            
+            async saveEdit(message) {
+                if (!this.editingDraft.trim()) return;
+                const content = this.editingDraft;
+                
+                try {
+                    const res = await window.chatHttp.put(`/api/chat/messages/${message.id}`, { content });
+                    this.messageVersion++;
+                    message.content = content;
+                    message.edited_at = new Date().toISOString();
+                    if (this.editingMessageId == message.id && this.editingDraft === content) this.cancelEdit();
+                } catch (e) {
+                    this.errorMessage = 'Failed to edit message';
+                }
+            },
+            
+            async deleteMessage(message) {
+                this.busyMessageId = message.id;
+                try {
+                    await window.chatHttp.delete(`/api/chat/messages/${message.id}`);
+                    this.messageVersion++;
+                    this.messages = this.messages.filter(m => m.id != message.id);
+                } catch (e) {
+                    this.errorMessage = 'Failed to delete message';
+                } finally {
+                    this.busyMessageId = null;
+                }
+            },
+            
+            setReply(message) {
+                this.replyTo = message;
+                this.$refs.composer.focus();
+            },
+            
+            scrollToMessage(id) {
+                this.$refs.messageScroller?.querySelector(`[data-chat-message-id="${Number(id)}"]`)?.scrollIntoView({block:'center',behavior:'smooth'});
+            },
+            async togglePin() {
+                const target=this.activeConversation;
+                if(!target) return;
+                const nextState=!target.is_pinned;
+                try {
+                    await window.chatHttp.post(`/api/chat/conversations/${target.id}/pin`,{pinned:nextState});
+                    const listed=this.conversations.find(c=>c.id===target.id);if(listed)listed.is_pinned=nextState;
+                    if(this.activeConversation?.id===target.id)this.activeConversation.is_pinned=nextState;
+                } catch(e){this.errorMessage=e.response?.data?.message || 'Unable to update pin preference.';}
+            },
+            async toggleArchive() {
+                const target=this.activeConversation;if(!target)return;
+                try {
+                    await window.chatHttp.post(`/api/chat/conversations/${target.id}/archive`,{archived:!target.is_archived});
+                    if(this.activeConversation?.id===target.id){this.selectionVersion++;this.activeConversation=null;this.messages=[];}
+                    await this.poll();
+                } catch(e){this.errorMessage=e.response?.data?.message || 'Unable to update archive preference.';}
+            },
+            openGroupSettings() {
+                if (!this.activeConversation || this.activeConversation.type !== 'group') return;
+                this.groupSettingsForm = {
+                    name: this.activeConversation.name || '',
+                    description: this.activeConversation.description || '',
+                    privacy: this.activeConversation.privacy || 'private'
+                };
+                this.showGroupSettingsModal = true;
+            },
+            
+            closeGroupSettings() {
+                this.showGroupSettingsModal = false;
+                this.showAddMember = false;
+                this.errorMessage = '';
+            },
+            
+            async createGroup() {
+                if(this.groupBusy) return;
+                if (!this.groupForm.name.trim()) {
+                    this.groupError = 'Group name is required.';
+                    return;
+                }
+                this.groupBusy = true;
+                this.groupError = '';
+                try {
+                    const res = await window.chatHttp.post('/api/chat/conversations', {
+                        type: 'group',
+                        name: this.groupForm.name,
+                        description: this.groupForm.description || null,
+                        privacy: this.groupForm.privacy,
+                        member_ids: this.groupForm.member_ids,
+                    });
+                    const conv = res.data.data || res.data.conversation || res.data;
+                    if(!this.conversations.some(c=>c.id===conv.id))this.conversations.unshift(conv);
+                    this.showGroupModal = false;
+                    this.groupForm = { name: '', description: '', privacy: 'private', member_ids: [] };
+                    this.groupCreateSearch = '';
+                    this.selectConversation(conv);
+                } catch (e) {
+                    const msg = e.response?.data?.message || e.response?.data?.errors?.name?.[0] || 'Failed to create group.';
+                    this.groupError = msg;
+                    console.error(e);
+                } finally {
+                    this.groupBusy = false;
+                }
+            },
+
+            async updateGroup() {
+                const conversationId=this.activeConversation?.id;if(!conversationId || this.groupBusy)return;
+                this.groupBusy = true;
+                this.errorMessage = '';
+                try {
+                    const res = await window.chatHttp.put(`/api/chat/groups/${conversationId}`, {...this.groupSettingsForm});
+                    if(this.activeConversation?.id!==conversationId)return;
+                    const updated = res.data.data || res.data;
+                    this.activeConversation.name = updated.name || this.groupSettingsForm.name;
+                    this.activeConversation.description = updated.description || this.groupSettingsForm.description;
+                    this.activeConversation.privacy = updated.privacy || this.groupSettingsForm.privacy;
+                    // Sync in sidebar list
+                    const idx = this.conversations.findIndex(c => c.id == this.activeConversation.id);
+                    if (idx !== -1) this.conversations[idx] = { ...this.conversations[idx], ...this.groupSettingsForm };
+                } catch (e) {
+                    this.errorMessage = e.response?.data?.message || 'Failed to update group.';
+                } finally {
+                    this.groupBusy = false;
+                }
+            },
+
+            async deleteGroup() {
+                const conversationId=this.activeConversation?.id;if(!conversationId)return;
+                this.confirm('Delete Group', 'Are you sure you want to delete this group? All messages will be lost.', async () => {
+                    this.groupBusy = true;
+                    try {
+                        await window.chatHttp.delete(`/api/chat/groups/${conversationId}`);
+                        this.conversations = this.conversations.filter(c => c.id != conversationId);
+                        if(this.activeConversation?.id===conversationId){this.selectionVersion++;this.activeConversation=null;this.messages=[];}
+                        this.closeGroupSettings();
+                    } catch (e) {
+                        this.errorMessage = e.response?.data?.message || 'Failed to delete group.';
+                    } finally {
+                        this.groupBusy = false;
+                    }
+                });
+            },
+            
+            async leaveGroup() {
+                const conversationId=this.activeConversation?.id;if(!conversationId)return;
+                this.confirm('Leave Group', 'Are you sure you want to leave this group?', async () => {
+                    this.groupBusy = true;
+                    try {
+                        await window.chatHttp.post(`/api/chat/groups/${conversationId}/leave`);
+                        this.conversations = this.conversations.filter(c => c.id != conversationId);
+                        if(this.activeConversation?.id===conversationId){this.selectionVersion++;this.activeConversation=null;this.messages=[];}
+                        this.closeGroupSettings();
+                    } catch (e) {
+                        this.errorMessage = 'Failed to leave group';
+                    } finally {
+                        this.groupBusy = false;
+                    }
+                });
+            },
+            
+            async addGroupMember(userId) {
+                this.groupBusy = true;
+                try {
+                    // Backend expects user_ids[] array
+                    await window.chatHttp.post(`/api/chat/groups/${this.activeConversation.id}/members`, { user_ids: [userId] });
+                    // Refresh the conversation to get updated members
+                    await this.poll();
+                } catch (e) {
+                    this.errorMessage = e.response?.data?.message || 'Failed to add member.';
+                } finally {
+                    this.groupBusy = false;
+                }
+            },
+
+            async removeGroupMember(member) {
+                const conversationId=this.activeConversation?.id;if(!conversationId)return;
+                // Backend POST /members/remove expects user_id (not member_id)
+                const userId = member.user_id ?? member.id;
+                try {
+                    await window.chatHttp.post(`/api/chat/groups/${conversationId}/members/remove`, { user_id: userId });
+                    if(this.activeConversation?.id===conversationId)this.activeConversation.active_members=this.activeConversation.active_members.filter(m=>m.id!=member.id);
+                } catch (e) {
+                    this.errorMessage = e.response?.data?.message || 'Failed to remove member.';
+                }
+            },
+
+            async updateGroupMemberRole(member, role) {
+                // Backend PUT/POST members/role expects user_id (not member_id)
+                const userId = member.user_id ?? member.id;
+                try {
+                    await window.chatHttp.put(`/api/chat/groups/${this.activeConversation.id}/members/role`, { user_id: userId, role });
+                    member.role = role;
+                } catch (e) {
+                    this.errorMessage = e.response?.data?.message || 'Failed to update role.';
+                }
+            },
+            
+            confirm(title, message, onConfirm) {
+                this.confirmModal = { show: true, title, message, cancelText: 'Cancel', confirmText: 'Confirm', onConfirm: () => {
+                    this.closeConfirm();
+                    onConfirm();
+                }};
+            },
+            
+            closeConfirm() {
+                this.confirmModal.show = false;
+            },
+            
+            scrollToBottom() {
+                const selectionVersion = this.selectionVersion;
+                this.$nextTick(() => {
+                    if (this.selectionVersion === selectionVersion && this.$refs.messageScroller) {
+                        this.$refs.messageScroller.scrollTop = this.$refs.messageScroller.scrollHeight;
+                    }
+                });
+            },
+            
+            formatAttachmentUrl(path) {
+                if (!path) return '';
+                if (path.startsWith('http')) {
+                    try {
+                        const url = new URL(path);
+                        if (url.hostname === window.location.hostname || url.hostname === 'localhost' || url.hostname === '127.0.0.1') {
+                            return url.pathname + url.search;
+                        }
+                    } catch(e) {}
+                    return path;
+                }
+                if (path.startsWith('/storage/') || path.startsWith('/assets/')) return path;
+                return `/storage/${path}`;
+            },
+            
+            defaultUserPhoto(user) {
+                return window.ProfileImages.defaultUserPhoto(user);
+            },
+
+            handlePhotoError(event, user) {
+                window.ProfileImages.handlePhotoError(event, user);
+            },
+
+            getUserPhotoUrl(user) {
+                return window.ProfileImages.userPhotoUrl(user);
+            },
+
+            getConversationUser(conv) {
+                const other = conv?.active_members?.find(m => Number(m.user_id) !== Number(this.currentUserId));
+                return this.users.find(user => Number(user.id) === Number(other?.user_id)) || other?.user;
+            },
+
+            handleConversationPhotoError(event, conv) {
+                if (conv?.type !== 'group') return this.handlePhotoError(event, this.getConversationUser(conv));
+                const image = event.target;
+                const fallback = '/assets/images/default_avatar.jpeg';
+                if (image.getAttribute('src') !== fallback) image.setAttribute('src', fallback);
+                else image.style.visibility = 'hidden';
+            },
+
+            getConversationPhotoUrl(conv) {
+                if (!conv) return '/assets/images/default_avatar.jpeg';
+                if (conv.type === 'group') {
+                    return conv.image_path ? this.formatAttachmentUrl(conv.image_path) : '/assets/images/default_avatar.jpeg';
+                }
+                return this.getUserPhotoUrl(this.getConversationUser(conv));
+            },
+            
+            isImageAttachment(file) {
+                if (file.mime) return file.mime.startsWith('image/');
+                if (file.type) return file.type.startsWith('image/');
+                const path = file.path || file.name || '';
+                return /\.(jpg|jpeg|png|gif|webp)$/i.test(path);
+            },
+            
+            getPreviewImageUrl(msg) {
+                if (!msg || !msg.attachments || !msg.attachments.length) return null;
+                const img = msg.attachments.find(a => this.isImageAttachment(a));
+                return img ? this.formatAttachmentUrl(img.storage_path || img.path) : null;
+            },
+            
+            initials(name) {
+                if (!name) return '?';
+                return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+            },
+            
+            conversationInitials(conv) {
+                if (!conv) return '?';
+                if (conv.type === 'group') return this.initials(conv.name);
+                // Backend returns activeMembers, not participants
+                const other = conv.active_members?.find(m => Number(m.user_id) !== Number(this.currentUserId));
+                return this.initials(other?.user?.name);
+            },
+            
+            conversationPhoto(conv) {
+                if (!conv) return null;
+                if (conv.type === 'group') return conv.image_path || null;
+                const other = conv.active_members?.find(m => Number(m.user_id) !== Number(this.currentUserId));
+                return other?.user?.photo || null;
+            },
+
+            conversationTitle(conv) {
+                if (!conv) return '';
+                if (conv.type === 'group') return conv.name || 'Group';
+                // Backend returns activeMembers, not participants
+                const other = conv.active_members?.find(m => Number(m.user_id) !== Number(this.currentUserId));
+                return other?.user?.name || 'Unknown User';
+            },
+
+            conversationSubtitle(conv) {
+                if (!conv) return '';
+                if (conv.type === 'group') return `${conv.active_members?.length || 0} members`;
+                const other = conv.active_members?.find(m => Number(m.user_id) !== Number(this.currentUserId));
+                const onlineUser = this.users.find(u => Number(u.id) === Number(other?.user_id));
+                return onlineUser?.is_online ? 'Active now' : (onlineUser?.last_seen_label || 'Direct Message');
+            },
+
+            userDetailsLabel(user) {
+                return [user?.location, user?.lob_team_name ? 'LOB: ' + user.lob_team_name : null]
+                    .filter(Boolean).join(' · ');
+            },
+
+            conversationLocation(conv) {
+                if (!conv) return null;
+                if (conv.type === 'group') return null;
+                const other = conv.active_members?.find(m => Number(m.user_id) !== Number(this.currentUserId));
+                const user = this.users.find(u => Number(u.id) === Number(other?.user_id));
+                return this.userDetailsLabel(user) || null;
+            },
+
+            senderLocation(message) {
+                if (!message || !message.sender_id) return null;
+                const user = this.users.find(u => Number(u.id) === Number(message.sender_id));
+                return this.userDetailsLabel(user) || null;
+            },
+
+            userLocation(userId) {
+                if (!userId) return null;
+                const user = this.users.find(u => Number(u.id) === Number(userId));
+                return this.userDetailsLabel(user) || null;
+            },
+
+            lastTime(item) {
+                if (!item) return '';
+                const dateStr = item.last_message_at || item.updated_at || item.created_at;
+                if (!dateStr) return '';
+                const date = new Date(dateStr);
+                if (isNaN(date)) return '';
+                return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            },
+
+            lastMessageObj(conv) {
+                if (!conv) return null;
+                return conv.last_message || (Array.isArray(conv.messages) ? conv.messages[0] : null) || conv.latest_message;
+            },
+
+            lastPreview(conv) {
+                const last = this.lastMessageObj(conv);
+                if (!last) return 'No messages yet';
+                if (last.content) return last.content;
+                if (this.getPreviewImageUrl(last)) return 'Photo';
+                if (last.attachments?.length) return 'Attachment';
+                return 'Message';
+            },
+
+            isOnline(conv) {
+                if (!conv || conv.type === 'group') return false;
+                const other = conv.active_members?.find(m => Number(m.user_id) !== Number(this.currentUserId));
+                if (!other) return false;
+                const liveUser = this.users.find(u => Number(u.id) === Number(other.user_id));
+                return liveUser?.is_online === true;
+            },
+            
+            exportingUsers: false,
+            async exportUsersToCSV() {
+                if (this.exportingUsers) return;
+                this.exportingUsers = true;
+                try {
+                    const response = await window.chatHttp.get('/api/chat/users/export', { responseType: 'blob' });
+                    const url = URL.createObjectURL(response.data);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = response.headers?.['content-disposition']?.match(/filename="?([^";]+)/)?.[1] || 'users_logged_in_today.csv';
+                    document.body.appendChild(link);
+                    link.click();
+                    link.remove();
+                    URL.revokeObjectURL(url);
+                } catch (error) {
+                    let message = 'Unable to export today’s users. Please try again.';
+                    try {
+                        const payload = error.response?.data;
+                        const data = payload instanceof Blob ? JSON.parse(await payload.text()) : payload;
+                        message = data?.message || message;
+                    } catch (_) {}
+                    this.errorMessage = message;
+                    window.AdminApp?.notificationManager?.error(message);
+                } finally {
+                    this.exportingUsers = false;
+                }
+            }
+        };
+    }
+</script>
+@endsection

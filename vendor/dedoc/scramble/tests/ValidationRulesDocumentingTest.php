@@ -665,6 +665,21 @@ it('supports array rule params', function () {
     assertMatchesSnapshot(collect($params)->map->toArray()->all());
 });
 
+it('does not require the keys allowed by array rule', function () {
+    $rules = [
+        'appearance' => 'sometimes|array:theme,font,style',
+        'appearance.theme' => 'sometimes|string',
+        'appearance.font' => 'required|string',
+    ];
+
+    $params = validationRulesToDocumentationWithDeep(($this->buildRulesToParameters)($rules));
+
+    $appearance = collect($params)->keyBy('name')->get('appearance')->schema->toArray();
+
+    expect($appearance['properties'])->toHaveKeys(['theme', 'font', 'style'])
+        ->and($appearance['required'])->toBe(['font']);
+});
+
 it('extract rules from enum rule', function () {
     $rules = [
         'status' => new Enum(StatusValidationEnum::class),
@@ -785,6 +800,22 @@ it('extract rules from object like rules with explicit array', function () {
     $params = validationRulesToDocumentationWithDeep(($this->buildRulesToParameters)($rules));
 
     assertMatchesSnapshot(collect($params)->map->toArray()->all());
+});
+
+it('extract rules from object like rules with nullable array', function () {
+    $rules = [
+        'publisher' => 'nullable|array',
+        'publisher.id' => 'nullable|int',
+    ];
+
+    $params = validationRulesToDocumentationWithDeep(($this->buildRulesToParameters)($rules));
+
+    expect($params[0]->schema->toArray())->toBe([
+        'type' => ['object', 'null'],
+        'properties' => [
+            'id' => ['type' => ['integer', 'null']],
+        ],
+    ]);
 });
 
 it('supports between rule', function () {
@@ -1226,6 +1257,19 @@ it('extracts rules from Validator::make facade call', function () {
     assertMatchesSnapshot($openApiDocument);
 });
 
+it('extracts rules from Validator::make facade call on a chained request method call', function () {
+    $openApiDocument = generateForRoute(function () {
+        return RouteFacade::post('api/test', [ValidationFacadeRulesChainedRequestCall_Test::class, 'index']);
+    });
+
+    expect($openApiDocument['paths']['/test']['post']['requestBody']['content']['application/json']['schema'])
+        ->toBe([
+            'type' => 'object',
+            'properties' => ['content' => ['type' => 'string']],
+            'required' => ['content'],
+        ]);
+});
+
 it('supports validation rules and form request at the same time', function () {
     RouteFacade::get('api/test', [ValidationRulesAndFormRequestAtTheSameTime_Test::class, 'index']);
 
@@ -1257,6 +1301,16 @@ class ValidationFacadeRulesDocumenting_Test
         Validator::make($request->all(), [
             'content' => ['required', Rule::in('wow')],
         ], attributes: []);
+    }
+}
+
+class ValidationFacadeRulesChainedRequestCall_Test
+{
+    public function index(Request $request)
+    {
+        Validator::make($request->json()->all(), [
+            'content' => ['required', 'string'],
+        ]);
     }
 }
 

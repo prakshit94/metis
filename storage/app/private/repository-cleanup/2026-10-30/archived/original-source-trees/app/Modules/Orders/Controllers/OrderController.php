@@ -1,0 +1,3045 @@
+<?php
+
+namespace App\Modules\Orders\Controllers;
+
+use App\Imports\OrdersImport;
+use App\Modules\Catalog\Models\Category;
+use App\Modules\Catalog\Models\Product;
+use App\Modules\Catalog\Models\Service;
+use App\Modules\Catalog\Models\Warehouse;
+use App\Modules\Core\Controllers\Controller;
+use App\Modules\Core\Models\Village;
+use App\Modules\Customers\Models\Party;
+use App\Modules\Inventory\Models\Stock;
+use App\Modules\Orders\Models\CancelReason;
+use App\Modules\Orders\Models\Coupon;
+use App\Modules\Orders\Models\DeliveryFailureReason;
+use App\Modules\Orders\Models\Invoice;
+use App\Modules\Orders\Models\Offer;
+use App\Modules\Orders\Models\Order;
+use App\Modules\Orders\Models\OrderReturn;
+use App\Modules\Orders\Models\OrderReturnItem;
+use App\Modules\Orders\Models\RescheduleReason;
+use App\Modules\Orders\Models\ReturnReason;
+use App\Modules\Orders\Requests\StoreOrderRequest;
+use App\Modules\Orders\Requests\UpdateOrderRequest;
+use App\Services\EnsureRecordVisibility;
+use App\Services\InventoryService;
+use App\Services\InvoiceService;
+use App\Services\OrderService;
+use App\Services\RecordVisibility;
+use App\Services\Shipping\ShippingManager;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
+use Maatwebsite\Excel\Facades\Excel;
+
+class OrderController extends Controller implements HasMiddleware
+{
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:orders.create', only: ['create']),
+            new Middleware('permission:orders.deliver', only: ['importBulkDeliverTemplate']),
+            new Middleware('permission:orders.return', only: ['importBulkReturnTemplate']),
+            new Middleware('permission:orders.shipping_label', only: ['downloadShippingLabel']),
+            new Middleware(EnsureRecordVisibility::class),
+            new Middleware('permission:orders.view', only: ['index', 'show']),
+            new Middleware('permission:orders.create', only: ['store', 'preview', 'bulkImport']),
+            new Middleware('permission:orders.create|orders.edit', only: ['nearbySellingInsights']),
+            new Middleware('permission:orders.edit', only: ['edit', 'update']),
+            new Middleware('permission:orders.delete', only: ['destroy']),
+            new Middleware('permission:orders.confirm', only: ['confirm']),
+            new Middleware('permission:orders.ship', only: ['ship']),
+            new Middleware('permission:orders.dispatch', only: ['dispatch']),
+            new Middleware('permission:orders.processing', only: ['markProcessing']),
+            new Middleware('permission:orders.deliver', only: ['markDelivered', 'importBulkDeliver']),
+            new Middleware('permission:orders.cancel', only: ['cancel']),
+            new Middleware('permission:orders.return', only: ['markReturned', 'importBulkReturn']),
+            new Middleware('permission:orders.invoice_pdf', only: ['downloadInvoice']),
+            new Middleware('permission:orders.generate_invoice', only: ['generateInvoice', 'generateBulkInvoices']),
+            new Middleware('permission:orders.cod', only: ['downloadReceipt']),
+            new Middleware('permission:orders.receipt', only: ['receipt']),
+            new Middleware('permission:orders.bulk_status', only: ['bulkStatus', 'bulkStoreVerification']),
+            new Middleware('permission:orders.bulk_print', only: ['bulkPrint']),
+            new Middleware('permission:orders.export', only: ['bulkExport', 'exportSelected']),
+            new Middleware('permission:orders.revert_status', only: ['revertStatus']),
+        ];
+    }
+
+    public function index(Request $request)
+    {
+        // Validate filters before constructing queries.
+        $filterRules = [];
+        foreach (['search', 'state', 'district', 'taluka', 'village', 'carrier', 'sort_field', 'sort_direction'] as $field) {
+            $filterRules[$field] = ['nullable', 'string'];
+        }
+        foreach (['product', 'warehouse'] as $field) {
+            $filterRules[$field] = ['nullable', 'string', 'regex:/^\s*[1-9][0-9]*\s*(,\s*[1-9][0-9]*\s*)*$/'];
+        }
+        foreach ([
+            'status' => [
+                'future_order', 'pending', 'unfulfillable', 'pending_confirmation', 'confirmed',
+                'processing', 'ready_to_ship', 'dispatched', 'delivery_attempted', 'delivered',
+                'return_requested', 'returned', 'cancelled', '__no_status_selected__',
+            ],
+            'payment_status' => ['paid', 'unpaid', 'partially_paid', 'refunded', 'partially_refunded', 'cancelled', 'no_invoice'],
+        ] as $field => $allowedValues) {
+            $filterRules[$field] = ['bail', 'nullable', 'string', function ($attribute, $value, $fail) use ($allowedValues) {
+                $values = array_map('trim', explode(',', $value));
+                if (array_diff($values, $allowedValues)) {
+                    $fail('The selected '.$attribute.' is invalid.');
+                }
+            }];
+        }
+        $filterRules['fulfillment'] = ['nullable', 'in:fulfillable,unfulfillable'];
+        $filterRules['date'] = ['nullable', 'in:today,yesterday,week,7d,month,30d,this_month,prev_month,last_month,this_year'];
+        $filterRules['page'] = ['nullable', 'integer', 'min:1'];
+        $filterRules['limit'] = ['nullable', 'integer', 'min:1'];
+        foreach (['from_date', 'to_date', 'dispatch_from_date', 'dispatch_to_date'] as $field) {
+            $filterRules[$field] = ['nullable', 'date_format:Y-m-d'];
+        }
+        if ($request->filled('from_date') && $request->filled('to_date')) {
+            $filterRules['to_date'][] = 'after_or_equal:from_date';
+        }
+        if ($request->filled('dispatch_from_date') && $request->filled('dispatch_to_date')) {
+            $filterRules['dispatch_to_date'][] = 'after_or_equal:dispatch_from_date';
+        }
+        $request->validate($filterRules);
+
+        // The UI sends explicit boundaries. Also support the same preset when
+        // this endpoint is called directly without explicit dates.
+        if ($request->filled('date') && ! $request->filled('from_date') && ! $request->filled('to_date')) {
+            $today = Carbon::today();
+            [$from, $to] = match ($request->input('date')) {
+                'today' => [$today->copy(), $today->copy()],
+                'yesterday' => [$today->copy()->subDay(), $today->copy()->subDay()],
+                'week', '7d' => [$today->copy()->subDays(7), $today->copy()],
+                'month', '30d' => [$today->copy()->subDays(30), $today->copy()],
+                'this_month' => [$today->copy()->startOfMonth(), $today->copy()],
+                'prev_month', 'last_month' => [$today->copy()->subMonthNoOverflow()->startOfMonth(), $today->copy()->subMonthNoOverflow()->endOfMonth()],
+                'this_year' => [$today->copy()->startOfYear(), $today->copy()],
+            };
+            $request->merge(['from_date' => $from->toDateString(), 'to_date' => $to->toDateString()]);
+        }
+
+        $query = Order::with([
+            'office:id,team_id,name,code',
+            'party:id,firstname,middlename,lastname,email,avatar,phone,alternatemobile,relative_name,relative_phone,company_name,pan_no,gst_no',
+            'warehouse:id,name,company_name,phone,gstin,address_line_1,address_line_2,city,state,pincode',
+            'shippingAddress:id,village_id,label,address_line_1,address_line_2,city,state,pincode,village_name,taluka,district,post_office',
+            'shippingAddress.village:id,village_name,taluka_name,district_name,post_so_name',
+            'billingAddress:id,village_id,label,address_line_1,address_line_2,city,state,pincode,village_name,taluka,district,post_office',
+            'billingAddress.village:id,village_name,taluka_name,district_name,post_so_name',
+            'shippingAddress.village.services',
+            'shippingAddress.village.services.providers:id,name,phone',
+            'invoice' => fn ($q) => $q->select(
+                'invoices.id',
+                'invoices.order_id',
+                'invoices.invoice_no',
+                'invoices.invoice_date',
+                'invoices.status',
+                'invoices.total_amount',
+                'invoices.tax_amount',
+                'invoices.net_amount',
+            )->withPaymentStatus(),
+            'invoice.payments:id,invoice_id,status,amount,payment_method,payment_date',
+            'items:id,order_id,product_id,quantity,unit_price,discount_amount,tax_amount,tax_rate,total_amount',
+            'items.product:id,name,sku,image_path,default_discount_type,default_discount',
+            'shipments:id,order_id,shipment_no,carrier_name,tracking_no,status,service_provider_id,shipped_at,delivered_at,delivery_attempts,next_followup_date,reschedule_reason',
+            'shipments.events:id,shipment_id,event_name,location,description,reschedule_reason,occurred_at',
+            'payments:id,order_id,payment_no,amount,payment_method,status,payment_date,transaction_id',
+            'creator:id,name,email,photo',
+            'updater:id,name,email',
+            'orderReturns:id,order_id,return_no,created_at,reason,notes,refund_amount,status',
+            'appliedOffer:id,name',
+            'statusLogs' => fn ($q) => $q->select('id', 'order_id', 'changed_by', 'status', 'notes', 'created_at')
+                ->with('user:id,name,first_name,last_name')->latest(),
+        ])->withCount('items');
+
+        $user = auth()->user();
+        $this->applyOrderActionPermissionScope($query, $user);
+
+        // Read-only payment filtering follows completed payments, including legacy invoices with stale status.
+        if ($request->filled('payment_status')) {
+            $paymentStatuses = array_values(array_intersect(
+                array_map('trim', explode(',', $request->input('payment_status'))),
+                ['paid', 'unpaid', 'partially_paid', 'refunded', 'partially_refunded', 'cancelled', 'no_invoice']
+            ));
+            $query->where(function ($paymentQuery) use ($paymentStatuses) {
+                $invoiceStatuses = array_values(array_diff($paymentStatuses, ['no_invoice']));
+                if ($invoiceStatuses) {
+                    $paymentQuery->whereHas('invoice', fn ($invoice) => $invoice->wherePaymentStatusIn($invoiceStatuses));
+                }
+                if (in_array('no_invoice', $paymentStatuses, true)) {
+                    $method = $invoiceStatuses ? 'orWhereDoesntHave' : 'whereDoesntHave';
+                    $paymentQuery->$method('invoice');
+                }
+                if (! $paymentStatuses) {
+                    $paymentQuery->whereRaw('1 = 0');
+                }
+            });
+        }
+
+        if ($request->filled('search')) {
+            $s = trim($request->search);
+            $query->where(function ($subQuery) use ($s) {
+                $subQuery->where('order_no', 'LIKE', "%{$s}%")
+                    ->orWhereHas('party', function ($q) use ($s) {
+                        $q->where('firstname', 'LIKE', "%{$s}%")
+                            ->orWhere('lastname', 'LIKE', "%{$s}%")
+                            ->orWhere('company_name', 'LIKE', "%{$s}%")
+                            ->orWhere('phone', 'LIKE', "%{$s}%");
+                    })
+                    ->orWhereHas('shipments', function ($q) use ($s) {
+                        $q->where('tracking_no', 'LIKE', "%{$s}%");
+                    });
+            });
+        }
+
+        if ($request->input('status') === '__no_status_selected__') {
+            $query->whereRaw('1 = 0');
+        } elseif ($request->filled('status')) {
+            $requestedStatuses = array_filter(array_map('trim', explode(',', $request->status)));
+            $hasFutureOrder = in_array('future_order', $requestedStatuses, true);
+            $hasPending = in_array('pending', $requestedStatuses, true);
+            $hasUnfulfillable = in_array('unfulfillable', $requestedStatuses, true);
+            $hasDeliveryAttempted = in_array('delivery_attempted', $requestedStatuses, true);
+            $hasDispatched = in_array('dispatched', $requestedStatuses, true);
+            $hasReturnRequested = in_array('return_requested', $requestedStatuses, true);
+            $hasReturned = in_array('returned', $requestedStatuses, true);
+
+            $realStatuses = array_values(array_filter($requestedStatuses, fn ($s) => ! in_array($s, ['future_order', 'pending', 'unfulfillable', 'delivery_attempted', 'dispatched', 'return_requested', 'returned'])));
+
+            $query->where(function ($q) use ($hasFutureOrder, $hasPending, $hasUnfulfillable, $realStatuses, $hasDispatched, $hasDeliveryAttempted, $hasReturnRequested, $hasReturned) {
+                $first = true;
+
+                if ($hasFutureOrder) {
+                    $q->where('status', 'future_order');
+                    $first = false;
+                }
+
+                if ($hasPending) {
+                    $method = $first ? 'where' : 'orWhere';
+                    $q->$method(function ($sq) {
+                        $sq->where('status', 'pending')
+                            ->whereDoesntHave('items', function ($itemQuery) {
+                                $itemQuery->leftJoin('stocks', function ($join) {
+                                    $join->on('order_items.product_id', '=', 'stocks.product_id')
+                                        ->whereColumn('stocks.warehouse_id', 'orders.warehouse_id');
+                                })->where(function ($sub) {
+                                    $sub->whereNull('stocks.id')
+                                        ->orWhereRaw('order_items.quantity > (stocks.quantity - stocks.reserved_qty)');
+                                });
+                            });
+                    });
+                    $first = false;
+                }
+
+                if ($hasUnfulfillable) {
+                    $method = $first ? 'where' : 'orWhere';
+                    $q->$method(function ($sq) {
+                        $sq->where('status', 'pending')
+                            ->whereHas('items', function ($itemQuery) {
+                                $itemQuery->leftJoin('stocks', function ($join) {
+                                    $join->on('order_items.product_id', '=', 'stocks.product_id')
+                                        ->whereColumn('stocks.warehouse_id', 'orders.warehouse_id');
+                                })->where(function ($sub) {
+                                    $sub->whereNull('stocks.id')
+                                        ->orWhereRaw('order_items.quantity > (stocks.quantity - stocks.reserved_qty)');
+                                });
+                            });
+                    });
+                    $first = false;
+                }
+
+                if ($hasDispatched) {
+                    $method = $first ? 'where' : 'orWhere';
+                    $q->$method(function ($sq) {
+                        $sq->whereIn('status', ['dispatched'])
+                            ->whereDoesntHave('shipments', function ($ssq) {
+                                $ssq->where('delivery_attempts', '>', 0);
+                            });
+                    });
+                    $first = false;
+                }
+
+                if ($hasDeliveryAttempted) {
+                    $method = $first ? 'where' : 'orWhere';
+                    $q->$method(function ($sq) {
+                        $sq->whereIn('status', ['dispatched'])
+                            ->whereHas('shipments', function ($ssq) {
+                                $ssq->where('delivery_attempts', '>', 0);
+                            });
+                    });
+                    $first = false;
+                }
+
+                if ($hasReturnRequested) {
+                    $method = $first ? 'where' : 'orWhere';
+                    $q->$method(function ($sq) {
+                        $sq->whereHas('orderReturns', function ($returnQuery) {
+                            $returnQuery->whereNotIn('status', ['completed', 'rejected'])
+                                ->whereNotExists(function ($newerReturn) {
+                                    $newerReturn->select(DB::raw(1))
+                                        ->from('order_returns as newer_order_returns')
+                                        ->whereColumn('newer_order_returns.order_id', 'order_returns.order_id')
+                                        ->whereColumn('newer_order_returns.id', '>', 'order_returns.id');
+                                });
+                        });
+                    });
+                    $first = false;
+                }
+
+                if ($hasReturned) {
+                    $method = $first ? 'where' : 'orWhere';
+                    $q->$method(function ($sq) {
+                        $sq->whereHas('orderReturns', function ($returnQuery) {
+                            $returnQuery->where('status', 'completed')
+                                ->whereNotExists(function ($newerReturn) {
+                                    $newerReturn->select(DB::raw(1))
+                                        ->from('order_returns as newer_order_returns')
+                                        ->whereColumn('newer_order_returns.order_id', 'order_returns.order_id')
+                                        ->whereColumn('newer_order_returns.id', '>', 'order_returns.id');
+                                });
+                        })->orWhere(function ($legacyReturned) {
+                            $legacyReturned->where('orders.status', 'returned')
+                                ->where(function ($noActiveReturn) {
+                                    $noActiveReturn->whereDoesntHave('orderReturns')
+                                        ->orWhereHas('orderReturns', function ($returnQuery) {
+                                            $returnQuery->where('status', 'rejected')
+                                                ->whereNotExists(function ($newerReturn) {
+                                                    $newerReturn->select(DB::raw(1))
+                                                        ->from('order_returns as newer_order_returns')
+                                                        ->whereColumn('newer_order_returns.order_id', 'order_returns.order_id')
+                                                        ->whereColumn('newer_order_returns.id', '>', 'order_returns.id');
+                                                });
+                                        });
+                                });
+                        });
+                    });
+                    $first = false;
+                }
+
+                if (! empty($realStatuses)) {
+                    $method = $first ? 'whereIn' : 'orWhereIn';
+                    $q->$method('status', $realStatuses);
+                }
+            });
+        }
+
+        if ($request->filled('product')) {
+            $productIds = array_filter(array_map('intval', explode(',', $request->product)));
+            if (! empty($productIds)) {
+                $query->whereHas('items', function ($q) use ($productIds) {
+                    $q->whereIn('product_id', $productIds);
+                });
+            }
+        }
+
+        if ($request->filled('fulfillment')) {
+            $stockSubquery = '(SELECT product_id, warehouse_id, SUM(quantity - reserved_qty) as available FROM stocks WHERE deleted_at IS NULL GROUP BY product_id, warehouse_id)';
+
+            if ($request->fulfillment === 'unfulfillable') {
+                $query->where('status', 'pending')
+                    ->whereRaw("EXISTS (
+                        SELECT 1 FROM order_items
+                        LEFT JOIN $stockSubquery s ON s.product_id = order_items.product_id AND s.warehouse_id = orders.warehouse_id
+                        WHERE order_items.order_id = orders.id
+                        AND order_items.quantity > IFNULL(s.available, 0)
+                    )");
+            } elseif ($request->fulfillment === 'fulfillable') {
+                $query->where(function ($query) use ($stockSubquery) {
+                    $query->whereIn('status', ['confirmed', 'processing'])
+                        ->orWhere(function ($q) use ($stockSubquery) {
+                            $q->where('status', 'pending')
+                                ->whereRaw("NOT EXISTS (
+                                    SELECT 1 FROM order_items
+                                    LEFT JOIN $stockSubquery s ON s.product_id = order_items.product_id AND s.warehouse_id = orders.warehouse_id
+                                    WHERE order_items.order_id = orders.id
+                                    AND order_items.quantity > IFNULL(s.available, 0)
+                                )");
+                        });
+                });
+            }
+        }
+
+        if ($request->filled('state') || $request->filled('district') || $request->filled('taluka') || $request->filled('village')) {
+            if ($request->filled('state')) {
+                $query->whereIn('shipping_state', array_map('trim', explode(',', (string) $request->state)));
+            }
+            if ($request->filled('district')) {
+                $query->whereIn('shipping_district', array_map('trim', explode(',', (string) $request->district)));
+            }
+            if ($request->filled('taluka')) {
+                $query->whereIn('shipping_taluka', array_map('trim', explode(',', (string) $request->taluka)));
+            }
+            if ($request->filled('village')) {
+                $query->whereIn('shipping_village_name', array_map('trim', explode(',', $request->village)));
+            }
+        }
+
+        if ($request->filled('carrier')) {
+            $carriers = array_filter(array_map('trim', explode(',', $request->carrier)));
+            if (! empty($carriers)) {
+                $query->where(function ($q) use ($carriers) {
+                    $q->whereHas('shipments', function ($sq) use ($carriers) {
+                        $sq->whereIn('carrier_name', $carriers);
+                    })->orWhereHas('shippingAddress.village.services', function ($sq) use ($carriers) {
+                        $sq->whereIn('name', $carriers)
+                            ->where('village_service_mappings.is_available', true);
+                    });
+                });
+            }
+        }
+
+        if ($request->filled('from_date')) {
+            $query->where('order_date', '>=', Carbon::parse($request->from_date)->startOfDay());
+        }
+        if ($request->filled('to_date')) {
+            $query->where('order_date', '<', Carbon::parse($request->to_date)->startOfDay()->addDay());
+        }
+
+        // Dispatch filters use the shipment's shipped_at timestamp, which is
+        // populated when the shipment enters transit. Keep these independent
+        // from the order creation date filters above.
+        if ($request->filled('dispatch_from_date') || $request->filled('dispatch_to_date')) {
+            $dispatchFrom = $request->filled('dispatch_from_date')
+                ? Carbon::parse($request->dispatch_from_date)->startOfDay()
+                : null;
+            $dispatchToExclusive = $request->filled('dispatch_to_date')
+                ? Carbon::parse($request->dispatch_to_date)->startOfDay()->addDay()
+                : null;
+
+            $query->whereHas('shipments', function ($shipmentQuery) use ($dispatchFrom, $dispatchToExclusive) {
+                $shipmentQuery->whereNotNull('shipped_at');
+                if ($dispatchFrom) {
+                    $shipmentQuery->where('shipped_at', '>=', $dispatchFrom);
+                }
+                if ($dispatchToExclusive) {
+                    $shipmentQuery->where('shipped_at', '<', $dispatchToExclusive);
+                }
+            });
+        }
+
+        if ($request->filled('warehouse')) {
+            $warehouseIds = array_filter(array_map('intval', explode(',', $request->warehouse)));
+            if (! empty($warehouseIds)) {
+                $query->whereIn('warehouse_id', $warehouseIds);
+            }
+        }
+
+        // Stats Query (Cached)
+        $statsQuery = clone $query;
+        $statsVersion = Cache::get('order_stats_version', 0);
+        $statsFilterHash = md5(json_encode($request->except(['page', 'limit', 'sort_field', 'sort_direction'])));
+        $cacheKey = 'order_stats_'.$statsVersion.'_'.auth()->id().'_'.$statsFilterHash;
+        $stats = Cache::remember($cacheKey, 300, function () use ($statsQuery) {
+            $statsQuery->setEagerLoads([]);
+            $grouped = $statsQuery->select('status', DB::raw('COUNT(*) as total'), DB::raw('SUM(net_amount) as amount'))
+                ->groupBy('status')
+                ->toBase()
+                ->get();
+
+            $returns = clone $statsQuery;
+            $returns = $returns->whereExists(function ($q) {
+                $q->select(DB::raw(1))
+                    ->from('order_returns')
+                    ->whereColumn('order_returns.order_id', 'orders.id')
+                    ->whereNotIn('order_returns.status', ['completed', 'rejected']);
+            })->select(DB::raw('COUNT(*) as total'), DB::raw('SUM(net_amount) as amount'))->toBase()->first();
+
+            $deliveryAttempted = clone $statsQuery;
+            $deliveryAttempted = $deliveryAttempted->whereIn('status', ['dispatched'])
+                ->whereExists(function ($q) {
+                    $q->select(DB::raw(1))
+                        ->from('shipments')
+                        ->whereColumn('shipments.order_id', 'orders.id')
+                        ->where('shipments.delivery_attempts', '>', 0);
+                })->select(DB::raw('COUNT(*) as total'), DB::raw('SUM(net_amount) as amount'))->toBase()->first();
+
+            $unfulfillable = clone $statsQuery;
+            $unfulfillable = $unfulfillable->where('status', 'pending')
+                ->whereExists(function ($q) {
+                    $q->select(DB::raw(1))
+                        ->from('order_items')
+                        ->leftJoin('stocks', function ($join) {
+                            $join->on('order_items.product_id', '=', 'stocks.product_id')
+                                ->whereColumn('stocks.warehouse_id', 'orders.warehouse_id');
+                        })
+                        ->whereColumn('order_items.order_id', 'orders.id')
+                        ->where(function ($sub) {
+                            $sub->whereNull('stocks.id')
+                                ->orWhereRaw('order_items.quantity > (stocks.quantity - stocks.reserved_qty)');
+                        });
+                })->select(DB::raw('COUNT(*) as total'), DB::raw('SUM(net_amount) as amount'))->toBase()->first();
+
+            return [
+
+                'total' => (int) $grouped->sum('total'),
+                'total_amount' => (float) $grouped->sum('amount'),
+                'future_order' => (int) $grouped->where('status', 'future_order')->sum('total'),
+                'future_order_amount' => (float) $grouped->where('status', 'future_order')->sum('amount'),
+                'pending' => (int) $grouped->where('status', 'pending')->sum('total') - (int) ($unfulfillable->total ?? 0),
+                'pending_amount' => (float) $grouped->where('status', 'pending')->sum('amount') - (float) ($unfulfillable->amount ?? 0),
+                'unfulfillable' => (int) ($unfulfillable->total ?? 0),
+                'unfulfillable_amount' => (float) ($unfulfillable->amount ?? 0),
+                'pending_confirmation' => (int) $grouped->where('status', 'pending_confirmation')->sum('total'),
+                'pending_confirmation_amount' => (float) $grouped->where('status', 'pending_confirmation')->sum('amount'),
+                'confirmed' => (int) $grouped->where('status', 'confirmed')->sum('total'),
+                'confirmed_amount' => (float) $grouped->where('status', 'confirmed')->sum('amount'),
+                'processing' => (int) $grouped->where('status', 'processing')->sum('total'),
+                'processing_amount' => (float) $grouped->where('status', 'processing')->sum('amount'),
+                'ready_to_ship' => (int) $grouped->where('status', 'ready_to_ship')->sum('total'),
+                'ready_to_ship_amount' => (float) $grouped->where('status', 'ready_to_ship')->sum('amount'),
+                'dispatched' => (int) $grouped->whereIn('status', ['dispatched'])->sum('total') - (int) ($deliveryAttempted->total ?? 0),
+                'dispatched_amount' => (float) $grouped->whereIn('status', ['dispatched'])->sum('amount') - (float) ($deliveryAttempted->amount ?? 0),
+                'delivery_attempted' => (int) ($deliveryAttempted->total ?? 0),
+                'delivery_attempted_amount' => (float) ($deliveryAttempted->amount ?? 0),
+                'delivered' => (int) $grouped->where('status', 'delivered')->sum('total'),
+                'delivered_amount' => (float) $grouped->where('status', 'delivered')->sum('amount'),
+                'returned' => (int) $grouped->where('status', 'returned')->sum('total'),
+                'returned_amount' => (float) $grouped->where('status', 'returned')->sum('amount'),
+                'return_requested' => (int) ($returns->total ?? 0),
+                'return_requested_amount' => (float) ($returns->amount ?? 0),
+                'cancelled' => (int) $grouped->where('status', 'cancelled')->sum('total'),
+                'cancelled_amount' => (float) $grouped->where('status', 'cancelled')->sum('amount'),
+            ];
+        });
+
+        // Warehouse Stats Query (Cached)
+        $warehouseStatsQuery = clone $query;
+        $warehouseStatsCacheKey = 'order_warehouse_stats_v2_'.$statsVersion.'_'.auth()->id().'_'.$statsFilterHash;
+        $warehouseStats = Cache::remember($warehouseStatsCacheKey, 300, function () use ($warehouseStatsQuery) {
+            $warehouseStatsQuery->setEagerLoads([]);
+            $grouped = (clone $warehouseStatsQuery)->select('warehouse_id', 'status', DB::raw('COUNT(*) as total'), DB::raw('SUM(net_amount) as amount'))
+                ->groupBy('warehouse_id', 'status')
+                ->toBase()
+                ->get();
+
+            $returnsQuery = clone $warehouseStatsQuery;
+            $returnsGrouped = $returnsQuery->whereExists(function ($q) {
+                $q->select(DB::raw(1))
+                    ->from('order_returns')
+                    ->whereColumn('order_returns.order_id', 'orders.id')
+                    ->whereNotIn('order_returns.status', ['completed', 'rejected']);
+            })->select('warehouse_id', DB::raw('COUNT(*) as total'), DB::raw('SUM(net_amount) as amount'))
+                ->groupBy('warehouse_id')
+                ->toBase()
+                ->get()
+                ->keyBy('warehouse_id');
+
+            // Keep each aggregate independent so status grouping cannot leak into totals.
+            $unfulfillableGrouped = (clone $warehouseStatsQuery)->where('status', 'pending')
+                ->whereExists(function ($q) {
+                    $q->select(DB::raw(1))->from('order_items')
+                        ->leftJoin('stocks', function ($join) {
+                            $join->on('order_items.product_id', '=', 'stocks.product_id')
+                                ->whereColumn('stocks.warehouse_id', 'orders.warehouse_id');
+                        })->whereColumn('order_items.order_id', 'orders.id')
+                        ->where(function ($sub) {
+                            $sub->whereNull('stocks.id')
+                                ->orWhereRaw('order_items.quantity > (stocks.quantity - stocks.reserved_qty)');
+                        });
+                })->select('warehouse_id', DB::raw('COUNT(*) as total'), DB::raw('SUM(net_amount) as amount'))
+                ->groupBy('warehouse_id')->toBase()->get()->keyBy('warehouse_id');
+
+            $attemptedGrouped = (clone $warehouseStatsQuery)->where('status', 'dispatched')
+                ->whereExists(function ($q) {
+                    $q->select(DB::raw(1))->from('shipments')
+                        ->whereColumn('shipments.order_id', 'orders.id')
+                        ->where('shipments.delivery_attempts', '>', 0);
+                })->select('warehouse_id', DB::raw('COUNT(*) as total'), DB::raw('SUM(net_amount) as amount'))
+                ->groupBy('warehouse_id')->toBase()->get()->keyBy('warehouse_id');
+
+            $warehouses = Warehouse::pluck('name', 'id')->toArray();
+
+            $warehouseIds = $grouped->pluck('warehouse_id')->merge($returnsGrouped->keys())->unique();
+
+            return $warehouseIds->map(function ($warehouseId) use ($warehouses, $grouped, $returnsGrouped, $unfulfillableGrouped, $attemptedGrouped) {
+                $whGroup = $grouped->where('warehouse_id', $warehouseId);
+                $retGrp = $returnsGrouped->get($warehouseId);
+                $unfulfillable = $unfulfillableGrouped->get($warehouseId);
+                $attempted = $attemptedGrouped->get($warehouseId);
+
+                return [
+
+                    'warehouse_id' => $warehouseId,
+                    'name' => $warehouses[$warehouseId] ?? 'Unassigned',
+                    'total' => (int) $whGroup->sum('total'),
+                    'total_amount' => (float) $whGroup->sum('amount'),
+                    'future_order' => (int) $whGroup->where('status', 'future_order')->sum('total'),
+                    'future_order_amount' => (float) $whGroup->where('status', 'future_order')->sum('amount'),
+                    'unfulfillable' => (int) ($unfulfillable->total ?? 0),
+                    'unfulfillable_amount' => (float) ($unfulfillable->amount ?? 0),
+                    'pending' => (int) $whGroup->where('status', 'pending')->sum('total') - (int) ($unfulfillable->total ?? 0),
+                    'pending_amount' => (float) $whGroup->where('status', 'pending')->sum('amount') - (float) ($unfulfillable->amount ?? 0),
+                    'pending_confirmation' => (int) $whGroup->where('status', 'pending_confirmation')->sum('total'),
+                    'pending_confirmation_amount' => (float) $whGroup->where('status', 'pending_confirmation')->sum('amount'),
+                    'confirmed' => (int) $whGroup->where('status', 'confirmed')->sum('total'),
+                    'confirmed_amount' => (float) $whGroup->where('status', 'confirmed')->sum('amount'),
+                    'processing' => (int) $whGroup->where('status', 'processing')->sum('total'),
+                    'processing_amount' => (float) $whGroup->where('status', 'processing')->sum('amount'),
+                    'ready_to_ship' => (int) $whGroup->where('status', 'ready_to_ship')->sum('total'),
+                    'ready_to_ship_amount' => (float) $whGroup->where('status', 'ready_to_ship')->sum('amount'),
+                    'delivery_attempted' => (int) ($attempted->total ?? 0),
+                    'delivery_attempted_amount' => (float) ($attempted->amount ?? 0),
+                    'dispatched' => (int) $whGroup->whereIn('status', ['dispatched'])->sum('total') - (int) ($attempted->total ?? 0),
+                    'dispatched_amount' => (float) $whGroup->whereIn('status', ['dispatched'])->sum('amount') - (float) ($attempted->amount ?? 0),
+                    'delivered' => (int) $whGroup->where('status', 'delivered')->sum('total'),
+                    'delivered_amount' => (float) $whGroup->where('status', 'delivered')->sum('amount'),
+                    'cancelled' => (int) $whGroup->where('status', 'cancelled')->sum('total'),
+                    'cancelled_amount' => (float) $whGroup->where('status', 'cancelled')->sum('amount'),
+                    'returned' => (int) $whGroup->where('status', 'returned')->sum('total'),
+                    'returned_amount' => (float) $whGroup->where('status', 'returned')->sum('amount'),
+                    'return_requested' => (int) ($retGrp->total ?? 0),
+                    'return_requested_amount' => (float) ($retGrp->amount ?? 0),
+                ];
+            })->values();
+        });
+
+        $sortField = $request->input('sort_field', 'id');
+        $sortDirection = $request->input('sort_direction', 'desc');
+        if (in_array($sortField, ['id', 'order_no', 'net_amount', 'order_date', 'status'])) {
+            $query->orderBy($sortField, $sortDirection === 'asc' ? 'asc' : 'desc');
+            if ($sortField !== 'id') {
+                $query->orderBy('id', $sortDirection === 'asc' ? 'asc' : 'desc');
+            }
+        } else {
+            $query->latest('id');
+        }
+        $perPage = min(max($request->integer('limit', 10), 1), 200);
+        $orders = $query->paginate($perPage);
+        app(\App\Services\OrderAttribution::class)->attach($orders->getCollection());
+
+        $productWarehousePairs = [];
+        foreach ($orders as $order) {
+            if ($order->status === 'pending') {
+                foreach ($order->items as $item) {
+                    if ($order->warehouse_id) {
+                        $productWarehousePairs[] = [$item->product_id, $order->warehouse_id];
+                    }
+                }
+            }
+        }
+
+        if (! empty($productWarehousePairs)) {
+            $productIds = array_unique(array_column($productWarehousePairs, 0));
+            $warehouseIds = array_unique(array_column($productWarehousePairs, 1));
+
+            $stocks = Stock::whereIn('product_id', $productIds)
+                ->whereIn('warehouse_id', $warehouseIds)
+                ->get()
+                ->keyBy(function ($stock) {
+                    return $stock->product_id.'_'.$stock->warehouse_id;
+                });
+
+            foreach ($orders as $order) {
+                if ($order->status === 'pending') {
+                    $order->is_unfulfillable = false;
+                    foreach ($order->items as $item) {
+                        if ($order->warehouse_id) {
+                            $key = $item->product_id.'_'.$order->warehouse_id;
+                            $stock = $stocks->get($key);
+                            $available = $stock ? ($stock->quantity - $stock->reserved_qty) : 0;
+                            if ($item->quantity > $available) {
+                                $item->is_out_of_stock = true;
+                                $item->available_stock = $available;
+                                $order->is_unfulfillable = true;
+                            } else {
+                                $item->is_out_of_stock = false;
+                                $item->available_stock = $available;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        $statusesList = $this->allowedOrderFilterStatuses($user);
+        $productsList = Cache::remember('products_list_filter', 3600, function () {
+            return Product::where('status', '!=', 'draft')->orderBy('name')->get(['id', 'name', 'sku']);
+        });
+
+        // For LOB-scoped users, limit the state filter dropdown to their own state only
+        $lobStateName = $user?->lob_state_name;
+        if ($lobStateName) {
+            $statesList = collect([$lobStateName]);
+        } else {
+            $statesList = Cache::remember('geo_states', 3600, function () {
+                return Village::distinct()->pluck('state_name')->filter()->sort()->values();
+            });
+        }
+
+        $targetStates = $request->filled('state')
+            ? array_map('trim', explode(',', (string) $request->state))
+            : ($lobStateName ? [$lobStateName] : []);
+
+        $districtsList = Cache::remember('geo_districts_'.md5(implode(',', $targetStates)), 3600, function () use ($targetStates) {
+            return Village::when(! empty($targetStates), function ($q) use ($targetStates) {
+                $q->whereIn('state_name', $targetStates);
+            })->distinct()->pluck('district_name')->filter()->sort()->values();
+        });
+
+        $talukasList = Cache::remember('geo_talukas_'.md5(implode(',', $targetStates).'_'.$request->district), 3600, function () use ($request, $targetStates) {
+            return Village::when(! empty($targetStates), function ($q) use ($targetStates) {
+                $q->whereIn('state_name', $targetStates);
+            })->when($request->filled('district'), function ($q) use ($request) {
+                $q->whereIn('district_name', array_map('trim', explode(',', (string) $request->district)));
+            })->distinct()->pluck('taluka_name')->filter()->sort()->values();
+        });
+
+        $villagesList = $request->filled('taluka') ? Cache::remember('geo_villages_'.md5(implode(',', $targetStates).'_'.$request->district.'_'.$request->taluka), 3600, function () use ($request, $targetStates) {
+            return Village::when(! empty($targetStates), function ($q) use ($targetStates) {
+                $q->whereIn('state_name', $targetStates);
+            })->when($request->filled('district'), function ($q) use ($request) {
+                $q->whereIn('district_name', array_map('trim', explode(',', (string) $request->district)));
+            })->whereIn('taluka_name', array_map('trim', explode(',', (string) $request->taluka)))
+                ->distinct()->pluck('village_name')->filter()->sort()->values();
+        }) : [];
+
+        $services = Cache::remember('services_with_providers', 3600, function () {
+            return Service::active()->with('providers')->get();
+        });
+        $carriersList = $services->pluck('name')
+            ->filter()
+            ->unique()
+            ->sort()
+            ->values();
+
+        $carrierProvidersMap = $services->mapWithKeys(function ($service) {
+            $providers = $service->providers->map(function ($p) {
+                return [
+
+                    'id' => $p->id,
+                    'name' => $p->name,
+                    'priority' => $p->pivot->priority ?? 999,
+                ];
+            })->sortBy('priority')->values();
+
+            return [$service->name => $providers];
+        });
+
+        $returnReasons = Cache::remember('return_reasons', 3600, fn () => ReturnReason::where('is_active', true)->orderBy('id')->get());
+        $rescheduleReasons = Cache::remember('reschedule_reasons', 3600, fn () => RescheduleReason::where('is_active', true)->orderBy('id')->get());
+        $deliveryFailureReasons = Cache::remember('delivery_failure_reasons', 3600, fn () => DeliveryFailureReason::where('is_active', true)->orderBy('id')->get());
+        $cancelReasons = Cache::remember('cancel_reasons', 3600, fn () => CancelReason::where('is_active', true)->orderBy('id')->get());
+
+        // 7 Day Trends Data (scoped by LOB state for non-global users)
+        $lobStateForTrends = $user?->lob_state_name;
+        $trendsCacheKey = 'order_trends_7_days_'.auth()->id().($lobStateForTrends ? '_'.md5($lobStateForTrends) : '');
+        $trendsData = Cache::remember($trendsCacheKey, 300, function () use ($lobStateForTrends) {
+            $trendsQuery = Order::where('order_date', '>=', now()->subDays(6)->startOfDay())
+                ->when($lobStateForTrends, fn ($q) => $q->where('shipping_state', $lobStateForTrends))
+                ->groupBy(DB::raw('DATE(order_date)'))
+                ->orderBy(DB::raw('DATE(order_date)'))
+                ->get([
+                    DB::raw('DATE(order_date) as date'),
+                    DB::raw('COUNT(*) as orders'),
+                    DB::raw('SUM(net_amount) as revenue'),
+                ]);
+
+            $data = [];
+            for ($i = 6; $i >= 0; $i--) {
+                $date = now()->subDays($i)->format('Y-m-d');
+                $record = $trendsQuery->firstWhere('date', $date);
+                $data[] = [
+                    'date' => Carbon::parse($date)->format('D'),
+                    'orders' => $record ? (int) $record->orders : 0,
+                    'revenue' => $record ? (float) $record->revenue : 0,
+                ];
+            }
+
+            return $data;
+        });
+
+        $warehousesList = Warehouse::where('status', 'active')
+            ->when($user?->lob_state_name, function ($query, $state) {
+                $query->where('state', $state);
+            })
+            ->orderBy('name')->get(['id', 'name']);
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'orders' => $orders,
+                'stats' => $stats,
+                'warehouseStats' => $warehouseStats,
+                'trends' => $trendsData,
+                'allowed_filter_statuses' => $statusesList,
+                'states' => $statesList,
+                'districts' => $districtsList,
+                'talukas' => $talukasList,
+                'villages' => $villagesList,
+                'carriers' => $carriersList,
+                'carrierProvidersMap' => $carrierProvidersMap,
+            ]);
+        }
+
+        return view('orders.index', compact(
+            'orders',
+            'stats',
+            'statusesList',
+            'productsList',
+            'statesList',
+            'districtsList',
+            'talukasList',
+            'villagesList',
+            'services',
+            'carriersList',
+            'carrierProvidersMap',
+            'returnReasons',
+            'rescheduleReasons',
+            'deliveryFailureReasons',
+            'cancelReasons',
+            'warehousesList',
+            'warehouseStats'
+        ));
+    }
+
+    public function create()
+    {
+        $requiredPermission = request()->filled('order_id') ? 'orders.edit' : 'orders.create';
+        abort_unless(auth()->user()?->can($requiredPermission), 403);
+
+        $warehouses = Warehouse::where('status', 'active')
+            ->orderBy('name')
+            ->when(auth()->user()?->lob_state_name, function ($query, $state) {
+                $query->where('state', $state);
+            })
+            ->get();
+
+        $activeOffers = Offer::with('product')->active()->orderByDesc('priority')->orderBy('id')->get();
+        $activeCoupons = Coupon::active()
+            ->where(function ($query) {
+                $query->whereNull('usage_limit')
+                    ->orWhere('usage_limit', 0)
+                    ->orWhereColumn('used_count', '<', 'usage_limit');
+            })
+            ->get();
+        $categories = Category::whereNull('parent_id')->with('children')->orderBy('name')->get();
+        $initialCustomer = null;
+        $initialOrder = null;
+        $initialCoupon = null;
+
+        if (request()->filled('customer_id')) {
+            $initialCustomer = Party::with([
+                'addresses.village.services',
+                'referrals:id,firstname,lastname,phone,referred_by',
+                'referrals.addresses' => function ($q) {
+                    $q->where('is_default', true)->with('village:id,village_name,taluka_name,district_name');
+                },
+                'referrer' => function ($q) {
+                    $q->withCount([
+                        'referredOrders as total_referred_orders',
+                        'referredOrders as delivered_referred_orders' => function ($query) {
+                            $query->where('orders.status', 'delivered');
+                        },
+                    ]);
+                },
+                'callLogs' => function ($q) {
+                    $q->latest()->limit(15)->with(['agent', 'tagL1', 'tagL2', 'tagL3', 'metas']);
+                },
+                'orders' => function ($q) {
+                    $q->latest()->limit(10)->withCount(['complaints', 'complaints as open_complaints_count' => function ($q) {
+                        $q->whereIn('status', ['open', 'in_progress']);
+                    }])->with([
+                        'items.product:id,name,sku,image_path,tax_rate_id',
+                        'items.product.taxRate',
+                        'warehouse:id,name',
+                        'shippingAddress:id,party_id,label,address_line_1,address_line_2,village_id,village_name,post_office,taluka,district,city,state,pincode',
+                        'billingAddress:id,party_id,label,address_line_1,address_line_2,village_id,village_name,post_office,taluka,district,city,state,pincode',
+                        'appliedOffer:id,name,discount_type,value',
+                        'selectedOffer:id,name',
+                        'coupon:id,code',
+                        'creator:id,first_name,last_name,name',
+                        'orderReturns',
+                        'statusLogs',
+                        'shipments',
+                    ]);
+                },
+                'walletTransactions' => function ($q) {
+                    $q->latest()->limit(50)->with('creator:id,first_name,last_name,name');
+                },
+            ])->withCount([
+                'referrals as total_farmers_referred',
+                'referredOrders as total_referred_orders_placed',
+                'referredOrders as total_referred_orders_delivered' => function ($q) {
+                    $q->where('orders.status', 'delivered');
+                },
+                'complaints as total_complaints',
+                'complaints as active_complaints' => function ($q) {
+                    $q->whereNotIn('status', ['resolved', 'closed']);
+                },
+                'orders' => function ($q) {
+                    $q->where('status', '!=', 'future_order');
+                },
+            ])->find(request()->integer('customer_id'));
+
+            if ($initialCustomer && empty($initialCustomer->referral_code)) {
+                $initialCustomer->referral_code = strtoupper(Str::random(8));
+                $initialCustomer->saveQuietly();
+            }
+        }
+
+        if (request()->filled('order_id')) {
+            $initialOrder = Order::with([
+                'party.addresses.village.services',
+                'warehouse',
+                'items.product:id,name,sku,image_path,tax_rate_id,allow_overselling,category_id',
+                'items.product.stocks.warehouse',
+                'items.product.taxRate',
+                'shippingAddress.village.services',
+                'billingAddress.village.services',
+                'appliedOffer:id,name,discount_type,value',
+                'selectedOffer:id,name',
+                'coupon:id,code',
+                'creator:id,first_name,last_name,name',
+                'statusLogs' => fn ($q) => $q->with('user')->latest(),
+            ])->find(request()->integer('order_id'));
+
+            $this->includeSavedInactiveOffer($activeOffers, $initialOrder);
+
+            if ($initialOrder?->coupon_code) {
+                $initialCoupon = Coupon::withTrashed()->where('code', $initialOrder->coupon_code)->first();
+            }
+
+            if ($initialOrder) {
+                $productIds = $initialOrder->items->pluck('product_id')->filter()->unique()->values();
+                $warehouseIds = $initialOrder->items
+                    ->flatMap(fn ($item) => $item->product?->stocks?->pluck('warehouse_id') ?? collect())
+                    ->filter()->unique()->values();
+                $pendingByStock = collect();
+
+                if ($productIds->isNotEmpty() && $warehouseIds->isNotEmpty()) {
+                    $pendingByStock = DB::table('order_items')
+                        ->join('orders', 'orders.id', '=', 'order_items.order_id')
+                        ->whereIn('orders.status', ['future_order', 'pending', 'pending_confirmation'])
+                        ->whereIn('order_items.product_id', $productIds)
+                        ->whereIn('orders.warehouse_id', $warehouseIds)
+                        ->groupBy('order_items.product_id', 'orders.warehouse_id')
+                        ->selectRaw('order_items.product_id, orders.warehouse_id, SUM(order_items.quantity) as pending_qty')
+                        ->get()
+                        ->mapWithKeys(fn ($row) => [$row->product_id.':'.$row->warehouse_id => (float) $row->pending_qty]);
+                }
+
+                $initialOrder->items->each(function ($item) use ($pendingByStock) {
+                    if ($item->product) {
+                        $totalQty = (float) $item->product->stocks->sum('quantity');
+                        $reservedQty = (float) $item->product->stocks->sum('reserved_qty');
+
+                        $item->product->setAttribute('stock_qty', $totalQty);
+                        $item->product->setAttribute('reserved_qty', $reservedQty);
+                        $item->product->setAttribute('allow_overselling', $item->product->allow_overselling);
+
+                        $item->product->setAttribute('warehouse_stocks', $item->product->stocks->map(function ($s) use ($item, $pendingByStock) {
+                            $pendingQty = $pendingByStock[$item->product_id.':'.$s->warehouse_id] ?? 0;
+
+                            return [
+
+                                'warehouse_id' => $s->warehouse_id,
+                                'warehouse_name' => $s->warehouse?->name ?? 'Unknown',
+                                'quantity' => $s->quantity,
+                                'reserved_qty' => (float) $s->reserved_qty,
+                                'pending_qty' => (float) $pendingQty,
+                                'available' => $s->quantity - $s->reserved_qty - (float) $pendingQty,
+                                'allow_overselling' => $s->allow_overselling !== null ? (bool) $s->allow_overselling : null,
+                                'overselling_qty' => $s->overselling_qty !== null ? (int) $s->overselling_qty : null,
+                                'is_sku_enabled' => $s->is_sku_enabled !== null ? (bool) $s->is_sku_enabled : null,
+                            ];
+                        })->values()->toArray());
+                    }
+                });
+            }
+
+            if ($initialOrder && ! $initialCustomer) {
+                $initialCustomer = Party::with([
+                    'addresses.village.services',
+                    'referrals:id,firstname,lastname,phone,referred_by',
+                    'referrals.addresses' => function ($q) {
+                        $q->where('is_default', true)->with('village:id,village_name,taluka_name,district_name');
+                    },
+                    'referrer' => function ($q) {
+                        $q->withCount([
+                            'referredOrders as total_referred_orders',
+                            'referredOrders as delivered_referred_orders' => function ($query) {
+                                $query->where('orders.status', 'delivered');
+                            },
+                        ]);
+                    },
+                    'orders' => function ($q) {
+                        $q->latest()->limit(10)->withCount(['complaints', 'complaints as open_complaints_count' => function ($q) {
+                            $q->whereIn('status', ['open', 'in_progress']);
+                        }])->with([
+                            'items.product:id,name,sku,image_path,tax_rate_id',
+                            'items.product.taxRate',
+                            'warehouse:id,name',
+                            'shippingAddress:id,party_id,label,address_line_1,address_line_2,village_id,village_name,post_office,taluka,district,city,state,pincode',
+                            'billingAddress:id,party_id,label,address_line_1,address_line_2,village_id,village_name,post_office,taluka,district,city,state,pincode',
+                            'appliedOffer:id,name,discount_type,value',
+                            'selectedOffer:id,name',
+                            'coupon:id,code',
+                            'creator:id,first_name,last_name,name',
+                            'orderReturns',
+                            'statusLogs',
+                            'shipments',
+                        ]);
+                    },
+                    'walletTransactions' => function ($q) {
+                        $q->latest()->limit(50)->with('creator:id,first_name,last_name,name');
+                    },
+                ])->withCount([
+                    'referrals as total_farmers_referred',
+                    'referredOrders as total_referred_orders_placed',
+                    'referredOrders as total_referred_orders_delivered' => function ($q) {
+                        $q->where('orders.status', 'delivered');
+                    },
+                    'complaints as total_complaints',
+                    'complaints as active_complaints' => function ($q) {
+                        $q->whereNotIn('status', ['resolved', 'closed']);
+                    },
+                    'orders' => function ($q) {
+                        $q->where('status', '!=', 'future_order');
+                    },
+                ])->find($initialOrder->party_id);
+            }
+        }
+
+        $hideSidebar = true;
+        $lockSearch = true;
+        $rescheduleReasons = RescheduleReason::where('is_active', true)->orderBy('id')->get();
+        $cancelReasons = CancelReason::where('is_active', true)->orderBy('id')->get();
+
+        if ($initialCustomer && class_exists(Invoice::class)) {
+            $invoices = Invoice::query()
+                ->whereHas('order', fn ($query) => $query->where('party_id', $initialCustomer->id))
+                ->whereIn('status', ['unpaid', 'partially_paid'])
+                ->with(['payments' => fn ($query) => $query->where('status', 'completed')])
+                ->get();
+
+            $due = 0;
+            foreach ($invoices as $invoice) {
+                $due += $invoice->due_amount;
+            }
+            $initialCustomer->setAttribute('calculated_outstanding', (float) $due);
+        }
+
+        if (request()->is('api/*')) {
+            return response()->json(compact('warehouses', 'activeOffers', 'activeCoupons', 'categories', 'initialCustomer', 'initialOrder', 'initialCoupon', 'rescheduleReasons', 'cancelReasons'));
+        }
+
+        return view('orders.create', compact('warehouses', 'activeOffers', 'activeCoupons', 'categories', 'hideSidebar', 'lockSearch', 'initialCustomer', 'initialOrder', 'initialCoupon', 'rescheduleReasons', 'cancelReasons'));
+    }
+
+    /**
+     * Read-only local sales recommendations for the order creation screen.
+     * Results are scoped to the selected address locality and recent sale orders.
+     */
+    public function nearbySellingInsights(Request $request)
+    {
+        $validated = $request->validate([
+            'customer_id' => ['required', 'integer', 'exists:parties,id'],
+            'address_id' => ['nullable', 'integer'],
+            'period_days' => ['nullable', 'integer', 'in:30,90,180,365'],
+            'scope' => ['nullable', 'in:auto,village,pincode,district'],
+        ]);
+
+        $periodDays = (int) ($validated['period_days'] ?? 30);
+        $requestedScope = $validated['scope'] ?? 'auto';
+
+        $customer = Party::query()
+            ->with(['addresses' => function ($query) {
+                $query->where('status', 'active')
+                    ->with('village:id,village_name,taluka_name,district_name,state_name')
+                    ->orderByDesc('is_default')
+                    ->orderBy('id');
+            }])
+            ->findOrFail($validated['customer_id']);
+
+        $address = $customer->addresses->firstWhere('id', $validated['address_id'] ?? null)
+            ?? $customer->addresses->first();
+
+        if (! $address) {
+            return response()->json([
+                'success' => true,
+                'data' => ['location' => null, 'location_level' => null, 'period_days' => $periodDays, 'customer_count' => 0, 'customers' => [], 'products' => []],
+            ]);
+        }
+
+        $villageId = $address->village_id;
+        $pincode = trim((string) $address->pincode);
+        $district = trim((string) ($address->village?->district_name ?: $address->district));
+        $state = trim((string) ($address->village?->state_name ?: $address->state));
+        $locationLevel = match ($requestedScope) {
+            'village' => $villageId ? 'village' : ($pincode !== '' ? 'pincode' : (($district !== '' && $state !== '') ? 'district' : null)),
+            'pincode' => $pincode !== '' ? 'pincode' : (($district !== '' && $state !== '') ? 'district' : null),
+            'district' => ($district !== '' && $state !== '') ? 'district' : null,
+            default => $villageId ? ($pincode !== '' ? 'village_pincode' : 'village') : ($pincode !== '' ? 'pincode' : (($district !== '' && $state !== '') ? 'district' : null)),
+        };
+
+        if (! $locationLevel) {
+            return response()->json([
+                'success' => true,
+                'data' => ['location' => null, 'location_level' => null, 'period_days' => $periodDays, 'customer_count' => 0, 'customers' => [], 'products' => []],
+            ]);
+        }
+
+        $applyAddressLocation = function ($query, string $alias) use ($locationLevel, $villageId, $pincode, $district, $state): void {
+            $query->where(function ($locationQuery) use ($alias, $locationLevel, $villageId, $pincode, $district, $state) {
+                if (in_array($locationLevel, ['village', 'village_pincode'], true)) {
+                    $locationQuery->where("{$alias}.village_id", $villageId);
+                    if ($locationLevel === 'village_pincode' && $pincode !== '') {
+                        $locationQuery->orWhere("{$alias}.pincode", $pincode);
+                    }
+                } elseif ($locationLevel === 'pincode') {
+                    $locationQuery->where("{$alias}.pincode", $pincode);
+                } else {
+                    $locationQuery->where("{$alias}.district", $district)
+                        ->where("{$alias}.state", $state);
+                }
+            });
+        };
+
+        $applyOrderLocation = function ($query, string $alias) use ($locationLevel, $villageId, $pincode, $district, $state): void {
+            $query->where(function ($locationQuery) use ($alias, $locationLevel, $villageId, $pincode, $district, $state) {
+                if (in_array($locationLevel, ['village', 'village_pincode'], true)) {
+                    $locationQuery->where("{$alias}.shipping_village_id", $villageId);
+                    if ($locationLevel === 'village_pincode' && $pincode !== '') {
+                        $locationQuery->orWhere("{$alias}.shipping_pincode", $pincode);
+                    }
+                } elseif ($locationLevel === 'pincode') {
+                    $locationQuery->where("{$alias}.shipping_pincode", $pincode);
+                } else {
+                    $locationQuery->where("{$alias}.shipping_district", $district)
+                        ->where("{$alias}.shipping_state", $state);
+                }
+            });
+        };
+
+        $recentPeriod = now()->subDays($periodDays);
+        $eligibleOrders = function ($query, string $alias) use ($recentPeriod): void {
+            $query->where("{$alias}.type", 'sale')
+                ->whereNotIn("{$alias}.status", ['future_order', 'cancelled', 'returned'])
+                ->where("{$alias}.order_date", '>=', $recentPeriod)
+                ->whereNull("{$alias}.deleted_at");
+        };
+        $applyOrderVisibility = function ($query, string $alias): void {
+            $user = auth()->user();
+            if ($user->hasAnyRole(['Super Admin', 'Admin']) || $user->can('view-all-data')) {
+                return;
+            }
+
+            $query->whereIn("{$alias}.status", $this->allowedOrderFilterStatuses($user));
+            if ($lobStateName = $user->lob_state_name) {
+                $query->where(function ($scope) use ($alias, $lobStateName, $user) {
+                    $scope->where("{$alias}.shipping_state", $lobStateName)
+                        ->orWhere("{$alias}.created_by", $user->id);
+                });
+            }
+            if (! $user->can('view_all_order')) {
+                $query->where("{$alias}.created_by", $user->id);
+            }
+        };
+
+        $nearbyPartyIds = DB::table('party_addresses as nearby_address')
+            ->whereNull('nearby_address.deleted_at')
+            ->where('nearby_address.status', 'active')
+            ->where('nearby_address.party_id', '<>', $customer->id);
+        $applyAddressLocation($nearbyPartyIds, 'nearby_address');
+        $nearbyPartyIds->select('nearby_address.party_id')->distinct();
+
+        $nearbyCustomerCount = DB::table('parties as nearby_customer_count')
+            ->whereIn('nearby_customer_count.id', clone $nearbyPartyIds)
+            ->where('nearby_customer_count.type', 'customer')
+            ->where('nearby_customer_count.status', 'active')
+            ->where('nearby_customer_count.is_active', true)
+            ->where('nearby_customer_count.is_blacklisted', false)
+            ->whereNull('nearby_customer_count.deleted_at')
+            ->count();
+
+        $recentCustomerOrders = DB::table('orders as recent_order')
+            ->select(
+                'recent_order.party_id',
+                DB::raw('MAX(recent_order.order_date) as last_purchase_at'),
+                DB::raw('COUNT(recent_order.id) as recent_order_count')
+            );
+        $eligibleOrders($recentCustomerOrders, 'recent_order');
+        $applyOrderVisibility($recentCustomerOrders, 'recent_order');
+        $recentCustomerOrders->groupBy('recent_order.party_id');
+
+        $nearbyPartyAddress = DB::table('party_addresses as farmer_address')
+            ->leftJoin('villages as farmer_village', 'farmer_village.id', '=', 'farmer_address.village_id')
+            ->whereColumn('farmer_address.party_id', 'nearby_party.id')
+            ->whereNull('farmer_address.deleted_at')
+            ->where('farmer_address.status', 'active');
+        $applyAddressLocation($nearbyPartyAddress, 'farmer_address');
+        $nearbyPartyAddress
+            ->orderByDesc('farmer_address.is_default')
+            ->orderBy('farmer_address.id')
+            ->limit(1)
+            ->selectRaw("COALESCE(NULLIF(farmer_village.village_name, ''), NULLIF(farmer_address.village_name, ''), NULLIF(farmer_address.city, ''))");
+
+        $nearbyCustomers = DB::table('parties as nearby_party')
+            ->joinSub($recentCustomerOrders, 'recent_customer_orders', function ($join) {
+                $join->on('recent_customer_orders.party_id', '=', 'nearby_party.id');
+            })
+            ->whereIn('nearby_party.id', $nearbyPartyIds)
+            ->where('nearby_party.type', 'customer')
+            ->where('nearby_party.status', 'active')
+            ->where('nearby_party.is_active', true)
+            ->where('nearby_party.is_blacklisted', false)
+            ->whereNull('nearby_party.deleted_at')
+            ->orderByDesc('recent_customer_orders.last_purchase_at')
+            ->limit(5)
+            ->select([
+                'nearby_party.id',
+                'nearby_party.firstname',
+                'nearby_party.middlename',
+                'nearby_party.lastname',
+                'recent_customer_orders.last_purchase_at',
+                'recent_customer_orders.recent_order_count',
+            ])
+            ->selectSub($nearbyPartyAddress, 'village_name')
+            ->get()
+            ->map(fn ($farmer) => [
+                'id' => $farmer->id,
+                'name' => trim(implode(' ', array_filter([$farmer->firstname, $farmer->middlename, $farmer->lastname]))),
+                'last_purchase_at' => $farmer->last_purchase_at,
+                'recent_order_count' => (int) $farmer->recent_order_count,
+                'village_name' => $farmer->village_name,
+            ])
+            ->values();
+
+        $localProductSales = DB::table('orders as local_order')
+            ->join('order_items as local_item', 'local_item.order_id', '=', 'local_order.id')
+            ->join('products as local_product', 'local_product.id', '=', 'local_item.product_id')
+            ->leftJoin('tax_rates as local_tax_rate', function ($join) {
+                $join->on('local_tax_rate.id', '=', 'local_product.tax_rate_id')
+                    ->whereNull('local_tax_rate.deleted_at');
+            });
+        $eligibleOrders($localProductSales, 'local_order');
+        $applyOrderVisibility($localProductSales, 'local_order');
+        $applyOrderLocation($localProductSales, 'local_order');
+        $topProducts = $localProductSales
+            ->where('local_product.is_active', true)
+            ->where('local_product.is_sku_enabled', true)
+            ->select(
+                'local_product.id',
+                'local_product.name',
+                'local_product.sku',
+                'local_product.image_path',
+                DB::raw('COALESCE(local_product.selling_price_including_tax / (1 + COALESCE(local_tax_rate.rate, 0) / 100), local_product.selling_price) as selling_price'),
+                DB::raw('COALESCE(local_tax_rate.rate, 0) as tax_rate'),
+                DB::raw('SUM(local_item.quantity) as units_sold'),
+                DB::raw('COUNT(DISTINCT local_order.id) as order_count'),
+                DB::raw('COUNT(DISTINCT local_order.party_id) as buyer_count'),
+                DB::raw('SUM(local_item.total_amount) as sales_value'),
+                DB::raw('MAX(local_order.order_date) as last_sold_at')
+            )
+            ->groupBy('local_product.id', 'local_product.name', 'local_product.sku', 'local_product.image_path', 'local_product.selling_price', 'local_product.selling_price_including_tax', 'local_tax_rate.rate')
+            ->orderByDesc('units_sold')
+            ->orderByDesc('order_count')
+            ->limit(5)
+            ->get()
+            ->map(fn ($product) => [
+                'id' => $product->id,
+                'name' => $product->name,
+                'sku' => $product->sku,
+                'image_url' => $product->image_path ? '/storage/'.ltrim($product->image_path, '/') : null,
+                'selling_price' => (float) $product->selling_price,
+                'tax_rate' => (float) $product->tax_rate,
+                'units_sold' => (float) $product->units_sold,
+                'order_count' => (int) $product->order_count,
+                'buyer_count' => (int) $product->buyer_count,
+                'sales_value' => (float) $product->sales_value,
+                'last_sold_at' => $product->last_sold_at,
+            ])
+            ->values();
+
+        $locationName = $address->village?->village_name ?: ($address->village_name ?: ($address->city ?: $district));
+        $locationLabel = trim(implode(', ', array_filter([$locationName, $pincode ?: null, $state ?: null])));
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'location' => $locationLabel,
+                'location_level' => $locationLevel,
+                'period_days' => $periodDays,
+                'customer_count' => $nearbyCustomerCount,
+                'customers' => $nearbyCustomers,
+                'products' => $topProducts,
+            ],
+        ]);
+    }
+
+    /**
+     * Calculate the server-authoritative order totals for the mobile review step.
+     * This does not persist an order or consume offer/coupon usage.
+     */
+    public function preview(StoreOrderRequest $request, OrderService $orderService)
+    {
+        $quote = DB::transaction(function () use ($request, $orderService) {
+            return $orderService->recalculateAndValidate($request->validated());
+        }, 3);
+
+        return response()->json([
+            'success' => true,
+            'quote' => $quote,
+        ]);
+    }
+
+    public function bulkImport(Request $request)
+    {
+        $request->validate(['file' => 'required|file|mimes:csv,txt,xlsx,xls|max:10240']);
+        $import = new OrdersImport(livePricing: true);
+        Excel::import($import, $request->file('file'));
+
+        return response()->json(['success' => true, 'imported_count' => $import->importedCount, 'duplicates' => $import->duplicates]);
+    }
+
+    public function store(StoreOrderRequest $request, OrderService $orderService)
+    {
+        // Keep pricing/coupon validation and persistence in one transaction.
+        // recalculateAndValidate() locks coupon usage rows; that lock must remain
+        // held until the new order and usage counters commit.
+        $order = DB::transaction(function () use ($request, $orderService) {
+            $validated = $request->validated();
+
+            $calc = $orderService->recalculateAndValidate($validated);
+            $validated['items'] = $calc['items'];
+            $validated['total_amount'] = $calc['subtotal'];
+            $validated['tax_amount'] = $calc['tax_amount'];
+            $validated['discount_amount'] = $calc['total_discount'];
+            $validated['coupon_code'] = $calc['coupon_code'];
+            $validated['applied_offer_id'] = $calc['applied_offer_id'];
+            $validated['selected_offer_id'] = $calc['selected_offer_id'];
+            $validated['net_amount'] = $calc['grand_total'];
+            $validated['applied_bogo_ids'] = $calc['applied_bogo_ids'];
+            $validated['cashback_earned'] = $calc['cashback_earned'] ?? 0;
+
+            return $orderService->createOrder($validated);
+        }, 3);
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Order created successfully.',
+                'order' => $order,
+            ]);
+        }
+
+        return redirect()->route('orders')->with('success', 'Order created successfully.');
+    }
+
+    public function edit(Order $order)
+    {
+        if (in_array($order->status, ['dispatched', 'cancelled', 'delivered', 'returned'])) {
+            if (request()->is('api/*')) {
+                return response()->json(['message' => 'Orders in this status cannot be edited.'], 422);
+            }
+
+            return redirect()->route('orders')->with('error', 'Orders in this status cannot be edited.');
+        }
+
+        $order->load(['party', 'warehouse', 'items.product.stocks.warehouse', 'shippingAddress', 'billingAddress', 'appliedOffer']);
+        $initialCoupon = $order->coupon_code
+            ? Coupon::withTrashed()->where('code', $order->coupon_code)->first()
+            : null;
+
+        $productIds = $order->items->pluck('product_id')->filter()->unique()->values();
+        $warehouseIds = $order->items
+            ->flatMap(fn ($item) => $item->product?->stocks?->pluck('warehouse_id') ?? collect())
+            ->filter()->unique()->values();
+        $pendingByStock = collect();
+
+        if ($productIds->isNotEmpty() && $warehouseIds->isNotEmpty()) {
+            $pendingByStock = DB::table('order_items')
+                ->join('orders', 'orders.id', '=', 'order_items.order_id')
+                ->whereIn('orders.status', ['future_order', 'pending', 'pending_confirmation'])
+                ->whereIn('order_items.product_id', $productIds)
+                ->whereIn('orders.warehouse_id', $warehouseIds)
+                ->groupBy('order_items.product_id', 'orders.warehouse_id')
+                ->selectRaw('order_items.product_id, orders.warehouse_id, SUM(order_items.quantity) as pending_qty')
+                ->get()
+                ->mapWithKeys(fn ($row) => [$row->product_id.':'.$row->warehouse_id => (float) $row->pending_qty]);
+        }
+
+        // Format product stocks to match searchApi structure
+        $order->items->each(function ($item) use ($pendingByStock) {
+            if ($item->product) {
+                $totalQty = (float) $item->product->stocks->sum('quantity');
+                $reservedQty = (float) $item->product->stocks->sum('reserved_qty');
+
+                $item->product->setAttribute('stock_qty', $totalQty);
+                $item->product->setAttribute('reserved_qty', $reservedQty);
+                $item->product->setAttribute('allow_overselling', $item->product->allow_overselling);
+
+                $item->product->setAttribute('warehouse_stocks', $item->product->stocks->map(function ($s) use ($item, $pendingByStock) {
+                    $pendingQty = $pendingByStock[$item->product_id.':'.$s->warehouse_id] ?? 0;
+
+                    return [
+
+                        'warehouse_id' => $s->warehouse_id,
+                        'warehouse_name' => $s->warehouse?->name ?? 'Unknown',
+                        'quantity' => $s->quantity,
+                        'reserved_qty' => (float) $s->reserved_qty,
+                        'pending_qty' => (float) $pendingQty,
+                        'available' => $s->quantity - $s->reserved_qty - (float) $pendingQty,
+                        'allow_overselling' => $s->allow_overselling !== null ? (bool) $s->allow_overselling : null,
+                        'overselling_qty' => $s->overselling_qty !== null ? (int) $s->overselling_qty : null,
+                        'is_sku_enabled' => $s->is_sku_enabled !== null ? (bool) $s->is_sku_enabled : null,
+                    ];
+                })->values()->toArray());
+            }
+        });
+
+        $order->party?->loadCount([
+            'complaints as total_complaints',
+            'complaints as active_complaints' => function ($q) {
+                $q->whereNotIn('status', ['resolved', 'closed']);
+            },
+        ]);
+
+        $warehouses = Warehouse::where('status', 'active')
+            ->orderBy('name')
+            ->when(auth()->user()?->lob_state_name, function ($query, $state) {
+                $query->where('state', $state);
+            })
+            ->get();
+
+        $categories = Category::where('is_active', true)->orderBy('name')->get();
+
+        $activeOffers = Offer::active()->orderByDesc('priority')->get();
+        $this->includeSavedInactiveOffer($activeOffers, $order);
+        $activeCoupons = Coupon::active()
+            ->where(function ($query) {
+                $query->whereNull('usage_limit')
+                    ->orWhere('usage_limit', 0)
+                    ->orWhereColumn('used_count', '<', 'usage_limit');
+            })
+            ->get();
+
+        $initialCustomer = $order->party;
+        $initialOrder = $order;
+
+        $hideSidebar = true;
+        $lockSearch = true;
+        $rescheduleReasons = RescheduleReason::where('is_active', true)->orderBy('id')->get();
+        $cancelReasons = CancelReason::where('is_active', true)->orderBy('id')->get();
+
+        if (request()->is('api/*')) {
+            return response()->json(compact('warehouses', 'activeOffers', 'activeCoupons', 'categories', 'initialCustomer', 'initialOrder', 'initialCoupon', 'rescheduleReasons', 'cancelReasons'));
+        }
+
+        return view('orders.create', compact('warehouses', 'activeOffers', 'activeCoupons', 'categories', 'hideSidebar', 'lockSearch', 'initialCustomer', 'initialOrder', 'initialCoupon', 'rescheduleReasons', 'cancelReasons'));
+    }
+
+    /** Include only an inactive offer already attached to the order being edited. */
+    private function includeSavedInactiveOffer($activeOffers, ?Order $order): void
+    {
+        $offerId = $order?->selected_offer_id ?: $order?->applied_offer_id;
+        if (! $offerId || $activeOffers->contains(fn (Offer $offer) => (int) $offer->id === (int) $offerId)) {
+            return;
+        }
+
+        $savedOffer = Offer::with('product')
+            ->whereKey($offerId)
+            ->where('is_active', false)
+            ->first();
+
+        if ($savedOffer) {
+            $activeOffers->push($savedOffer);
+        }
+    }
+
+    public function show(string $id)
+    {
+        $query = Order::with([
+            'office:id,team_id,name,code',
+            'party',
+            'warehouse',
+            'invoice.payments',
+            'items.product',
+            'shipments.events',
+            'payments',
+            'creator',
+            'updater',
+            'shippingAddress.village.services.providers:id,name,phone',
+            'billingAddress.village.services',
+            'appliedOffer',
+            'selectedOffer',
+            'coupon',
+            'statusLogs' => fn ($q) => $q->with('user')->latest(),
+            'orderReturns',
+        ]);
+
+        $user = auth()->user();
+        $this->applyOrderActionPermissionScope($query, $user);
+
+        $order = $query->findOrFail($id);
+        app(\App\Services\OrderAttribution::class)->attach(new \Illuminate\Database\Eloquent\Collection([$order]));
+
+        if (request()->wantsJson() || request()->ajax()) {
+            return response()->json([
+                'order' => $order,
+            ]);
+        }
+
+        return redirect()->route('orders');
+    }
+
+    public function confirm(string $id, Request $request, InventoryService $inventoryService)
+    {
+        $order = Order::findOrFail($id);
+        if (! in_array($order->status, ['pending', 'pending_confirmation'])) {
+            return response()->json(['error' => 'Only pending orders can be confirmed or scheduled.'], 400);
+        }
+
+        if ($request->input('action') === 'schedule') {
+            $request->validate([
+                'scheduled_date' => 'required|date',
+            ]);
+
+            $order->status = 'pending_confirmation';
+            $order->scheduled_confirmation_date = $request->input('scheduled_date');
+            $order->increment('confirmation_attempts');
+            $order->save();
+
+            $reasonText = $request->filled('reason') ? 'Reason: '.ucfirst(str_replace('_', ' ', $request->input('reason'))).'. ' : '';
+            $scheduledDateText = 'Scheduled Date: '.Carbon::parse($request->input('scheduled_date'))->format('d M Y, h:i A').'. ';
+            $notes = $request->filled('notes') ? $request->input('notes') : 'Scheduled for future confirmation.';
+
+            $order->statusLogs()->create([
+                'status' => 'pending_confirmation',
+                'notes' => $reasonText.$scheduledDateText.$notes,
+                'changed_by' => auth()->id(),
+            ]);
+
+            if ($request->hasSession()) {
+                session()->flash('success', 'Order scheduled for confirmation.');
+            }
+
+            return response()->json(['success' => true, 'message' => 'Order scheduled for confirmation.']);
+        }
+
+        try {
+            $inventoryService->confirmOrder($order);
+
+            $order->statusLogs()->create([
+                'status' => 'confirmed',
+                'notes' => $request->input('notes') ?? 'Order confirmed.',
+                'changed_by' => auth()->id(),
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json(['error' => collect($e->validator->errors()->all())->first()], 400);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 400);
+        }
+
+        if ($request->hasSession()) {
+            session()->flash('success', 'Order successfully confirmed!');
+        }
+
+        return response()->json(['success' => true, 'message' => 'Order confirmed and stock reserved.']);
+    }
+
+    public function ship(string $id, Request $request, InventoryService $inventoryService)
+    {
+        $order = Order::findOrFail($id);
+        if ($order->status !== 'processing') {
+            return response()->json(['error' => 'Only processing orders can be marked as ready to ship.'], 400);
+        }
+
+        $validated = $request->validate([
+            'carrier_name' => 'required|string|max:255',
+            'service_provider_id' => [
+                'nullable',
+                'integer',
+                'exists:users,id',
+                function ($attribute, $value, $fail) use ($request) {
+                    $carrierName = $request->input('carrier_name');
+                    if ($carrierName && $value) {
+                        $service = Service::where('name', $carrierName)->first();
+                        if (! $service || ! $service->providers()->where('users.id', $value)->exists()) {
+                            $fail('The selected service provider is not assigned to the selected carrier.');
+                        }
+                    }
+                },
+            ],
+            'tracking_no' => 'nullable|string|max:255|unique:shipments,tracking_no,'.$id.',order_id',
+        ]);
+
+        try {
+            $inventoryService->readyToShipOrder($order, $validated['carrier_name'], $validated['tracking_no'] ?? null, $validated['service_provider_id'] ?? null);
+            $order->statusLogs()->create([
+                'status' => 'ready_to_ship',
+                'notes' => 'Order marked as ready to ship. Carrier: '.$validated['carrier_name'].', Provider ID: '.($validated['service_provider_id'] ?? 'N/A').', Tracking: '.($validated['tracking_no'] ?? 'Auto-generated/None'),
+                'changed_by' => auth()->id(),
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json(['error' => collect($e->validator->errors()->all())->first()], 400);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 400);
+        }
+
+        return response()->json(['success' => true, 'message' => 'Order marked as ready to ship.']);
+    }
+
+    public function dispatch(string $id, InventoryService $inventoryService, InvoiceService $invoiceService)
+    {
+        $order = Order::findOrFail($id);
+        if ($order->status !== 'ready_to_ship') {
+            return response()->json(['error' => 'Only orders in ready to ship status can be dispatched.'], 400);
+        }
+
+        $shipment = $order->shipments()->first();
+        if (! $shipment || ! $shipment->carrier_name) {
+            return response()->json(['error' => 'Order cannot be dispatched without a valid carrier.'], 400);
+        }
+
+        if (strtolower($shipment->carrier_name) === 'india post' && empty($shipment->tracking_no)) {
+            return response()->json(['error' => 'Order cannot be dispatched without valid India Post tracking details.'], 400);
+        }
+
+        if (! $order->invoice) {
+            $invoiceService->generateForOrder($order);
+        }
+
+        try {
+            $inventoryService->dispatchOrder($order);
+            $order->statusLogs()->create([
+                'status' => 'dispatched',
+                'notes' => 'Order dispatched.',
+                'changed_by' => auth()->id(),
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json(['error' => collect($e->validator->errors()->all())->first()], 400);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 400);
+        }
+
+        return response()->json(['success' => true, 'message' => 'Order dispatched and inventory updated.']);
+    }
+
+    public function markProcessing(string $id, OrderService $orderService)
+    {
+        $order = Order::findOrFail($id);
+        if ($order->status !== 'confirmed') {
+            return response()->json(['error' => 'Only confirmed orders can be moved to processing.'], 400);
+        }
+
+        try {
+            $orderService->updateStatus($order, 'processing');
+            $order->statusLogs()->create([
+                'status' => 'processing',
+                'notes' => 'Order moved to processing.',
+                'changed_by' => auth()->id(),
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json(['error' => collect($e->validator->errors()->all())->first()], 400);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 400);
+        }
+
+        return response()->json(['success' => true, 'message' => 'Order moved to processing.']);
+    }
+
+    public function markDelivered(string $id, Request $request, InventoryService $inventoryService)
+    {
+        $order = Order::findOrFail($id);
+        if (! in_array($order->status, ['dispatched'], true)) {
+            return response()->json(['error' => 'Only dispatched orders can be marked as delivered.'], 400);
+        }
+
+        if ($request->input('action') === 'schedule') {
+            $request->validate([
+                'scheduled_date' => 'required|date',
+            ]);
+
+            $shipment = $order->shipments()->latest()->first();
+            if ($shipment) {
+                $shipment->next_followup_date = $request->input('scheduled_date');
+                $shipment->reschedule_reason = $request->input('reason');
+                $shipment->increment('delivery_attempts');
+                $shipment->save();
+            }
+
+            $reasonText = $request->filled('reason') ? 'Reason: '.ucfirst(str_replace('_', ' ', $request->input('reason'))).'. ' : '';
+            $scheduledDateText = 'Scheduled Date: '.Carbon::parse($request->input('scheduled_date'))->format('d M Y, h:i A').'. ';
+            $notes = $request->filled('notes') ? $request->input('notes') : 'Scheduled for future delivery attempt.';
+
+            $order->statusLogs()->create([
+                'status' => 'delivery_rescheduled',
+                'notes' => $reasonText.$scheduledDateText.$notes,
+                'changed_by' => auth()->id(),
+            ]);
+
+            return response()->json(['success' => true, 'message' => 'Delivery attempt rescheduled.']);
+        }
+
+        try {
+            $inventoryService->deliverOrder($order);
+
+            $shipment = $order->shipments()->latest()->first();
+            if ($shipment) {
+                $shipment->delivered_by = $request->filled('delivered_by') ? $request->input('delivered_by') : auth()->user()->name;
+                $shipment->save();
+            }
+
+            $order->statusLogs()->create([
+                'status' => 'delivered',
+                'notes' => $request->input('notes') ?? 'Order delivered.',
+                'changed_by' => auth()->id(),
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json(['error' => collect($e->validator->errors()->all())->first()], 400);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 400);
+        }
+
+        return response()->json(['success' => true, 'message' => 'Order marked as delivered.']);
+    }
+
+    public function cancel(string $id, Request $request, InventoryService $inventoryService)
+    {
+        $order = Order::findOrFail($id);
+        if (in_array($order->status, ['delivered', 'cancelled', 'returned'], true)) {
+            return response()->json(['error' => 'Delivered, cancelled, or returned orders cannot be cancelled.'], 400);
+        }
+
+        try {
+            $inventoryService->cancelOrder($order);
+
+            $reasonText = $request->filled('reason') ? 'Reason: '.ucfirst(str_replace('_', ' ', $request->input('reason'))).'. ' : '';
+            $order->statusLogs()->create([
+                'status' => 'cancelled',
+                'notes' => $reasonText.($request->input('notes') ?? 'Order cancelled.'),
+                'changed_by' => auth()->id(),
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json(['error' => collect($e->validator->errors()->all())->first()], 400);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 400);
+        }
+
+        return response()->json(['success' => true, 'message' => 'Order cancelled and stock released.']);
+    }
+
+    public function markReturned(string $id, Request $request, InventoryService $inventoryService)
+    {
+        $order = Order::findOrFail($id);
+        if (! in_array($order->status, ['delivered', 'dispatched'], true)) {
+            return response()->json(['error' => 'Only delivered or dispatched orders can be marked as returned.'], 400);
+        }
+
+        try {
+            $inventoryService->returnOrder($order);
+
+            $reasonText = $request->filled('reason') ? 'Reason: '.ucfirst(str_replace('_', ' ', $request->input('reason'))).'. ' : '';
+            $order->statusLogs()->create([
+                'status' => 'returned',
+                'notes' => $reasonText.($request->input('notes') ?? 'Order returned.'),
+                'changed_by' => auth()->id(),
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json(['error' => collect($e->validator->errors()->all())->first()], 400);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 400);
+        }
+
+        return response()->json(['success' => true, 'message' => 'Order marked as returned and inventory restocked.']);
+    }
+
+    public function receipt(string $id, OrderService $orderService)
+    {
+        $order = $orderService->getOrderForReceipt((int) $id);
+
+        if (request()->is('api/*')) {
+            return response()->json(['data' => $order]);
+        }
+
+        return view('orders.receipt', compact('order'));
+    }
+
+    public function bulkStatus(Request $request, InventoryService $inventoryService, OrderService $orderService, InvoiceService $invoiceService)
+    {
+        $validated = $request->validate([
+            'order_ids' => 'required|array|min:1',
+            'order_ids.*' => 'integer|exists:orders,id',
+            'status' => 'required|string|in:pending,confirmed,processing,ready_to_ship,dispatched,delivered,cancelled,returned',
+            'carrier_name' => 'nullable|string|max:255',
+            'service_provider_id' => [
+                'nullable',
+                'integer',
+                'exists:users,id',
+                function ($attribute, $value, $fail) use ($request) {
+                    if ($request->input('status') === 'ready_to_ship') {
+                        $carrierName = $request->input('carrier_name');
+                        if ($carrierName && $value) {
+                            $service = Service::where('name', $carrierName)->first();
+                            if (! $service || ! $service->providers()->where('users.id', $value)->exists()) {
+                                $fail('The selected service provider is not assigned to the selected carrier.');
+                            }
+                        }
+                    }
+                },
+            ],
+            'tracking_no' => [
+                'nullable',
+                'string',
+                'max:255',
+                function ($attribute, $value, $fail) use ($request) {
+                    $orderIds = $request->input('order_ids', []);
+                    if (is_array($orderIds) && count($orderIds) > 1) {
+                        $fail('Tracking number cannot be assigned to multiple orders at once.');
+                    }
+                    if (is_array($orderIds) && count($orderIds) === 1) {
+                        $orderId = $orderIds[0];
+                        $exists = DB::table('shipments')
+                            ->where('tracking_no', $value)
+                            ->where('order_id', '!=', $orderId)
+                            ->exists();
+                        if ($exists) {
+                            $fail('The tracking no has already been taken.');
+                        }
+                    }
+                },
+            ],
+        ]);
+
+        $ids = $validated['order_ids'];
+        $targetStatus = $validated['status'];
+        abort_unless($request->user()?->can('orders.bulk_status.'.$targetStatus), 403);
+        $count = 0;
+        $skipped = 0;
+        $errors = [];
+
+        DB::transaction(function () use ($ids, $targetStatus, $validated, $inventoryService, $orderService, $invoiceService, &$count, &$skipped, &$errors) {
+            $orders = Order::whereIn('id', $ids)->lockForUpdate()->get();
+
+            if ($targetStatus === 'ready_to_ship') {
+                $orders->loadMissing('shippingAddress.village.services.providers');
+            }
+
+            foreach ($orders as $order) {
+                try {
+                    // Roll back only this order when a later shipment/log write fails.
+                    DB::transaction(function () use ($order, $targetStatus, $validated, $inventoryService, $orderService, $invoiceService, &$count, &$skipped, &$errors): void {
+                        if ($targetStatus === 'confirmed') {
+                            if (in_array($order->status, ['pending', 'pending_confirmation'])) {
+                                $inventoryService->confirmOrder($order);
+                                $order->statusLogs()->create([
+                                    'status' => 'confirmed',
+                                    'notes' => 'Bulk status updated to confirmed.',
+                                    'changed_by' => auth()->id(),
+                                ]);
+                                $count++;
+                            } else {
+                                $skipped++;
+                            }
+                        } elseif ($targetStatus === 'processing') {
+                            if ($order->status === 'confirmed') {
+                                $orderService->updateStatus($order, 'processing');
+                                $order->statusLogs()->create([
+                                    'status' => 'processing',
+                                    'notes' => 'Bulk status updated to processing.',
+                                    'changed_by' => auth()->id(),
+                                ]);
+                                $count++;
+                            } else {
+                                $skipped++;
+                            }
+                        } elseif ($targetStatus === 'ready_to_ship') {
+                            if ($order->status === 'processing') {
+                                // Auto-assign top priority carrier if not provided
+                                $assignedCarrier = $validated['carrier_name'] ?? null;
+                                $assignedProviderId = $validated['service_provider_id'] ?? null;
+                                $hasCarrier = false;
+
+                                if ($order->shippingAddress && $order->shippingAddress->village && $order->shippingAddress->village->services) {
+                                    $services = $order->shippingAddress->village->services->filter(function ($s) {
+                                        return $s->is_active && $s->pivot->is_available;
+                                    })->sortBy(function ($s) {
+                                        return $s->pivot->priority ?? 9999;
+                                    });
+
+                                    if ($assignedCarrier) {
+                                        foreach ($services as $service) {
+                                            if ($service->name === $assignedCarrier) {
+                                                $hasCarrier = true;
+                                                $topProvider = $service->providers->sortBy(function ($p) {
+                                                    return $p->pivot->priority ?? 9999;
+                                                })->first();
+                                                if (! $assignedProviderId && $topProvider) {
+                                                    $assignedProviderId = $topProvider->id;
+                                                }
+                                                break;
+                                            }
+                                        }
+                                    } else {
+                                        $topService = $services->first();
+                                        if ($topService) {
+                                            $assignedCarrier = $topService->name;
+                                            $hasCarrier = true;
+                                            $topProvider = $topService->providers->sortBy(function ($p) {
+                                                return $p->pivot->priority ?? 9999;
+                                            })->first();
+                                            $assignedProviderId = $topProvider->id ?? null;
+                                        }
+                                    }
+                                }
+
+                                if (! $hasCarrier) {
+                                    $errors[] = "Order #{$order->order_no}: No mapped service found.";
+                                    $skipped++;
+
+                                    return;
+                                }
+
+                                $inventoryService->readyToShipOrder($order, $assignedCarrier, $validated['tracking_no'] ?? null, $assignedProviderId);
+                                $order->statusLogs()->create([
+                                    'status' => 'ready_to_ship',
+                                    'notes' => 'Bulk status updated to ready to ship. Carrier: '.$assignedCarrier.', Tracking: '.($validated['tracking_no'] ?? 'Auto-generated/None'),
+                                    'changed_by' => auth()->id(),
+                                ]);
+                                $count++;
+                            } else {
+                                $skipped++;
+                            }
+                        } elseif ($targetStatus === 'dispatched') {
+                            if ($order->status === 'ready_to_ship') {
+                                $shipment = $order->shipments()->first();
+                                if (! $shipment || ! $shipment->carrier_name) {
+                                    $errors[] = "Order #{$order->order_no}: Cannot dispatch without a valid carrier.";
+                                    $skipped++;
+
+                                    return;
+                                }
+                                if (strtolower($shipment->carrier_name) === 'india post' && empty($shipment->tracking_no)) {
+                                    $errors[] = "Order #{$order->order_no}: Cannot dispatch without valid India Post tracking details.";
+                                    $skipped++;
+
+                                    return;
+                                }
+                                if (! $order->invoice) {
+                                    $invoiceService->generateForOrder($order);
+                                }
+                                $inventoryService->dispatchOrder($order);
+                                $order->statusLogs()->create([
+                                    'status' => 'dispatched',
+                                    'notes' => 'Bulk status updated to dispatched.',
+                                    'changed_by' => auth()->id(),
+                                ]);
+                                $count++;
+                            } else {
+                                $skipped++;
+                            }
+                        } elseif ($targetStatus === 'delivered') {
+                            if (in_array($order->status, ['dispatched'], true)) {
+                                $inventoryService->deliverOrder($order);
+                                $shipment = $order->shipments()->latest()->first();
+                                if ($shipment) {
+                                    $shipment->delivered_by = auth()->user()->name;
+                                    $shipment->save();
+                                }
+                                $order->statusLogs()->create([
+                                    'status' => 'delivered',
+                                    'notes' => 'Bulk status updated to delivered.',
+                                    'changed_by' => auth()->id(),
+                                ]);
+                                $count++;
+                            } else {
+                                $skipped++;
+                            }
+                        } elseif ($targetStatus === 'cancelled') {
+                            if (in_array($order->status, ['pending', 'pending_confirmation', 'confirmed', 'processing', 'ready_to_ship'], true)) {
+                                $inventoryService->cancelOrder($order);
+                                $order->statusLogs()->create([
+                                    'status' => 'cancelled',
+                                    'notes' => 'Bulk status updated to cancelled.',
+                                    'changed_by' => auth()->id(),
+                                ]);
+                                $count++;
+                            } else {
+                                $skipped++;
+                            }
+                        }
+                    });
+                } catch (ValidationException $e) {
+                    $errors[] = "Order #{$order->order_no}: ".collect($e->validator->errors()->all())->first();
+                    $skipped++;
+                } catch (\Exception $e) {
+                    $errors[] = "Order #{$order->order_no}: ".$e->getMessage();
+                    $skipped++;
+                }
+            }
+        });
+
+        $msg = "Bulk status update completed. Success: {$count}, Skipped: {$skipped}.";
+        if (! empty($errors)) {
+            // Include up to 3 errors to avoid excessively long toast messages
+            $msg .= ' Errors: '.implode(' ', array_slice($errors, 0, 3));
+            if (count($errors) > 3) {
+                $msg .= ' (and '.(count($errors) - 3).' more)';
+            }
+        }
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json(['success' => true, 'message' => $msg]);
+        }
+
+        return back()->with($count > 0 ? 'success' : 'error', $msg);
+    }
+
+    public function destroy(Order $order)
+    {
+        DB::transaction(function () use ($order) {
+            $order = Order::lockForUpdate()->findOrFail($order->id);
+            if (in_array($order->status, ['dispatched', 'delivered', 'returned', 'return_requested'], true)
+                || $order->payments()->exists() || $order->invoices()->exists()) {
+                throw ValidationException::withMessages(['order' => 'Orders with fulfillment or financial history must be cancelled or reversed through their dedicated workflow.']);
+            }
+            if (in_array($order->status, ['confirmed', 'processing', 'ready_to_ship'], true)) {
+                app(InventoryService::class)->cancelOrder($order);
+            }
+            $order->delete();
+        }, 3);
+
+        if (request()->wantsJson() || request()->ajax()) {
+            return response()->json(['success' => true, 'message' => 'Order deleted successfully.']);
+        }
+
+        return redirect()->route('orders')->with('success', 'Order deleted successfully.');
+    }
+
+    public function downloadInvoice(string $id, InvoiceService $invoiceService)
+    {
+        $order = Order::with(['party', 'items.product.taxRate', 'shippingAddress.village', 'billingAddress.village'])->findOrFail($id);
+        $invoice = $invoiceService->generateForOrder($order);
+        $invoice->load(['order.party', 'order.items.product.taxRate', 'order.shippingAddress.village', 'order.billingAddress.village']);
+
+        $pdf = Pdf::loadView('orders.pdf.invoice', compact('invoice'))->setPaper('a5', 'portrait');
+
+        return $pdf->download("invoice-{$invoice->invoice_no}.pdf");
+    }
+
+    public function downloadShippingLabel(string $id)
+    {
+        $order = Order::with(['shipments'])->findOrFail($id);
+        $shipment = $order->shipments->first();
+
+        if (! $shipment || ! $shipment->tracking_no) {
+            if (request()->is('api/*')) {
+                return response()->json(['message' => 'No shipping tracking number found for this order.'], 422);
+            }
+
+            return back()->with('error', 'No shipping tracking number found for this order.');
+        }
+
+        try {
+            $shippingManager = app(ShippingManager::class);
+            // Defaulting to india_post for now or fetch by carrier name
+            // (Assuming India Post here per user requirement)
+            $provider = $shippingManager->driver('india_post');
+
+            $url = $provider->generateLabel($order, $shipment->tracking_no);
+
+            if (request()->is('api/*')) {
+                return response()->json(['url' => $url]);
+            }
+
+            return redirect($url);
+        } catch (\Exception $e) {
+            if (request()->is('api/*')) {
+                return response()->json(['message' => $e->getMessage()], 422);
+            }
+
+            return back()->with('error', $e->getMessage());
+        }
+    }
+
+    public function generateInvoice(string $id, InvoiceService $invoiceService)
+    {
+        $order = Order::findOrFail($id);
+        $invoiceService->generateForOrder($order);
+
+        if (request()->wantsJson() || request()->ajax()) {
+            return response()->json(['success' => true, 'message' => 'Invoice generated successfully.']);
+        }
+
+        return back()->with('success', 'Invoice generated successfully.');
+    }
+
+    public function generateBulkInvoices(Request $request, InvoiceService $invoiceService)
+    {
+        $validated = $request->validate([
+            'order_ids' => 'required|array|min:1',
+            'order_ids.*' => 'integer|exists:orders,id',
+        ]);
+
+        $orders = Order::whereIn('id', array_unique($validated['order_ids']))->get();
+        $generated = 0;
+
+        DB::transaction(function () use ($orders, $invoiceService, &$generated): void {
+            foreach ($orders as $order) {
+                if (! $invoiceService->findForOrder($order)) {
+                    $invoiceService->generateForOrder($order);
+                    $generated++;
+                }
+            }
+        });
+
+        $message = $generated > 0
+            ? "Generated {$generated} invoice(s)."
+            : 'Invoices have already been generated for the selected orders.';
+
+        return response()->json(['success' => true, 'message' => $message, 'generated' => $generated]);
+    }
+
+    public function downloadReceipt(string $id, InvoiceService $invoiceService)
+    {
+        $order = Order::with(['party', 'items.product.taxRate', 'shippingAddress.village', 'invoice'])->findOrFail($id);
+        $invoiceService->generateForOrder($order);
+        $order->load('invoice');
+
+        $pdf = Pdf::loadView('orders.pdf.cod', compact('order'))->setPaper('a5', 'portrait');
+
+        return $pdf->download("receipt-{$order->order_no}.pdf");
+    }
+
+    public function bulkPrint(Request $request, InvoiceService $invoiceService)
+    {
+        $request->validate([
+            'order_ids' => 'required|array|min:1',
+            'order_ids.*' => 'integer|exists:orders,id',
+            'type' => 'required|string|in:invoice,cod',
+        ]);
+
+        $orders = Order::whereIn('id', array_unique($request->order_ids))
+            ->with('invoice')
+            ->get();
+
+        DB::transaction(function () use ($orders, $invoiceService): void {
+            foreach ($orders as $order) {
+                if (! $invoiceService->findForOrder($order)) {
+                    $invoiceService->generateForOrder($order);
+                }
+            }
+        });
+
+        $orders->load('invoice');
+
+        if ($request->type === 'invoice') {
+            $invoices = Invoice::with([
+                'order.party',
+                'order.warehouse',
+                'order.items.product.taxRate',
+                'order.shippingAddress.village',
+                'order.billingAddress.village',
+            ])->whereIn('order_id', $orders->pluck('id'))->get();
+            $pdf = Pdf::loadView('orders.pdf.bulk_invoice', compact('invoices'))->setPaper('a5', 'portrait');
+
+            return $pdf->download('bulk-invoices.pdf');
+        } else {
+            $orders->load([
+                'party',
+                'items.product.taxRate',
+                'shippingAddress.village',
+                'warehouse',
+            ]);
+            $pdf = Pdf::loadView('orders.pdf.bulk_cod', compact('orders'))->setPaper('a5', 'portrait');
+
+            return $pdf->download('bulk-cod-receipts.pdf');
+        }
+    }
+
+    public function update(UpdateOrderRequest $request, Order $order, OrderService $orderService)
+    {
+        if (in_array($order->status, ['dispatched', 'cancelled', 'delivered', 'returned'])) {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json(['success' => false, 'message' => 'Orders in this status cannot be edited.'], 403);
+            }
+
+            return redirect()->route('orders')->with('error', 'Orders in this status cannot be edited.');
+        }
+
+        $validated = $request->validated();
+
+        $updated = $orderService->updateCustomerOrder($order, $validated);
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Order updated successfully.',
+                'order' => $updated,
+            ]);
+        }
+
+        return redirect()->route('orders')->with('success', 'Order updated successfully.');
+    }
+
+    public function bulkExport(Request $request)
+    {
+        $query = Order::with(['party', 'warehouse', 'items.product', 'shipments', 'billingAddress', 'shippingAddress']);
+
+        $user = auth()->user();
+        $this->applyOrderActionPermissionScope($query, $user);
+
+        if ($request->filled('search')) {
+            $s = trim($request->search);
+            $query->where(function ($subQuery) use ($s) {
+                $subQuery->where('order_no', 'LIKE', "%{$s}%")
+                    ->orWhereHas('party', function ($q) use ($s) {
+                        $q->where('firstname', 'LIKE', "%{$s}%")
+                            ->orWhere('lastname', 'LIKE', "%{$s}%")
+                            ->orWhere('company_name', 'LIKE', "%{$s}%")
+                            ->orWhere('phone', 'LIKE', "%{$s}%");
+                    });
+            });
+        }
+
+        if ($request->filled('status')) {
+            $requestedStatuses = array_filter(array_map('trim', explode(',', $request->status)));
+            $hasFutureOrder = in_array('future_order', $requestedStatuses, true);
+            $hasPending = in_array('pending', $requestedStatuses, true);
+            $hasUnfulfillable = in_array('unfulfillable', $requestedStatuses, true);
+            $hasDeliveryAttempted = in_array('delivery_attempted', $requestedStatuses, true);
+            $hasDispatched = in_array('dispatched', $requestedStatuses, true);
+
+            $realStatuses = array_values(array_filter($requestedStatuses, fn ($s) => ! in_array($s, ['future_order', 'pending', 'unfulfillable', 'delivery_attempted', 'dispatched'])));
+
+            $query->where(function ($q) use ($hasFutureOrder, $hasPending, $hasUnfulfillable, $realStatuses, $hasDispatched, $hasDeliveryAttempted) {
+                $first = true;
+
+                if ($hasFutureOrder) {
+                    $q->where('status', 'future_order');
+                    $first = false;
+                }
+
+                if ($hasPending) {
+                    $method = $first ? 'where' : 'orWhere';
+                    $q->$method(function ($sq) {
+                        $sq->where('status', 'pending')
+                            ->whereDoesntHave('items', function ($itemQuery) {
+                                $itemQuery->leftJoin('stocks', function ($join) {
+                                    $join->on('order_items.product_id', '=', 'stocks.product_id')
+                                        ->whereColumn('stocks.warehouse_id', 'orders.warehouse_id');
+                                })->where(function ($sub) {
+                                    $sub->whereNull('stocks.id')
+                                        ->orWhereRaw('order_items.quantity > (stocks.quantity - stocks.reserved_qty)');
+                                });
+                            });
+                    });
+                    $first = false;
+                }
+
+                if ($hasUnfulfillable) {
+                    $method = $first ? 'where' : 'orWhere';
+                    $q->$method(function ($sq) {
+                        $sq->where('status', 'pending')
+                            ->whereHas('items', function ($itemQuery) {
+                                $itemQuery->leftJoin('stocks', function ($join) {
+                                    $join->on('order_items.product_id', '=', 'stocks.product_id')
+                                        ->whereColumn('stocks.warehouse_id', 'orders.warehouse_id');
+                                })->where(function ($sub) {
+                                    $sub->whereNull('stocks.id')
+                                        ->orWhereRaw('order_items.quantity > (stocks.quantity - stocks.reserved_qty)');
+                                });
+                            });
+                    });
+                    $first = false;
+                }
+
+                if ($hasDispatched) {
+                    $method = $first ? 'where' : 'orWhere';
+                    $q->$method(function ($sq) {
+                        $sq->whereIn('status', ['dispatched'])
+                            ->whereDoesntHave('shipments', function ($ssq) {
+                                $ssq->where('delivery_attempts', '>', 0);
+                            });
+                    });
+                    $first = false;
+                }
+
+                if ($hasDeliveryAttempted) {
+                    $method = $first ? 'where' : 'orWhere';
+                    $q->$method(function ($sq) {
+                        $sq->whereIn('status', ['dispatched'])
+                            ->whereHas('shipments', function ($ssq) {
+                                $ssq->where('delivery_attempts', '>', 0);
+                            });
+                    });
+                    $first = false;
+                }
+
+                if (! empty($realStatuses)) {
+                    $method = $first ? 'whereIn' : 'orWhereIn';
+                    $q->$method('status', $realStatuses);
+                }
+            });
+        }
+
+        if ($request->filled('product')) {
+            $productIds = array_filter(array_map('intval', explode(',', $request->product)));
+            if (! empty($productIds)) {
+                $query->whereHas('items', function ($q) use ($productIds) {
+                    $q->whereIn('product_id', $productIds);
+                });
+            }
+        }
+
+        if ($request->filled('fulfillment')) {
+            $stockSubquery = '(SELECT product_id, warehouse_id, SUM(quantity - reserved_qty) as available FROM stocks WHERE deleted_at IS NULL GROUP BY product_id, warehouse_id)';
+
+            if ($request->fulfillment === 'unfulfillable') {
+                $query->where('status', 'pending')
+                    ->whereRaw("EXISTS (
+                        SELECT 1 FROM order_items
+                        LEFT JOIN $stockSubquery s ON s.product_id = order_items.product_id AND s.warehouse_id = orders.warehouse_id
+                        WHERE order_items.order_id = orders.id
+                        AND order_items.quantity > IFNULL(s.available, 0)
+                    )");
+            } elseif ($request->fulfillment === 'fulfillable') {
+                $query->where(function ($query) use ($stockSubquery) {
+                    $query->whereIn('status', ['confirmed', 'processing'])
+                        ->orWhere(function ($q) use ($stockSubquery) {
+                            $q->where('status', 'pending')
+                                ->whereRaw("NOT EXISTS (
+                                    SELECT 1 FROM order_items
+                                    LEFT JOIN $stockSubquery s ON s.product_id = order_items.product_id AND s.warehouse_id = orders.warehouse_id
+                                    WHERE order_items.order_id = orders.id
+                                    AND order_items.quantity > IFNULL(s.available, 0)
+                                )");
+                        });
+                });
+            }
+        }
+
+        if ($request->filled('state') || $request->filled('district') || $request->filled('taluka') || $request->filled('village')) {
+            if ($request->filled('state')) {
+                $query->whereIn('shipping_state', array_map('trim', explode(',', (string) $request->state)));
+            }
+            if ($request->filled('district')) {
+                $query->whereIn('shipping_district', array_map('trim', explode(',', (string) $request->district)));
+            }
+            if ($request->filled('taluka')) {
+                $query->whereIn('shipping_taluka', array_map('trim', explode(',', (string) $request->taluka)));
+            }
+            if ($request->filled('village')) {
+                $query->whereIn('shipping_village_name', array_map('trim', explode(',', $request->village)));
+            }
+        }
+
+        if ($request->filled('carrier')) {
+            $carriers = array_filter(array_map('trim', explode(',', $request->carrier)));
+            if (! empty($carriers)) {
+                $query->where(function ($q) use ($carriers) {
+                    $q->whereHas('shipments', function ($sq) use ($carriers) {
+                        $sq->whereIn('carrier_name', $carriers);
+                    })->orWhereHas('shippingAddress.village.services', function ($sq) use ($carriers) {
+                        $sq->whereIn('name', $carriers)
+                            ->where('village_service_mappings.is_available', true);
+                    });
+                });
+            }
+        }
+
+        if ($request->filled('from_date')) {
+            $query->where('order_date', '>=', Carbon::parse($request->from_date)->startOfDay());
+        }
+        if ($request->filled('to_date')) {
+            $query->where('order_date', '<', Carbon::parse($request->to_date)->startOfDay()->addDay());
+        }
+
+        if ($request->filled('dispatch_from_date') || $request->filled('dispatch_to_date')) {
+            $dispatchFrom = $request->filled('dispatch_from_date')
+                ? Carbon::parse($request->dispatch_from_date)->startOfDay()
+                : null;
+            $dispatchToExclusive = $request->filled('dispatch_to_date')
+                ? Carbon::parse($request->dispatch_to_date)->startOfDay()->addDay()
+                : null;
+
+            $query->whereHas('shipments', function ($shipmentQuery) use ($dispatchFrom, $dispatchToExclusive) {
+                $shipmentQuery->whereNotNull('shipped_at');
+                if ($dispatchFrom) {
+                    $shipmentQuery->where('shipped_at', '>=', $dispatchFrom);
+                }
+                if ($dispatchToExclusive) {
+                    $shipmentQuery->where('shipped_at', '<', $dispatchToExclusive);
+                }
+            });
+        }
+
+        if ($request->filled('warehouse')) {
+            $warehouseIds = array_filter(array_map('intval', explode(',', $request->warehouse)));
+            if (! empty($warehouseIds)) {
+                $query->whereIn('warehouse_id', $warehouseIds);
+            }
+        }
+
+        $sortField = $request->input('sort_field', 'id');
+        $sortDirection = $request->input('sort_direction', 'asc');
+
+        $allowedSorts = ['id', 'order_no', 'order_date', 'total_amount', 'net_amount', 'status'];
+        if (in_array($sortField, $allowedSorts)) {
+            $query->orderBy($sortField, $sortDirection === 'desc' ? 'desc' : 'asc');
+        } else {
+            $query->orderBy('id', 'asc');
+        }
+
+        // Keep the original cursor's row order and batch only relation loading.
+        $orders = $query->cursor()->chunk(500)->flatMap(
+            fn ($batch) => (new Collection($batch->all()))
+                ->load($query->getEagerLoads())
+        );
+
+        $filename = 'orders-export-'.now()->format('Ymd_His').'.csv';
+
+        return response()->streamDownload($this->generateCsvExportCallback($orders), $filename, [
+            'Content-Type' => 'text/csv',
+        ]);
+    }
+
+    public function exportSelected(Request $request)
+    {
+        $validated = $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'exists:orders,id',
+        ]);
+
+        $user = auth()->user();
+
+        // Apply the same permission scope used in index() — prevents data-leak via ID enumeration
+        $query = Order::with(['party', 'warehouse', 'items.product', 'shipments', 'billingAddress', 'shippingAddress'])
+            ->whereIn('id', $validated['ids'])
+            ->orderBy('id');
+
+        $this->applyOrderActionPermissionScope($query, $user);
+
+        // Keep the original cursor's row order and batch only relation loading.
+        $orders = $query->cursor()->chunk(500)->flatMap(
+            fn ($batch) => (new Collection($batch->all()))
+                ->load($query->getEagerLoads())
+        );
+
+        $filename = 'orders-export-selected-'.now()->format('Ymd_His').'.csv';
+
+        return response()->streamDownload($this->generateCsvExportCallback($orders), $filename, [
+            'Content-Type' => 'text/csv',
+        ]);
+    }
+
+    public function revertStatus(Request $request, Order $order, InventoryService $inventoryService)
+    {
+        abort_unless(auth()->user()->can('orders.revert_status'), 403);
+
+        $request->validate([
+            'status' => 'required|string|in:pending,confirmed,processing,ready_to_ship,dispatched,delivered',
+        ]);
+
+        $targetStatus = $request->status;
+
+        DB::transaction(function () use ($order, $targetStatus, $inventoryService) {
+            $order = Order::query()->lockForUpdate()->findOrFail($order->id);
+            $currentStatus = $order->status;
+            $allowedTargets = [
+                'confirmed' => ['pending'],
+                'processing' => ['confirmed'],
+                'ready_to_ship' => ['processing'],
+                'dispatched' => ['ready_to_ship'],
+                'delivered' => ['dispatched'],
+                'cancelled' => ['pending'],
+            ];
+
+            if ($currentStatus === 'return_requested') {
+                $previousStatus = $order->statusLogs()
+                    ->whereIn('status', ['delivered', 'dispatched'])
+                    ->latest('id')
+                    ->value('status') ?? 'delivered';
+                $allowedTargets['return_requested'] = [$previousStatus];
+            }
+
+            if (! in_array($targetStatus, $allowedTargets[$currentStatus] ?? [], true)) {
+                throw ValidationException::withMessages([
+                    'status' => "Cannot revert an order from {$currentStatus} to {$targetStatus}.",
+                ]);
+            }
+
+            if ($currentStatus === 'return_requested') {
+                $pendingReturn = $order->orderReturns()
+                    ->where('status', 'pending')
+                    ->latest('id')
+                    ->first();
+                if (! $pendingReturn) {
+                    throw ValidationException::withMessages([
+                        'status' => 'The pending return request could not be found to revert this order.',
+                    ]);
+                }
+
+                $pendingReturn->load('items');
+                $wasInTransit = in_array($targetStatus, Order::inTransitStatuses(), true);
+                if ($wasInTransit && $order->warehouse_id) {
+                    foreach ($pendingReturn->items as $item) {
+                        $stock = Stock::where('product_id', $item->product_id)
+                            ->where('warehouse_id', $order->warehouse_id)
+                            ->lockForUpdate()
+                            ->first();
+
+                        if ($stock) {
+                            $stock->dispatched_qty = (float) $stock->dispatched_qty + (float) $item->requested_qty;
+                            $stock->save();
+                        }
+                    }
+                }
+
+                $pendingReturn->items()->delete();
+                $pendingReturn->delete();
+                $order->update(['status' => $targetStatus, 'updated_by' => auth()->id()]);
+            } elseif ($targetStatus === 'pending') {
+                $inventoryService->revertOrderToPending($order);
+            } elseif ($currentStatus === 'processing' && $targetStatus === 'confirmed') {
+                $order->loadMissing('shipments');
+                foreach ($order->shipments as $shipment) {
+                    if ($shipment->status === 'pending') {
+                        $shipment->events()->get()->each->delete();
+                        $shipment->delete();
+                    }
+                }
+                $order->update(['status' => $targetStatus, 'updated_by' => auth()->id()]);
+            } elseif ($currentStatus === 'ready_to_ship' && $targetStatus === 'processing') {
+                $inventoryService->revertOrderToProcessing($order);
+            } elseif ($currentStatus === 'dispatched' && $targetStatus === 'ready_to_ship') {
+                $inventoryService->revertOrderToProcessing($order);
+            } elseif ($currentStatus === 'delivered' && $targetStatus === 'dispatched') {
+                $inventoryService->revertDeliveredToDispatched($order);
+            }
+
+            $order->statusLogs()->create([
+                'status' => $targetStatus,
+                'notes' => "Order status reverted from {$currentStatus} to {$targetStatus}.",
+                'changed_by' => auth()->id(),
+            ]);
+        }, 3);
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json(['success' => true, 'message' => 'Order reverted successfully.']);
+        }
+
+        return back()->with('success', 'Order reverted successfully.');
+    }
+
+    private function applyOrderActionPermissionScope($query, $user): void
+    {
+        app(RecordVisibility::class)->orders($query, $user);
+    }
+
+    private function allowedOrderFilterStatuses($user): array
+    {
+        if (! $user) {
+            return [];
+        }
+
+        if ($user->hasAnyRole(['Super Admin', 'Admin']) || $user->can('view-all-data')) {
+            return ['future_order', 'pending', 'unfulfillable', 'pending_confirmation', 'confirmed', 'processing', 'ready_to_ship', 'dispatched', 'delivery_attempted', 'delivered', 'return_requested', 'returned', 'cancelled'];
+        }
+
+        $statuses = [];
+
+        if ($user->can('orders.view.future_order')) {
+            $statuses[] = 'future_order';
+        }
+        if ($user->can('orders.view.pending')) {
+            $statuses[] = 'pending';
+            $statuses[] = 'unfulfillable';
+            $statuses[] = 'pending_confirmation';
+        }
+        if ($user->can('orders.view.confirmed')) {
+            $statuses[] = 'confirmed';
+        }
+        if ($user->can('orders.view.processing')) {
+            $statuses[] = 'processing';
+        }
+        if ($user->can('orders.view.ready_to_ship')) {
+            $statuses[] = 'ready_to_ship';
+        }
+        if ($user->can('orders.view.dispatched')) {
+            $statuses[] = 'dispatched';
+            $statuses[] = 'delivery_attempted';
+        }
+        if ($user->can('orders.view.delivered')) {
+            $statuses[] = 'delivered';
+        }
+        if ($user->can('orders.view.return_requested')) {
+            $statuses[] = 'return_requested';
+        }
+        if ($user->can('orders.view.returned')) {
+            $statuses[] = 'returned';
+        }
+        if ($user->can('orders.view.cancelled')) {
+            $statuses[] = 'cancelled';
+        }
+
+        $orderedStatuses = ['future_order', 'pending', 'unfulfillable', 'pending_confirmation', 'confirmed', 'processing', 'ready_to_ship', 'dispatched', 'delivery_attempted', 'delivered', 'return_requested', 'returned', 'cancelled'];
+
+        if ($user->can('view_all_order') && empty($statuses)) {
+            return $orderedStatuses;
+        }
+
+        return array_values(array_intersect($orderedStatuses, array_unique($statuses)));
+    }
+
+    private function generateCsvExportCallback($orders)
+    {
+        return function () use ($orders) {
+            $out = fopen('php://output', 'w');
+
+            // Output BOM to fix UTF-8 in Excel
+            fwrite($out, $bom = (chr(0xEF).chr(0xBB).chr(0xBF)));
+
+            fputcsv($out, [
+                'Order ID', 'Order No', 'Order Date', 'Status', 'Order Type',
+                'Order Subtotal', 'Order Tax', 'Order Discount', 'Order Total',
+                'Coupon Code', 'Applied Offer ID', 'Wallet Used', 'Cashback Earned',
+                'Customer First Name', 'Customer Middle Name', 'Customer Last Name',
+                'Company Name', 'Customer Email', 'Customer Phone', 'Alternate Mobile', 'Relative Name', 'Relative Phone', 'GST Number', 'PAN Number',
+                'Billing Address 1', 'Billing Address 2', 'Billing Village', 'Billing PO/BO', 'Billing Taluka', 'Billing District', 'Billing City', 'Billing State', 'Billing Pincode',
+                'Shipping Address 1', 'Shipping Address 2', 'Shipping Village', 'Shipping PO/BO', 'Shipping Taluka', 'Shipping District', 'Shipping City', 'Shipping State', 'Shipping Pincode',
+                'Warehouse Name', 'Carrier Name', 'Tracking No',
+                'Product Name', 'Product SKU', 'Batch Number', 'Quantity', 'Unit Price', 'Item Tax Rate', 'Item Tax', 'Item Discount', 'Item Net',
+            ]);
+
+            foreach ($orders as $order) {
+                // Safely gather shipments
+                $carriers = $order->shipments->pluck('carrier_name')->filter()->implode(', ');
+                $trackings = $order->shipments->pluck('tracking_no')->filter()->implode(', ');
+
+                $customerFirstName = $order->party?->firstname ?? '';
+                $customerMiddleName = $order->party?->middlename ?? '';
+                $customerLastName = $order->party?->lastname ?? '';
+                $customerCompanyName = $order->party?->company_name ?? '';
+                $customerEmail = $order->party?->email ?? '';
+                $customerPhone = $order->party?->phone ?? '';
+                $customerAltMobile = $order->party?->alternatemobile ?? '';
+                $customerRelName = $order->party?->relative_name ?? '';
+                $customerRelPhone = $order->party?->relative_phone ?? '';
+                $customerGst = $order->party?->gst_no ?? '';
+                $customerPan = $order->party?->pan_no ?? '';
+
+                $billingAdd1 = $order->billing_address_line_1 ?? '';
+                $billingAdd2 = $order->billing_address_line_2 ?? '';
+                $billingVillage = $order->billing_village_name ?? '';
+                $billingPO = $order->billing_post_office ?? '';
+                $billingTaluka = $order->billing_taluka ?? '';
+                $billingDistrict = $order->billing_district ?? '';
+                $billingCity = $order->billing_city ?? '';
+                $billingState = $order->billing_state ?? '';
+                $billingPin = $order->billing_pincode ?? '';
+
+                $shippingAdd1 = $order->shipping_address_line_1 ?? '';
+                $shippingAdd2 = $order->shipping_address_line_2 ?? '';
+                $shippingVillage = $order->shipping_village_name ?? '';
+                $shippingPO = $order->shipping_post_office ?? '';
+                $shippingTaluka = $order->shipping_taluka ?? '';
+                $shippingDistrict = $order->shipping_district ?? '';
+                $shippingCity = $order->shipping_city ?? '';
+                $shippingState = $order->shipping_state ?? '';
+                $shippingPin = $order->shipping_pincode ?? '';
+
+                $warehouseName = $order->warehouse?->name ?? '';
+
+                $commonOrderData = [
+                    $order->id, $order->order_no, $order->order_date, $order->status, $order->type,
+                    $order->total_amount, $order->tax_amount, $order->discount_amount, $order->net_amount,
+                    $order->coupon_code ?? '-', $order->applied_offer_id ?? '-', $order->wallet_amount_used, $order->cashback_earned,
+                    $customerFirstName ?: '-', $customerMiddleName ?: '-', $customerLastName ?: '-',
+                    $customerCompanyName ?: '-', $customerEmail ?: '-', $customerPhone ?: '-', $customerAltMobile ?: '-', $customerRelName ?: '-', $customerRelPhone ?: '-', $customerGst ?: '-', $customerPan ?: '-',
+                    $billingAdd1 ?: '-', $billingAdd2 ?: '-', $billingVillage ?: '-', $billingPO ?: '-', $billingTaluka ?: '-', $billingDistrict ?: '-', $billingCity ?: '-', $billingState ?: '-', $billingPin ?: '-',
+                    $shippingAdd1 ?: '-', $shippingAdd2 ?: '-', $shippingVillage ?: '-', $shippingPO ?: '-', $shippingTaluka ?: '-', $shippingDistrict ?: '-', $shippingCity ?: '-', $shippingState ?: '-', $shippingPin ?: '-',
+                    $warehouseName ?: '-', $carriers ?: '-', $trackings ?: '-',
+                ];
+
+                if ($order->items->isEmpty()) {
+                    fputcsv($out, array_merge($commonOrderData, [
+                        '-', '-', '-', '-', '-', '-', '-', '-', '-',
+                    ]));
+                } else {
+                    foreach ($order->items as $item) {
+                        $productName = $item->product ? $item->product->name : 'Unknown Product';
+                        $productSku = $item->product ? $item->product->sku : '-';
+                        fputcsv($out, array_merge($commonOrderData, [
+                            $productName, $productSku, $item->batch_number ?: '-', $item->quantity, $item->unit_price, $item->tax_rate, $item->tax_amount, $item->discount_amount, $item->total_amount,
+                        ]));
+                    }
+                }
+            }
+
+            fclose($out);
+        };
+    }
+
+    public function importBulkDeliver(Request $request, InventoryService $inventoryService)
+    {
+        $request->validate(['file' => 'required|file|max:10240']);
+
+        ini_set('auto_detect_line_endings', true);
+        $isPreview = $request->boolean('preview');
+        $file = $request->file('file');
+        $handle = fopen($file->getRealPath(), 'r');
+
+        if ($handle === false) {
+            return ($isPreview || $request->expectsJson()) ? response()->json(['error' => 'Unable to read uploaded file.'], 400) : back()->with('error', 'Unable to read uploaded file.');
+        }
+
+        $firstRow = fgetcsv($handle);
+        if (isset($firstRow[0])) {
+            $firstRow[0] = preg_replace('/^\xEF\xBB\xBF/', '', $firstRow[0]);
+        }
+        if (isset($firstRow[0])) {
+            $firstRow[0] = preg_replace('/^\xEF\xBB\xBF/', '', $firstRow[0]);
+        }
+        if ($firstRow === false) {
+            fclose($handle);
+
+            return ($isPreview || $request->expectsJson()) ? response()->json(['error' => 'CSV file is empty.'], 400) : back()->with('error', 'CSV file is empty.');
+        }
+
+        $normalized = array_map(fn ($v) => strtolower(trim((string) $v)), $firstRow);
+        $hasHeader = in_array('order_no', $normalized, true) || in_array('order_id', $normalized, true);
+
+        $updated = 0;
+        $skipped = [];
+        $previewData = [];
+        $seenOrderNos = [];
+
+        $extractByHeader = function (array $row, array $header, array $keys): ?string {
+            foreach ($keys as $key) {
+                $index = array_search($key, $header, true);
+                if ($index !== false) {
+                    return isset($row[$index]) ? trim((string) $row[$index]) : null;
+                }
+            }
+
+            return null;
+        };
+
+        \DB::beginTransaction();
+        try {
+            while (($row = fgetcsv($handle)) !== false) {
+                if ($hasHeader) {
+                    $orderNo = $extractByHeader($row, $normalized, ['order_id', 'order_no']);
+                } else {
+                    $orderNo = trim((string) ($row[0] ?? ''));
+                }
+
+                if (! $orderNo) {
+                    continue;
+                }
+
+                if (in_array($orderNo, $seenOrderNos, true)) {
+                    if ($isPreview) {
+                        $previewData[] = [
+                            'order_no' => $orderNo,
+                            'is_valid' => false,
+                            'customer' => 'N/A',
+                            'current_status' => 'Duplicate in CSV',
+                            'upcoming_status' => 'N/A',
+                            'error' => 'Duplicate order in CSV',
+                        ];
+                    } else {
+                        $skipped[] = $orderNo.' (Duplicate in CSV)';
+                    }
+
+                    continue;
+                }
+                $seenOrderNos[] = $orderNo;
+
+                $order = app(RecordVisibility::class)->orders(Order::with(['party', 'items']), $request->user())->where(function ($q) use ($orderNo) {
+                    $q->where('order_no', $orderNo);
+                    if (is_numeric($orderNo)) {
+                        $q->orWhere('id', $orderNo);
+                    }
+                })->first();
+
+                if ($isPreview) {
+                    $isValid = $order && in_array($order->status, ['dispatched'], true);
+                    $errorMsg = null;
+                    if (! $order) {
+                        $errorMsg = 'Order not found';
+                    } elseif (! $isValid) {
+                        $errorMsg = 'Invalid status (currently: '.$order->status.')';
+                    }
+
+                    $previewData[] = [
+                        'order_no' => $orderNo,
+                        'is_valid' => $isValid,
+                        'customer' => $order && $order->party ? trim($order->party->firstname.' '.$order->party->lastname) : 'N/A',
+                        'current_status' => $order ? $order->status : 'Not Found',
+                        'upcoming_status' => $isValid ? 'delivered' : 'N/A',
+                        'error' => $errorMsg,
+                    ];
+
+                    continue;
+                }
+
+                if (! $order || ! in_array($order->status, ['dispatched'], true)) {
+                    $skipped[] = $orderNo.($order ? " (Invalid status: {$order->status})" : ' (Not Found)');
+
+                    continue;
+                }
+
+                $inventoryService->deliverOrder($order);
+                $shipment = $order->shipments()->latest()->first();
+                if ($shipment) {
+                    $shipment->delivered_by = auth()->user()->name;
+                    $shipment->save();
+                }
+                $order->statusLogs()->create([
+                    'status' => 'delivered',
+                    'notes' => 'Bulk CSV updated to delivered.',
+                    'changed_by' => auth()->id(),
+                ]);
+                $updated++;
+            }
+
+            if ($isPreview) {
+                \DB::rollBack();
+                fclose($handle);
+
+                return response()->json(['preview' => $previewData]);
+            }
+
+            \DB::commit();
+        } catch (\Exception $e) {
+            \DB::rollBack();
+            fclose($handle);
+
+            return ($isPreview || $request->expectsJson()) ? response()->json(['error' => 'Error processing CSV: '.$e->getMessage()], 400) : back()->with('error', 'Error processing CSV: '.$e->getMessage());
+        }
+
+        fclose($handle);
+
+        $message = "Deliver orders import completed. Updated {$updated} order(s).";
+        if (count($skipped) > 0) {
+            $message .= "\n\nSkipped ".count($skipped)." invalid/duplicate order(s):\n- ".implode("\n- ", $skipped);
+        }
+
+        return ($request->wantsJson() || $request->ajax()) ? response()->json(['success' => true, 'message' => $message]) : back()->with('success', $message);
+    }
+
+    public function importBulkDeliverTemplate()
+    {
+        return response()->streamDownload(function () {
+            $out = fopen('php://output', 'w');
+            fwrite($out, chr(0xEF).chr(0xBB).chr(0xBF));
+            fputcsv($out, ['order_no']);
+            fputcsv($out, ['ORD-0001']);
+            fputcsv($out, ['ORD-0002']);
+            fclose($out);
+        }, 'bulk-deliver-template.csv', ['Content-Type' => 'text/csv']);
+    }
+
+    public function importBulkReturn(Request $request, InventoryService $inventoryService)
+    {
+        $request->validate(['file' => 'required|file|max:10240']);
+
+        ini_set('auto_detect_line_endings', true);
+        $isPreview = $request->boolean('preview');
+        $file = $request->file('file');
+        $handle = fopen($file->getRealPath(), 'r');
+
+        if ($handle === false) {
+            return ($isPreview || $request->expectsJson()) ? response()->json(['error' => 'Unable to read uploaded file.'], 400) : back()->with('error', 'Unable to read uploaded file.');
+        }
+
+        $firstRow = fgetcsv($handle);
+        if (isset($firstRow[0])) {
+            $firstRow[0] = preg_replace('/^\xEF\xBB\xBF/', '', $firstRow[0]);
+        }
+        if (isset($firstRow[0])) {
+            $firstRow[0] = preg_replace('/^\xEF\xBB\xBF/', '', $firstRow[0]);
+        }
+        if ($firstRow === false) {
+            fclose($handle);
+
+            return ($isPreview || $request->expectsJson()) ? response()->json(['error' => 'CSV file is empty.'], 400) : back()->with('error', 'CSV file is empty.');
+        }
+
+        $normalized = array_map(fn ($v) => strtolower(trim((string) $v)), $firstRow);
+        $hasHeader = in_array('order_no', $normalized, true) || in_array('order_id', $normalized, true);
+
+        $updated = 0;
+        $skipped = [];
+        $previewData = [];
+        $seenOrderNos = [];
+
+        $extractByHeader = function (array $row, array $header, array $keys): ?string {
+            foreach ($keys as $key) {
+                $index = array_search($key, $header, true);
+                if ($index !== false) {
+                    return isset($row[$index]) ? trim((string) $row[$index]) : null;
+                }
+            }
+
+            return null;
+        };
+
+        \DB::beginTransaction();
+        try {
+            while (($row = fgetcsv($handle)) !== false) {
+                if ($hasHeader) {
+                    $orderNo = $extractByHeader($row, $normalized, ['order_id', 'order_no']);
+                } else {
+                    $orderNo = trim((string) ($row[0] ?? ''));
+                }
+
+                if (! $orderNo) {
+                    continue;
+                }
+
+                if (in_array($orderNo, $seenOrderNos, true)) {
+                    if ($isPreview) {
+                        $previewData[] = [
+                            'order_no' => $orderNo,
+                            'is_valid' => false,
+                            'customer' => 'N/A',
+                            'current_status' => 'Duplicate in CSV',
+                            'upcoming_status' => 'N/A',
+                            'error' => 'Duplicate order in CSV',
+                        ];
+                    } else {
+                        $skipped[] = $orderNo.' (Duplicate in CSV)';
+                    }
+
+                    continue;
+                }
+                $seenOrderNos[] = $orderNo;
+
+                $order = app(RecordVisibility::class)->orders(Order::with(['party', 'items']), $request->user())->where(function ($q) use ($orderNo) {
+                    $q->where('order_no', $orderNo);
+                    if (is_numeric($orderNo)) {
+                        $q->orWhere('id', $orderNo);
+                    }
+                })->first();
+
+                if ($isPreview) {
+                    $isValid = $order && in_array($order->status, ['delivered', 'dispatched'], true);
+                    $errorMsg = null;
+                    if (! $order) {
+                        $errorMsg = 'Order not found';
+                    } elseif (! $isValid) {
+                        $errorMsg = 'Invalid status (currently: '.$order->status.')';
+                    }
+
+                    $previewData[] = [
+                        'order_no' => $orderNo,
+                        'is_valid' => $isValid,
+                        'customer' => $order && $order->party ? trim($order->party->firstname.' '.$order->party->lastname) : 'N/A',
+                        'current_status' => $order ? $order->status : 'Not Found',
+                        'upcoming_status' => $isValid ? 'return_requested' : 'N/A',
+                        'error' => $errorMsg,
+                    ];
+
+                    continue;
+                }
+
+                if (! $order || ! in_array($order->status, ['delivered', 'dispatched'], true)) {
+                    $skipped[] = $orderNo.($order ? " (Invalid status: {$order->status})" : ' (Not Found)');
+
+                    continue;
+                }
+
+                // Replicate OrderReturnController logic for returns
+                $baseNo = str_replace('ORD-', 'RET-', $order->order_no);
+                if ($baseNo === $order->order_no) {
+                    $baseNo = 'RET-'.$order->order_no;
+                }
+                $returnCount = OrderReturn::where('order_id', $order->id)->count();
+                $returnNo = $returnCount > 0 ? $baseNo.'-'.($returnCount + 1) : $baseNo;
+
+                $return = OrderReturn::create([
+                    'order_id' => $order->id,
+                    'return_no' => $returnNo,
+                    'status' => 'pending',
+                    'reason' => 'Bulk CSV Import',
+                    'notes' => 'Return requested via CSV import.',
+                ]);
+
+                $wasInTransit = in_array($order->status, Order::inTransitStatuses(), true);
+
+                foreach ($order->items as $item) {
+                    OrderReturnItem::create([
+                        'order_return_id' => $return->id,
+                        'product_id' => $item->product_id,
+                        'requested_qty' => $item->quantity,
+                    ]);
+
+                    if ($wasInTransit && $order->warehouse_id) {
+                        $stock = Stock::where('product_id', $item->product_id)
+                            ->where('warehouse_id', $order->warehouse_id)
+                            ->lockForUpdate()
+                            ->first();
+
+                        if ($stock) {
+                            $stock->dispatched_qty = max(0.0, (float) $stock->dispatched_qty - (float) $item->quantity);
+                            $stock->save();
+                        }
+                    }
+                }
+
+                $order->update([
+                    'status' => 'return_requested',
+                    'updated_by' => auth()->id(),
+                ]);
+
+                $order->statusLogs()->create([
+                    'status' => 'return_requested',
+                    'notes' => 'Bulk CSV updated to return_requested.',
+                    'changed_by' => auth()->id(),
+                ]);
+                $updated++;
+            }
+
+            if ($isPreview) {
+                \DB::rollBack();
+                fclose($handle);
+
+                return response()->json(['preview' => $previewData]);
+            }
+
+            \DB::commit();
+        } catch (\Exception $e) {
+            \DB::rollBack();
+            fclose($handle);
+
+            return ($isPreview || $request->expectsJson()) ? response()->json(['error' => 'Error processing CSV: '.$e->getMessage()], 400) : back()->with('error', 'Error processing CSV: '.$e->getMessage());
+        }
+
+        fclose($handle);
+
+        $message = "Return orders import completed. Updated {$updated} order(s).";
+        if (count($skipped) > 0) {
+            $message .= "\n\nSkipped ".count($skipped)." invalid/duplicate order(s):\n- ".implode("\n- ", $skipped);
+        }
+
+        return ($request->wantsJson() || $request->ajax()) ? response()->json(['success' => true, 'message' => $message]) : back()->with('success', $message);
+    }
+
+    public function importBulkReturnTemplate()
+    {
+        return response()->streamDownload(function () {
+            $out = fopen('php://output', 'w');
+            fwrite($out, chr(0xEF).chr(0xBB).chr(0xBF));
+            fputcsv($out, ['order_no']);
+            fputcsv($out, ['ORD-0001']);
+            fputcsv($out, ['ORD-0002']);
+            fputcsv($out, ['ORD-0003']);
+            fclose($out);
+        }, 'bulk-return-template.csv', ['Content-Type' => 'text/csv']);
+    }
+}

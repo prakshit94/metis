@@ -1,0 +1,107 @@
+<?php
+
+namespace App\Modules\Orders\Models;
+
+use App\Concerns\LogsActivity;
+use App\Modules\Catalog\Models\Service;
+use Illuminate\Database\Eloquent\Model;
+use OwenIt\Auditing\Auditable as AuditableTrait;
+use OwenIt\Auditing\Contracts\Auditable;
+use Spatie\Activitylog\LogOptions;
+
+class Shipment extends Model implements Auditable
+{
+    use LogsActivity;
+    use AuditableTrait;
+
+    protected $fillable = [
+        'shipment_no',
+        'order_id',
+        'carrier_name',
+        'service_provider_id',
+        'tracking_no',
+        'status',
+        'shipped_at',
+        'delivered_at',
+        'delivered_by',
+        'delivery_attempts',
+        'next_followup_date',
+        'reschedule_reason',
+        'actual_weight_g',
+        'length_cm',
+        'width_cm',
+        'height_cm',
+        'article_type',
+        'shipping_cost',
+        'provider_response',
+        'tax_components',
+        'booking_data',
+        'estimated_delivery_date',
+        'india_post_tracking_response',
+    ];
+
+    protected $casts = [
+        'shipped_at' => 'datetime',
+        'delivered_at' => 'datetime',
+        'next_followup_date' => 'datetime',
+        'provider_response' => 'array',
+        'tax_components' => 'array',
+        'booking_data' => 'array',
+        'estimated_delivery_date' => 'date',
+        'india_post_tracking_response' => 'array',
+    ];
+
+    public function order()
+    {
+        return $this->belongsTo(Order::class);
+    }
+
+    public function service()
+    {
+        return $this->belongsTo(Service::class, 'carrier_name', 'name');
+    }
+
+    public function events()
+    {
+        return $this->hasMany(ShipmentTrackingEvent::class);
+    }
+
+    public static function generateShipmentNo(?Order $order = null): string
+    {
+        if ($order && $order->order_no) {
+            $baseNo = str_replace('ORD-', 'SHP-', $order->order_no);
+            if ($baseNo === $order->order_no) {
+                $baseNo = 'SHP-'.$order->order_no;
+            }
+            $count = self::where('order_id', $order->id)->count();
+            if ($count > 0) {
+                return $baseNo.'-'.($count + 1);
+            }
+
+            return $baseNo;
+        }
+
+        $prefix = 'SHP-'.now()->format('dmYHi');
+        $lastShipment = self::where('shipment_no', 'like', $prefix.'-%')
+            ->orderBy('shipment_no', 'desc')
+            ->first();
+
+        if ($lastShipment) {
+            $parts = explode('-', $lastShipment->shipment_no);
+            $lastNum = (int) end($parts);
+            $nextNum = str_pad($lastNum + 1, 2, '0', STR_PAD_LEFT);
+
+            return $prefix.'-'.$nextNum;
+        }
+
+        return $prefix.'-01';
+    }
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logFillable()
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs();
+    }
+}

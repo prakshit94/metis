@@ -1,0 +1,744 @@
+[
+  {
+    "package": "barryvdh/laravel-dompdf",
+    "version": "v3.1.2",
+    "dependency": "direct",
+    "installation": "runtime",
+    "php_requirement": "^8.1"
+  },
+  {
+    "package": "brick/math",
+    "version": "0.14.8",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": "^8.2"
+  },
+  {
+    "package": "carbonphp/carbon-doctrine-types",
+    "version": "3.2.1",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": "^8.1"
+  },
+  {
+    "package": "composer/pcre",
+    "version": "3.4.0",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": "^7.4 || ^8.0"
+  },
+  {
+    "package": "composer/semver",
+    "version": "3.4.4",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": "^5.3.2 || ^7.0 || ^8.0"
+  },
+  {
+    "package": "dedoc/scramble",
+    "version": "0.13.43",
+    "dependency": "direct",
+    "installation": "runtime",
+    "php_requirement": "^8.1"
+  },
+  {
+    "package": "dflydev/dot-access-data",
+    "version": "v3.0.3",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": "^7.1 || ^8.0"
+  },
+  {
+    "package": "doctrine/inflector",
+    "version": "2.1.0",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": "^7.2 || ^8.0"
+  },
+  {
+    "package": "doctrine/lexer",
+    "version": "3.0.1",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": "^8.1"
+  },
+  {
+    "package": "dompdf/dompdf",
+    "version": "v3.1.6",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": "^7.1 || ^8.0"
+  },
+  {
+    "package": "dompdf/php-font-lib",
+    "version": "1.0.2",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": "^7.1 || ^8.0"
+  },
+  {
+    "package": "dompdf/php-svg-lib",
+    "version": "1.0.2",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": "^7.1 || ^8.0"
+  },
+  {
+    "package": "dragonmantank/cron-expression",
+    "version": "v3.6.0",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": "^8.2|^8.3|^8.4|^8.5"
+  },
+  {
+    "package": "egulias/email-validator",
+    "version": "4.0.4",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": ">=8.1"
+  },
+  {
+    "package": "fakerphp/faker",
+    "version": "v1.24.1",
+    "dependency": "direct",
+    "installation": "development",
+    "php_requirement": "^7.4 || ^8.0"
+  },
+  {
+    "package": "filp/whoops",
+    "version": "2.18.4",
+    "dependency": "transitive",
+    "installation": "development",
+    "php_requirement": "^7.1 || ^8.0"
+  },
+  {
+    "package": "fruitcake/php-cors",
+    "version": "v1.4.0",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": "^8.1"
+  },
+  {
+    "package": "graham-campbell/result-type",
+    "version": "v1.2.0",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": "^7.2.5 || ^8.0"
+  },
+  {
+    "package": "guzzlehttp/guzzle",
+    "version": "7.15.5",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": "^7.2.5 || ^8.0"
+  },
+  {
+    "package": "guzzlehttp/promises",
+    "version": "2.5.3",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": "^7.2.5 || ^8.0"
+  },
+  {
+    "package": "guzzlehttp/psr7",
+    "version": "2.13.1",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": "^7.2.5 || ^8.0"
+  },
+  {
+    "package": "guzzlehttp/uri-template",
+    "version": "v1.0.11",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": "^7.2.5 || ^8.0"
+  },
+  {
+    "package": "laravel/framework",
+    "version": "v12.69.2",
+    "dependency": "direct",
+    "installation": "runtime",
+    "php_requirement": "^8.2"
+  },
+  {
+    "package": "laravel/pail",
+    "version": "v1.2.7",
+    "dependency": "direct",
+    "installation": "development",
+    "php_requirement": "^8.2"
+  },
+  {
+    "package": "laravel/pint",
+    "version": "v1.32.1",
+    "dependency": "direct",
+    "installation": "development",
+    "php_requirement": "^8.3.0"
+  },
+  {
+    "package": "laravel/prompts",
+    "version": "v0.3.24",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": "^8.1"
+  },
+  {
+    "package": "laravel/sail",
+    "version": "v1.67.0",
+    "dependency": "direct",
+    "installation": "development",
+    "php_requirement": "^8.0"
+  },
+  {
+    "package": "laravel/sanctum",
+    "version": "v4.3.3",
+    "dependency": "direct",
+    "installation": "runtime",
+    "php_requirement": "^8.2"
+  },
+  {
+    "package": "laravel/serializable-closure",
+    "version": "v2.0.16",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": "^8.1"
+  },
+  {
+    "package": "laravel/tinker",
+    "version": "v2.11.1",
+    "dependency": "direct",
+    "installation": "runtime",
+    "php_requirement": "^7.2.5|^8.0"
+  },
+  {
+    "package": "league/commonmark",
+    "version": "2.10.1",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": "^7.4 || ^8.0"
+  },
+  {
+    "package": "league/config",
+    "version": "v1.2.0",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": "^7.4 || ^8.0"
+  },
+  {
+    "package": "league/flysystem",
+    "version": "3.36.0",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": "^8.0.2"
+  },
+  {
+    "package": "league/flysystem-local",
+    "version": "3.35.3",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": "^8.0.2"
+  },
+  {
+    "package": "league/mime-type-detection",
+    "version": "1.17.0",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": "^7.4 || ^8.0"
+  },
+  {
+    "package": "league/uri",
+    "version": "7.8.1",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": "^8.1"
+  },
+  {
+    "package": "league/uri-interfaces",
+    "version": "7.8.1",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": "^8.1"
+  },
+  {
+    "package": "maatwebsite/excel",
+    "version": "4.0.3",
+    "dependency": "direct",
+    "installation": "runtime",
+    "php_requirement": "^8.3"
+  },
+  {
+    "package": "maennchen/zipstream-php",
+    "version": "3.2.2",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": null
+  },
+  {
+    "package": "markbaker/complex",
+    "version": "3.0.2",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": "^7.2 || ^8.0"
+  },
+  {
+    "package": "markbaker/matrix",
+    "version": "3.0.1",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": "^7.1 || ^8.0"
+  },
+  {
+    "package": "masterminds/html5",
+    "version": "2.11.0",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": ">=7.4"
+  },
+  {
+    "package": "monolog/monolog",
+    "version": "3.12.0",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": ">=8.1"
+  },
+  {
+    "package": "myclabs/deep-copy",
+    "version": "1.14.0",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": "^8.0"
+  },
+  {
+    "package": "nesbot/carbon",
+    "version": "3.14.0",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": "^8.1"
+  },
+  {
+    "package": "nette/schema",
+    "version": "v1.3.6",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": "8.1 - 8.5"
+  },
+  {
+    "package": "nette/utils",
+    "version": "v4.1.5",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": "8.2 - 8.5"
+  },
+  {
+    "package": "nikic/php-parser",
+    "version": "v5.9.0",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": ">=7.4"
+  },
+  {
+    "package": "nunomaduro/collision",
+    "version": "v8.9.5",
+    "dependency": "direct",
+    "installation": "development",
+    "php_requirement": "^8.2.0"
+  },
+  {
+    "package": "nunomaduro/termwind",
+    "version": "v2.4.0",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": "^8.2"
+  },
+  {
+    "package": "owen-it/laravel-auditing",
+    "version": "v14.0.6",
+    "dependency": "direct",
+    "installation": "runtime",
+    "php_requirement": "^8.2"
+  },
+  {
+    "package": "phpoffice/phpspreadsheet",
+    "version": "5.10.0",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": "^8.2"
+  },
+  {
+    "package": "phpoption/phpoption",
+    "version": "1.10.0",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": "^7.2.5 || ^8.0"
+  },
+  {
+    "package": "phpstan/phpdoc-parser",
+    "version": "2.3.5",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": "^7.4 || ^8.0"
+  },
+  {
+    "package": "picqer/php-barcode-generator",
+    "version": "v2.4.2",
+    "dependency": "direct",
+    "installation": "runtime",
+    "php_requirement": "^8.1"
+  },
+  {
+    "package": "psr/clock",
+    "version": "1.0.0",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": "^7.0 || ^8.0"
+  },
+  {
+    "package": "psr/container",
+    "version": "2.0.2",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": ">=7.4.0"
+  },
+  {
+    "package": "psr/event-dispatcher",
+    "version": "1.0.0",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": ">=7.2.0"
+  },
+  {
+    "package": "psr/http-client",
+    "version": "1.0.3",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": "^7.0 || ^8.0"
+  },
+  {
+    "package": "psr/http-factory",
+    "version": "1.1.0",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": ">=7.1"
+  },
+  {
+    "package": "psr/http-message",
+    "version": "2.0",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": "^7.2 || ^8.0"
+  },
+  {
+    "package": "psr/log",
+    "version": "3.0.2",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": ">=8.0.0"
+  },
+  {
+    "package": "psr/simple-cache",
+    "version": "3.0.0",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": ">=8.0.0"
+  },
+  {
+    "package": "psy/psysh",
+    "version": "v0.12.24",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": "^8.0 || ^7.4"
+  },
+  {
+    "package": "ralouphie/getallheaders",
+    "version": "3.0.3",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": ">=5.6"
+  },
+  {
+    "package": "ramsey/collection",
+    "version": "2.1.1",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": "^8.1"
+  },
+  {
+    "package": "ramsey/uuid",
+    "version": "4.9.4",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": "^8.0"
+  },
+  {
+    "package": "sabberworm/php-css-parser",
+    "version": "v9.4.0",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": "^7.2.0 || ~8.0.0 || ~8.1.0 || ~8.2.0 || ~8.3.0 || ~8.4.0 || ~8.5.0"
+  },
+  {
+    "package": "spatie/laravel-activitylog",
+    "version": "4.12.3",
+    "dependency": "direct",
+    "installation": "runtime",
+    "php_requirement": "^8.1"
+  },
+  {
+    "package": "spatie/laravel-package-tools",
+    "version": "1.93.2",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": "^8.1"
+  },
+  {
+    "package": "spatie/laravel-permission",
+    "version": "8.3.0",
+    "dependency": "direct",
+    "installation": "runtime",
+    "php_requirement": "^8.3"
+  },
+  {
+    "package": "symfony/clock",
+    "version": "v7.4.8",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": ">=8.2"
+  },
+  {
+    "package": "symfony/console",
+    "version": "v7.4.19",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": ">=8.2"
+  },
+  {
+    "package": "symfony/css-selector",
+    "version": "v7.4.18",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": ">=8.2"
+  },
+  {
+    "package": "symfony/deprecation-contracts",
+    "version": "v3.7.1",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": ">=8.1"
+  },
+  {
+    "package": "symfony/error-handler",
+    "version": "v7.4.17",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": ">=8.2"
+  },
+  {
+    "package": "symfony/event-dispatcher",
+    "version": "v7.4.17",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": ">=8.2"
+  },
+  {
+    "package": "symfony/event-dispatcher-contracts",
+    "version": "v3.7.1",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": ">=8.1"
+  },
+  {
+    "package": "symfony/finder",
+    "version": "v7.4.19",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": ">=8.2"
+  },
+  {
+    "package": "symfony/http-foundation",
+    "version": "v7.4.19",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": ">=8.2"
+  },
+  {
+    "package": "symfony/http-kernel",
+    "version": "v7.4.19",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": ">=8.2"
+  },
+  {
+    "package": "symfony/mailer",
+    "version": "v7.4.19",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": ">=8.2"
+  },
+  {
+    "package": "symfony/mime",
+    "version": "v7.4.19",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": ">=8.2"
+  },
+  {
+    "package": "symfony/polyfill-ctype",
+    "version": "v1.37.0",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": ">=7.2"
+  },
+  {
+    "package": "symfony/polyfill-intl-grapheme",
+    "version": "v1.41.0",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": ">=7.2"
+  },
+  {
+    "package": "symfony/polyfill-intl-idn",
+    "version": "v1.42.0",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": ">=7.2"
+  },
+  {
+    "package": "symfony/polyfill-intl-normalizer",
+    "version": "v1.42.0",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": ">=7.2"
+  },
+  {
+    "package": "symfony/polyfill-mbstring",
+    "version": "v1.38.2",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": ">=7.2"
+  },
+  {
+    "package": "symfony/polyfill-php80",
+    "version": "v1.37.0",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": ">=7.2"
+  },
+  {
+    "package": "symfony/polyfill-php83",
+    "version": "v1.41.0",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": ">=7.2"
+  },
+  {
+    "package": "symfony/polyfill-php84",
+    "version": "v1.38.1",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": ">=7.2"
+  },
+  {
+    "package": "symfony/polyfill-php85",
+    "version": "v1.41.0",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": ">=7.2"
+  },
+  {
+    "package": "symfony/polyfill-uuid",
+    "version": "v1.37.0",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": ">=7.2"
+  },
+  {
+    "package": "symfony/process",
+    "version": "v7.4.19",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": ">=8.2"
+  },
+  {
+    "package": "symfony/routing",
+    "version": "v7.4.18",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": ">=8.2"
+  },
+  {
+    "package": "symfony/service-contracts",
+    "version": "v3.7.3",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": ">=8.1"
+  },
+  {
+    "package": "symfony/string",
+    "version": "v7.4.19",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": ">=8.2"
+  },
+  {
+    "package": "symfony/translation",
+    "version": "v7.4.17",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": ">=8.2"
+  },
+  {
+    "package": "symfony/translation-contracts",
+    "version": "v3.7.1",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": ">=8.1"
+  },
+  {
+    "package": "symfony/uid",
+    "version": "v7.4.17",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": ">=8.2"
+  },
+  {
+    "package": "symfony/var-dumper",
+    "version": "v7.4.18",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": ">=8.2"
+  },
+  {
+    "package": "symfony/yaml",
+    "version": "v7.4.18",
+    "dependency": "transitive",
+    "installation": "development",
+    "php_requirement": ">=8.2"
+  },
+  {
+    "package": "thecodingmachine/safe",
+    "version": "v3.4.0",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": "^8.1"
+  },
+  {
+    "package": "tijsverkoyen/css-to-inline-styles",
+    "version": "v2.4.0",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": "^7.4 || ^8.0"
+  },
+  {
+    "package": "vlucas/phpdotenv",
+    "version": "v5.7.0",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": "^7.2.5 || ^8.0"
+  },
+  {
+    "package": "voku/portable-ascii",
+    "version": "2.1.1",
+    "dependency": "transitive",
+    "installation": "runtime",
+    "php_requirement": ">=7.1.0"
+  }
+]

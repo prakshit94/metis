@@ -1,0 +1,111 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Modules\Inventory\Models;
+
+use App\Concerns\LogsActivity;
+use App\Modules\Catalog\Models\Warehouse;
+use App\Modules\Users\Models\User;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Storage;
+use OwenIt\Auditing\Auditable as AuditableTrait;
+use OwenIt\Auditing\Contracts\Auditable;
+use Spatie\Activitylog\LogOptions;
+
+class PurchaseOrder extends Model
+ implements Auditable{
+    use LogsActivity;
+    use AuditableTrait;
+
+    use SoftDeletes;
+
+    protected $fillable = [
+        'po_number',
+        'supplier_id',
+        'warehouse_id',
+        'status',
+        'expected_delivery_date',
+        'total_amount',
+        'tax_amount',
+        'discount_amount',
+        'net_amount',
+        'notes',
+        'created_by',
+        'updated_by',
+        'approved_by',
+        'approved_at',
+        'rejection_reason',
+        'invoice_path',
+        'paid_amount',
+        'payment_status',
+    ];
+
+    protected $casts = [
+        'expected_delivery_date' => 'date',
+        'total_amount' => 'decimal:2',
+        'tax_amount' => 'decimal:2',
+        'discount_amount' => 'decimal:2',
+        'net_amount' => 'decimal:2',
+        'paid_amount' => 'decimal:2',
+        'approved_at' => 'datetime',
+    ];
+
+    protected $appends = ['invoice_url', 'due_amount'];
+
+    public function getDueAmountAttribute(): float
+    {
+        return max(0, (float)$this->net_amount - (float)$this->paid_amount);
+    }
+
+    public function payments(): HasMany
+    {
+        return $this->hasMany(PurchaseOrderPayment::class);
+    }
+
+    public function supplier(): BelongsTo
+    {
+        return $this->belongsTo(Supplier::class, 'supplier_id')->withTrashed();
+    }
+
+    public function warehouse(): BelongsTo
+    {
+        return $this->belongsTo(Warehouse::class, 'warehouse_id')->withTrashed();
+    }
+
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function items(): HasMany
+    {
+        return $this->hasMany(PurchaseOrderItem::class);
+    }
+
+    public function goodsReceipts(): HasMany
+    {
+        return $this->hasMany(GoodsReceipt::class);
+    }
+
+    public function approver(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'approved_by');
+    }
+
+    public function getInvoiceUrlAttribute(): ?string
+    {
+        return $this->invoice_path ? Storage::disk('public')->url($this->invoice_path) : null;
+    }
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logFillable()
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs();
+    }
+}

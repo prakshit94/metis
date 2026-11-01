@@ -1,0 +1,551 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Modules\Core\Controllers\Controller;
+use App\Services\ActivityFeedService;
+use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
+use OwenIt\Auditing\Models\Audit;
+
+class AuditLogController extends Controller implements HasMiddleware
+{
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:audit-log-view', only: ['index']),
+            new Middleware('permission:audit-log-delete', only: ['clearAll', 'destroy']),
+        ];
+    }
+
+    /**
+     * Display a listing of the audit logs.
+     * 
+     * @return array{data: array<int, \OwenIt\Auditing\Models\Audit&array{model_name: string, user: \App\Modules\Users\Models\User|null}>, total: int, current_page: int, last_page: int, stats: array{total: int, created: int, updated: int, deleted: int}}
+     */
+    public function index(Request $request)
+    {
+        // Enforce basic permission if you have one, or just require auth for now.
+        // Assuming Super Admin can view, but let's allow basic view logic.
+        // We will pass the data as JSON if it's an AJAX request (for Alpine) or standard Blade.
+
+        if ($request->wantsJson()) {
+            $query = Audit::with(['user', 'auditable'])->latest();
+
+            if ($request->filled('search')) {
+                $search = $request->search;
+                $query->where(function ($q) use ($search) {
+                    $q->where('event', 'like', "%{$search}%")
+                        ->orWhere('auditable_type', 'like', "%{$search}%")
+                        ->orWhereHas('user', function ($uq) use ($search) {
+                            $uq->where('name', 'like', "%{$search}%");
+                        });
+                });
+            }
+
+            if ($request->filled('event')) {
+                $query->where('event', $request->event);
+            }
+
+            $perPage = $request->input('per_page', 15);
+            $audits = $query->paginate($perPage);
+            app(ActivityFeedService::class)->prepareAudits($audits->getCollection());
+
+            // Collect all user IDs from old/new values to prevent N+1 queries
+            $userIdsToFetch = [];
+            $userKeys = ['created_by', 'updated_by', 'changed_by', 'deleted_by', 'user_id', 'manager_id'];
+            
+            foreach ($audits as $audit) {
+                foreach (['old_values', 'new_values'] as $valueType) {
+                    $values = $audit->{$valueType};
+                    if (is_array($values)) {
+                        foreach ($userKeys as $key) {
+                            if (isset($values[$key]) && is_numeric($values[$key])) {
+                                $userIdsToFetch[] = $values[$key];
+                            }
+                        }
+                    }
+                }
+            }
+            
+            $userIdsToFetch = array_unique($userIdsToFetch);
+            $userNames = count($userIdsToFetch) > 0 
+                ? \App\Modules\Users\Models\User::whereIn('id', $userIdsToFetch)->pluck('name', 'id')->toArray() 
+                : [];
+
+            // Transform the class names for frontend friendly display
+            $audits->getCollection()->transform(function ($audit) use ($userKeys, $userNames) {
+                $modelParts = explode('\\', $audit->auditable_type);
+                $audit->model_name = end($modelParts);
+
+                // Replace user IDs with actual names in the JSON payload
+                $oldValues = $audit->old_values;
+                $newValues = $audit->new_values;
+
+                foreach ($userKeys as $key) {
+                    if (is_array($oldValues) && isset($oldValues[$key]) && isset($userNames[$oldValues[$key]])) {
+                        $oldValues[$key] = $userNames[$oldValues[$key]] . ' (ID: ' . $oldValues[$key] . ')';
+                    }
+                    if (is_array($newValues) && isset($newValues[$key]) && isset($userNames[$newValues[$key]])) {
+                        $newValues[$key] = $userNames[$newValues[$key]] . ' (ID: ' . $newValues[$key] . ')';
+                    }
+                }
+
+                $formatValue = function ($key, $value) {
+                    if (is_null($value)) return $value;
+
+                    // Format amounts
+                    $amountKeys = ['amount', 'price', 'cost', 'tax', 'discount', 'total', 'net'];
+                    foreach ($amountKeys as $ak) {
+                        if (str_contains($key, $ak) && is_numeric($value)) {
+                            return '₹' . number_format((float)$value, 2);
+                        }
+                    }
+
+                    // Format dates
+                    $dateKeys = ['_at', '_date', 'date_', 'time_', '_until', 'dob'];
+                    foreach ($dateKeys as $dk) {
+                        if (str_contains($key, $dk) && is_string($value) && strtotime($value) !== false) {
+                            try {
+                                return \Illuminate\Support\Carbon::parse($value)->format('d M Y, h:i A');
+                            } catch (\Exception $e) {
+                                return $value;
+                            }
+                        }
+                    }
+
+                    return $value;
+                };
+
+                if (is_array($oldValues)) {
+                    foreach ($oldValues as $k => $v) {
+                        $oldValues[$k] = $formatValue($k, $v);
+                    }
+                }
+
+                if (is_array($newValues)) {
+                    foreach ($newValues as $k => $v) {
+                        $newValues[$k] = $formatValue($k, $v);
+                    }
+                }
+
+                $audit->old_values = $oldValues;
+                $audit->new_values = $newValues;
+
+                $audit->formatted_description = self::formatOwenItAuditDescription($audit);
+
+                return $audit;
+            });
+
+            // Calculate stats
+            $totals = Audit::query()->toBase()->selectRaw("
+                COUNT(*) as total,
+                COALESCE(SUM(CASE WHEN event = 'created' THEN 1 ELSE 0 END), 0) as created,
+                COALESCE(SUM(CASE WHEN event = 'updated' THEN 1 ELSE 0 END), 0) as updated,
+                COALESCE(SUM(CASE WHEN event = 'deleted' THEN 1 ELSE 0 END), 0) as deleted
+            ")->first();
+            $stats = [
+                'total' => (int) $totals->total,
+                'created' => (int) $totals->created,
+                'updated' => (int) $totals->updated,
+                'deleted' => (int) $totals->deleted,
+            ];
+
+            return response()->json([
+                'data' => $audits->items(),
+                'total' => $audits->total(),
+                'current_page' => $audits->currentPage(),
+                'last_page' => $audits->lastPage(),
+                'stats' => $stats,
+            ]);
+        }
+
+        return view('admin.audit-logs.index');
+    }
+
+    /**
+     * Clear all audit logs (Super Admin only).
+     */
+    public function clearAll(Request $request)
+    {
+        if (! auth()->user()->hasRole('Super Admin')) {
+            return response()->json(['message' => 'Unauthorized action. Only Super Admin can clear logs.'], 403);
+        }
+
+        Audit::truncate();
+
+        return response()->json(['message' => 'All audit logs have been cleared successfully.']);
+    }
+
+    /**
+     * Delete specific logs.
+     */
+    public function destroy(Request $request)
+    {
+        if (! auth()->user()->hasRole('Super Admin')) {
+            return response()->json(['message' => 'Unauthorized action.'], 403);
+        }
+
+        $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'integer|exists:audits,id',
+        ]);
+
+        Audit::whereIn('id', $request->ids)->delete();
+
+        return response()->json(['message' => 'Selected logs deleted.']);
+    }
+
+    /**
+     * Fetch recent activity logs for the authenticated user.
+     */
+    public function recentActivities(Request $request)
+    {
+        $user = $request->user();
+        $this->authorizeActivityAccess($user);
+
+        $snapshot = app(ActivityFeedService::class)->snapshot($user);
+        $activities = $snapshot['activities'];
+        $readIds = $snapshot['readIds'];
+        $unreadCount = $snapshot['count'];
+
+        return response()->json([
+            'count' => $unreadCount,
+            'activities' => $activities->map(function ($a) use ($readIds) {
+                $causer = $a->causer;
+                $formattedDescription = self::formatActivityDescription($a);
+                $causerName = $causer
+                    ? (trim(implode(' ', array_filter([$causer->first_name, $causer->last_name]))) ?: $causer->name)
+                    : 'System';
+                return [
+                    'id'                    => $a->id,
+                    'formatted_description' => $formattedDescription,
+                    'plain_description'     => self::plainActivityDescription($formattedDescription),
+                    'causer_name'           => $causerName,
+                    'causer_photo'          => $causer?->photo ?? null,
+                    'time_ago'              => $a->created_at?->diffForHumans() ?? '',
+                    'is_read'               => in_array($a->id, $readIds),
+                ];
+            }),
+        ]);
+    }
+
+    /**
+     * Mark specific or all activities as read.
+     */
+    public function markAsRead(Request $request, $id)
+    {
+        $user = $request->user();
+        $this->authorizeActivityAccess($user);
+
+        if ($id === 'all') {
+            $this->activityQueryFor($user)->select('id')->chunkById(1000, function ($activities) use ($user) {
+                app(ActivityFeedService::class)->markRead($user, $activities->modelKeys());
+            });
+        } else {
+            abort_unless(ctype_digit((string) $id), 422, 'Invalid activity ID.');
+
+            $activity = $this->activityQueryFor($user)->findOrFail((int) $id);
+            app(ActivityFeedService::class)->markRead($user, [$activity->id]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'count' => $this->unreadActivityCount($user),
+        ]);
+    }
+
+    private function authorizeActivityAccess($user): void
+    {
+        abort_unless(
+            $user && ($user->can('audit-log-view') || $user->hasAnyRole(['Super Admin', 'Admin'])),
+            403,
+            'You do not have permission to view activity logs.'
+        );
+    }
+
+    private function activityQueryFor($user)
+    {
+        return app(ActivityFeedService::class)->visibleQuery($user);
+    }
+
+    private function unreadActivityCount($user): int
+    {
+        return app(ActivityFeedService::class)->unreadCount($user);
+    }
+
+    public static function plainActivityDescription(string $formattedDescription): string
+    {
+        return trim((string) preg_replace('/\s+/', ' ', html_entity_decode(strip_tags($formattedDescription))));
+    }
+
+    public static function formatOwenItAuditDescription($audit)
+    {
+        $subjectName = class_basename($audit->auditable_type);
+        $detail = '';
+        $transition = '';
+
+        $subject = $audit->auditable;
+
+        $old = $audit->old_values ?? [];
+        $attrs = $audit->new_values ?? [];
+
+        if ($subjectName === 'Order') {
+            $orderNo = $subject ? $subject->order_no : ($attrs['order_no'] ?? null);
+            if ($orderNo) $detail = ' #' . $orderNo;
+        } elseif ($subjectName === 'User') {
+            $name = $subject ? $subject->name : ($attrs['name'] ?? null);
+            if ($name) $detail = ' ' . $name;
+        } elseif ($subjectName === 'Attendance') {
+            $date = $subject ? $subject->date : ($attrs['date'] ?? null);
+            if ($date) $detail = ' for ' . \Carbon\Carbon::parse($date)->format('d M Y');
+        } elseif ($subjectName === 'Stock') {
+            $subject?->loadMissing('product');
+            $productName = $subject?->product?->name ?? 'Product';
+            $detail = ' for ' . $productName;
+        } elseif ($subjectName === 'OrderItem') {
+            $subject?->loadMissing(['product', 'order']);
+            $productName = $subject?->product?->name ?? 'Product';
+            $detail = ' for ' . $productName;
+            $orderNo = $subject?->order?->order_no ?? null;
+            if ($orderNo) {
+                $detail .= " (Order #{$orderNo})";
+            }
+        } elseif ($subjectName === 'PartyAddress') {
+            $subject?->loadMissing('party');
+            $customerName = $subject?->party?->name;
+            if (!$customerName) {
+                $partyId = $attrs['party_id'] ?? $old['party_id'] ?? null;
+                if ($partyId) {
+                    $customerName = $audit->relationLoaded('feedAddressParty')
+                        ? $audit->getRelation('feedAddressParty')?->name
+                        : \App\Modules\Customers\Models\Party::find($partyId)?->name;
+                }
+            }
+            $customerName = $customerName ?? 'Customer';
+            $label = $subject?->label ?? $attrs['label'] ?? $old['label'] ?? '';
+            $subjectName = $label ? "({$label}) Address" : 'Address';
+            $detail = " for {$customerName}";
+        } elseif ($subjectName === 'SystemFile') {
+            $name = $subject->original_name ?? $attrs['original_name'] ?? null;
+            if ($name) $detail = ' ' . $name;
+        } else {
+            $name = $subject->name ?? $subject->title ?? $attrs['name'] ?? $attrs['title'] ?? null;
+            if ($name) $detail = ' ' . $name;
+        }
+
+        if ($audit->event === 'updated' && !empty($old) && !empty($attrs)) {
+            $changedKeys = array_keys($attrs);
+            $changedKeys = array_filter($changedKeys, fn($key) => !in_array($key, ['updated_at', 'updated_by', 'created_at', 'remember_token', 'password']));
+
+            if (!empty($changedKeys)) {
+                if (in_array('status', $changedKeys) && isset($old['status']) && isset($attrs['status'])) {
+                    $transition = " status from <span class='badge bg-secondary text-capitalize'>{$old['status']}</span> to <span class='badge bg-primary text-capitalize'>{$attrs['status']}</span>";
+                } elseif (in_array('payment_status', $changedKeys) && isset($attrs['payment_status'])) {
+                    $transition = " payment status to <span class='badge bg-info text-capitalize'>{$attrs['payment_status']}</span>";
+                } elseif ($subjectName === 'Stock' && in_array('reserved_qty', $changedKeys)) {
+                    // Extract numeric value from possibly formatted strings like "₹123.00"
+                    $oldQty = isset($old['reserved_qty']) ? (float) preg_replace('/[^0-9.-]/', '', $old['reserved_qty']) : 0;
+                    $newQty = isset($attrs['reserved_qty']) ? (float) preg_replace('/[^0-9.-]/', '', $attrs['reserved_qty']) : 0;
+                    $diff = $newQty - $oldQty;
+                    $actionStr = $diff > 0 ? "reserved {$diff} qty" : "unreserved " . abs($diff) . " qty";
+                    $transition = " <span class='text-muted' style='font-size: 0.8em;'>({$actionStr})</span>";
+                } else {
+                    $parts = [];
+                    foreach ($changedKeys as $k) {
+                        $oldVal = is_array($old[$k] ?? null) ? json_encode($old[$k]) : ($old[$k] ?? '—');
+                        $newVal = is_array($attrs[$k] ?? null) ? json_encode($attrs[$k]) : ($attrs[$k] ?? '—');
+                        $label  = ucfirst(str_replace('_', ' ', $k));
+                        $parts[] = "<span class='text-muted' style='font-size:0.8em;'>{$label}: <s>{$oldVal}</s> → <b>{$newVal}</b></span>";
+                    }
+                    if (!empty($parts) && count($parts) <= 5) {
+                        $transition = '<br>' . implode('<br>', $parts);
+                    }
+                }
+            }
+        }
+        
+        $action = $audit->event;
+        $article = in_array(strtolower($subjectName[0] ?? ''), ['a', 'e', 'i', 'o', 'u']) ? 'an' : 'a';
+
+        if ($transition) {
+            $formatted = "{$action} <b>{$subjectName}</b>";
+            if ($detail) {
+                $formatted .= " <span class='text-primary fw-semibold'>{$detail}</span>";
+            }
+            $formatted .= $transition;
+        } else {
+            $formatted = "{$action} {$article} <b>{$subjectName}</b>";
+            if ($detail) {
+                $formatted .= " <span class='text-primary fw-semibold'>{$detail}</span>";
+            }
+        }
+
+        return $formatted;
+    }
+
+    public static function formatActivityDescription($a)
+    {
+        $subjectName = class_basename($a->subject_type);
+        $detail = '';
+        $transition = '';
+
+        $subject = $a->subject;
+
+        if ($a->properties) {
+            $attrs = $a->properties['attributes'] ?? [];
+            $old = $a->properties['old'] ?? [];
+
+            // ── Consolidated Order logs (created / updated) ──────────────────
+            // Our OrderService fires a single rich log with customer, items, etc.
+            // Detect these early by the presence of 'customer' in attrs and
+            // return a fully pre-built description, bypassing the generic renderer.
+            if ($subjectName === 'Order' && isset($attrs['customer'])) {
+                $orderNo   = $subject ? $subject->order_no : ($attrs['order_no'] ?? null);
+                $customer  = $attrs['customer'];
+                $itemsList = $attrs['items'] ?? null;
+                $netAmount = isset($attrs['net_amount']) ? '₹' . number_format((float) $attrs['net_amount'], 2) : null;
+                $statusNote = $attrs['status_note'] ?? '';
+
+                $desc  = $a->description . " <b>Order</b>";
+                if ($orderNo)   $desc .= " <b>#$orderNo</b>";
+                if ($customer)  $desc .= " for <span class='text-primary fw-semibold'>$customer</span>";
+                if ($netAmount) $desc .= " · <span class='text-success fw-semibold'>$netAmount</span>";
+                if ($itemsList) $desc .= "<br><small class='text-muted'>Items: $itemsList</small>";
+                if ($statusNote) $desc .= "<br><small class='text-muted'>$statusNote</small>";
+
+                return $desc;
+            }
+
+            // Get identifier from subject instance or fallback to attributes (e.g. for deleted models)
+            if ($subjectName === 'Order') {
+                $orderNo = $subject ? $subject->order_no : ($attrs['order_no'] ?? null);
+                if ($orderNo) $detail = ' #' . $orderNo;
+            } elseif ($subjectName === 'User') {
+                $userName  = $subject ? trim(implode(' ', array_filter([$subject->first_name, $subject->last_name]))) ?: $subject->name : ($attrs['name'] ?? null);
+                $userEmail = $subject ? $subject->email : ($attrs['email'] ?? null);
+                if ($userName)  $detail  = ' ' . $userName;
+                if ($userEmail) $detail .= " ({$userEmail})";
+            } elseif ($subjectName === 'Attendance') {
+                $date = $subject ? $subject->date : ($attrs['date'] ?? null);
+                if ($date) $detail = ' for ' . \Carbon\Carbon::parse($date)->format('d M Y');
+            } elseif ($subjectName === 'Stock') {
+                $subject?->loadMissing('product');
+                $productName = $subject?->product?->name ?? 'Product';
+                $detail = ' for ' . $productName;
+                
+                $relatedOrderActivity = $a->relationLoaded('feedRelatedOrderActivity')
+                    ? $a->getRelation('feedRelatedOrderActivity')
+                    : ($a->created_at ? \Spatie\Activitylog\Models\Activity::with('subject')
+                    ->where('subject_type', 'App\Modules\Orders\Models\Order')
+                    ->where('causer_id', $a->causer_id)
+                    ->whereBetween('created_at', [$a->created_at->copy()->subSeconds(2), $a->created_at->copy()->addSeconds(2)])
+                    ->first() : null);
+                    
+                if ($relatedOrderActivity) {
+                    $order = $relatedOrderActivity->subject;
+                    $orderNo = $order ? $order->order_no : ($relatedOrderActivity->properties['attributes']['order_no'] ?? null);
+                    if ($orderNo) {
+                        $detail .= " (Order #{$orderNo})";
+                    }
+                }
+            } elseif ($subjectName === 'OrderItem') {
+                $subject?->loadMissing(['product', 'order']);
+                $productName = $subject?->product?->name ?? 'Product';
+                $detail = ' for ' . $productName;
+                $orderNo = $subject?->order?->order_no ?? null;
+                if ($orderNo) {
+                    $detail .= " (Order #{$orderNo})";
+                }
+            } elseif ($subjectName === 'PartyAddress') {
+                $subject?->loadMissing('party');
+                $customerName = $subject?->party?->name;
+                if (!$customerName) {
+                    $partyId = $attrs['party_id'] ?? $old['party_id'] ?? null;
+                    if ($partyId) {
+                        $customerName = $a->relationLoaded('feedAddressParty')
+                            ? $a->getRelation('feedAddressParty')?->name
+                            : \App\Modules\Customers\Models\Party::find($partyId)?->name;
+                    }
+                }
+                $customerName = $customerName ?? 'Customer';
+                $label = $subject?->label ?? $attrs['label'] ?? $old['label'] ?? '';
+                $subjectName = $label ? "({$label}) Address" : 'Address';
+                $detail = " for {$customerName}";
+            } elseif ($subjectName === 'SystemFile') {
+                $name = $subject?->original_name ?? $attrs['original_name'] ?? null;
+                if ($name) $detail = ' ' . $name;
+            } else {
+                $name = $subject?->name ?? $subject?->title ?? $attrs['name'] ?? $attrs['title'] ?? null;
+                if ($name) $detail = ' ' . $name;
+            }
+
+            if ($a->description === 'updated' && !empty($old) && !empty($attrs)) {
+                $changedKeys = [];
+                foreach ($attrs as $key => $value) {
+                    $oldValue = $old[$key] ?? null;
+                    if (is_array($value) || is_array($oldValue)) {
+                        if (json_encode($value) !== json_encode($oldValue)) {
+                            $changedKeys[] = $key;
+                        }
+                    } elseif ((string) $value !== (string) $oldValue) {
+                        $changedKeys[] = $key;
+                    }
+                }
+                $changedKeys = array_filter($changedKeys, fn($key) => !in_array($key, ['updated_at', 'updated_by', 'created_at', 'remember_token', 'password']));
+
+                if (!empty($changedKeys)) {
+                    if (in_array('status', $changedKeys)) {
+                        $transition = " status from <span class='badge bg-secondary text-capitalize'>{$old['status']}</span> to <span class='badge bg-primary text-capitalize'>{$attrs['status']}</span>";
+                    } elseif (in_array('payment_status', $changedKeys)) {
+                        $transition = " payment status to <span class='badge bg-info text-capitalize'>{$attrs['payment_status']}</span>";
+                    } elseif ($subjectName === 'Stock' && in_array('reserved_qty', $changedKeys)) {
+                        $oldQty = $old['reserved_qty'] ?? 0;
+                        $newQty = $attrs['reserved_qty'] ?? 0;
+                        $diff = $newQty - $oldQty;
+                        $actionStr = $diff > 0 ? "reserved {$diff} qty" : "unreserved " . abs($diff) . " qty";
+                        $transition = " <span class='text-muted' style='font-size: 0.8em;'>({$actionStr})</span>";
+                    } elseif ($subjectName === 'User' && in_array('is_active', $changedKeys)) {
+                        // Spatie stores cast booleans as true/false in JSON; also handle 1/0
+                        $newIsActive = !empty($attrs['is_active']);
+                        if ($newIsActive) {
+                            $transition = " account status to <span class='badge bg-success'>✓ Activated</span>";
+                        } else {
+                            $transition = " account status to <span class='badge bg-danger'>✗ Deactivated</span>";
+                        }
+                    } else {
+                        $parts = [];
+                        foreach ($changedKeys as $k) {
+                            $oldVal = is_array($old[$k] ?? null) ? json_encode($old[$k]) : ($old[$k] ?? '—');
+                            $newVal = is_array($attrs[$k] ?? null) ? json_encode($attrs[$k]) : ($attrs[$k] ?? '—');
+                            $label  = ucfirst(str_replace('_', ' ', $k));
+                            $parts[] = "<span class='text-muted' style='font-size:0.8em;'>{$label}: <s>{$oldVal}</s> → <b>{$newVal}</b></span>";
+                        }
+                        if (!empty($parts) && count($parts) <= 5) {
+                            $transition = '<br>' . implode('<br>', $parts);
+                        }
+                    }
+                }
+            }
+        }
+        
+        $action = $a->description;
+        $article = in_array(strtolower($subjectName[0] ?? ''), ['a', 'e', 'i', 'o', 'u']) ? 'an' : 'a';
+
+        if ($transition) {
+            $formatted_description = "{$action} <b>{$subjectName}</b>";
+            if ($detail) {
+                $formatted_description .= " <span class='text-primary fw-semibold'>{$detail}</span>";
+            }
+            $formatted_description .= $transition;
+        } else {
+            $formatted_description = "{$action} {$article} <b>{$subjectName}</b>";
+            if ($detail) {
+                $formatted_description .= " <span class='text-primary fw-semibold'>{$detail}</span>";
+            }
+        }
+
+        return $formatted_description;
+    }
+}

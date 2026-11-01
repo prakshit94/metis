@@ -1,0 +1,16 @@
+{
+  "tracked_files_remaining": 983,
+  "entries_removed_from_tracking": 9818,
+  "protected_data_files_unchanged": 147,
+  "active_source_files_unchanged": 372,
+  "archive_members": 986,
+  "archive_bytes": 43255521,
+  "archive_sha256": "68455c76a7a4f72159eadcc854e8d2c8beab03cf44ebd2a571d87a23dc1f0377",
+  "production_admin_routes": 621,
+  "production_shop_routes": 32,
+  "frontend_build_passed": true,
+  "migrations_preserved": 126,
+  "seed_images_preserved": 15,
+  "committed": false,
+  "deployed": false
+}

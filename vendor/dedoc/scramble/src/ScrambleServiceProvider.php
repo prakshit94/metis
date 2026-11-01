@@ -3,12 +3,14 @@
 namespace Dedoc\Scramble;
 
 use Dedoc\Scramble\Configuration\GeneratorConfigCollection;
+use Dedoc\Scramble\Configuration\InferConfig;
 use Dedoc\Scramble\Configuration\OperationTransformers;
 use Dedoc\Scramble\Configuration\ParametersExtractors;
 use Dedoc\Scramble\Console\Commands\AnalyzeDocumentation;
 use Dedoc\Scramble\Console\Commands\CacheDocumentation;
 use Dedoc\Scramble\Console\Commands\ClearDocumentationCache;
 use Dedoc\Scramble\Console\Commands\ExportDocumentation;
+use Dedoc\Scramble\Contracts\RouteProvider as RouteProviderContract;
 use Dedoc\Scramble\DocumentTransformers\AddDocumentTags;
 use Dedoc\Scramble\DocumentTransformers\CleanupUnusedResponseReferencesTransformer;
 use Dedoc\Scramble\Extensions\ExceptionToResponseExtension;
@@ -37,6 +39,8 @@ use Dedoc\Scramble\Support\InferExtensions\AfterCursorPaginatorDefinitionCreated
 use Dedoc\Scramble\Support\InferExtensions\AfterEloquentBuilderDefinitionCreatedExtension;
 use Dedoc\Scramble\Support\InferExtensions\AfterEloquentCollectionDefinitionCreatedExtension;
 use Dedoc\Scramble\Support\InferExtensions\AfterEloquentRelationDefinitionCreatedExtension;
+use Dedoc\Scramble\Support\InferExtensions\AfterEnumRuleDefinitionCreatedExtension;
+use Dedoc\Scramble\Support\InferExtensions\AfterInRuleDefinitionCreatedExtension;
 use Dedoc\Scramble\Support\InferExtensions\AfterJsonApiResourceDefinitionCreatedExtension;
 use Dedoc\Scramble\Support\InferExtensions\AfterJsonResourceDefinitionCreatedExtension;
 use Dedoc\Scramble\Support\InferExtensions\AfterLengthAwarePaginatorDefinitionCreatedExtension;
@@ -55,10 +59,12 @@ use Dedoc\Scramble\Support\InferExtensions\JsonResponseMethodReturnTypeExtension
 use Dedoc\Scramble\Support\InferExtensions\ModelExtension;
 use Dedoc\Scramble\Support\InferExtensions\PaginateMethodsReturnTypeExtension;
 use Dedoc\Scramble\Support\InferExtensions\PossibleExceptionInfer;
+use Dedoc\Scramble\Support\InferExtensions\RedirectorTypeInfer;
 use Dedoc\Scramble\Support\InferExtensions\RequestExtension;
 use Dedoc\Scramble\Support\InferExtensions\ResourceCollectionTypeInfer;
 use Dedoc\Scramble\Support\InferExtensions\ResourceResponseMethodReturnTypeExtension;
 use Dedoc\Scramble\Support\InferExtensions\ResponseFactoryTypeInfer;
+use Dedoc\Scramble\Support\InferExtensions\RuleStaticMethodReturnTypeExtension;
 use Dedoc\Scramble\Support\InferExtensions\ShallowFunctionDefinition;
 use Dedoc\Scramble\Support\InferExtensions\StorageResponseTypeInfer;
 use Dedoc\Scramble\Support\InferExtensions\TransformsToResourceCollectionExtension;
@@ -68,6 +74,7 @@ use Dedoc\Scramble\Support\InferExtensions\ValidatorTypeInfer;
 use Dedoc\Scramble\Support\ProNudge\Extensions\LaravelDataRequestBodyNudgeExtractor;
 use Dedoc\Scramble\Support\ProNudge\Extensions\LaravelDataReturnTypeNudgeExtension;
 use Dedoc\Scramble\Support\ProNudge\Extensions\QueryBuilderUsageNudgeExtension;
+use Dedoc\Scramble\Support\RouteProviders\RouteProvider;
 use Dedoc\Scramble\Support\Type\FunctionType;
 use Dedoc\Scramble\Support\Type\TemplateType;
 use Dedoc\Scramble\Support\Type\VoidType;
@@ -87,6 +94,7 @@ use Dedoc\Scramble\Support\TypeToSchemaExtensions\LengthAwarePaginatorTypeToSche
 use Dedoc\Scramble\Support\TypeToSchemaExtensions\PaginatedResourceResponseTypeToSchema;
 use Dedoc\Scramble\Support\TypeToSchemaExtensions\PaginatorTypeToSchema;
 use Dedoc\Scramble\Support\TypeToSchemaExtensions\PlainObjectToSchema;
+use Dedoc\Scramble\Support\TypeToSchemaExtensions\RedirectResponseToSchema;
 use Dedoc\Scramble\Support\TypeToSchemaExtensions\ResourceCollectionTypeToSchema;
 use Dedoc\Scramble\Support\TypeToSchemaExtensions\ResourceResponseTypeToSchema;
 use Dedoc\Scramble\Support\TypeToSchemaExtensions\ResponsableTypeToSchema;
@@ -94,6 +102,7 @@ use Dedoc\Scramble\Support\TypeToSchemaExtensions\ResponseTypeToSchema;
 use Dedoc\Scramble\Support\TypeToSchemaExtensions\StreamedResponseToSchema;
 use Dedoc\Scramble\Support\TypeToSchemaExtensions\VoidTypeToSchema;
 use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Routing\Router;
 use PhpParser\ParserFactory;
 use PhpParser\PrettyPrinter;
@@ -102,9 +111,15 @@ use Spatie\LaravelPackageTools\PackageServiceProvider;
 
 class ScrambleServiceProvider extends PackageServiceProvider
 {
+    /** @var array<class-string, class-string> */
+    public $bindings = [
+        RouteProviderContract::class => RouteProvider::class,
+    ];
+
     public $singletons = [
         PrettyPrinter::class => PrettyPrinter\Standard::class,
         GeneratorConfigCollection::class => GeneratorConfigCollection::class,
+        InferConfig::class => InferConfig::class,
         CacheableGenerator::class => CacheableGenerator::class,
     ];
 
@@ -139,7 +154,7 @@ class ScrambleServiceProvider extends PackageServiceProvider
             );
         });
 
-        $this->app->singleton(Index::class, function () {
+        $this->app->scoped(Index::class, function () {
             $index = new Index;
             foreach ((require __DIR__.'/../dictionaries/classMap.php') ?: [] as $className => $serializedClassDefinition) {
                 $index->classesDefinitions[$className] = unserialize($serializedClassDefinition);
@@ -161,7 +176,7 @@ class ScrambleServiceProvider extends PackageServiceProvider
             return $index;
         });
 
-        $this->app->singleton(Infer::class);
+        $this->app->scoped(Infer::class);
 
         $this->app->when(ExtensionsBroker::class)
             ->needs('$extensions')
@@ -195,6 +210,8 @@ class ScrambleServiceProvider extends PackageServiceProvider
                     AfterResourceCollectionDefinitionCreatedExtension::class,
                     AfterAnonymousResourceCollectionDefinitionCreatedExtension::class,
                     AfterResponseDefinitionCreatedExtension::class,
+                    AfterEnumRuleDefinitionCreatedExtension::class,
+                    AfterInRuleDefinitionCreatedExtension::class,
                 ]);
 
                 return array_merge(
@@ -205,10 +222,12 @@ class ScrambleServiceProvider extends PackageServiceProvider
                         new PaginateMethodsReturnTypeExtension,
                         new FacadeStaticMethodReturnTypeExtension,
                         new ArrStaticMethodReturnTypeExtension,
+                        new RuleStaticMethodReturnTypeExtension,
 
                         new ValidatorTypeInfer,
                         new ResourceCollectionTypeInfer,
                         new ResponseFactoryTypeInfer,
+                        new RedirectorTypeInfer,
                         new StorageResponseTypeInfer,
 
                         new ArrayMergeReturnTypeExtension,
@@ -270,6 +289,7 @@ class ScrambleServiceProvider extends PackageServiceProvider
                     ResponseTypeToSchema::class,
                     BinaryFileResponseToSchema::class,
                     StreamedResponseToSchema::class,
+                    RedirectResponseToSchema::class,
                     ResourceResponseTypeToSchema::class,
                     PaginatedResourceResponseTypeToSchema::class,
                     JsonApiAnonymousCollectionTypeToSchema::class,
@@ -306,6 +326,12 @@ class ScrambleServiceProvider extends PackageServiceProvider
             ->withDocumentTransformers([
                 AddDocumentTags::class,
                 CleanupUnusedResponseReferencesTransformer::class,
+            ]);
+
+        Scramble::infer()
+            ->configure()
+            ->buildDefinitionsUsingAstFor([
+                Attribute::class,
             ]);
 
         if (Scramble::$defaultRoutesIgnored) {
@@ -357,7 +383,7 @@ class ScrambleServiceProvider extends PackageServiceProvider
                          * `spec` here is for backward compatibility in case there is a
                          * stale published view that expects it to exist, will be removed in 1.0
                          */
-                        'spec' => $result->spec(),
+                        'spec' => $result->spec($config->openApiVersion()),
                         'config' => $config,
                         'result' => $result,
                     ]);
