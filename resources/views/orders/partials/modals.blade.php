@@ -272,7 +272,7 @@
                                             </button>
                                             @endcan
                                             <template x-if="selectedOrder.shipments && selectedOrder.shipments.length > 0 && selectedOrder.shipments[0].tracking_no">
-                                                <a :href="`/orders/${selectedOrder.id}/shipping-label`" target="_blank" class="btn btn-secondary flex-grow-1 shadow-sm rounded-pill fw-semibold py-2 transition-all hover-shadow">
+                                                <a :href="`/admin/orders/${selectedOrder.id}/shipping-label`" target="_blank" class="btn btn-secondary flex-grow-1 shadow-sm rounded-pill fw-semibold py-2 transition-all hover-shadow">
                                                     <i class="bi bi-tag-fill me-2"></i>Shipping Label
                                                 </a>
                                             </template>
@@ -661,13 +661,14 @@
             </div>
             <div class="modal-body pt-3">
                 <div class="alert alert-info">
-                    <i class="bi bi-info-circle-fill me-2"></i>Please review the details below. Only valid orders will be updated.
+                    <i class="bi bi-info-circle-fill me-2"></i>Please review the details below. Only valid orders will be updated. Use an order_no or tracking_id column. If both are supplied, both must identify the same order.
                 </div>
                 <div class="table-responsive" style="max-height: 400px;">
                     <table class="table table-striped table-hover table-sm small align-middle mb-0">
                         <thead class="table-light sticky-top">
                             <tr>
-                                <th>Order No</th>
+                                <th>Order No / Reference</th>
+                                <th>Tracking ID</th>
                                 <th>Customer</th>
                                 <th>Current Status</th>
                                 <th>Validation</th>
@@ -677,6 +678,7 @@
                             <template x-for="(row, idx) in importRows" :key="idx">
                                 <tr :class="row.is_valid ? '' : 'table-danger'">
                                     <td class="font-monospace fw-bold" x-text="row.order_no"></td>
+                                    <td class="font-monospace" x-text="row.tracking_no || '—'"></td>
                                     <td class="text-truncate" style="max-width: 150px;" x-text="row.customer"></td>
                                     <td>
                                         <span class="badge text-bg-secondary-subtle text-secondary-emphasis" x-text="row.current_status"></span>
@@ -706,7 +708,7 @@
             </div>
             <div class="modal-footer border-top-0 pt-0 mt-3">
                 <button type="button" class="btn btn-secondary" @click="cancelImport()">Cancel</button>
-                <button type="button" class="btn btn-primary" @click="confirmImport()">Confirm Import</button>
+                <button type="button" class="btn btn-primary" :disabled="importing || !importRows.some(row => row.is_valid)" @click="confirmImport()">Confirm Import</button>
             </div>
         </div>
     </div>

@@ -25,7 +25,7 @@
             <p class="text-muted mb-0">Manage employee leave requests, approvals, balances, and holidays</p>
         </div>
         <div class="d-flex flex-wrap gap-2">
-            @can('attendance-view')<a href="{{ url('/attendances') }}" class="btn btn-outline-secondary">Attendance workspace</a>@endcan
+            @can('attendance-view')<a href="{{ url('/admin/attendances') }}" class="btn btn-outline-secondary">Attendance workspace</a>@endcan
             @can('leave-create')
             <button type="button" class="btn btn-primary" x-show="currentTab === 'requests'" @click="$dispatch('open-leave-modal')">
                 <i class="bi bi-plus-circle me-2"></i>Request Leave

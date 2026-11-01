@@ -275,7 +275,7 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" @click="resetForm()"></button>
                 </div>
 
-                <form :action="form.id ? `{{ url('/promotions/referral-programs') }}/${form.id}` : `{{ route('referrals.programs.store') }}`" method="POST">
+                <form :action="form.id ? `{{ url('/admin/promotions/referral-programs') }}/${form.id}` : `{{ route('referrals.programs.store') }}`" method="POST">
                     @csrf
                     <input type="hidden" name="program_id" :value="form.id || ''">
                     <input type="hidden" name="_method" :value="form.id ? 'PUT' : 'POST'">

@@ -29,7 +29,7 @@
         </div>
 
         <div class="auth-body">
-            <a class="auth-brand auth-form-brand" href="{{ url('/') }}" aria-label="Metis home">
+            <a class="auth-brand auth-form-brand" href="{{ route('dashboard') }}" aria-label="Metis home">
                 <img src="{{ $logoImage }}{{ str_contains($logoImage, '?') ? '&' : '?' }}v={{ file_exists(public_path('assets/images/logo.png')) ? filemtime(public_path('assets/images/logo.png')) : time() }}" alt="Metis logo" onerror="this.onerror=null;this.src='{{ asset('assets/images/logo.png') }}';">
                 <span>Metis</span>
             </a>

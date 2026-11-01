@@ -40,7 +40,7 @@
                     <template x-for="office in (offices[team.id] || [])" :key="office.id"><tr>
                         <td><strong x-text="office.name"></strong><span class="d-block small text-body-secondary" x-text="[office.address_line_1 || office.address, office.address_line_2, office.village_name || office.city, office.pincode].filter(Boolean).join(' · ')"></span></td>
                         <td><span class="badge bg-secondary" x-text="office.code"></span><span class="d-block small text-body-secondary" x-text="'Order prefix: ' + team.code"></span></td>
-                        <td><span x-text="office.members_count"></span> @can('user-view')<a :href="'/users?office_id=' + office.id" class="small ms-1">View users</a>@endcan</td>
+                        <td><span x-text="office.members_count"></span> @can('user-view')<a :href="'/admin/users?office_id=' + office.id" class="small ms-1">View users</a>@endcan</td>
                         <td><span class="badge" :class="office.is_active ? 'bg-success-subtle text-success-emphasis' : 'bg-secondary-subtle text-secondary-emphasis'" x-text="office.is_active ? 'Active' : 'Inactive'"></span></td>
                         <td><div class="d-flex flex-wrap gap-2">@can('office-edit')<button type="button" class="btn btn-sm btn-outline-secondary" @click="openOffice(team, office)" :aria-label="'Edit office ' + office.name">Edit</button>@endcan @can('office-delete')<button type="button" class="btn btn-sm btn-outline-danger" @click="removeOffice(team, office)" :aria-label="'Delete office ' + office.name">Delete</button>@endcan</div></td>
                     </tr></template>

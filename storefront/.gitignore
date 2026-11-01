@@ -1,6 +1,0 @@
-/bootstrap/cache/*
-!/bootstrap/cache/.gitignore
-/storage/**
-!/storage/.gitignore
-.env
-/vendor

@@ -196,7 +196,7 @@
                                 </td>
                                 <td>
                                     <template x-if="payment.order">
-                                        <a :href="`/orders/${payment.order.id}`" class="text-decoration-none font-monospace text-primary fw-medium" target="_blank" x-text="payment.order.order_no"></a>
+                                        <a :href="`/admin/orders/${payment.order.id}`" class="text-decoration-none font-monospace text-primary fw-medium" target="_blank" x-text="payment.order.order_no"></a>
                                     </template>
                                     <template x-if="!payment.order">
                                         <span class="text-body-secondary font-monospace">N/A</span>

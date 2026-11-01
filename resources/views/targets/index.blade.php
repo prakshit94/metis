@@ -587,7 +587,7 @@
                 </div>
 
                 <div class="modal-body p-4 p-md-5 pt-4">
-                    <form method="POST" :action="isEdit ? '{{ url('targets') }}/' + form.id : '{{ route('targets.store') }}'" @submit="isSubmitting = true">
+                    <form method="POST" :action="isEdit ? '{{ url('admin/targets') }}/' + form.id : '{{ route('targets.store') }}'" @submit="isSubmitting = true">
                         @csrf
                         <input type="hidden" :name="isEdit ? '_method' : ''" value="PUT">
 

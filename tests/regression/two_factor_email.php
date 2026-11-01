@@ -97,12 +97,12 @@ clear2fa();
 clearEmailCooldown();
 app('session')->driver()->invalidate(); // Fresh browser session; array sessions cannot be revoked via the DB table.
 $webCookies = [];
-$webLoginEmail = $web('/login', 'POST', ['email' => $user->email, 'password' => 'Example123!']);
-check($webLoginEmail->getStatusCode() === 302 && str_ends_with($webLoginEmail->headers->get('Location'), '/login/two-factor'), 'browser email login stops at verification');
+$webLoginEmail = $web('/admin/login', 'POST', ['email' => $user->email, 'password' => 'Example123!']);
+check($webLoginEmail->getStatusCode() === 302 && str_ends_with($webLoginEmail->headers->get('Location'), '/admin/login/two-factor'), 'browser email login stops at verification');
 $browserCode = lastEmailCode();
-$page = $web('/login/two-factor');
+$page = $web('/admin/login/two-factor');
 check($page->getStatusCode() === 200 && str_contains($page->getContent(), 'Resend verification email') && str_contains($page->getContent(), 'c***@example.invalid'), 'browser challenge shows masked address and resend control');
-$browserVerified = $web('/login/two-factor', 'POST', ['code' => $browserCode]);
+$browserVerified = $web('/admin/login/two-factor', 'POST', ['code' => $browserCode]);
 check($browserVerified->getStatusCode() === 302 && ! session()->has('two_factor_challenge'), 'browser email verification completes existing session flow');
 $eventJson = DB::table('two_factor_security_events')->where('user_id', $uid)->get()->toJson();
 check(str_contains($eventJson, 'email_login_code_sent') && ! str_contains($eventJson, $browserCode), 'email audit records delivery events without verification codes');

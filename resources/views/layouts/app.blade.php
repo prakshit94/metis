@@ -85,7 +85,7 @@
                     headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content || '', 'Accept': 'application/json' }
                 });
                 if (response.status === 401 || response.status === 419) {
-                    window.location.href = '/login';
+                    window.location.href = '/admin/login';
                     return;
                 }
                 const data = await response.json();
@@ -130,6 +130,8 @@
             </div>
         </div>
     </div>
+
+    @include('partials.loading-screen-script')
 
     <!-- Main Wrapper -->
     <div class="admin-wrapper" id="admin-wrapper">

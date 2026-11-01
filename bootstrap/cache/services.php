@@ -39,6 +39,7 @@
     35 => 'Spatie\\Permission\\PermissionServiceProvider',
     36 => 'App\\Providers\\AppServiceProvider',
     37 => 'App\\Providers\\EventServiceProvider',
+    38 => 'App\\Storefront\\Providers\\StorefrontServiceProvider',
   ),
   'eager' => 
   array (
@@ -65,6 +66,7 @@
     20 => 'Spatie\\Permission\\PermissionServiceProvider',
     21 => 'App\\Providers\\AppServiceProvider',
     22 => 'App\\Providers\\EventServiceProvider',
+    23 => 'App\\Storefront\\Providers\\StorefrontServiceProvider',
   ),
   'deferred' => 
   array (

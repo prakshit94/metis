@@ -155,7 +155,7 @@ check(Order::count() === $ordersBefore, 'stale wallet review leaves no partial o
 // Rendering stays in memory; regression runs leave no fixture HTML in the workspace.
 $role = \Spatie\Permission\Models\Role::findOrCreate('Super Admin', 'web');
 $user->assignRole($role);
-$request = \Illuminate\Http\Request::create('/orders/create?customer_id='.$party);
+$request = \Illuminate\Http\Request::create('/admin/orders/create?customer_id='.$party);
 $request->setUserResolver(fn () => $user);
 view()->share('errors', new \Illuminate\Support\ViewErrorBag);
 app()->instance('request', $request);
@@ -163,7 +163,7 @@ foreach (['offers', 'coupons'] as $screen) {
     check(str_contains(app(PromotionsController::class)->$screen()->render(), 'promotions'), $screen.' page renders');
 }
 view()->share('errors', new \Illuminate\Support\ViewErrorBag);
-$viewRequest = \Illuminate\Http\Request::create('/promotions/referral-programs');
+$viewRequest = \Illuminate\Http\Request::create('/admin/promotions/referral-programs');
 $viewRequest->setUserResolver(fn () => $user);
 check(str_contains($programs->index($viewRequest)->render(), 'Referral Programs'), 'referral page renders');
 check(str_contains(app(\App\Modules\Orders\Controllers\OrderController::class)->create()->render(), 'Create Order'), 'order creation page renders');

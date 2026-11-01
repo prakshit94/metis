@@ -28,7 +28,7 @@ async function apiFetch(url, options = {}) {
       message.toLowerCase().includes('authoriz') ||
       message.toLowerCase().includes('forbidden')
     ) {
-      window.location.href = '/';
+      window.location.href = '/admin';
       return;
     }
     throw new Error(message);
@@ -110,7 +110,7 @@ document.addEventListener('alpine:init', () => {
       params.append('sort_field', this.sortField);
       params.append('sort_direction', this.sortDirection);
 
-      apiFetch(`/refunds?${params.toString()}`)
+      apiFetch(`/admin/refunds?${params.toString()}`)
         .then((data) => {
           this.refunds = data.refunds?.data || [];
           this.currentPage = data.refunds?.current_page || 1;
@@ -182,7 +182,7 @@ document.addEventListener('alpine:init', () => {
 
       this.isSubmitting = true;
       try {
-        const res = await apiFetch('/refunds/bulk-status', {
+        const res = await apiFetch('/admin/refunds/bulk-status', {
           method: 'POST',
           body: JSON.stringify({
             ids: this.selectedRefunds,
@@ -202,7 +202,7 @@ document.addEventListener('alpine:init', () => {
     async updateRefundStatus(id, status) {
       this.isSubmitting = true;
       try {
-        const res = await apiFetch('/refunds/bulk-status', {
+        const res = await apiFetch('/admin/refunds/bulk-status', {
           method: 'POST',
           body: JSON.stringify({
             ids: [id],

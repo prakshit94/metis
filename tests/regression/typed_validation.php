@@ -1,8 +1,8 @@
 <?php
 // No database access: exercise shared validation boundaries with form and JSON input shapes.
 $storefront=in_array('--storefront',$argv,true);
-require dirname(__DIR__,2).($storefront?'/storefront/bootstrap/autoload.php':'/vendor/autoload.php');
-$app=require dirname(__DIR__,2).($storefront?'/storefront/bootstrap/app.php':'/bootstrap/app.php');
+require dirname(__DIR__,2).'/vendor/autoload.php';
+$app=require dirname(__DIR__,2).'/bootstrap/app.php';
 $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
 $checks=0;
 function verify($condition,$message){global $checks;if(!$condition)throw new RuntimeException($message);$checks++;}

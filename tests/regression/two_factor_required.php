@@ -40,16 +40,16 @@ $browserUser = User::create(['name'=>'Browser enrollment','email'=>'required-bro
 app('session')->driver()->invalidate();
 app('cache')->store('array')->flush();
 $webCookies = [];
-$browser = $web('/login', 'POST', ['email'=>$browserUser->email,'password'=>'Example123!','remember'=>1]);
-check($browser->getStatusCode()===302 && str_ends_with($browser->headers->get('Location'),'/login/two-factor'), 'required browser account stops at enrollment');
-$page=$web('/login/two-factor');
+$browser = $web('/admin/login', 'POST', ['email'=>$browserUser->email,'password'=>'Example123!','remember'=>1]);
+check($browser->getStatusCode()===302 && str_ends_with($browser->headers->get('Location'),'/admin/login/two-factor'), 'required browser account stops at enrollment');
+$page=$web('/admin/login/two-factor');
 check($page->getStatusCode()===200 && str_contains($page->getContent(),'Set up two-step login'), 'browser enrollment page renders without authenticated application access');
-$browserSetup = $web('/login/two-factor/enroll','POST',['method'=>'authenticator']);
+$browserSetup = $web('/admin/login/two-factor/enroll','POST',['method'=>'authenticator']);
 check($browserSetup->getStatusCode()===302 && DB::table('user_two_factor_settings')->where('user_id',$browserUser->id)->value('pending_secret') !== null, 'browser owner starts authenticator enrollment ('.$browserSetup->getStatusCode().')');
 $secret=Crypt::decryptString(DB::table('user_two_factor_settings')->where('user_id',$browserUser->id)->value('pending_secret'));
-$complete=$web('/login/two-factor','POST',['code'=>app(Totp::class)->code($secret,intdiv(now()->timestamp,30))]);
+$complete=$web('/admin/login/two-factor','POST',['code'=>app(Totp::class)->code($secret,intdiv(now()->timestamp,30))]);
 check($complete->getStatusCode()===200 && str_contains($complete->getContent(),'recovery'), 'browser enrollment shows recovery codes after successful verification');
-check($web('/security')->getStatusCode()===200 && isset($webCookies['remembered_email']), 'browser enrollment completes normal authenticated session and remember preference');
+check($web('/admin/security')->getStatusCode()===200 && isset($webCookies['remembered_email']), 'browser enrollment completes normal authenticated session and remember preference');
 
 app('session')->driver()->invalidate();
 app('cache')->store('array')->flush();

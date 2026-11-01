@@ -287,7 +287,7 @@
                                         <ul class="dropdown-menu dropdown-menu-end shadow-sm">
                                             @can('purchaseorder-view')
                                             <li><a class="dropdown-item" href="#" @click.prevent="viewItem(item)"><i class="bi bi-eye me-2 text-secondary"></i> View Details</a></li>
-                                            <li><a class="dropdown-item" :href="'/procurement/purchase-orders/' + item.id + '/pdf'" target="_blank"><i class="bi bi-file-pdf me-2 text-danger"></i> Download PDF</a></li>
+                                            <li><a class="dropdown-item" :href="'/admin/procurement/purchase-orders/' + item.id + '/pdf'" target="_blank"><i class="bi bi-file-pdf me-2 text-danger"></i> Download PDF</a></li>
                                             @endcan
                                             <template x-if="!item.deleted_at">
                                                 <div>
@@ -984,7 +984,7 @@
                 <div class="modal-footer bg-body-tertiary border-top-0 d-flex justify-content-between">
                     <div class="d-flex gap-2">
                         <div x-show="selectedPO" style="display: none;">
-                            <a :href="'/procurement/purchase-orders/' + selectedPO.id + '/pdf'" target="_blank" class="btn btn-outline-primary rounded-pill px-4 fw-bold shadow-sm bg-body">
+                            <a :href="'/admin/procurement/purchase-orders/' + selectedPO.id + '/pdf'" target="_blank" class="btn btn-outline-primary rounded-pill px-4 fw-bold shadow-sm bg-body">
                                 <i class="bi bi-file-pdf me-1"></i> Download PDF
                             </a>
                         </div>
@@ -1601,7 +1601,7 @@ document.addEventListener('alpine:init', () => {
             if (this.isReceiving) return;
             this.isReceiving = true;
             try {
-                const response = await fetch(`/procurement/purchase-orders/${this.receiveForm.po_id}/receive`, {
+                const response = await fetch(`/admin/procurement/purchase-orders/${this.receiveForm.po_id}/receive`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') },
                     body: JSON.stringify(this.receiveForm)
@@ -1644,7 +1644,7 @@ document.addEventListener('alpine:init', () => {
                 const formData = new FormData();
                 formData.append('invoice', file);
                 
-                const response = await fetch(`/procurement/purchase-orders/${this.invoiceForm.po_id}/invoice`, {
+                const response = await fetch(`/admin/procurement/purchase-orders/${this.invoiceForm.po_id}/invoice`, {
                     method: 'POST',
                     headers: { 
                         'Accept': 'application/json',
@@ -1688,14 +1688,14 @@ document.addEventListener('alpine:init', () => {
             try {
                 let url, method, bodyData;
                 if (this.isBulkDelete) {
-                    url = `/procurement/purchase-orders/bulk`;
+                    url = `/admin/procurement/purchase-orders/bulk`;
                     method = 'POST';
                     bodyData = {
                         action: 'delete',
                         ids: this.selected
                     };
                 } else {
-                    url = `/procurement/purchase-orders/${this.deleteForm.po_id}`;
+                    url = `/admin/procurement/purchase-orders/${this.deleteForm.po_id}`;
                     method = 'DELETE';
                     bodyData = {};
                 }
@@ -1730,7 +1730,7 @@ document.addEventListener('alpine:init', () => {
 
         downloadBulkPdf() {
             if (this.selected.length === 0) return;
-            window.open(`/procurement/purchase-orders/bulk-pdf?ids=${this.selected.join(',')}`, '_blank');
+            window.open(`/admin/procurement/purchase-orders/bulk-pdf?ids=${this.selected.join(',')}`, '_blank');
         },
 
         openRestoreModal(poId) {
@@ -1752,14 +1752,14 @@ document.addEventListener('alpine:init', () => {
             try {
                 let url, method, bodyData;
                 if (this.isBulkRestore) {
-                    url = `/procurement/purchase-orders/bulk`;
+                    url = `/admin/procurement/purchase-orders/bulk`;
                     method = 'POST';
                     bodyData = {
                         action: 'restore',
                         ids: this.selected
                     };
                 } else {
-                    url = `/procurement/purchase-orders/${this.restoreForm.po_id}/restore`;
+                    url = `/admin/procurement/purchase-orders/${this.restoreForm.po_id}/restore`;
                     method = 'POST';
                     bodyData = {};
                 }
@@ -1817,13 +1817,13 @@ document.addEventListener('alpine:init', () => {
             try {
                 let url, bodyData;
                 if (this.isBulkApprove) {
-                    url = `/procurement/purchase-orders/bulk`;
+                    url = `/admin/procurement/purchase-orders/bulk`;
                     bodyData = {
                         action: 'approve',
                         ids: this.selected
                     };
                 } else {
-                    url = `/procurement/purchase-orders/${this.approveForm.po_id}/approve`;
+                    url = `/admin/procurement/purchase-orders/${this.approveForm.po_id}/approve`;
                     bodyData = {};
                 }
 
@@ -1870,14 +1870,14 @@ document.addEventListener('alpine:init', () => {
             try {
                 let url, bodyData;
                 if (this.isBulkReject) {
-                    url = `/procurement/purchase-orders/bulk`;
+                    url = `/admin/procurement/purchase-orders/bulk`;
                     bodyData = {
                         action: 'reject',
                         ids: this.selected,
                         rejection_reason: this.rejectForm.rejection_reason
                     };
                 } else {
-                    url = `/procurement/purchase-orders/${this.rejectForm.po_id}/reject`;
+                    url = `/admin/procurement/purchase-orders/${this.rejectForm.po_id}/reject`;
                     bodyData = {
                         rejection_reason: this.rejectForm.rejection_reason
                     };
@@ -1909,7 +1909,7 @@ document.addEventListener('alpine:init', () => {
             if (this.selected.length === 0) return;
             
             try {
-                const response = await fetch(`/procurement/purchase-orders/bulk`, {
+                const response = await fetch(`/admin/procurement/purchase-orders/bulk`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') },
                     body: JSON.stringify({
@@ -1979,7 +1979,7 @@ document.addEventListener('alpine:init', () => {
             this.isPaying = true;
 
             try {
-                const response = await fetch(`/procurement/purchase-orders/${this.paymentForm.po_id}/payments`, {
+                const response = await fetch(`/admin/procurement/purchase-orders/${this.paymentForm.po_id}/payments`, {
                     method: 'POST',
                     headers: { 
                         'Content-Type': 'application/json', 
@@ -2021,7 +2021,7 @@ document.addEventListener('alpine:init', () => {
             bootstrap.Modal.getOrCreateInstance(document.getElementById('paymentHistoryModal')).show();
 
             try {
-                const response = await fetch(`/procurement/purchase-orders/${po.id}/payments`, {
+                const response = await fetch(`/admin/procurement/purchase-orders/${po.id}/payments`, {
                     headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
                 });
                 const res = await response.json();

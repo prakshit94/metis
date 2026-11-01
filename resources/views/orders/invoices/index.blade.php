@@ -198,7 +198,7 @@
                                 </td>
                                 <td>
                                     <template x-if="invoice.order">
-                                        <a :href="`/orders/${invoice.order.id}`" class="text-decoration-none font-monospace text-primary fw-medium" target="_blank" x-text="invoice.order.order_no"></a>
+                                        <a :href="`/admin/orders/${invoice.order.id}`" class="text-decoration-none font-monospace text-primary fw-medium" target="_blank" x-text="invoice.order.order_no"></a>
                                     </template>
                                     <template x-if="!invoice.order">
                                         <span class="text-body-secondary font-monospace">N/A</span>
@@ -324,7 +324,7 @@
                                 <div class="col-md-6">
                                     <p class="fw-bold small text-muted text-uppercase mb-1">Order Ref</p>
                                     <template x-if="selectedInvoice.order">
-                                        <a :href="`/orders/${selectedInvoice.order.id}`" class="text-decoration-none font-monospace fs-5 text-primary fw-medium" target="_blank" x-text="selectedInvoice.order.order_no"></a>
+                                        <a :href="`/admin/orders/${selectedInvoice.order.id}`" class="text-decoration-none font-monospace fs-5 text-primary fw-medium" target="_blank" x-text="selectedInvoice.order.order_no"></a>
                                     </template>
                                     <template x-if="!selectedInvoice.order">
                                         <p class="font-monospace fw-medium text-body-emphasis mb-0">N/A</p>

@@ -408,7 +408,7 @@ document.addEventListener('alpine:init', () => {
         if (requestId !== this._rolesRequestId) return;
         const msg = err.message.toLowerCase();
         if (msg.includes('authoriz') || msg.includes('unauthorized') || msg.includes('forbidden') || msg.includes('cannot read properties of undefined')) {
-          window.location.href = '/';
+          window.location.href = '/admin';
           return;
         }
         showToast(`Failed to load roles: ${err.message}`, 'danger');
@@ -432,7 +432,7 @@ document.addEventListener('alpine:init', () => {
         if (requestId !== this._permissionsRequestId) return;
         const msg = err.message.toLowerCase();
         if (msg.includes('authoriz') || msg.includes('unauthorized') || msg.includes('forbidden') || msg.includes('cannot read properties of undefined')) {
-          window.location.href = '/';
+          window.location.href = '/admin';
           return;
         }
         showToast(`Failed to load permissions: ${err.message}`, 'danger');

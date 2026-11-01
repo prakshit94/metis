@@ -628,7 +628,7 @@ function erpAnalyticsDashboard() {
             this.loading = true;
             this.error = null;
             try {
-                let url = `/analytics/data?period=${this.period}&limit=${this.limit}`;
+                let url = `/admin/analytics/data?period=${this.period}&limit=${this.limit}`;
                 if (this.period === 'custom') {
                     if (!this.customFrom || !this.customTo) return;
                     url += `&from=${this.customFrom}&to=${this.customTo}`;

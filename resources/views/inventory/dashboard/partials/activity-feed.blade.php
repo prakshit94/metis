@@ -14,7 +14,7 @@
                      params.append('warehouse_id', this.warehouseId);
                  }
                  
-                 const response = await fetch(`/inventory/dashboard/activities?${params.toString()}`);
+                 const response = await fetch(`/admin/inventory/dashboard/activities?${params.toString()}`);
                  if (response.ok) {
                      const html = await response.text();
                      this.$refs.activityContainer.innerHTML = html;

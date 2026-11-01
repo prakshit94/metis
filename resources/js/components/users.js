@@ -522,7 +522,7 @@ document.addEventListener('alpine:init', () => {
           msg.includes('unauthorized') ||
           msg.includes('forbidden')
         ) {
-          window.location.href = '/';
+          window.location.href = '/admin';
           return;
         }
         showToast('Failed to load users: ' + err.message, 'danger');
@@ -1750,7 +1750,7 @@ document.addEventListener('alpine:init', () => {
           });
           window.ProfileImages.updateUserPhoto(res.data);
           showToast(res.message || 'User updated successfully.', 'success');
-          if (res.reauthentication_required) { window.location.href = '/login'; return; }
+          if (res.reauthentication_required) { window.location.href = '/admin/login'; return; }
         } else {
           const res = await apiFetch('/api/users', {
             method: 'POST',

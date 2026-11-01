@@ -789,8 +789,8 @@ document.addEventListener('alpine:init', () => {
                     window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'success', message: 'Customer added successfully!' }}));
                     
                     const path = window.location.pathname;
-                    if (path === '/' || path === '/dashboard' || path.includes('/orders/create')) {
-                        window.location.href = `/orders/create?customer_id=${data.data.id}`;
+                    if (path === '/admin' || path === '/admin/' || path.includes('/admin/orders/create')) {
+                        window.location.href = `/admin/orders/create?customer_id=${data.data.id}`;
                     } else {
                         setTimeout(() => window.location.reload(), 1000);
                     }

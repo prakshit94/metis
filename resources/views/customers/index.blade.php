@@ -351,7 +351,7 @@
                                     <div class="d-flex align-items-center" style="min-width: 150px">
                                         <div class="avatar bg-primary bg-opacity-10 text-primary rounded-circle me-3 d-flex align-items-center justify-content-center fw-bold flex-shrink-0" style="width: 40px; height: 40px;" x-text="c.initials"></div>
                                         <div>
-                                            <a :href="'/customers/' + c.id" class="fw-semibold text-body text-decoration-none hover-primary" x-text="c.name"></a>
+                                            <a :href="'/admin/customers/' + c.id" class="fw-semibold text-body text-decoration-none hover-primary" x-text="c.name"></a>
                                             <div class="small text-muted text-capitalize" x-text="c.category || 'individual'"></div>
                                         </div>
                                     </div>
@@ -402,7 +402,7 @@
                                         <ul class="dropdown-menu dropdown-menu-end">
                                             @can('customer-view')
                                             <li>
-                                                <a class="dropdown-item" :href="'/customers/' + c.id">
+                                                <a class="dropdown-item" :href="'/admin/customers/' + c.id">
                                                     <i class="bi bi-eye me-2"></i>View Profile
                                                 </a>
                                             </li>

@@ -32,6 +32,8 @@ class LogAuthenticationAttempts
      */
     public function handleLogin(Login $event): void
     {
+        if ($event->guard === 'customer') return;
+
         /** @var User $user */
         $user = $event->user;
 
@@ -55,6 +57,8 @@ class LogAuthenticationAttempts
      */
     public function handleFailed(Failed $event): void
     {
+        if ($event->guard === 'customer') return;
+
         $email = (string) ($event->credentials['email'] ?? 'unknown');
 
         /** @var User|null $user */

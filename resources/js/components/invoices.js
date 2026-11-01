@@ -28,7 +28,7 @@ async function apiFetch(url, options = {}) {
       message.toLowerCase().includes('authoriz') ||
       message.toLowerCase().includes('forbidden')
     ) {
-      window.location.href = '/';
+      window.location.href = '/admin';
       return;
     }
     throw new Error(message);
@@ -142,7 +142,7 @@ document.addEventListener('alpine:init', () => {
       params.append('sort_field', this.sortField);
       params.append('sort_direction', this.sortDirection);
 
-      apiFetch(`/invoices?${params.toString()}`)
+      apiFetch(`/admin/invoices?${params.toString()}`)
         .then((data) => {
           this.invoices = data.invoices?.data || [];
           this.currentPage = data.invoices?.current_page || 1;
@@ -238,7 +238,7 @@ document.addEventListener('alpine:init', () => {
 
       this.isSubmitting = true;
       try {
-        const res = await apiFetch('/invoices/bulk-status', {
+        const res = await apiFetch('/admin/invoices/bulk-status', {
           method: 'POST',
           body: JSON.stringify({
             ids: this.selectedInvoices,
@@ -259,7 +259,7 @@ document.addEventListener('alpine:init', () => {
       if (!this.selectedInvoices.length) return;
       this.isSubmitting = true;
       try {
-        const res = await fetch('/invoices/export', {
+        const res = await fetch('/admin/invoices/export', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -296,7 +296,7 @@ document.addEventListener('alpine:init', () => {
 
     async viewDetails(invoice) {
       try {
-        const data = await apiFetch(`/invoices/${invoice.id}`);
+        const data = await apiFetch(`/admin/invoices/${invoice.id}`);
         this.selectedInvoice = {
           ...data.invoice,
           paymentHistory: data.invoice.payments || [],
@@ -332,7 +332,7 @@ document.addEventListener('alpine:init', () => {
       if (!this.paymentForm.invoice_id) return;
       this.isSubmitting = true;
       try {
-        const res = await apiFetch(`/invoices/${this.paymentForm.invoice_id}/payments`, {
+        const res = await apiFetch(`/admin/invoices/${this.paymentForm.invoice_id}/payments`, {
           method: 'POST',
           body: JSON.stringify({
             amount: this.paymentForm.amount,
@@ -371,7 +371,7 @@ document.addEventListener('alpine:init', () => {
       formData.append('file', this.importFile);
 
       try {
-        const res = await fetch('/payments/import/preview', {
+        const res = await fetch('/admin/payments/import/preview', {
           method: 'POST',
           headers: { 'X-CSRF-TOKEN': getCsrfToken(), Accept: 'application/json' },
           body: formData,
@@ -393,7 +393,7 @@ document.addEventListener('alpine:init', () => {
       if (!this.importPreview.length) return;
       this.isImporting = true;
       try {
-        const res = await apiFetch('/payments/import/process', {
+        const res = await apiFetch('/admin/payments/import/process', {
           method: 'POST',
           body: JSON.stringify({ payments: this.importPreview }),
         });

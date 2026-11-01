@@ -37,7 +37,7 @@ const registerComponent = () => {
         return;
       }
 
-      const url = new URL(window.location.origin + '/reports/export');
+      const url = new URL(window.location.origin + '/admin/reports/export');
       url.searchParams.append('type', this.reportType);
       if (this.reportType !== 'india_post') {
         url.searchParams.append('from', this.dateFrom);

@@ -620,7 +620,7 @@
                     'title' => 'Pending Order Confirmation',
                     'message' => 'Order <b>'.e($order->order_no).'</b> is awaiting confirmation.',
                     'time_ago' => $order->created_at ? $order->created_at->diffForHumans() : null,
-                    'link' => '/orders'
+                    'link' => '/admin/orders'
                 ]);
             }
         } catch (\Exception $e) {}
@@ -643,7 +643,7 @@
                     'title' => 'Overdue Invoice',
                     'message' => 'Invoice <b>'.e($invoice->invoice_no).'</b> is overdue.',
                     'time_ago' => $invoice->due_date ? \Carbon\Carbon::parse($invoice->due_date)->diffForHumans() : null,
-                    'link' => '/invoices'
+                    'link' => '/admin/invoices'
                 ]);
             }
         } catch (\Exception $e) {}
@@ -664,7 +664,7 @@
                     'title' => 'Pending Return Request',
                     'message' => 'Return <b>'.e($returnRequest->return_no).'</b> is awaiting approval.',
                     'time_ago' => $returnRequest->created_at ? $returnRequest->created_at->diffForHumans() : null,
-                    'link' => '/returns'
+                    'link' => '/admin/returns'
                 ]);
             }
         } catch (\Exception $e) {}
@@ -685,7 +685,7 @@
                     'title' => 'Pending Refund',
                     'message' => 'Refund <b>'.e($refund->refund_no).'</b> requires processing.',
                     'time_ago' => $refund->created_at ? $refund->created_at->diffForHumans() : null,
-                    'link' => '/refunds'
+                    'link' => '/admin/refunds'
                 ]);
             }
         } catch (\Exception $e) {}
@@ -706,7 +706,7 @@
                     'title' => 'Failed Shipment',
                     'message' => 'Shipment <b>'.e($shipment->shipment_no).'</b> has failed delivery.',
                     'time_ago' => $shipment->updated_at ? $shipment->updated_at->diffForHumans() : null,
-                    'link' => '/shipping'
+                    'link' => '/admin/shipping'
                 ]);
             }
         } catch (\Exception $e) {}
@@ -727,7 +727,7 @@
                     'title' => 'Pending Stock Adjustment',
                     'message' => 'Adjustment <b>'.e($adj->reference_no).'</b> awaits approval.',
                     'time_ago' => $adj->created_at ? $adj->created_at->diffForHumans() : null,
-                    'link' => '/inventory/adjustments'
+                    'link' => '/admin/inventory/adjustments'
                 ]);
             }
         } catch (\Exception $e) {}
@@ -1212,7 +1212,7 @@ document.addEventListener('alpine:init', () => {
                 localStorage.setItem('ecommerce_active_customer_id', match[1]);
             } else if (customerIdParam) {
                 localStorage.setItem('ecommerce_active_customer_id', customerIdParam);
-            } else if (window.location.pathname.replace(/\/$/, '') === '/orders/create') {
+            } else if (window.location.pathname.replace(/\/$/, '') === '/admin/orders/create') {
                 localStorage.removeItem('ecommerce_active_customer_id');
             }
         },
@@ -1245,7 +1245,7 @@ document.addEventListener('alpine:init', () => {
             const pathMatch = window.location.pathname.match(/^\/customers\/(\d+)(?:\/|$)/);
             const customerId = (pathMatch && pathMatch[1]) || localStorage.getItem('ecommerce_active_customer_id');
             if (customerId) {
-                return `/orders/create?customer_id=${encodeURIComponent(customerId)}&step=review`;
+                return `/admin/orders/create?customer_id=${encodeURIComponent(customerId)}&step=review`;
             }
             return '{{ route('orders.create') }}';
         },

@@ -49,7 +49,7 @@ async function apiFetch(url, options = {}) {
       message.toLowerCase().includes('authoriz') ||
       message.toLowerCase().includes('forbidden')
     ) {
-      window.location.href = '/';
+      window.location.href = '/admin';
       return;
     }
     throw new Error(message);
@@ -484,7 +484,7 @@ document.addEventListener('alpine:init', () => {
       this.carrierFilter = csv('carrier');
       this.warehouseFilter = ids('warehouse');
 
-      if (window.location.pathname.startsWith('/orders')) {
+      if (window.location.pathname.startsWith('/admin/orders')) {
         this.loadOrders();
       }
 
@@ -536,7 +536,7 @@ document.addEventListener('alpine:init', () => {
 
       // Delay chart initialization to ensure DOM is fully ready
       setTimeout(() => {
-        if (window.location.pathname.startsWith('/orders')) {
+        if (window.location.pathname.startsWith('/admin/orders')) {
           this.initCharts();
           this.initResizeHandler();
         }
@@ -548,7 +548,7 @@ document.addEventListener('alpine:init', () => {
 
     async fetchAndShowOrder(orderId) {
       try {
-        const details = await apiFetch(`/orders/${orderId}`);
+        const details = await apiFetch(`/admin/orders/${orderId}`);
         if (details && details.order) {
           this.selectedOrder = this.mapOrder(details.order);
           getModal('#orderDetailModal')?.show();
@@ -701,7 +701,7 @@ document.addEventListener('alpine:init', () => {
       const newUrl = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
       window.history.replaceState({}, '', newUrl);
 
-      apiFetch(`/orders?${params.toString()}`, { signal: controller.signal })
+      apiFetch(`/admin/orders?${params.toString()}`, { signal: controller.signal })
         .then((data) => {
           if (requestId !== this._loadRequestId) return;
           this.orders = (data.orders.data || []).map((o) => this.mapOrder(o));
@@ -1515,7 +1515,7 @@ document.addEventListener('alpine:init', () => {
         query.set('customer_id', order.partyId || order.original?.party_id);
       }
       query.set('step', 'confirm');
-      window.location.href = `/orders/create?${query.toString()}`;
+      window.location.href = `/admin/orders/create?${query.toString()}`;
     },
 
     async submitConfirmOrder() {
@@ -1537,7 +1537,7 @@ document.addEventListener('alpine:init', () => {
           notes: this.confirmNotes,
         };
 
-        const res = await apiFetch(`/orders/${this.confirmModalOrder.id}/confirm`, {
+        const res = await apiFetch(`/admin/orders/${this.confirmModalOrder.id}/confirm`, {
           method: 'POST',
           body: JSON.stringify(payload),
         });
@@ -1572,7 +1572,7 @@ document.addEventListener('alpine:init', () => {
       if (!confirmed.isConfirmed) return;
 
       try {
-        const res = await apiFetch(`/orders/${order.id}/processing`, { method: 'POST' });
+        const res = await apiFetch(`/admin/orders/${order.id}/processing`, { method: 'POST' });
         showToast(res || 'Order moved to processing.');
         this.loadOrders();
       } catch (err) {
@@ -1684,7 +1684,7 @@ document.addEventListener('alpine:init', () => {
         showToast(res || 'Shipping details updated.');
 
         // Reload details in modal
-        const details = await apiFetch(`/orders/${order.id}`);
+        const details = await apiFetch(`/admin/orders/${order.id}`);
         if (details && details.order) {
           this.selectedOrder = this.mapOrder(details.order);
           // Also update it in the main list
@@ -1737,7 +1737,7 @@ document.addEventListener('alpine:init', () => {
         return;
       }
       try {
-        const res = await apiFetch(`/orders/${this.shipOrderId}/ship`, {
+        const res = await apiFetch(`/admin/orders/${this.shipOrderId}/ship`, {
           method: 'POST',
           body: JSON.stringify({
             carrier_name: this.shipCarrierName,
@@ -1774,7 +1774,7 @@ document.addEventListener('alpine:init', () => {
       if (!confirmed.isConfirmed) return;
 
       try {
-        const res = await apiFetch(`/orders/${order.id}/dispatch`, { method: 'POST' });
+        const res = await apiFetch(`/admin/orders/${order.id}/dispatch`, { method: 'POST' });
         showToast(res || 'Order marked as dispatched.');
         this.loadOrders();
       } catch (err) {
@@ -1817,7 +1817,7 @@ document.addEventListener('alpine:init', () => {
           notes: this.deliverNotes,
         };
 
-        const res = await apiFetch(`/orders/${this.deliverModalOrder.id}/deliver`, {
+        const res = await apiFetch(`/admin/orders/${this.deliverModalOrder.id}/deliver`, {
           method: 'POST',
           body: JSON.stringify(payload),
         });
@@ -1861,7 +1861,7 @@ document.addEventListener('alpine:init', () => {
       }
 
       try {
-        const res = await apiFetch(`/orders/${this.returnModalOrder.id}/returns`, {
+        const res = await apiFetch(`/admin/orders/${this.returnModalOrder.id}/returns`, {
           method: 'POST',
           body: JSON.stringify({
             reason: this.returnReason,
@@ -1897,7 +1897,7 @@ document.addEventListener('alpine:init', () => {
           notes: this.cancelNotes,
         };
 
-        const res = await apiFetch(`/orders/${this.cancelModalOrder.id}/cancel`, {
+        const res = await apiFetch(`/admin/orders/${this.cancelModalOrder.id}/cancel`, {
           method: 'POST',
           body: JSON.stringify(payload),
         });
@@ -1980,7 +1980,7 @@ document.addEventListener('alpine:init', () => {
       if (!status) return;
 
       try {
-        const res = await apiFetch(`/orders/${order.id}/revert-status`, {
+        const res = await apiFetch(`/admin/orders/${order.id}/revert-status`, {
           method: 'POST',
           body: JSON.stringify({ status }),
         });
@@ -2007,20 +2007,20 @@ document.addEventListener('alpine:init', () => {
       if (customerId) query.set('customer_id', customerId);
       query.set('order_id', order.id);
       query.set('step', 'review');
-      window.location.href = `/orders/create?${query.toString()}`;
+      window.location.href = `/admin/orders/create?${query.toString()}`;
     },
 
     printInvoice(order) {
-      window.open(`/orders/${order.id}/invoice-pdf`, '_blank');
+      window.open(`/admin/orders/${order.id}/invoice-pdf`, '_blank');
     },
 
     printCOD(order) {
-      window.open(`/orders/${order.id}/cod-pdf`, '_blank');
+      window.open(`/admin/orders/${order.id}/cod-pdf`, '_blank');
     },
 
     async generateAndPrintInvoice(order) {
       try {
-        const res = await apiFetch(`/orders/${order.id}/generate-invoice`, { method: 'POST' });
+        const res = await apiFetch(`/admin/orders/${order.id}/generate-invoice`, { method: 'POST' });
         showToast(res || 'Invoice generated successfully.');
 
         // Open/Print the PDF invoice in a new tab
@@ -2031,7 +2031,7 @@ document.addEventListener('alpine:init', () => {
 
         // If the detail modal is currently showing the selected order, update it too
         if (this.selectedOrder && this.selectedOrder.id === order.id) {
-          const details = await apiFetch(`/orders/${order.id}`);
+          const details = await apiFetch(`/admin/orders/${order.id}`);
           if (details && details.order) {
             this.selectedOrder = this.mapOrder(details.order);
           }
@@ -2095,7 +2095,7 @@ document.addEventListener('alpine:init', () => {
       if (!formValues) return;
 
       try {
-        const res = await apiFetch('/orders/bulk-return', {
+        const res = await apiFetch('/admin/orders/bulk-return', {
           method: 'POST',
           body: JSON.stringify({
             order_ids: this.selectedOrders,
@@ -2190,7 +2190,7 @@ document.addEventListener('alpine:init', () => {
       }
 
       try {
-        const res = await apiFetch('/orders/bulk-status', {
+        const res = await apiFetch('/admin/orders/bulk-status', {
           method: 'POST',
           body: JSON.stringify({
             order_ids: this.selectedOrders,
@@ -2234,7 +2234,7 @@ document.addEventListener('alpine:init', () => {
       params.append('type', type);
 
       try {
-        const response = await fetch(`/orders/bulk-print?${params.toString()}`, {
+        const response = await fetch(`/admin/orders/bulk-print?${params.toString()}`, {
           headers: {
             Accept: 'application/json, application/pdf',
           },
@@ -2284,7 +2284,7 @@ document.addEventListener('alpine:init', () => {
       if (!confirmed.isConfirmed) return;
 
       try {
-        const res = await apiFetch('/orders/bulk-generate-invoices', {
+        const res = await apiFetch('/admin/orders/bulk-generate-invoices', {
           method: 'POST',
           body: JSON.stringify({ order_ids: this.selectedOrders }),
         });
@@ -2298,7 +2298,7 @@ document.addEventListener('alpine:init', () => {
 
     exportOrders() {
       window.open(
-        `/orders/export?${new URLSearchParams({
+        `/admin/orders/export?${new URLSearchParams({
           search: this.searchQuery,
           status: this.statusFilter.length ? this.statusFilter.join(',') : '',
           product: this.productFilter ? this.productFilter.join(',') : '',
@@ -2321,7 +2321,7 @@ document.addEventListener('alpine:init', () => {
     async exportSelectedOrders() {
       if (!this.selectedOrders.length) return;
       try {
-        const res = await fetch('/orders/export-selected', {
+        const res = await fetch('/admin/orders/export-selected', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -2367,7 +2367,7 @@ document.addEventListener('alpine:init', () => {
       this.currentBulkImportType = 'deliver';
 
       try {
-        const res = await fetch('/orders/import-deliver', {
+        const res = await fetch('/admin/orders/import-deliver', {
           method: 'POST',
           body: formData,
           headers: {
@@ -2401,7 +2401,7 @@ document.addEventListener('alpine:init', () => {
       this.currentBulkImportType = 'return';
 
       try {
-        const res = await fetch('/orders/import-return', {
+        const res = await fetch('/admin/orders/import-return', {
           method: 'POST',
           body: formData,
           headers: {
@@ -2429,10 +2429,10 @@ document.addEventListener('alpine:init', () => {
       let endpoint = '';
       if (this.currentBulkImportType === 'deliver') {
         fileInput = document.getElementById('import-deliver-file');
-        endpoint = '/orders/import-deliver';
+        endpoint = '/admin/orders/import-deliver';
       } else if (this.currentBulkImportType === 'return') {
         fileInput = document.getElementById('import-return-file');
-        endpoint = '/orders/import-return';
+        endpoint = '/admin/orders/import-return';
       } else {
         return;
       }

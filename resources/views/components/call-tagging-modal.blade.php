@@ -347,7 +347,7 @@ document.addEventListener('alpine:init', () => {
             const version = this._version;
             this.loadingL1 = true; this.error = '';
             try {
-                const result = await this.jsonRequest('/call-tags?level=1');
+                const result = await this.jsonRequest('/admin/call-tags?level=1');
                 if (version !== this._version) return;
                 this.l1Tags = result;
                 if (!result.length) this.error = 'No active call categories are available. Contact your administrator.';
@@ -363,7 +363,7 @@ document.addEventListener('alpine:init', () => {
             this.fieldsReady = false; this.loadingL3 = false; this.loadingL2 = Boolean(id); this.error = '';
             if (!id) return;
             try {
-                const result = await this.jsonRequest('/call-tags?parent_id=' + encodeURIComponent(id));
+                const result = await this.jsonRequest('/admin/call-tags?parent_id=' + encodeURIComponent(id));
                 if (version !== this._version || request !== this._l1Request || String(id) !== String(this.selectedL1)) return;
                 this.l2Tags = result;
             } catch (error) { if (version === this._version && request === this._l1Request) this.error = error.message; }
@@ -377,8 +377,8 @@ document.addEventListener('alpine:init', () => {
             if (!id) return;
             try {
                 const [tags, fields] = await Promise.all([
-                    this.jsonRequest('/call-tags?parent_id=' + encodeURIComponent(id)),
-                    this.jsonRequest('/call-tags/' + encodeURIComponent(id) + '/form')
+                    this.jsonRequest('/admin/call-tags?parent_id=' + encodeURIComponent(id)),
+                    this.jsonRequest('/admin/call-tags/' + encodeURIComponent(id) + '/form')
                 ]);
                 if (version !== this._version || request !== this._l2Request || String(id) !== String(this.selectedL2)) return;
                 this.l3Tags = tags; this.formFields = fields; this.fieldsReady = true;
@@ -409,7 +409,7 @@ document.addEventListener('alpine:init', () => {
             this.searchTimeout[fieldName] = setTimeout(async () => {
                 let url = '';
                 if (fieldType === 'product_search') {
-                    url = `/products-search-api?q=${encodeURIComponent(query || '')}`;
+                    url = `/admin/products-search-api?q=${encodeURIComponent(query || '')}`;
                 } else if (fieldType === 'agent_search') {
                     url = `/api/chat/users?q=${encodeURIComponent(query || '')}`;
                 }
@@ -480,7 +480,7 @@ document.addEventListener('alpine:init', () => {
             };
             
             try {
-                const data = await this.jsonRequest('/call-logs', {
+                const data = await this.jsonRequest('/admin/call-logs', {
                     method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') },
                     body: JSON.stringify(payload)
                 });

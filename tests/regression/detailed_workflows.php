@@ -149,7 +149,7 @@ try {
 }
 $response = $http('DELETE', '/api/chat/messages/'.$messageId, [], $token);
 check($response->getStatusCode() === 200 && DB::table('chat_messages')->where('id', $messageId)->value('deleted_at') !== null, 'native chat deletion preserves soft-delete behavior');
-$cacheRoute = $app['router']->getRoutes()->match(Request::create('/clear-views'));
+$cacheRoute = $app['router']->getRoutes()->match(Request::create('/admin/clear-views'));
 check(in_array('auth', $cacheRoute->gatherMiddleware(), true) && in_array('permission:settings-edit', $cacheRoute->gatherMiddleware(), true), 'view-cache maintenance requires authentication and settings-edit');
 foreach (['disabled' => ['is_active' => false], 'suspended' => ['suspended_until' => now()->addMinutes(10)]] as $state => $attributes) {
     $blockedUser = User::create(array_merge(['name' => 'Blocked '.$state, 'email' => $state.'@example.invalid', 'password' => bcrypt('Example123!')], $attributes));

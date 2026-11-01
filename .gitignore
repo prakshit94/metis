@@ -80,3 +80,6 @@ test_dropdown.js
 __pycache__/
 *.py[cod]
 /releases/
+
+# Retired standalone storefront runtime (sessions/cache/logs; never source)
+/storage/app/private/retired-storefront/

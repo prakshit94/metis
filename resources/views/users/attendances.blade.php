@@ -27,7 +27,7 @@
 <div class="attendance-workspace" x-data="{ workspaceSection: 'attendance' }">
     <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
         <div><span class="text-primary small fw-semibold">TIME &amp; LEAVE</span><h1 class="h3 mt-1 mb-2">Attendance workspace</h1><p class="text-muted mb-0">Review daily activity, manage rosters, and track requests in one place.</p></div>
-        <a href="{{ url('/leaves') }}" class="btn btn-outline-secondary">Leave management</a>
+        <a href="{{ url('/admin/leaves') }}" class="btn btn-outline-secondary">Leave management</a>
     </div>
     <nav class="attendance-workspace-nav d-flex gap-2 mb-4 p-2 border rounded-3 bg-body" aria-label="Attendance workspace sections">
         <button type="button" class="btn" :class="workspaceSection === 'attendance' ? 'btn-primary' : 'btn-light'" :aria-current="workspaceSection === 'attendance' ? 'page' : null" @click="workspaceSection = 'attendance'">Attendance</button>
@@ -94,7 +94,7 @@
     <div class="card mb-4" x-show="selectedEmployee" x-cloak><div class="card-body d-flex justify-content-between gap-3 flex-wrap">
         <div><h2 class="h6 mb-1" x-text="selectedEmployee?.name"></h2><span class="small text-muted" x-text="[selectedEmployee?.employee_id, selectedEmployee?.designation, selectedEmployee?.department?.name].filter(Boolean).join(' · ')"></span>
             <div class="small mt-1">Manager: <span x-text="selectedEmployee?.manager?.name || 'Unassigned'"></span> · LOB: <span x-text="selectedEmployee?.lob_team_code || 'Global'"></span> · Joined: <span x-text="employeeJoined"></span></div>
-        </div>@can('user-view')<a href="{{ url('/users') }}" class="btn btn-outline-secondary btn-sm align-self-start">Manage employees and reporting</a>@endcan
+        </div>@can('user-view')<a href="{{ url('/admin/users') }}" class="btn btn-outline-secondary btn-sm align-self-start">Manage employees and reporting</a>@endcan
     </div></div>
     <div class="row g-3 mb-4" aria-live="polite">
         <div class="col-6 col-lg-3"><div class="border rounded p-3 h-100"><span class="small text-muted">Completed session time</span><strong class="d-block fs-5" x-text="completedTime"></strong></div></div>

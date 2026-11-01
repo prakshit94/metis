@@ -878,8 +878,8 @@ document.addEventListener('alpine:init', () => {
       getResults(query) {
         const q = query.toLowerCase();
         return [
-          { title: 'Calendar Events', url: '/calendar', type: 'Page' },
-          { title: 'File Manager', url: '/files', type: 'Page' },
+          { title: 'Calendar Events', url: '/admin/calendar', type: 'Page' },
+          { title: 'File Manager', url: '/admin/files', type: 'Page' },
           { title: 'User Settings', url: '/settings', type: 'Page' },
         ].filter((item) => item.title.toLowerCase().includes(q));
       },

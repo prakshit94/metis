@@ -411,7 +411,7 @@ document.addEventListener('alpine:init', () => {
                 if (this.searchQuery) params.append('search', this.searchQuery);
                 if (this.statusFilter) params.append('status', this.statusFilter);
 
-                const response = await fetch(`/refunds?${params.toString()}`, {
+                const response = await fetch(`/admin/refunds?${params.toString()}`, {
                     headers: {
                         'Accept': 'application/json',
                         'X-Requested-With': 'XMLHttpRequest'
@@ -456,7 +456,7 @@ document.addEventListener('alpine:init', () => {
             
             this.isSubmitting = true;
             try {
-                const response = await fetch('/refunds/bulk-status', {
+                const response = await fetch('/admin/refunds/bulk-status', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

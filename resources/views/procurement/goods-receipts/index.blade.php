@@ -214,7 +214,7 @@
                                         <ul class="dropdown-menu dropdown-menu-end shadow-sm">
                                             @can('goodsreceipt-view')
                                             <li><a class="dropdown-item" href="#" @click.prevent="viewItem(item)"><i class="bi bi-eye me-2 text-secondary"></i> View Details</a></li>
-                                            <li><a class="dropdown-item" :href="'/procurement/goods-receipts/' + item.id + '/pdf'" target="_blank"><i class="bi bi-file-pdf me-2 text-danger"></i> Download PDF</a></li>
+                                            <li><a class="dropdown-item" :href="'/admin/procurement/goods-receipts/' + item.id + '/pdf'" target="_blank"><i class="bi bi-file-pdf me-2 text-danger"></i> Download PDF</a></li>
                                             @endcan
                                             <template x-if="!item.deleted_at">
                                                 <div>
@@ -707,7 +707,7 @@ document.addEventListener('alpine:init', () => {
 
             try {
                 this.isReceiving = true;
-                const response = await fetch(`/procurement/purchase-orders/${this.receiveForm.po_id}/receive`, {
+                const response = await fetch(`/admin/procurement/purchase-orders/${this.receiveForm.po_id}/receive`, {
                     method: 'POST',
                     headers: { 
                         'Content-Type': 'application/json', 
@@ -828,11 +828,11 @@ document.addEventListener('alpine:init', () => {
             try {
                 let url, method, bodyData;
                 if (this.isBulkDelete) {
-                    url = `/procurement/goods-receipts/bulk`;
+                    url = `/admin/procurement/goods-receipts/bulk`;
                     method = 'POST';
                     bodyData = { action: 'delete', ids: this.selectedActiveIds };
                 } else {
-                    url = `/procurement/goods-receipts/${this.deleteForm.id}`;
+                    url = `/admin/procurement/goods-receipts/${this.deleteForm.id}`;
                     method = 'DELETE';
                     bodyData = {};
                 }
@@ -882,11 +882,11 @@ document.addEventListener('alpine:init', () => {
             try {
                 let url, method, bodyData;
                 if (this.isBulkRestore) {
-                    url = `/procurement/goods-receipts/bulk`;
+                    url = `/admin/procurement/goods-receipts/bulk`;
                     method = 'POST';
                     bodyData = { action: 'restore', ids: this.selectedDeletedIds };
                 } else {
-                    url = `/procurement/goods-receipts/${this.restoreForm.id}/restore`;
+                    url = `/admin/procurement/goods-receipts/${this.restoreForm.id}/restore`;
                     method = 'POST';
                     bodyData = {};
                 }

@@ -31,7 +31,7 @@ async function apiFetch(url, options = {}) {
       message.toLowerCase().includes('authoriz') ||
       message.toLowerCase().includes('forbidden')
     ) {
-      window.location.href = '/';
+      window.location.href = '/admin';
       return;
     }
     throw new Error(message);
@@ -153,7 +153,7 @@ document.addEventListener('alpine:init', () => {
       formData.append('is_preview', 1);
 
       try {
-        const res = await fetch('/returns/bulk-qc-import', {
+        const res = await fetch('/admin/returns/bulk-qc-import', {
           method: 'POST',
           body: formData,
           headers: {
@@ -255,7 +255,7 @@ document.addEventListener('alpine:init', () => {
       params.append('sort_field', this.sortField);
       params.append('sort_direction', this.sortDirection);
 
-      apiFetch(`/returns?${params.toString()}`)
+      apiFetch(`/admin/returns?${params.toString()}`)
         .then((data) => {
           this.returns = (data.returns?.data || []).map((r) => this.mapReturn(r));
           this.currentPage = data.returns?.current_page || 1;
@@ -301,7 +301,7 @@ document.addEventListener('alpine:init', () => {
       if (!confirmed.isConfirmed) return;
 
       try {
-        const res = await apiFetch(`/returns/${ret.id}/approve`, { method: 'POST' });
+        const res = await apiFetch(`/admin/returns/${ret.id}/approve`, { method: 'POST' });
         showToast(res.message || 'Return approved.');
         this.loadReturns();
       } catch (err) {
@@ -330,7 +330,7 @@ document.addEventListener('alpine:init', () => {
       if (!confirmed.isConfirmed) return;
 
       try {
-        const res = await apiFetch(`/returns/${ret.id}/cancel`, { method: 'POST' });
+        const res = await apiFetch(`/admin/returns/${ret.id}/cancel`, { method: 'POST' });
         showToast(res.message || 'Return cancelled.');
         this.loadReturns();
       } catch (err) {
@@ -514,7 +514,7 @@ document.addEventListener('alpine:init', () => {
 
       for (const ret of pending) {
         try {
-          await apiFetch(`/returns/${ret.id}/approve`, { method: 'POST' });
+          await apiFetch(`/admin/returns/${ret.id}/approve`, { method: 'POST' });
           successCount++;
         } catch {
           failCount++;
@@ -559,7 +559,7 @@ document.addEventListener('alpine:init', () => {
 
       for (const ret of pending) {
         try {
-          await apiFetch(`/returns/${ret.id}/cancel`, { method: 'POST' });
+          await apiFetch(`/admin/returns/${ret.id}/cancel`, { method: 'POST' });
           successCount++;
         } catch {
           failCount++;
@@ -608,7 +608,7 @@ document.addEventListener('alpine:init', () => {
                   : 'Bulk rejected — all items marked damaged',
             })),
           };
-          await apiFetch(`/returns/${ret.id}/qc`, {
+          await apiFetch(`/admin/returns/${ret.id}/qc`, {
             method: 'POST',
             body: JSON.stringify(payload),
           });
@@ -733,7 +733,7 @@ document.addEventListener('alpine:init', () => {
           })),
         };
 
-        const res = await apiFetch(`/returns/${this.selectedReturn.id}/qc`, {
+        const res = await apiFetch(`/admin/returns/${this.selectedReturn.id}/qc`, {
           method: 'POST',
           body: JSON.stringify(payload),
         });
@@ -912,7 +912,7 @@ document.addEventListener('alpine:init', () => {
       for (const returnId of Object.keys(returnPayloads)) {
         try {
           const payload = returnPayloads[returnId];
-          await apiFetch(`/returns/${returnId}/qc`, {
+          await apiFetch(`/admin/returns/${returnId}/qc`, {
             method: 'POST',
             body: JSON.stringify(payload),
           });
@@ -950,7 +950,7 @@ document.addEventListener('alpine:init', () => {
           payment_method: this.financeMethod,
         };
 
-        const res = await apiFetch(`/returns/${this.selectedReturn.id}/finance`, {
+        const res = await apiFetch(`/admin/returns/${this.selectedReturn.id}/finance`, {
           method: 'POST',
           body: JSON.stringify(payload),
         });

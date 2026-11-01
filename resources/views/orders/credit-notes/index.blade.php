@@ -492,7 +492,7 @@ document.addEventListener('alpine:init', () => {
         },
 
         searchCustomers(q) {
-            fetch(`/credit-notes/customers/search?q=${encodeURIComponent(q)}`, {
+            fetch(`/admin/credit-notes/customers/search?q=${encodeURIComponent(q)}`, {
                 headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content }
             })
                 .then(r => r.json())

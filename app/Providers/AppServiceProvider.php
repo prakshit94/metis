@@ -93,7 +93,7 @@ class AppServiceProvider extends ServiceProvider
             }
 
             // 3. Include Hybrid Modules (Orders, Inventory, Customers, etc.)
-            return preg_match('/^(orders|returns|refunds|payments|invoices|promotions|customers|catalog|inventory|shipping|villages|products)/', $uri);
+            return preg_match('/^(?:admin\/)?(orders|returns|refunds|payments|invoices|promotions|customers|catalog|inventory|shipping|villages|products)/', $uri);
         });
 
         View::composer('components.add-customer-modal', function ($view) {

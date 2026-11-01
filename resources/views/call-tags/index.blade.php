@@ -630,7 +630,7 @@ document.addEventListener('alpine:init', () => {
             
             this.saving = true;
             
-            const url = this.tagId ? `/call-tags-admin/${this.tagId}` : `/call-tags-admin`;
+            const url = this.tagId ? `/admin/call-tags-admin/${this.tagId}` : `/admin/call-tags-admin`;
             const method = this.tagId ? 'PUT' : 'POST';
             
             try {
@@ -684,7 +684,7 @@ document.addEventListener('alpine:init', () => {
             
             if (result.isConfirmed) {
                 try {
-                    const res = await fetch(`/call-tags-admin/${id}`, {
+                    const res = await fetch(`/admin/call-tags-admin/${id}`, {
                         method: 'DELETE',
                         headers: {
                             'Accept': 'application/json',
@@ -724,7 +724,7 @@ document.addEventListener('alpine:init', () => {
             }
 
             try {
-                const res = await fetch('/call-tags-admin/bulk-action', {
+                const res = await fetch('/admin/call-tags-admin/bulk-action', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

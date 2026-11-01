@@ -140,7 +140,7 @@ console.log('PASS: user forms show verified methods, distinguish required enroll
 
 const usersMarkup = fs.readFileSync(new URL('../../resources/views/users/index.blade.php', import.meta.url), 'utf8');
 assert.equal(usersMarkup.includes('Open my own Security page'), false);
-assert.equal(usersMarkup.slice(usersMarkup.indexOf('<!-- Card 6: Account Settings -->')).includes("url('/security')"), false);
+assert.equal(usersMarkup.slice(usersMarkup.indexOf('<!-- Card 6: Account Settings -->')).includes("url('/admin/security')"), false);
 assert.ok(usersMarkup.includes('aria-controls="userTwoStepInfo"'));
 assert.ok(usersMarkup.includes('@mouseenter="clearTimeout(infoCloseTimer); infoOpen = true"'));
 assert.ok(usersMarkup.includes('@focus="infoOpen = true"'));

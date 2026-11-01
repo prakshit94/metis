@@ -154,16 +154,16 @@ $web = function (string $uri, string $method = 'GET', array $body = []) use ($ap
 
     return $response;
 };
-$webLogin = $web('/login', 'POST', ['email' => $user->email, 'password' => 'Example123!', 'remember' => 1]);
-check($webLogin->getStatusCode() === 302 && str_ends_with($webLogin->headers->get('Location'), '/login/two-factor'), 'browser password login redirects to second factor');
-check($web('/login/two-factor')->getStatusCode() === 200, 'browser challenge renders with its pending session');
-$wrong = $web('/login/two-factor', 'POST', ['code' => 'bad']);
+$webLogin = $web('/admin/login', 'POST', ['email' => $user->email, 'password' => 'Example123!', 'remember' => 1]);
+check($webLogin->getStatusCode() === 302 && str_ends_with($webLogin->headers->get('Location'), '/admin/login/two-factor'), 'browser password login redirects to second factor');
+check($web('/admin/login/two-factor')->getStatusCode() === 200, 'browser challenge renders with its pending session');
+$wrong = $web('/admin/login/two-factor', 'POST', ['code' => 'bad']);
 check($wrong->getStatusCode() === 302 && ! array_key_exists('code', session()->getOldInput()), 'browser failure redirects without flashing the submitted code');
-$webSuccess = $web('/login/two-factor', 'POST', ['code' => $regenerated['recovery_codes'][1]]);
-check($webSuccess->getStatusCode() === 302 && ! str_ends_with($webSuccess->headers->get('Location'), '/login/two-factor'), 'browser recovery verification completes web sign-in');
+$webSuccess = $web('/admin/login/two-factor', 'POST', ['code' => $regenerated['recovery_codes'][1]]);
+check($webSuccess->getStatusCode() === 302 && ! str_ends_with($webSuccess->headers->get('Location'), '/admin/login/two-factor'), 'browser recovery verification completes web sign-in');
 check(isset($webCookies['remembered_email']), 'browser remember preference survives the second factor');
 check(! session()->has('two_factor_challenge'), 'successful browser verification clears pending challenge');
-check($web('/security')->getStatusCode() === 200, 'authenticated security page renders after second factor');
+check($web('/admin/security')->getStatusCode() === 200, 'authenticated security page renders after second factor');
 // Security mutation must not be possible while borrowing another identity.
 $impersonated = requestFor(['current_password' => 'Example123!']);
 $impersonated->setUserResolver(fn () => $user->fresh());

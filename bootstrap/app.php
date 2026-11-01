@@ -1,7 +1,6 @@
 <?php
 
 use App\Http\Middleware\EnsureUserIsActive;
-use App\Http\Middleware\PreventBackHistory;
 use App\Services\ApiClientContext;
 use App\Services\TeamContext as TeamContextMiddleware;
 use Illuminate\Foundation\Application;
@@ -28,11 +27,9 @@ return Application::configure(basePath: dirname(__DIR__))
             ThrottleRequests::class.':api',
         ]);
 
-        $middleware->web(append: [
-            TeamContextMiddleware::class,
-            PreventBackHistory::class,
-            EnsureUserIsActive::class,
-        ]);
+        $middleware->web(prepend: [\App\Http\Middleware\SelectWebSession::class]);
+        $middleware->redirectGuestsTo(fn () => route('login'));
+        $middleware->redirectUsersTo(fn () => route('dashboard'));
         $middleware->api(append: [
             TeamContextMiddleware::class,
             EnsureUserIsActive::class,
@@ -61,7 +58,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // Keep browser OTP lockouts on the challenge form; mobile clients retain HTTP 429.
         $exceptions->renderable(function (\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $error, $request) {
             if ($error->getStatusCode() !== 429 || !$request->isMethod('POST')
-                || !$request->is('login/two-factor', 'login/two-factor/*') || $request->expectsJson()) {
+                || !$request->is('admin/login/two-factor', 'admin/login/two-factor/*') || $request->expectsJson()) {
                 return null;
             }
             $seconds = max(1, (int) ($error->getHeaders()['Retry-After'] ?? 300));

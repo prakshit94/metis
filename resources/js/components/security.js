@@ -375,7 +375,7 @@ document.addEventListener('alpine:init', () => {
                 'Emergency lockdown initiated. All sessions terminated. Redirecting...',
                 'warning'
               );
-              setTimeout(() => (window.location.href = '/login'), 2000);
+              setTimeout(() => (window.location.href = '/admin/login'), 2000);
             } else {
               throw new Error('Lockdown failed');
             }

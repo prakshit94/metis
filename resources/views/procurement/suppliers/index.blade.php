@@ -781,7 +781,7 @@
                         sort_dir: this.sortDirection
                     });
                     
-                    const response = await fetch(`/procurement/suppliers?${params}`, {
+                    const response = await fetch(`/admin/procurement/suppliers?${params}`, {
                         headers: {
                             'Accept': 'application/json',
                             'X-Requested-With': 'XMLHttpRequest'
@@ -830,7 +830,7 @@
 
                 this.bulkSubmitting = true;
                 try {
-                    const response = await fetch(`/procurement/suppliers/bulk`, {
+                    const response = await fetch(`/admin/procurement/suppliers/bulk`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -891,7 +891,7 @@
                 
                 this.submitting = true;
                 const isUpdate = this.isEditing && this.form.id;
-                const url = isUpdate ? `/procurement/suppliers/${this.form.id}` : '/procurement/suppliers';
+                const url = isUpdate ? `/admin/procurement/suppliers/${this.form.id}` : '/admin/procurement/suppliers';
                 
                 try {
                     const payload = { ...this.form };
@@ -932,7 +932,7 @@
                 if (!confirm(`Are you sure you want to delete ${item.company_name}?`)) return;
                 
                 try {
-                    const response = await fetch(`/procurement/suppliers/${item.id}`, {
+                    const response = await fetch(`/admin/procurement/suppliers/${item.id}`, {
                         method: 'DELETE',
                         headers: {
                             'Accept': 'application/json',

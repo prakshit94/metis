@@ -46,7 +46,7 @@
         @endcan
         @canany(['orders.import', 'orders.deliver', 'orders.return'])
         <div class="dropdown">
-            <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" title="Import New Orders">
+            <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" title="Update delivery or return status by order number or tracking ID">
                 <i class="bi bi-upload me-2"></i>Import Orders
             </button>
             <ul class="dropdown-menu">
@@ -61,9 +61,15 @@
                 </li>
                 <li>
                     <a class="dropdown-item" href="{{ route('orders.import-deliver-template') }}">
-                        <i class="bi bi-file-earmark-arrow-down me-2"></i>Download Deliver Template
+                        <i class="bi bi-file-earmark-arrow-down me-2"></i>Deliver Template — Order Number
                     </a>
                 </li>
+                <li>
+                    <a class="dropdown-item" href="{{ route('orders.import-deliver-template', ['identifier' => 'tracking_id']) }}">
+                        <i class="bi bi-file-earmark-arrow-down me-2"></i>Deliver Template — Tracking ID
+                    </a>
+                </li>
+                <li><span class="dropdown-item-text small text-muted">Upload either template using Upload Deliver CSV.</span></li>
                 @endcan
                 @can('orders.return')
                 <li><hr class="dropdown-divider"></li>
@@ -75,9 +81,15 @@
                 </li>
                 <li>
                     <a class="dropdown-item" href="{{ route('orders.import-return-template') }}">
-                        <i class="bi bi-file-earmark-arrow-down me-2"></i>Download Return Template
+                        <i class="bi bi-file-earmark-arrow-down me-2"></i>Return Template — Order Number
                     </a>
                 </li>
+                <li>
+                    <a class="dropdown-item" href="{{ route('orders.import-return-template', ['identifier' => 'tracking_id']) }}">
+                        <i class="bi bi-file-earmark-arrow-down me-2"></i>Return Template — Tracking ID
+                    </a>
+                </li>
+                <li><span class="dropdown-item-text small text-muted">Upload either template using Upload Return CSV.</span></li>
                 @endcan
             </ul>
         </div>

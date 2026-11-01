@@ -211,7 +211,7 @@ class SecurityController extends Controller
         $request->session()->put('impersonation_original_team_id', $originalTeamId);
         $request->session()->put('impersonation_original_password_hash', $originalPasswordHash);
 
-        return response()->json(['message' => 'Impersonating '.$user->name, 'redirect' => '/']);
+        return response()->json(['message' => 'Impersonating '.$user->name, 'redirect' => '/admin']);
     }
 
     /**
@@ -239,7 +239,7 @@ class SecurityController extends Controller
             $request->session()->regenerateToken();
             setPermissionsTeamId(null);
 
-            return response()->json(['message' => 'The original account is no longer available for impersonation. You have been logged out.', 'redirect' => '/login']);
+            return response()->json(['message' => 'The original account is no longer available for impersonation. You have been logged out.', 'redirect' => '/admin/login']);
         }
 
         $this->switchImpersonationUser($request, $originalUser);
@@ -248,7 +248,7 @@ class SecurityController extends Controller
             setPermissionsTeamId($originalTeamId);
         }
 
-        return response()->json(['message' => 'Welcome back, '.$originalUser->name, 'redirect' => '/users']);
+        return response()->json(['message' => 'Welcome back, '.$originalUser->name, 'redirect' => '/admin/users']);
     }
 
     /** Keep identities, CSRF tokens, and permission/session data separate. */

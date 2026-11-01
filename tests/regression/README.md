@@ -155,3 +155,38 @@ recipient restrictions, sparse edits, activation concurrency, wallet rollback,
 order edit entry points, in-memory Blade rendering and migration repairs.
 The existing `concurrency_worker.php` also supports referral activation checks. Tests are
 excluded from production packages; the broader suite remains `audit_fixes.php`.
+
+Order delivery/return CSV identifier checks:
+
+```sh
+METIS_TEST_MYSQL_SOCKET=/path/to/disposable/mysql.sock php tests/regression/order_status_imports.php
+```
+
+Covers order-number compatibility, tracking header aliases and shipment lookup,
+leading zeroes, conflicting/ambiguous identifiers, duplicate orders, headerless
+files, read-only previews, real stock/return effects and visibility restrictions.
+
+Unified storefront/admin checks:
+
+```sh
+METIS_TEST_MYSQL_SOCKET=/path/to/disposable/mysql.sock php tests/regression/storefront.php
+METIS_TEST_MYSQL_SOCKET=/path/to/disposable/mysql.sock php tests/regression/unified_application.php
+node tests/regression/storefront_product_settings.mjs
+```
+
+The first suite preserves the customer checkout/address/login-code and lifecycle
+coverage. The HTTP suite checks `/` and `/admin`, separate login/logout cookies,
+staff remember-cookie isolation, real checkout attribution and unchanged native
+API URLs. Both database suites create and remove disposable schemas.
+
+Admin loading lifecycle checks (no database required):
+
+```sh
+node tests/regression/admin_loading_screen.mjs
+node tests/regression/order_create_loading.mjs
+```
+
+The shared page overlay is released when HTML parsing reaches `interactive`,
+independently of the main application bundle and its imports. Checks cover missing
+bundle execution, late execution, restored pages, transition-free cleanup, and
+product-request success, timeout, network failure and cancellation.

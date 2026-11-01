@@ -10,7 +10,7 @@ function otpCheck(bool $ok, string $label): void {
     if (!$ok) throw new RuntimeException($label);
     echo 'PASS: '.$label.PHP_EOL;
 }
-$request = Illuminate\Http\Request::create('/login/two-factor', 'POST', [], [], [], ['REMOTE_ADDR' => '192.0.2.30', 'HTTP_ACCEPT' => 'text/html']);
+$request = Illuminate\Http\Request::create('/admin/login/two-factor', 'POST', [], [], [], ['REMOTE_ADDR' => '192.0.2.30', 'HTTP_ACCEPT' => 'text/html']);
 $request->setUserResolver(fn () => null);
 $request->setRouteResolver(fn () => new Illuminate\Routing\Route('POST', 'login/two-factor', fn () => null));
 $session = new Illuminate\Session\Store('otp-throttle-test', new Illuminate\Session\ArraySessionHandler(120));
@@ -37,7 +37,7 @@ try {
 } catch (Symfony\Component\HttpKernel\Exception\HttpException $error) {
     otpCheck($error->getStatusCode() === 429 && (int)$error->getHeaders()['Retry-After'] > 0, 'account OTP budget remains five attempts with an accurate retry header');
     $response = app(Illuminate\Contracts\Debug\ExceptionHandler::class)->render($request, $error);
-    otpCheck($response->getStatusCode() === 302 && str_ends_with($response->headers->get('Location'), '/login/two-factor'), 'browser lockout returns to the OTP form');
+    otpCheck($response->getStatusCode() === 302 && str_ends_with($response->headers->get('Location'), '/admin/login/two-factor'), 'browser lockout returns to the OTP form');
     otpCheck(str_contains($session->get('error'), 'Wait ') && !$session->has('_old_input.code'), 'browser explains retry without flashing an OTP');
     $apiRequest = Illuminate\Http\Request::create('/api/auth/two-factor/challenge', 'POST', [], [], [], ['HTTP_ACCEPT'=>'application/json']);
     $response = app(Illuminate\Contracts\Debug\ExceptionHandler::class)->render($apiRequest, $error);

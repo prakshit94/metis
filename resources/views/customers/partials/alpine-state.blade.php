@@ -205,7 +205,7 @@
                 page: this.productPage,
                 exclude_order_id: this.editingOrderId || '',
             });
-            const res = await fetch(`/products-search-api?${params}`, {
+            const res = await fetch(`/admin/products-search-api?${params}`, {
                 headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
             });
             if (!res.ok) throw new Error('Network error');
@@ -693,7 +693,7 @@
                 net_amount: parseFloat(this.grandTotal.toFixed(2)),
                 use_wallet_balance: this.useWalletBalance ? 1 : 0,
             };
-            const url = this.editingOrderId ? `/orders/${this.editingOrderId}` : '/orders';
+            const url = this.editingOrderId ? `/admin/orders/${this.editingOrderId}` : '/admin/orders';
             const res = await fetch(url, { 
                 method: this.editingOrderId ? 'PUT' : 'POST', 
                 headers: {
@@ -730,7 +730,7 @@
                     scheduled_date: this.orderStatus === 'future_order' ? this.futureOrderDate : null,
                     notes: 'Order placed via Customer Profile'
                 };
-                const confirmRes = await fetch(`/orders/${json.order?.id || json.data?.id || this.editingOrderId}/confirm`, {
+                const confirmRes = await fetch(`/admin/orders/${json.order?.id || json.data?.id || this.editingOrderId}/confirm`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

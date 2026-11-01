@@ -602,7 +602,7 @@
                                 this.errorMsg = '';
                                 this.isLoading = true;
                                 
-                                fetch(`/customers/search-by-phone?phone=${this.searchPhone}`, {
+                                fetch(`/admin/customers/search-by-phone?phone=${this.searchPhone}`, {
                                     headers: {
                                         'Accept': 'application/json',
                                         'X-Requested-With': 'XMLHttpRequest'

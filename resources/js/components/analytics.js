@@ -39,7 +39,7 @@ document.addEventListener('alpine:init', () => {
         conversion: 8.4,
       },
       {
-        path: '/analytics',
+        path: '/admin/analytics',
         title: 'Analytics Page',
         views: 9234,
         uniqueViews: 7156,

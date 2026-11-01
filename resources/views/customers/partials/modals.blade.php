@@ -16,7 +16,7 @@
             </button>
         </div>
 
-        <form :action="(editingAddress && editingAddress.id) ? `/customers/{{ $customer->id }}/addresses/${editingAddress.id}` : `/customers/{{ $customer->id }}/addresses`" method="POST" class="space-y-4">
+        <form :action="(editingAddress && editingAddress.id) ? `/admin/customers/{{ $customer->id }}/addresses/${editingAddress.id}` : `/admin/customers/{{ $customer->id }}/addresses`" method="POST" class="space-y-4">
             @csrf
             <template x-if="editingAddress && editingAddress.id">
                 @method('PUT')
@@ -143,7 +143,7 @@
         <h3 class="text-lg font-black text-foreground mb-2">Delete Address?</h3>
         <p class="text-sm text-muted-foreground mb-6">Are you sure you want to delete <span class="font-bold text-foreground" x-text="deletingAddress?.label || 'this address'"></span>? This action cannot be undone.</p>
         
-        <form :action="(deletingAddress && deletingAddress.id) ? `/customers/{{ $customer->id }}/addresses/${deletingAddress.id}` : '#'" method="POST">
+        <form :action="(deletingAddress && deletingAddress.id) ? `/admin/customers/{{ $customer->id }}/addresses/${deletingAddress.id}` : '#'" method="POST">
             @csrf
             @method('DELETE')
             <div class="flex flex-col sm:flex-row items-center justify-center gap-3">

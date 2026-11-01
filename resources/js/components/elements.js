@@ -14,7 +14,7 @@ const elementsData = [
     icon: 'bi bi-square',
     description: 'Bootstrap button styles, sizes, and states',
     examples: 12,
-    url: '/elements/buttons',
+    url: '/admin/elements/buttons',
     preview: `
             <div class="d-flex gap-2 flex-wrap">
                 <button class="btn btn-primary btn-sm">Primary</button>
@@ -30,7 +30,7 @@ const elementsData = [
     icon: 'bi bi-exclamation-triangle',
     description: 'Contextual feedback messages for user actions',
     examples: 8,
-    url: '/elements/alerts',
+    url: '/admin/elements/alerts',
     preview: `
             <div class="alert alert-primary alert-sm py-2 px-3 mb-2" role="alert">
                 <i class="bi bi-info-circle me-2"></i>Primary alert
@@ -47,7 +47,7 @@ const elementsData = [
     icon: 'bi bi-award',
     description: 'Small count and labeling components',
     examples: 6,
-    url: '/elements/badges',
+    url: '/admin/elements/badges',
     preview: `
             <div class="d-flex gap-2 flex-wrap">
                 <span class="badge bg-primary">Primary</span>
@@ -64,7 +64,7 @@ const elementsData = [
     icon: 'bi bi-card-text',
     description: 'Flexible content containers with headers and footers',
     examples: 10,
-    url: '/elements/cards',
+    url: '/admin/elements/cards',
     preview: `
             <div class="card" style="width: 200px;">
                 <div class="card-body p-3">
@@ -82,7 +82,7 @@ const elementsData = [
     icon: 'bi bi-window',
     description: 'Streamlined modal dialogs with flexible content',
     examples: 9,
-    url: '/elements/modals',
+    url: '/admin/elements/modals',
     preview: `
             <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#exampleModal">
                 Launch Modal
@@ -109,7 +109,7 @@ const elementsData = [
     icon: 'bi bi-ui-checks-grid',
     description: 'Form inputs, selects, checkboxes, and validation',
     examples: 15,
-    url: '/elements/forms',
+    url: '/admin/elements/forms',
     preview: `
             <div class="mb-2">
                 <input type="text" class="form-control form-control-sm" placeholder="Text input">
@@ -133,7 +133,7 @@ const elementsData = [
     icon: 'bi bi-table',
     description: 'Responsive tables with various styling options',
     examples: 8,
-    url: '/elements/tables',
+    url: '/admin/elements/tables',
     preview: `
             <table class="table table-sm">
                 <thead>
@@ -239,10 +239,10 @@ document.addEventListener('alpine:init', () => {
           )
           .map((c) => ({ title: c.title, url: c.url, type: 'element' }));
         const generalResults = [
-          { title: 'Dashboard', url: '/', type: 'page' },
-          { title: 'Analytics', url: '/analytics', type: 'page' },
-          { title: 'Users', url: '/users', type: 'page' },
-          { title: 'Elements', url: '/elements', type: 'page' },
+          { title: 'Dashboard', url: '/admin', type: 'page' },
+          { title: 'Analytics', url: '/admin/analytics', type: 'page' },
+          { title: 'Users', url: '/admin/users', type: 'page' },
+          { title: 'Elements', url: '/admin/elements', type: 'page' },
         ].filter((item) => item.title.toLowerCase().includes(q));
         return [...elementResults, ...generalResults].slice(0, 8);
       },

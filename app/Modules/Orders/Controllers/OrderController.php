@@ -2707,6 +2707,28 @@ class OrderController extends Controller implements HasMiddleware
         };
     }
 
+    /** Resolve identifiers only; lifecycle and financial handling stay in the existing flows. */
+    private function resolveImportOrder(Request $request, ?string $orderNo, ?string $trackingNo): array
+    {
+        $query = app(RecordVisibility::class)->orders(Order::with(['party', 'items', 'shipments' => fn ($q) => $q->whereNull('deleted_at')]), $request->user());
+        if ($orderNo !== null && $orderNo !== '') {
+            $query->where(function ($q) use ($orderNo) {
+                $q->where('order_no', $orderNo);
+                // Preserve legacy numeric order-ID imports, but never pick an ambiguous match.
+                if (ctype_digit($orderNo)) $q->orWhere('id', $orderNo);
+            });
+        }
+        if ($trackingNo !== null && $trackingNo !== '') {
+            $query->whereHas('shipments', fn ($shipment) => $shipment
+                ->where('tracking_no', $trackingNo)->whereNull('deleted_at'));
+        }
+        $matches = $query->lockForUpdate()->limit(2)->get();
+        if ($matches->count() > 1) return [null, 'Ambiguous identifier: multiple orders match'];
+        if ($matches->isEmpty()) return [null, 'Order not found or identifiers do not match'];
+
+        return [$matches->first(), null];
+    }
+
     public function importBulkDeliver(Request $request, InventoryService $inventoryService)
     {
         $request->validate(['file' => 'required|file|max:10240']);
@@ -2724,9 +2746,6 @@ class OrderController extends Controller implements HasMiddleware
         if (isset($firstRow[0])) {
             $firstRow[0] = preg_replace('/^\xEF\xBB\xBF/', '', $firstRow[0]);
         }
-        if (isset($firstRow[0])) {
-            $firstRow[0] = preg_replace('/^\xEF\xBB\xBF/', '', $firstRow[0]);
-        }
         if ($firstRow === false) {
             fclose($handle);
 
@@ -2734,12 +2753,15 @@ class OrderController extends Controller implements HasMiddleware
         }
 
         $normalized = array_map(fn ($v) => strtolower(trim((string) $v)), $firstRow);
-        $hasHeader = in_array('order_no', $normalized, true) || in_array('order_id', $normalized, true);
+        $hasHeader = (bool) array_intersect(['order_no', 'order_id', 'tracking_id', 'tracking_no', 'tracking_number', 'awb'], $normalized);
+        // Headerless files retain the legacy order-number format, including row one.
+        if (! $hasHeader) rewind($handle);
 
         $updated = 0;
         $skipped = [];
         $previewData = [];
         $seenOrderNos = [];
+        $seenOrderIds = [];
 
         $extractByHeader = function (array $row, array $header, array $keys): ?string {
             foreach ($keys as $key) {
@@ -2756,19 +2778,23 @@ class OrderController extends Controller implements HasMiddleware
         try {
             while (($row = fgetcsv($handle)) !== false) {
                 if ($hasHeader) {
-                    $orderNo = $extractByHeader($row, $normalized, ['order_id', 'order_no']);
+                    $orderNo = $extractByHeader($row, $normalized, ['order_no', 'order_id']);
+                    $trackingNo = $extractByHeader($row, $normalized, ['tracking_id', 'tracking_no', 'tracking_number', 'awb']);
                 } else {
-                    $orderNo = trim((string) ($row[0] ?? ''));
+                    $orderNo = trim(preg_replace('/^\xEF\xBB\xBF/', '', (string) ($row[0] ?? '')));
+                    $trackingNo = null;
                 }
 
-                if (! $orderNo) {
+                $reference = ($orderNo !== null && $orderNo !== '') ? $orderNo : $trackingNo;
+                if ($reference === null || $reference === '') {
                     continue;
                 }
 
-                if (in_array($orderNo, $seenOrderNos, true)) {
+                if (in_array([$orderNo, $trackingNo], $seenOrderNos, true)) {
                     if ($isPreview) {
                         $previewData[] = [
-                            'order_no' => $orderNo,
+                            'order_no' => $reference,
+                            'tracking_no' => $trackingNo,
                             'is_valid' => false,
                             'customer' => 'N/A',
                             'current_status' => 'Duplicate in CSV',
@@ -2776,31 +2802,33 @@ class OrderController extends Controller implements HasMiddleware
                             'error' => 'Duplicate order in CSV',
                         ];
                     } else {
-                        $skipped[] = $orderNo.' (Duplicate in CSV)';
+                        $skipped[] = $reference.' (Duplicate in CSV)';
                     }
 
                     continue;
                 }
-                $seenOrderNos[] = $orderNo;
+                $seenOrderNos[] = [$orderNo, $trackingNo];
 
-                $order = app(RecordVisibility::class)->orders(Order::with(['party', 'items']), $request->user())->where(function ($q) use ($orderNo) {
-                    $q->where('order_no', $orderNo);
-                    if (is_numeric($orderNo)) {
-                        $q->orWhere('id', $orderNo);
-                    }
-                })->first();
+                [$order, $lookupError] = $this->resolveImportOrder($request, $orderNo, $trackingNo);
+                if ($order && isset($seenOrderIds[$order->id])) {
+                    $lookupError = 'Duplicate order in CSV';
+                    $order = null;
+                }
+                if ($order) $seenOrderIds[$order->id] = true;
 
                 if ($isPreview) {
                     $isValid = $order && in_array($order->status, ['dispatched'], true);
                     $errorMsg = null;
                     if (! $order) {
-                        $errorMsg = 'Order not found';
+                        $errorMsg = $lookupError ?: 'Order not found';
                     } elseif (! $isValid) {
                         $errorMsg = 'Invalid status (currently: '.$order->status.')';
                     }
 
                     $previewData[] = [
-                        'order_no' => $orderNo,
+                        'order_no' => $order?->order_no ?? $reference,
+                        'reference' => $reference,
+                        'tracking_no' => $trackingNo ?: ($order ? $order->shipments->pluck('tracking_no')->filter()->implode(', ') : null),
                         'is_valid' => $isValid,
                         'customer' => $order && $order->party ? trim($order->party->firstname.' '.$order->party->lastname) : 'N/A',
                         'current_status' => $order ? $order->status : 'Not Found',
@@ -2812,7 +2840,7 @@ class OrderController extends Controller implements HasMiddleware
                 }
 
                 if (! $order || ! in_array($order->status, ['dispatched'], true)) {
-                    $skipped[] = $orderNo.($order ? " (Invalid status: {$order->status})" : ' (Not Found)');
+                    $skipped[] = $reference.($order ? " (Invalid status: {$order->status})" : ' ('.($lookupError ?: 'Not Found').')');
 
                     continue;
                 }
@@ -2856,14 +2884,16 @@ class OrderController extends Controller implements HasMiddleware
         return ($request->wantsJson() || $request->ajax()) ? response()->json(['success' => true, 'message' => $message]) : back()->with('success', $message);
     }
 
-    public function importBulkDeliverTemplate()
+    public function importBulkDeliverTemplate(Request $request)
     {
-        return response()->streamDownload(function () {
+        $request->validate(['identifier' => 'nullable|in:order_no,tracking_id']);
+        $tracking = $request->input('identifier') === 'tracking_id';
+        return response()->streamDownload(function () use ($tracking) {
             $out = fopen('php://output', 'w');
             fwrite($out, chr(0xEF).chr(0xBB).chr(0xBF));
-            fputcsv($out, ['order_no']);
-            fputcsv($out, ['ORD-0001']);
-            fputcsv($out, ['ORD-0002']);
+            fputcsv($out, [$tracking ? 'tracking_id' : 'order_no']);
+            fputcsv($out, [$tracking ? 'TRACK-0001' : 'ORD-0001']);
+            fputcsv($out, [$tracking ? 'TRACK-0002' : 'ORD-0002']);
             fclose($out);
         }, 'bulk-deliver-template.csv', ['Content-Type' => 'text/csv']);
     }
@@ -2885,9 +2915,6 @@ class OrderController extends Controller implements HasMiddleware
         if (isset($firstRow[0])) {
             $firstRow[0] = preg_replace('/^\xEF\xBB\xBF/', '', $firstRow[0]);
         }
-        if (isset($firstRow[0])) {
-            $firstRow[0] = preg_replace('/^\xEF\xBB\xBF/', '', $firstRow[0]);
-        }
         if ($firstRow === false) {
             fclose($handle);
 
@@ -2895,12 +2922,15 @@ class OrderController extends Controller implements HasMiddleware
         }
 
         $normalized = array_map(fn ($v) => strtolower(trim((string) $v)), $firstRow);
-        $hasHeader = in_array('order_no', $normalized, true) || in_array('order_id', $normalized, true);
+        $hasHeader = (bool) array_intersect(['order_no', 'order_id', 'tracking_id', 'tracking_no', 'tracking_number', 'awb'], $normalized);
+        // Headerless files retain the legacy order-number format, including row one.
+        if (! $hasHeader) rewind($handle);
 
         $updated = 0;
         $skipped = [];
         $previewData = [];
         $seenOrderNos = [];
+        $seenOrderIds = [];
 
         $extractByHeader = function (array $row, array $header, array $keys): ?string {
             foreach ($keys as $key) {
@@ -2917,19 +2947,23 @@ class OrderController extends Controller implements HasMiddleware
         try {
             while (($row = fgetcsv($handle)) !== false) {
                 if ($hasHeader) {
-                    $orderNo = $extractByHeader($row, $normalized, ['order_id', 'order_no']);
+                    $orderNo = $extractByHeader($row, $normalized, ['order_no', 'order_id']);
+                    $trackingNo = $extractByHeader($row, $normalized, ['tracking_id', 'tracking_no', 'tracking_number', 'awb']);
                 } else {
-                    $orderNo = trim((string) ($row[0] ?? ''));
+                    $orderNo = trim(preg_replace('/^\xEF\xBB\xBF/', '', (string) ($row[0] ?? '')));
+                    $trackingNo = null;
                 }
 
-                if (! $orderNo) {
+                $reference = ($orderNo !== null && $orderNo !== '') ? $orderNo : $trackingNo;
+                if ($reference === null || $reference === '') {
                     continue;
                 }
 
-                if (in_array($orderNo, $seenOrderNos, true)) {
+                if (in_array([$orderNo, $trackingNo], $seenOrderNos, true)) {
                     if ($isPreview) {
                         $previewData[] = [
-                            'order_no' => $orderNo,
+                            'order_no' => $reference,
+                            'tracking_no' => $trackingNo,
                             'is_valid' => false,
                             'customer' => 'N/A',
                             'current_status' => 'Duplicate in CSV',
@@ -2937,31 +2971,33 @@ class OrderController extends Controller implements HasMiddleware
                             'error' => 'Duplicate order in CSV',
                         ];
                     } else {
-                        $skipped[] = $orderNo.' (Duplicate in CSV)';
+                        $skipped[] = $reference.' (Duplicate in CSV)';
                     }
 
                     continue;
                 }
-                $seenOrderNos[] = $orderNo;
+                $seenOrderNos[] = [$orderNo, $trackingNo];
 
-                $order = app(RecordVisibility::class)->orders(Order::with(['party', 'items']), $request->user())->where(function ($q) use ($orderNo) {
-                    $q->where('order_no', $orderNo);
-                    if (is_numeric($orderNo)) {
-                        $q->orWhere('id', $orderNo);
-                    }
-                })->first();
+                [$order, $lookupError] = $this->resolveImportOrder($request, $orderNo, $trackingNo);
+                if ($order && isset($seenOrderIds[$order->id])) {
+                    $lookupError = 'Duplicate order in CSV';
+                    $order = null;
+                }
+                if ($order) $seenOrderIds[$order->id] = true;
 
                 if ($isPreview) {
                     $isValid = $order && in_array($order->status, ['delivered', 'dispatched'], true);
                     $errorMsg = null;
                     if (! $order) {
-                        $errorMsg = 'Order not found';
+                        $errorMsg = $lookupError ?: 'Order not found';
                     } elseif (! $isValid) {
                         $errorMsg = 'Invalid status (currently: '.$order->status.')';
                     }
 
                     $previewData[] = [
-                        'order_no' => $orderNo,
+                        'order_no' => $order?->order_no ?? $reference,
+                        'reference' => $reference,
+                        'tracking_no' => $trackingNo ?: ($order ? $order->shipments->pluck('tracking_no')->filter()->implode(', ') : null),
                         'is_valid' => $isValid,
                         'customer' => $order && $order->party ? trim($order->party->firstname.' '.$order->party->lastname) : 'N/A',
                         'current_status' => $order ? $order->status : 'Not Found',
@@ -2973,7 +3009,7 @@ class OrderController extends Controller implements HasMiddleware
                 }
 
                 if (! $order || ! in_array($order->status, ['delivered', 'dispatched'], true)) {
-                    $skipped[] = $orderNo.($order ? " (Invalid status: {$order->status})" : ' (Not Found)');
+                    $skipped[] = $reference.($order ? " (Invalid status: {$order->status})" : ' ('.($lookupError ?: 'Not Found').')');
 
                     continue;
                 }
@@ -3054,15 +3090,17 @@ class OrderController extends Controller implements HasMiddleware
         return ($request->wantsJson() || $request->ajax()) ? response()->json(['success' => true, 'message' => $message]) : back()->with('success', $message);
     }
 
-    public function importBulkReturnTemplate()
+    public function importBulkReturnTemplate(Request $request)
     {
-        return response()->streamDownload(function () {
+        $request->validate(['identifier' => 'nullable|in:order_no,tracking_id']);
+        $tracking = $request->input('identifier') === 'tracking_id';
+        return response()->streamDownload(function () use ($tracking) {
             $out = fopen('php://output', 'w');
             fwrite($out, chr(0xEF).chr(0xBB).chr(0xBF));
-            fputcsv($out, ['order_no']);
-            fputcsv($out, ['ORD-0001']);
-            fputcsv($out, ['ORD-0002']);
-            fputcsv($out, ['ORD-0003']);
+            fputcsv($out, [$tracking ? 'tracking_id' : 'order_no']);
+            fputcsv($out, [$tracking ? 'TRACK-0001' : 'ORD-0001']);
+            fputcsv($out, [$tracking ? 'TRACK-0002' : 'ORD-0002']);
+            fputcsv($out, [$tracking ? 'TRACK-0003' : 'ORD-0003']);
             fclose($out);
         }, 'bulk-return-template.csv', ['Content-Type' => 'text/csv']);
     }

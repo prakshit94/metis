@@ -14,7 +14,7 @@
                             <p class="text-muted mb-0">Manage users, roles, and permissions</p>
                         </div>
                         <div class="users-page-actions d-flex flex-wrap align-items-center gap-2">
-                            <a href="{{ url('/security') }}" class="btn btn-outline-primary"><i class="bi bi-shield-lock me-2" aria-hidden="true"></i>My security &amp; 2-step verification</a>
+                            <a href="{{ url('/admin/security') }}" class="btn btn-outline-primary"><i class="bi bi-shield-lock me-2" aria-hidden="true"></i>My security &amp; 2-step verification</a>
 
                             @can('user-import')
                             <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#importModal">
@@ -578,10 +578,10 @@
                                                                 :id="'user-actions-' + user.id" role="menu" :aria-label="'Actions for ' + user.name"
                                                                 x-show="open" x-cloak @keydown="keydown($event)" @click.outside="outside($event)" @click="close()">
                                                                 @can('attendance-view')
-                                                                <li role="none"><a role="menuitem" class="dropdown-item" :href="'/attendances?user_id=' + user.id" x-show="!user.isDeleted"><i class="bi bi-calendar-check me-2"></i>View attendance</a></li>
+                                                                <li role="none"><a role="menuitem" class="dropdown-item" :href="'/admin/attendances?user_id=' + user.id" x-show="!user.isDeleted"><i class="bi bi-calendar-check me-2"></i>View attendance</a></li>
                                                                 @endcan
                                                                 @can('leave-view')
-                                                                <li role="none"><a role="menuitem" class="dropdown-item" :href="'/leaves?user_id=' + user.id" x-show="!user.isDeleted"><i class="bi bi-calendar-minus me-2"></i>View leave requests</a></li>
+                                                                <li role="none"><a role="menuitem" class="dropdown-item" :href="'/admin/leaves?user_id=' + user.id" x-show="!user.isDeleted"><i class="bi bi-calendar-minus me-2"></i>View leave requests</a></li>
                                                                 @endcan
 
                                                                 @can('user-edit')

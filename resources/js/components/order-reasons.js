@@ -28,7 +28,7 @@ async function apiFetch(url, options = {}) {
       message.toLowerCase().includes('authoriz') ||
       message.toLowerCase().includes('forbidden')
     ) {
-      window.location.href = '/';
+      window.location.href = '/admin';
       return;
     }
     throw new Error(message);

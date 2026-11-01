@@ -3469,7 +3469,7 @@ mapOrder(o) {
             }
 
             try {
-                const response = await fetch(`/orders/${encodeURIComponent(orderId)}?_t=${Date.now()}`, {
+                const response = await fetch(`/admin/orders/${encodeURIComponent(orderId)}?_t=${Date.now()}`, {
                     headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
                 });
                 const data = await response.json();
@@ -4024,7 +4024,7 @@ mapOrder(o) {
                 return;
             }
             try {
-                const res = await fetch(`/customers/${this.partyId}?_t=${Date.now()}`, { headers: {'Accept':'application/json','X-Requested-With':'XMLHttpRequest'} });
+                const res = await fetch(`/admin/customers/${this.partyId}?_t=${Date.now()}`, { headers: {'Accept':'application/json','X-Requested-With':'XMLHttpRequest'} });
                 const json = await res.json();
                 this.customerDetails = this.sanitizeCustomerData(json.data);
                 this.addresses = json.data?.addresses || [];
@@ -4093,7 +4093,7 @@ mapOrder(o) {
             try {
                 const params = new URLSearchParams({ customer_id: this.partyId, period_days: String(this.nearbyInsightsPeriodDays), scope: this.nearbyInsightsScope });
                 if (this.shippingAddressId) params.set('address_id', this.shippingAddressId);
-                const response = await fetch(`/orders/nearby-selling-insights?${params.toString()}`, {
+                const response = await fetch(`/admin/orders/nearby-selling-insights?${params.toString()}`, {
                     headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
                     signal: abortController.signal,
                 });
@@ -4313,7 +4313,7 @@ mapOrder(o) {
             if (missingCartItemIds.length > 0) {
                 try {
                     const p = new URLSearchParams({ ids: missingCartItemIds.join(','), warehouse_id: this.warehouseId, perPage: 100, exclude_future_orders: '1', _t: Date.now() });
-                    const res = await fetch(`/products-search-api?${p}`, { headers: {'Accept':'application/json','X-Requested-With':'XMLHttpRequest'} });
+                    const res = await fetch(`/admin/products-search-api?${p}`, { headers: {'Accept':'application/json','X-Requested-With':'XMLHttpRequest'} });
                     const json = await res.json();
                     missingProducts = json.data || [];
                 } catch(e) {}
@@ -4506,6 +4506,11 @@ mapOrder(o) {
             createOrderSearchControllers.get(this)?.abort();
             const controller = new AbortController();
             createOrderSearchControllers.set(this, controller);
+            let timedOut = false;
+            const timeout = setTimeout(() => {
+                timedOut = true;
+                controller.abort();
+            }, 30000);
 
             try {
                 const p = new URLSearchParams({
@@ -4518,7 +4523,7 @@ mapOrder(o) {
                     exclude_future_orders: '1',
                     _t: Date.now(),
                 });
-                const res = await fetch(`/products-search-api?${p}`, {
+                const res = await fetch(`/admin/products-search-api?${p}`, {
                     headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
                     signal: controller.signal,
                 });
@@ -4540,11 +4545,14 @@ mapOrder(o) {
                 this.productTo = json.to || 0;
                 this.productLastPage = json.last_page || 1;
             } catch (e) {
-                if (e?.name === 'AbortError') return; // Intentionally cancelled — no error needed
+                // Superseded searches must not overwrite the current request's state.
+                if (createOrderSearchControllers.get(this) !== controller) return;
+                if (e?.name === 'AbortError' && !timedOut) return;
                 this.products = [];
                 this.productTotal = 0; this.productFrom = 0; this.productTo = 0; this.productLastPage = 1;
-                window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: 'Failed to load products. Please try again.' } }));
+                window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'error', message: timedOut ? 'Loading products timed out. Please try again.' : 'Failed to load products. Please try again.' } }));
             } finally {
+                clearTimeout(timeout);
                 if (createOrderSearchControllers.get(this) === controller) {
                     createOrderSearchControllers.delete(this);
                     this.searching = false;
@@ -5257,7 +5265,7 @@ mapOrder(o) {
                 }
             }
             try {
-                const res = await fetch('/coupons/validate', {method:'POST', headers:{'Content-Type':'application/json','X-CSRF-TOKEN':document.querySelector('meta[name=csrf-token]').content,'Accept':'application/json'}, body:JSON.stringify({code,type:this.orderType,party_id:this.partyId,warehouse_id:this.warehouseId,selected_offer_id:this.activeOfferId,subtotal:this.subtotal,items:this.cart.map(item=>({product_id:item.id,quantity:item.quantity,is_gift:Boolean(item.is_gift),gift_source:item.gift_source || null}))})});
+                const res = await fetch('/admin/coupons/validate', {method:'POST', headers:{'Content-Type':'application/json','X-CSRF-TOKEN':document.querySelector('meta[name=csrf-token]').content,'Accept':'application/json'}, body:JSON.stringify({code,type:this.orderType,party_id:this.partyId,warehouse_id:this.warehouseId,selected_offer_id:this.activeOfferId,subtotal:this.subtotal,items:this.cart.map(item=>({product_id:item.id,quantity:item.quantity,is_gift:Boolean(item.is_gift),gift_source:item.gift_source || null}))})});
                 const json = await res.json();
                 if (requestId !== this._couponRequestId) return;
                 if (!res.ok) throw new Error(Object.values(json.errors || {}).flat().join(' ') || json.message || 'Could not validate coupon.');
@@ -5286,7 +5294,7 @@ mapOrder(o) {
             if (this.partyId) query.set('customer_id', this.partyId);
             query.set('order_id', orderId);
             query.set('step', 'review');
-            window.location.href = `/orders/create?${query.toString()}`;
+            window.location.href = `/admin/orders/create?${query.toString()}`;
         },
 
         cancelOrder(orderId, orderNo) {
@@ -5301,7 +5309,7 @@ mapOrder(o) {
                 return;
             }
             try {
-                const res = await fetch(`/orders/${this.cancelModalOrder.id}/cancel`, { 
+                const res = await fetch(`/admin/orders/${this.cancelModalOrder.id}/cancel`, {
                     method: 'POST', 
                     headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, 'Accept': 'application/json' },
                     body: JSON.stringify({ reason: this.cancelReason, notes: this.cancelNotes })
@@ -5403,7 +5411,7 @@ mapOrder(o) {
                     return false;
                 }
                 const payload = { ...this.buildOrderPayload(), expected_quote: quote.quote_hash, expected_wallet_amount: quote.wallet_amount_used };
-                const url = this.editingOrderId ? `/orders/${this.editingOrderId}` : '/orders';
+                const url = this.editingOrderId ? `/admin/orders/${this.editingOrderId}` : '/admin/orders';
                 const res = await fetch(url, { 
                     method: this.editingOrderId ? 'PUT' : 'POST', 
                     headers: {
@@ -5457,7 +5465,7 @@ mapOrder(o) {
                     notes: this.confirmNotes
                 };
                 
-                const response = await fetch(`/orders/${this.editingOrderId}/confirm`, {
+                const response = await fetch(`/admin/orders/${this.editingOrderId}/confirm`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
