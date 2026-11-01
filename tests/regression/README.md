@@ -190,3 +190,15 @@ The shared page overlay is released when HTML parsing reaches `interactive`,
 independently of the main application bundle and its imports. Checks cover missing
 bundle execution, late execution, restored pages, transition-free cleanup, and
 product-request success, timeout, network failure and cancellation.
+
+Public storefront media checks:
+
+```sh
+METIS_TEST_MYSQL_SOCKET=/path/to/test/mysql.sock php tests/regression/storefront_media.php
+php tests/regression/header_branding.php
+```
+
+The media suite uses a disposable schema and temporary upload directory to test
+real HTTP image responses, cache revalidation, uploaded logo paths, product
+visibility and path protection. Shopping session and CSRF middleware are checked
+separately from the session-free GET-only media endpoints.

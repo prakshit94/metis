@@ -3,11 +3,20 @@
 use Illuminate\Support\Facades\Route;
 use App\Storefront\Http\Controllers\StorefrontController as Shop;
 
-Route::name('shop.')->group(function () {
-    Route::get('/brand-logo', \App\Storefront\Http\Controllers\BrandingController::class)->name('brand-logo');
+// Public media never reads or writes a shopping session.
+$mediaMiddleware = [
+    \Illuminate\Session\Middleware\StartSession::class,
+    \Illuminate\View\Middleware\ShareErrorsFromSession::class,
+    // GET-only media has no session token cookie to issue. Shopping POSTs retain CSRF.
+    \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class,
+    \App\Http\Middleware\SelectWebSession::class,
+];
+
+Route::name('shop.')->group(function () use ($mediaMiddleware) {
+    Route::get('/brand-logo', \App\Storefront\Http\Controllers\BrandingController::class)->withoutMiddleware($mediaMiddleware)->name('brand-logo');
     Route::get('/', [Shop::class, 'index'])->block(10, 10)->name('index');
     Route::get('/products/{slug}', [Shop::class, 'product'])->block(10, 10)->name('product');
-    Route::get('/images/{id}/{image}', [Shop::class, 'image'])->whereNumber(['id', 'image'])->block(10, 10)->name('image');
+    Route::get('/images/{id}/{image}', [Shop::class, 'image'])->whereNumber(['id', 'image'])->withoutMiddleware($mediaMiddleware)->name('image');
     Route::get('/register', [Shop::class, 'registerForm'])->block(10, 10)->name('register');
     Route::post('/register', [Shop::class, 'register'])->middleware('throttle:5,1')->block(10, 10)->name('register.submit');
     Route::post('/verification/resend', [Shop::class, 'resendVerification'])->middleware('throttle:3,1')->block(10, 10)->name('verification.resend');

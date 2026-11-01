@@ -11,7 +11,16 @@ class Product extends \App\Modules\Catalog\Models\Product
 
     public function getImagesAttribute()
     {
-        return $this->image_path ? collect([(object) ['id' => 1]]) : collect();
+        if (! $this->image_path) return collect();
+
+        return collect([(object) [
+            'id' => 1,
+            'url' => route('shop.image', [
+                'id' => $this->id,
+                'image' => 1,
+                'v' => substr(sha1($this->image_path.'|'.$this->updated_at), 0, 12),
+            ], false),
+        ]]);
     }
 
     public function getCurrencyAttribute(): string

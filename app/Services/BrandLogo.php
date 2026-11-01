@@ -34,6 +34,13 @@ final class BrandLogo
     private static function local(string $path, string $query = '', string $fragment = ''): string
     {
         $file = public_path(ltrim(rawurldecode($path), '/'));
+        // Use the small bundled copy only while it is newer than the source logo.
+        $small = public_path('assets/images/logo-small.webp');
+        if (in_array($path, ['/assets/images/logo.png', '/storefront/brand-logo.png'], true)
+            && is_file($file) && is_file($small) && filemtime($small) >= filemtime($file)) {
+            $path = '/assets/images/logo-small.webp';
+            $file = $small;
+        }
         if (is_file($file)) {
             $version = 'v='.filemtime($file);
             $query = preg_match('/(?:^|&)v=[^&]*/', $query)

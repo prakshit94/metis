@@ -60,16 +60,21 @@ class StorefrontController extends Controller
         return view('shop.product', ['product' => $this->products()->where('slug', $slug)->firstOrFail()]);
     }
 
-    public function image(int $id, int $image)
+    public function image(Request $request, int $id, int $image)
     {
-        $product = $this->products()->findOrFail($id);
+        // Keep public visibility checks without loading catalog/tax data for a file request.
+        $product = Product::storefrontAvailable()->select(['id', 'image_path'])->findOrFail($id);
         abort_unless($image === 1 && $product->image_path, 404);
         $base = realpath(storage_path('app/public'));
         $path = $base ? realpath($base.'/'.ltrim($product->image_path, '/')) : false;
         abort_unless($path && str_starts_with($path, $base.DIRECTORY_SEPARATOR) && is_file($path), 404);
         abort_unless(in_array(mime_content_type($path), ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif'], true), 404);
 
-        return response()->file($path, ['Cache-Control' => 'public, max-age=3600', 'X-Content-Type-Options' => 'nosniff']);
+        $response = response()->file($path, ['Cache-Control' => 'public, max-age=3600', 'X-Content-Type-Options' => 'nosniff']);
+        $response->setAutoEtag();
+        $response->setAutoLastModified();
+        $response->isNotModified($request);
+        return $response;
     }
 
     public function registerForm()

@@ -18,11 +18,11 @@
 
     @php
         $appLogo = \App\Models\SystemSetting::where('key', 'default_image_logo_png')->value('value');
-        $logoImage = $appLogo ? $appLogo : asset('assets/images/logo.png');
+        $brandLogo = \App\Services\BrandLogo::resolve($appLogo);
+        $logoImage = $brandLogo['src'];
     @endphp
     <!-- Favicon -->
-    <link rel="icon" type="image/svg+xml" href="{{ $logoImage }}{{ str_contains($logoImage, '?') ? '&' : '?' }}v={{ file_exists(public_path('assets/images/logo.png')) ? filemtime(public_path('assets/images/logo.png')) : time() }}">
-    <link rel="icon" type="image/png" href="{{ $logoImage }}{{ str_contains($logoImage, '?') ? '&' : '?' }}v={{ file_exists(public_path('assets/images/logo.png')) ? filemtime(public_path('assets/images/logo.png')) : time() }}">
+    <link rel="icon" href="{{ $logoImage }}">
 
     <!-- Preconnect -->
     <link rel="preconnect" href="https://fonts.googleapis.com">

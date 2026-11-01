@@ -15,7 +15,8 @@
     $bgImage = $loginBg ? $loginBg : asset('assets/images/background.png');
 
     $appLogo = \App\Models\SystemSetting::where('key', 'default_image_logo_png')->value('value');
-    $logoImage = $appLogo ? $appLogo : asset('assets/images/logo.png');
+    $brandLogo = \App\Services\BrandLogo::resolve($appLogo);
+    $logoImage = $brandLogo['src'];
 @endphp
 <div class="login-page auth-layout auth-layout--login" x-data="loginApp()" :class="{ 'login-panel-collapsed': !panelOpen }" @pageshow.window="isSubmitting = false" style="--auth-background-image: url('{{ $bgImage }}');">
     <button type="button" x-cloak x-show="!panelOpen" x-ref="restorePanel" class="btn btn-primary auth-restore-panel" @click="togglePanel()" aria-controls="main-content" :aria-expanded="panelOpen.toString()"><i class="bi bi-layout-sidebar-reverse me-2" aria-hidden="true"></i>Show sign in</button>
@@ -30,7 +31,7 @@
 
         <div class="auth-body">
             <a class="auth-brand auth-form-brand" href="{{ route('dashboard') }}" aria-label="Metis home">
-                <img src="{{ $logoImage }}{{ str_contains($logoImage, '?') ? '&' : '?' }}v={{ file_exists(public_path('assets/images/logo.png')) ? filemtime(public_path('assets/images/logo.png')) : time() }}" alt="Metis logo" onerror="this.onerror=null;this.src='{{ asset('assets/images/logo.png') }}';">
+                <img src="{{ $logoImage }}" alt="Metis logo" fetchpriority="high" decoding="async" onerror="this.onerror=null;this.src='{{ $brandLogo['fallback'] }}';">
                 <span>Metis</span>
             </a>
 

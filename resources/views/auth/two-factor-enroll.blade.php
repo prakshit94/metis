@@ -4,12 +4,13 @@
 @section('content')
 @php
     $background = \App\Models\SystemSetting::where('key', 'login_background_image')->value('value') ?: asset('assets/images/background.png');
-    $logo = \App\Models\SystemSetting::where('key', 'default_image_logo_png')->value('value') ?: asset('assets/images/logo.png');
+    $authLogo = \App\Services\BrandLogo::resolve(\App\Models\SystemSetting::where('key', 'default_image_logo_png')->value('value'));
+    $logo = $authLogo['src'];
 @endphp
 <div class="login-page" style="--auth-background-image: url('{{ $background }}');">
     <main class="auth-main" id="main-content">
         <div class="auth-body" x-data="loginEnrollment" data-enrollment-uri="{{ $enrollment_uri ?? '' }}">
-            <a class="auth-brand auth-form-brand" href="{{ route('login') }}"><img src="{{ $logo }}" alt="Metis logo"><span>Metis</span></a>
+            <a class="auth-brand auth-form-brand" href="{{ route('login') }}"><img src="{{ $logo }}" alt="Metis logo" decoding="async" onerror="this.onerror=null;this.src='{{ $authLogo['fallback'] }}';"><span>Metis</span></a>
             <div class="auth-heading"><h1>Set up two-step login</h1><p>Your administrator requires a second step. Choose and verify your own method before accessing the application. This sign-in request expires after five minutes.</p></div>
             @if(session('error'))<div class="alert alert-danger" role="alert">{{ session('error') }}</div>@endif
             @if(session('status'))<div class="alert alert-info" role="status">{{ session('status') }}</div>@endif
