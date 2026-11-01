@@ -56,3 +56,5 @@ html{scroll-padding-top:calc(var(--shop-header-height,180px) + 20px)}
 @media(max-width:380px){.header nav{gap:10px;font-size:11px}.shop-brand-logo img{width:52px;height:40px}.header .account-link{gap:4px}.header .cart-link{gap:3px}.shop-catalog .product-art{height:145px}.shop-catalog .product-copy{padding:10px}.shop-catalog .price{font-size:15px}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.shop-catalog .product-card{transition:none}.shop-catalog .product-card:hover{transform:none}}
 .shop-catalog .catalog-title{font-size:25px;letter-spacing:-.7px;font-weight:500;margin:12px 0;line-height:1.25}@media(max-width:540px){.shop-catalog .catalog-title{font-size:23px}}
+
+.staff-login-link{display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--line);border-radius:6px;padding:9px 12px;font-size:12px;white-space:nowrap}.staff-login-link:hover{background:#edf2e3;text-decoration:none}@media(max-width:540px){.header nav{flex:1;flex-wrap:wrap;justify-content:flex-end;gap:8px 12px}.staff-login-link{padding:7px 9px;font-size:11px}}

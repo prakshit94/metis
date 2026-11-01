@@ -13,6 +13,7 @@
     <a class="brand shop-brand-logo" href="{{ route('shop.index') }}" aria-label="Shop home"><img src="{{ route('shop.brand-logo', [], false) }}" alt="Company logo" width="64" height="48" fetchpriority="high" decoding="async" onerror="this.onerror=null;this.src='{{ \App\Services\BrandLogo::resolve(null)['fallback'] }}';"></a>
     <form class="search" action="{{ route('shop.index') }}" role="search"><span aria-hidden="true">⌕</span><input aria-label="Search products" name="q" type="search" maxlength="100" placeholder="Search for products, essentials and more" value="{{ request('q') }}"><button>Search</button></form>
     <nav aria-label="Account navigation">
+        <a class="staff-login-link" href="{{ route('login', [], false) }}">Staff login</a>
         @php($shopAccount = Auth::guard('customer')->user())
         @if($shopAccount)
             <details class="account-dropdown">
