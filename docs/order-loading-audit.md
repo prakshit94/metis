@@ -50,3 +50,25 @@ The indefinite failure did not occur during ordinary authenticated reloads.
 The missing-module fixture verifies the dependency failure directly. The fix
 removes the covering loader; it cannot repair an unavailable application bundle
 or make interactive controls work when that bundle itself fails to load.
+
+## Confirmed browser-tab loading cause (customer 84338)
+
+The user clarified that the remaining indicator was the browser tab's spinner,
+not the full-page overlay. On the affected page, DOM inspection showed:
+
+- `document.readyState` remained `interactive` after the order UI became usable.
+- The full-page overlay was already absent.
+- 34 unfinished notification-avatar images pointed to the legacy remote CRM host.
+  The header rendered these eagerly inside the closed notification dropdown.
+
+These remote images delayed the browser's load event. The shared notification
+avatar now uses native `loading="lazy"` and `decoding="async"`, so optional photos
+do not block window loading. Photo URLs, notification data, and business rules
+are unchanged. The earlier overlay fix addressed a separate loading indicator;
+it did not resolve these pending image requests.
+
+Verified in the actual authenticated customer-84338 page after reload:
+`document.readyState === 'complete'`, no pending eager images, and all 34
+notification images retained. Opening the notification dropdown also left the
+page in the complete state. Blade compilation passed. This correction requires
+no backend or JavaScript bundle change.

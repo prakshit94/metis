@@ -892,7 +892,8 @@
                                             </template>
                                             
                                             <template x-if="activity.causer_photo">
-                                                <img :src="activity.causer_photo" class="rounded-circle flex-shrink-0 object-fit-cover ms-2" :class="!activity.is_read ? 'border border-2 border-primary border-opacity-25' : ''" alt="User" width="40" height="40" x-on:error="$el.src='{{ asset('assets/images/product-placeholder.svg') }}'">
+                                                <!-- Notification photos are optional; remote photos must not delay window.load. -->
+                                                <img loading="lazy" decoding="async" :src="activity.causer_photo" class="rounded-circle flex-shrink-0 object-fit-cover ms-2" :class="!activity.is_read ? 'border border-2 border-primary border-opacity-25' : ''" alt="User" width="40" height="40" x-on:error="$el.src='{{ asset('assets/images/product-placeholder.svg') }}'">
                                             </template>
                                             <template x-if="!activity.causer_photo">
                                                 <div class="text-primary rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 ms-2" :class="!activity.is_read ? 'bg-primary bg-opacity-25 border border-2 border-primary border-opacity-25' : 'bg-secondary bg-opacity-10 text-secondary'" style="width: 40px; height: 40px;">
