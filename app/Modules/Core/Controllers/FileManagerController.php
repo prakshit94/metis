@@ -434,7 +434,9 @@ class FileManagerController extends Controller implements HasMiddleware
             return $url;
         });
 
-        return response()->json(['message' => 'Default image updated successfully', 'url' => $url]);
+        return response()->json(['message' => 'Default image updated successfully', 'url' => $url,
+            'logo_url' => $targetName === 'logo.png' ? \App\Services\BrandLogo::resolve($url)['src'] : null,
+        ]);
     }
 
     private function imageUrlForId(string $fileId): string

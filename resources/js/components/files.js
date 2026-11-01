@@ -683,6 +683,10 @@ document.addEventListener('alpine:init', () => {
         if (response.ok && !response.redirected) {
           const result = await response.json();
           if (targetName === 'default_avatar.jpeg') window.ProfileImages?.setDefaultAvatar(result.url);
+          if (targetName === 'logo.png' && result.logo_url) {
+            document.querySelectorAll('[data-header-logo]').forEach(image => { image.src = result.logo_url; });
+            document.querySelectorAll('link[rel="icon"]').forEach(icon => { icon.href = result.logo_url; });
+          }
           this.showNotification(`Default image ${targetName} updated`, 'success');
           await this.loadFiles();
         } else {

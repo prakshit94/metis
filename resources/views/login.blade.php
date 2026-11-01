@@ -32,13 +32,7 @@
         <div class="auth-body">
             <a class="auth-brand auth-form-brand" href="{{ route('dashboard') }}" aria-label="Metis home">
                 <img src="{{ $logoImage }}" alt="Metis logo" fetchpriority="high" decoding="async" onerror="this.onerror=null;this.src='{{ $brandLogo['fallback'] }}';">
-                <span>Metis</span>
             </a>
-
-            <div class="auth-heading">
-                <h1>Sign in</h1>
-                <p>Use your work email to access the dashboard.</p>
-            </div>
 
             @if (session('error'))
                 <div class="alert alert-danger py-2 px-3 small" role="alert">{{ session('error') }}</div>

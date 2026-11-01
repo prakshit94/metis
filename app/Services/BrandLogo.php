@@ -21,6 +21,10 @@ final class BrandLogo
         if ($host !== '' && !in_array($host, $localHosts, true)) {
             return ['src' => $value, 'fallback' => $fallback];
         }
+        if (($parts['path'] ?? '') === '/api/files/preview') {
+            $file = self::previewFile($parts);
+            return ['src' => $file ? '/brand-logo?v='.substr(sha1($file.'|'.filemtime($file)), 0, 12) : $fallback, 'fallback' => $fallback];
+        }
         $path = '/'.ltrim($parts['path'] ?? '', '/');
         $decoded = rawurldecode($path);
         if (str_contains($decoded, "\0") || str_contains($decoded, '\\') || preg_match('~(?:^|/)\.\.?(?:/|$)~', $decoded)
@@ -29,6 +33,19 @@ final class BrandLogo
         }
         $src = self::local($path, $parts['query'] ?? '', $parts['fragment'] ?? '');
         return ['src' => $src, 'fallback' => $fallback];
+    }
+
+    /** Resolve only a File Manager upload, never an arbitrary URL or filesystem path. */
+    public static function previewFile(array $parts): ?string
+    {
+        if (($parts['path'] ?? '') !== '/api/files/preview' || config('filesystems.disks.public.driver') !== 'local') return null;
+        parse_str($parts['query'] ?? '', $query);
+        $name = $query['f'] ?? null;
+        if (!is_string($name) || $name === '' || $name === '.' || $name === '..'
+            || str_contains($name, "\0") || str_contains($name, '/') || str_contains($name, '\\')) return null;
+        $base = realpath(\Illuminate\Support\Facades\Storage::disk('public')->path('uploads'));
+        $file = $base ? realpath($base.'/'.$name) : false;
+        return $file && str_starts_with($file, $base.DIRECTORY_SEPARATOR) && is_file($file) ? $file : null;
     }
 
     private static function local(string $path, string $query = '', string $fragment = ''): string

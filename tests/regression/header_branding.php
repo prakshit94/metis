@@ -21,3 +21,22 @@ brandCheck(str_contains($header,'object-fit-contain rounded-2') && !str_contains
 $layout=file_get_contents(resource_path('views/layouts/app.blade.php'));
 brandCheck(substr_count($layout,'<link rel="icon"')===1,'layout does not advertise the same bitmap as conflicting SVG and PNG icons');
 foreach(['components/header','layouts/app'] as $name){$path='/tmp/metis-'.str_replace('/','-',$name).'-branding.php';file_put_contents($path,app('blade.compiler')->compileString(file_get_contents(resource_path('views/'.$name.'.blade.php'))));passthru('php -l '.escapeshellarg($path),$status);brandCheck($status===0,$name.' compiles successfully');}
+
+$uploads = '/tmp/metis-logo-preview-'.bin2hex(random_bytes(5));
+mkdir($uploads.'/uploads', 0700, true);
+copy(public_path('assets/images/logo-small.webp'), $uploads.'/uploads/selected.webp');
+config(['filesystems.disks.public.root'=>$uploads, 'filesystems.disks.public.driver'=>'local']);
+Illuminate\Support\Facades\Storage::forgetDisk('public');
+try {
+    $selected = BrandLogo::resolve('/api/files/preview?f=selected.webp')['src'];
+    brandCheck(str_starts_with($selected, '/brand-logo?v='), 'File Manager preview URLs resolve to cache-versioned public branding');
+    brandCheck(BrandLogo::resolve('http://localhost:9000/api/files/preview?f=selected.webp')['src']===$selected, 'legacy preview host and port do not break uploaded logos');
+    foreach (['../selected.webp', 'nested/selected.webp', 'nested\\selected.webp', 'missing.webp'] as $invalid) {
+        brandCheck(BrandLogo::resolve('/api/files/preview?f='.rawurlencode($invalid))['src']===$fallback, 'invalid or missing preview upload falls back safely');
+    }
+    brandCheck(BrandLogo::resolve('/api/files/preview?f[]=selected.webp')['src']===$fallback, 'array filename cannot bypass preview logo validation');
+} finally {
+    unlink($uploads.'/uploads/selected.webp');
+    rmdir($uploads.'/uploads');
+    rmdir($uploads);
+}

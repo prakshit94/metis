@@ -23,6 +23,10 @@ class BrandingController extends Controller
         $base = realpath($uploaded ? storage_path('app/public') : public_path());
         $relative = $uploaded ? substr($path, strlen('/storage/')) : ltrim($path, '/');
         $file = $base && ! str_contains($path, "\0") ? realpath($base.'/'.$relative) : false;
+        if (($parts['path'] ?? '') === '/api/files/preview') {
+            $file = \App\Services\BrandLogo::previewFile($parts);
+            $base = $file ? dirname($file) : false;
+        }
         if (! $file || ! str_starts_with($file, $base.DIRECTORY_SEPARATOR) || ! is_file($file) || ! in_array(mime_content_type($file), ['image/png', 'image/jpeg', 'image/webp', 'image/gif', 'image/avif'], true)) {
             $file = public_path('storefront/brand-logo.png');
         }

@@ -3,14 +3,15 @@
 <head>
     <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
     <title>@yield('title', 'Metis Market · Everyday essentials, thoughtfully chosen')</title>
-    <link rel="preload" as="image" href="{{ route('shop.brand-logo', [], false) }}">
+    @php($shopBrandLogo = \App\Services\BrandLogo::resolve(\App\Models\SystemSetting::where('key', 'default_image_logo_png')->value('value')))
+    <link rel="preload" as="image" href="{{ $shopBrandLogo['src'] }}">
     <link rel="stylesheet" href="{{ asset('storefront/shop.css') }}?v={{ sha1_file(public_path('storefront/shop.css')) }}">
 </head>
 <body class="{{ request()->routeIs('shop.index') ? 'shop-home' : '' }}">
 <a class="skip-link" href="#main-content">Skip to content</a>
 <div class="shop-sticky-header" data-shop-sticky-header>
 <header class="header">
-    <a class="brand shop-brand-logo" href="{{ route('shop.index') }}" aria-label="Shop home"><img src="{{ route('shop.brand-logo', [], false) }}" alt="Company logo" width="64" height="48" fetchpriority="high" decoding="async" onerror="this.onerror=null;this.src='{{ \App\Services\BrandLogo::resolve(null)['fallback'] }}';"></a>
+    <a class="brand shop-brand-logo" href="{{ route('shop.index') }}" aria-label="Shop home"><img src="{{ $shopBrandLogo['src'] }}" alt="Company logo" width="64" height="48" fetchpriority="high" decoding="async" onerror="this.onerror=null;this.src='{{ \App\Services\BrandLogo::resolve(null)['fallback'] }}';"></a>
     <form class="search" action="{{ route('shop.index') }}" role="search"><span aria-hidden="true">⌕</span><input aria-label="Search products" name="q" type="search" maxlength="100" placeholder="Search for products, essentials and more" value="{{ request('q') }}"><button>Search</button></form>
     <nav aria-label="Account navigation">
         <a class="staff-login-link" href="{{ route('login', [], false) }}">Staff login</a>
@@ -43,7 +44,7 @@
     @yield('content')
 </main>
 <section class="assurances"><div><b>Carefully selected</b><span>Products for your everyday needs</span></div><div><b>Shop with confidence</b><span>Secure customer account access</span></div><div><b>Pay on delivery</b><span>Place your order, pay when it arrives</span></div></section>
-<footer><a class="brand shop-brand-logo" href="{{ route('shop.index') }}" aria-label="Shop home"><img src="{{ route('shop.brand-logo', [], false) }}" alt="Company logo" width="64" height="48" decoding="async" onerror="this.onerror=null;this.src='{{ \App\Services\BrandLogo::resolve(null)['fallback'] }}';"></a><p>Your everyday marketplace.</p><a href="{{ route('login') }}">Staff sign in ↗</a><span>© {{ date('Y') }} Metis Market</span></footer>
+<footer><a class="brand shop-brand-logo" href="{{ route('shop.index') }}" aria-label="Shop home"><img src="{{ $shopBrandLogo['src'] }}" alt="Company logo" width="64" height="48" decoding="async" onerror="this.onerror=null;this.src='{{ \App\Services\BrandLogo::resolve(null)['fallback'] }}';"></a><p>Your everyday marketplace.</p><a href="{{ route('login') }}">Staff sign in ↗</a><span>© {{ date('Y') }} Metis Market</span></footer>
 <div class="cart-feedback" role="status" aria-live="polite" hidden></div>
 <script src="{{ asset('storefront/shop-cart.js') }}?v={{ filemtime(public_path('storefront/shop-cart.js')) }}" defer></script>
 <script src="{{ asset('storefront/shop-account.js') }}?v={{ filemtime(public_path('storefront/shop-account.js')) }}" defer></script>
