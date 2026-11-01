@@ -63,7 +63,7 @@ $session->put('shop.cart',[$product->id=>'2']);$controller->cart(req());
 check($session->get('shop.cart')[$product->id]===2,'loading an existing cart repairs numeric-string quantities');
 
 $r=req();app()->instance('request',$r);Illuminate\Support\Facades\View::share('errors',new Illuminate\Support\ViewErrorBag);
-check(str_contains($controller->index($r)->render(),'Everyday essentials.'),'reference catalog renders through adapted schema');
+check(str_contains($controller->index($r)->render(),'Shop farm products'),'reference catalog renders through adapted schema');
 check(str_contains($controller->product($product->slug)->render(),'Sample essential'),'product details render with original UI');
 Illuminate\Support\Facades\Auth::guard('customer')->setUser($account);
 check(str_contains($controller->cart($r)->render(),'Where should we deliver?'),'cart, shipping and saved address views render');
