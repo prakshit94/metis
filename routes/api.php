@@ -473,6 +473,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
     // Promotions JSON API
     Route::prefix('promotions')->name('api.promotions.')->group(function (): void {
+        Route::get('/product-options', [PromotionsController::class, 'productOptions'])->name('product-options');
         // Coupons
         Route::get('/coupons', [PromotionsController::class, 'couponsIndex'])->name('coupons.index');
         Route::post('/coupons', [PromotionsController::class, 'couponsStore'])->name('coupons.store');

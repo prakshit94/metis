@@ -99,6 +99,9 @@ class OrderService
             if (auth()->check() && ! empty($data['warehouse_id'])) {
                 app(RecordVisibility::class)->assertWarehouse((int) $data['warehouse_id']);
             }
+            if (($data['status'] ?? '') === 'future_order' && empty($data['future_order_date'])) {
+                throw ValidationException::withMessages(['future_order_date' => 'A scheduled order date is required.']);
+            }
             $orderNo = $data['order_no'] ?? null;
             $generateOrderNo = ! $orderNo;
 
@@ -173,16 +176,18 @@ class OrderService
                 Coupon::where('code', $order->coupon_code)->increment('used_count');
             }
 
-            if ($order->applied_offer_id) {
-                Offer::where('id', $order->applied_offer_id)->increment('used_count');
-            }
-
-            if (! empty($data['applied_bogo_ids'])) {
-                Offer::whereIn('id', $data['applied_bogo_ids'])->increment('used_count');
+            $usedOfferIds = $order->selected_offer_id ? [$order->selected_offer_id]
+                : array_filter([$order->applied_offer_id, ...($data['applied_bogo_ids'] ?? [])]);
+            if ($usedOfferIds) {
+                Offer::whereIn('id', array_unique($usedOfferIds))->increment('used_count');
             }
 
             if (! empty($data['use_wallet_balance'])) {
                 $party = Party::whereKey($data['party_id'])->lockForUpdate()->first();
+                $actualWallet = min((float) $order->net_amount, max(0, (float) ($party?->wallet_balance ?? 0)));
+                if (isset($data['expected_wallet_amount']) && abs((float) $data['expected_wallet_amount'] - $actualWallet) >= 0.01) {
+                    throw ValidationException::withMessages(['wallet' => 'Wallet balance changed. Review the order again before saving.']);
+                }
                 if ($party && (float) $party->wallet_balance > 0.0) {
                     $usedAmount = 0;
                     $netPayable = $order->net_amount - (float) $party->wallet_balance;
@@ -325,6 +330,20 @@ class OrderService
      * Recalculate order totals and validate coupon code.
      * Must be called inside a database transaction if a coupon is being updated.
      */
+    private function couponMatches(Coupon $coupon, int $productId, ?int $categoryId): bool
+    {
+        return ($coupon->applicable_products === [] || in_array($productId, $coupon->applicable_products, true))
+            && ! in_array($productId, $coupon->excluded_products, true)
+            && ($coupon->applicable_categories === [] || in_array($categoryId, $coupon->applicable_categories, true))
+            && ! in_array($categoryId, $coupon->excluded_categories, true);
+    }
+
+    private function offerExcludes(Offer $offer, int $productId, ?int $categoryId): bool
+    {
+        return in_array($productId, $offer->excluded_products, true)
+            || in_array($categoryId, $offer->excluded_categories, true);
+    }
+
     public function recalculateAndValidate(array $data, ?string $lastCouponCode = null, bool $isUpdate = false, ?int $lastSelectedOfferId = null): array
     {
         $cart = [];
@@ -334,6 +353,7 @@ class OrderService
                 if (! empty($item['id']) && isset($item['quantity'])) {
                     $cart[] = [
                         'id' => $item['id'],
+                        'product_variant_id' => $item['product_variant_id'] ?? null,
                         'quantity' => $item['quantity'],
                         'is_gift' => ! empty($item['is_gift']),
                         'gift_source' => $item['gift_source'] ?? null,
@@ -345,6 +365,7 @@ class OrderService
                 if (! empty($item['product_id']) && isset($item['quantity'])) {
                     $cart[] = [
                         'id' => $item['product_id'],
+                        'product_variant_id' => $item['product_variant_id'] ?? null,
                         'quantity' => $item['quantity'],
                         'is_gift' => ! empty($item['is_gift']),
                         'gift_source' => $item['gift_source'] ?? null,
@@ -359,6 +380,12 @@ class OrderService
             ]);
         }
 
+        if (! collect($cart)->contains(fn ($item) => empty($item['is_gift']))) {
+            throw ValidationException::withMessages(['items' => 'At least one purchased item is required.']);
+        }
+        if (collect($cart)->contains(fn ($item) => ! empty($item['product_variant_id']))) {
+            throw ValidationException::withMessages(['items' => 'Product variants are not supported by this order workflow.']);
+        }
         $isPurchase = ($data['type'] ?? 'sale') === 'purchase';
 
         // Load products to verify prices
@@ -394,7 +421,7 @@ class OrderService
 
         $activeOffers = Offer::active()
             ->where(function ($query) use ($productIds) {
-                $query->whereNull('product_id')
+                $query->where('type', 'free_product')->orWhereNull('product_id')
                     ->orWhereIn('product_id', $productIds);
             })
             ->orderByDesc('priority')
@@ -427,7 +454,7 @@ class OrderService
                 }
                 $productId = $item['product_id'] ?? $item['id'] ?? null;
                 $product = $products->get($productId);
-                if (! $product) {
+                if (! $product || $this->offerExcludes($offer, (int) $productId, $product->category_id)) {
                     continue;
                 }
                 $matches = true;
@@ -466,6 +493,7 @@ class OrderService
                 }
                 $productId = $item['product_id'] ?? $item['id'] ?? null;
                 $categoryId = $products->get($productId)?->category_id;
+                if ($this->offerExcludes($offer, (int) $productId, $categoryId)) continue;
                 $matchesProduct = empty($apps) || in_array($productId, $apps) || in_array((string) $productId, $apps);
                 $matchesCategory = empty($cats) || ($categoryId && (in_array($categoryId, $cats) || in_array((string) $categoryId, $cats)));
                 if ((empty($apps) && empty($cats)) || (! empty($apps) && $matchesProduct) || (! empty($cats) && $matchesCategory)) {
@@ -483,7 +511,7 @@ class OrderService
             $apps = is_string($offer->applicable_products) ? json_decode($offer->applicable_products, true) : $offer->applicable_products;
             $cats = is_string($offer->applicable_categories) ? json_decode($offer->applicable_categories, true) : $offer->applicable_categories;
             if (empty($apps) && empty($cats)) {
-                return true;
+                return collect($cart)->contains(fn ($item) => empty($item['is_gift']) && ! $this->offerExcludes($offer, (int) $item['id'], $products->get($item['id'])?->category_id));
             }
             $triggerQty = 0;
             foreach ($cart as $item) {
@@ -492,6 +520,7 @@ class OrderService
                 }
                 $productId = $item['product_id'] ?? $item['id'] ?? null;
                 $categoryId = $products->get($productId)?->category_id;
+                if ($this->offerExcludes($offer, (int) $productId, $categoryId)) continue;
                 if ((! empty($apps) && (in_array($productId, $apps) || in_array((string) $productId, $apps)))
                     || (! empty($cats) && $categoryId && (in_array($categoryId, $cats) || in_array((string) $categoryId, $cats)))) {
                     $triggerQty += (int) ($item['quantity'] ?? 0);
@@ -524,6 +553,7 @@ class OrderService
                     $triggerQty = 0;
                     foreach ($cart as $item) {
                         if (empty($item['is_gift'])) {
+                            if ($this->offerExcludes($o, (int) $item['id'], $products->get($item['id'])?->category_id)) continue;
                             if (! empty($apps) && (in_array($item['id'], $apps) || in_array((string) $item['id'], $apps))) {
                                 $triggerQty += (int) ($item['quantity'] ?? 0);
                             } elseif (! empty($cats)) {
@@ -582,6 +612,22 @@ class OrderService
                 throw ValidationException::withMessages(['coupon_code' => 'Minimum spend of ₹'.number_format($coupon->min_spend, 2).' required.']);
             }
 
+            if ($coupon->type === 'free_shipping') {
+                throw ValidationException::withMessages(['coupon_code' => 'Free shipping is unavailable until shipping charges are configured.']);
+            }
+            if ($coupon->recipient_party_id && (int) $coupon->recipient_party_id !== (int) ($data['party_id'] ?? 0)) {
+                throw ValidationException::withMessages(['coupon_code' => 'This reward belongs to a different customer.']);
+            }
+            $eligiblePurchased = collect($cart)->contains(function ($item) use ($coupon, $products, $isPurchase) {
+                $product = $products->get($item['id']);
+                return empty($item['is_gift']) && $product
+                    && $this->couponMatches($coupon, (int) $product->id, $product->category_id)
+                    && (($isPurchase ? (float) $product->purchase_price : (float) $product->selling_price) * (float) $item['quantity']
+                        - $this->calculateLineDiscount($isPurchase ? (float) $product->purchase_price : (float) $product->selling_price, (float) $item['quantity'], (float) ($product->default_discount ?? 0), $product->default_discount_type)) > 0;
+            });
+            if (! $eligiblePurchased) {
+                throw ValidationException::withMessages(['coupon_code' => 'This promo code does not apply to any purchased products.']);
+            }
             if ($coupon->type === 'free_product' && $coupon->free_product_id) {
                 $expectedGifts[] = [
                     'product_id' => (int) $coupon->free_product_id,
@@ -592,6 +638,18 @@ class OrderService
             $couponCode = $coupon->code;
         }
 
+        foreach ($expectedGifts as $gift) {
+            $submitted = collect($cart)->filter(fn ($item) => ! empty($item['is_gift'])
+                && (int) $item['id'] === $gift['product_id'] && ($item['gift_source'] ?? '') === $gift['source'])->sum('quantity');
+            if ($submitted < $gift['qty']) {
+                $cart[] = ['id' => $gift['product_id'], 'quantity' => $gift['qty'] - $submitted, 'is_gift' => true, 'gift_source' => $gift['source']];
+            }
+        }
+        $missingProductIds = array_diff(array_column($cart, 'id'), $products->keys()->all());
+        if ($missingProductIds) {
+            $products = $products->union(Product::with(['taxRate', 'stocks' => fn ($query) => $query->where('warehouse_id', $warehouseId)])
+                ->whereIn('id', $missingProductIds)->get()->keyBy('id'));
+        }
         $giftAllowances = [];
         foreach ($expectedGifts as $gift) {
             $key = $gift['product_id'].'|'.$gift['source'];
@@ -655,8 +713,7 @@ class OrderService
                     $giftAllowances[$key] -= $qty;
                     $itemDisc = $itemBase;
                 } else {
-                    // Unvalidated gifts retain the existing full-price behavior.
-                    $itemDisc = 0.0;
+                    throw ValidationException::withMessages(['items' => 'This gift has not been earned by the purchased items.']);
                 }
             }
 
@@ -689,7 +746,8 @@ class OrderService
         $appliedBogoIds = [];
         // Calculate the selected BOGO on a second pass to respect minimum spend.
         foreach ($items as &$item) {
-            $productBogoOffer = $selectedBogoOffer && ! $hasSelectedOrderOffer ? $selectedBogoOffer : null;
+            $productBogoOffer = $selectedBogoOffer && ! $hasSelectedOrderOffer && ! $item['is_gift']
+                && ! $this->offerExcludes($selectedBogoOffer, (int) $item['product_id'], $item['category_id']) ? $selectedBogoOffer : null;
             if ($productBogoOffer) {
                 $o = $productBogoOffer;
                 $apps = is_string($o->applicable_products) ? json_decode($o->applicable_products, true) : $o->applicable_products;
@@ -835,69 +893,41 @@ class OrderService
             }
         }
 
-        // Final pass: distribute discounts and compute correct GST
-        $taxAmount = 0.0;
-        foreach ($items as &$item) {
-            $postBogo = max(0.0, $item['total_amount'] - $item['bogo_discount']);
-            $taxableAmount = $postBogo;
-
-            if ($taxableAmount > 0) {
-                // Deduct proportional order discount
-                if ($bestOrderOffer && $orderEligibleSubtotal > 0) {
-                    $isEligible = true;
-                    if ($bestOrderOffer->type === 'category_discount' && ! empty($bestOrderOffer->applicable_categories)) {
-                        $cats = is_string($bestOrderOffer->applicable_categories) ? json_decode($bestOrderOffer->applicable_categories, true) : $bestOrderOffer->applicable_categories;
-                        $cid = $item['category_id'];
-                        if (! in_array($cid, $cats) && ! in_array((string) $cid, $cats)) {
-                            $isEligible = false;
-                        }
-                    } elseif ($bestOrderOffer->product_id) {
-                        if ($item['product_id'] != $bestOrderOffer->product_id) {
-                            $isEligible = false;
-                        }
-                    } elseif (! empty($bestOrderOffer->applicable_products)) {
-                        $apps = is_string($bestOrderOffer->applicable_products) ? json_decode($bestOrderOffer->applicable_products, true) : $bestOrderOffer->applicable_products;
-                        $pid = $item['product_id'];
-                        if (! in_array($pid, $apps) && ! in_array((string) $pid, $apps)) {
-                            $isEligible = false;
-                        }
-                    }
-                    if ($isEligible && ! $item['is_gift']) {
-                        $taxableAmount -= ($orderDiscount * ($postBogo / $orderEligibleSubtotal));
-                    }
+        // Allocate each benefit to eligible lines, never to another campaign's targets.
+        // Preserve offer-first stacking and the existing whole-rupee final rounding.
+        $offerWeights = [];
+        $couponWeights = [];
+        foreach ($items as $index => $item) {
+            $balance = max(0.0, $item['total_amount'] - $item['bogo_discount']);
+            $matchesOffer = $bestOrderOffer && ! $item['is_gift']
+                && ! $this->offerExcludes($bestOrderOffer, (int) $item['product_id'], $item['category_id']);
+            if ($matchesOffer) {
+                if ($bestOrderOffer->type === 'category_discount' && $bestOrderOffer->applicable_categories !== []) {
+                    $matchesOffer = in_array($item['category_id'], $bestOrderOffer->applicable_categories, true);
+                } elseif ($bestOrderOffer->product_id) {
+                    $matchesOffer = (int) $item['product_id'] === (int) $bestOrderOffer->product_id;
+                } elseif ($bestOrderOffer->applicable_products !== []) {
+                    $matchesOffer = in_array((int) $item['product_id'], $bestOrderOffer->applicable_products, true);
                 }
-
-                // Deduct proportional coupon discount
-                if ($coupon && $couponEligibleSubtotal > 0 && ! $item['is_gift']) {
-                    $isEligible = true;
-                    $pid = $item['product_id'];
-                    $cid = $item['category_id'];
-                    if (! empty($apps) && ! in_array($pid, $apps) && ! in_array((string) $pid, $apps)) {
-                        $isEligible = false;
-                    }
-                    if (! empty($excs) && (in_array($pid, $excs) || in_array((string) $pid, $excs))) {
-                        $isEligible = false;
-                    }
-                    if (! empty($appCats) && (! in_array($cid, $appCats) && ! in_array((string) $cid, $appCats))) {
-                        $isEligible = false;
-                    }
-                    if (! empty($excCats) && (in_array($cid, $excCats) || in_array((string) $cid, $excCats))) {
-                        $isEligible = false;
-                    }
-
-                    if ($isEligible) {
-                        $taxableAmount -= ($couponDiscount * ($postBogo / $couponEligibleSubtotal));
-                    }
-                }
-
-                $taxableAmount = max(0.0, $taxableAmount);
             }
-
-            $itemTax = $taxableAmount * (($item['tax_rate'] ?? 0) / 100);
-            $item['tax_amount'] = $itemTax;
-            $taxAmount += $itemTax;
-
-            // Clean up temporary variables
+            $offerWeights[$index] = $matchesOffer ? $balance : 0.0;
+            $couponWeights[$index] = $coupon && ! $item['is_gift'] && $this->couponMatches($coupon, (int) $item['product_id'], $item['category_id']) ? $balance : 0.0;
+        }
+        $orderEligibleSubtotal = array_sum($offerWeights);
+        $orderDiscount = $bestOrderOffer ? $this->calculateOfferDiscount($orderEligibleSubtotal, $subtotal, $bestOrderOffer) : 0.0;
+        $offerAllocations = [];
+        foreach ($items as $index => $item) {
+            $offerAllocations[$index] = $orderEligibleSubtotal > 0 ? $orderDiscount * $offerWeights[$index] / $orderEligibleSubtotal : 0.0;
+            $couponWeights[$index] = max(0.0, $couponWeights[$index] - ($couponWeights[$index] > 0 ? $offerAllocations[$index] : 0));
+        }
+        $remainingCouponSubtotal = array_sum($couponWeights);
+        $couponDiscount = min($couponDiscount, $remainingCouponSubtotal);
+        $taxAmount = 0.0;
+        foreach ($items as $index => &$item) {
+            $couponAllocation = $remainingCouponSubtotal > 0 ? $couponDiscount * $couponWeights[$index] / $remainingCouponSubtotal : 0.0;
+            $taxableAmount = max(0.0, $item['total_amount'] - $item['bogo_discount'] - $offerAllocations[$index] - $couponAllocation);
+            $item['tax_amount'] = $taxableAmount * (($item['tax_rate'] ?? 0) / 100);
+            $taxAmount += $item['tax_amount'];
             unset($item['category_id'], $item['bogo_discount']);
         }
         unset($item);
@@ -912,7 +942,7 @@ class OrderService
 
         $cashbackEarned = 0.0;
 
-        if ($coupon && $couponEligibleSubtotal > 0 && $couponEligibleSubtotal >= ((float) $coupon->min_spend ?? 0)) {
+        if ($coupon && $couponEligibleSubtotal > 0 && $regularSubtotal >= (float) $coupon->min_spend) {
             if ($coupon->cashback_percent > 0) {
                 $cashbackEarned += $couponEligibleSubtotal * ($coupon->cashback_percent / 100);
             }
@@ -921,7 +951,7 @@ class OrderService
             }
         }
 
-        if ($bestOrderOffer && $orderEligibleSubtotal > 0 && $orderEligibleSubtotal >= ((float) $bestOrderOffer->min_spend ?? 0)) {
+        if ($bestOrderOffer && $orderEligibleSubtotal > 0 && $regularSubtotal >= (float) $bestOrderOffer->min_spend) {
             if ($bestOrderOffer->cashback_percent > 0) {
                 $cashbackEarned += $orderEligibleSubtotal * ($bestOrderOffer->cashback_percent / 100);
             }
@@ -932,7 +962,7 @@ class OrderService
 
         $cashbackEarned = round($cashbackEarned, 2);
 
-        return [
+        $quote = [
             'items' => $items,
             'subtotal' => $subtotal,
             'tax_amount' => $taxAmount,
@@ -941,6 +971,7 @@ class OrderService
             'coupon_discount' => $couponDiscount,
             'total_discount' => $totalDiscount,
             'grand_total' => $grandTotal,
+            'rounding_adjustment' => round($grandTotal - ($subtotal - $totalDiscount + $taxAmount), 2),
             'coupon_code' => $couponCode,
             'order_offer_name' => $bestOrderOffer?->name,
             'applied_offer_id' => $bestOrderOffer?->id,
@@ -948,6 +979,10 @@ class OrderService
             'applied_bogo_ids' => $appliedBogoIds,
             'cashback_earned' => $cashbackEarned,
         ];
+        if (! empty($data['expected_quote']) && ! hash_equals(hash('sha256', json_encode($quote)), $data['expected_quote'])) {
+            throw ValidationException::withMessages(['quote' => 'Prices or promotions have changed. Review the order again before saving.']);
+        }
+        return $quote;
     }
 
     /**
@@ -965,7 +1000,7 @@ class OrderService
         $billingAddr = PartyAddress::find($data['billing_address_id'] ?? $data['address_id']);
 
         return DB::transaction(function () use ($customer, $data, $shippingAddr, $billingAddr) {
-            $calc = $this->recalculateAndValidate($data);
+            $calc = $this->recalculateAndValidate(array_replace($data, ['party_id' => $customer->id]));
 
             $orderPayload = array_merge([
                 'type' => 'sale',
@@ -979,6 +1014,7 @@ class OrderService
                 'applied_offer_id' => $calc['applied_offer_id'],
                 'selected_offer_id' => $calc['selected_offer_id'],
                 'net_amount' => $calc['grand_total'],
+                'cashback_earned' => $calc['cashback_earned'],
                 'items' => $calc['items'],
                 'status' => $data['status'] ?? 'pending',
                 'future_order_date' => $data['future_order_date'] ?? null,
@@ -1019,7 +1055,7 @@ class OrderService
             $lastOfferId = $order->applied_offer_id;
             $lastSelectedOfferId = $order->selected_offer_id ?: $order->applied_offer_id;
 
-            $calc = $this->recalculateAndValidate($data, $lastCouponCode, true, $lastSelectedOfferId);
+            $calc = $this->recalculateAndValidate(array_replace($data, ['party_id' => $order->party_id]), $lastCouponCode, true, $lastSelectedOfferId);
 
             // Treat the amount already used on this order as available while
             // recalculating it, then apply only the difference to the wallet.
@@ -1039,6 +1075,9 @@ class OrderService
                 ? min((float) $calc['grand_total'], $availableWalletBalance)
                 : 0.0;
             $walletUsed = round(max(0.0, $walletUsed), 2);
+            if (isset($data['expected_wallet_amount']) && abs((float) $data['expected_wallet_amount'] - $walletUsed) >= 0.01) {
+                throw ValidationException::withMessages(['wallet' => 'Wallet balance changed. Review the order again before saving.']);
+            }
             $walletDelta = round($walletUsed - $previousWalletUsed, 2);
 
             if ($party && abs($walletDelta) >= 0.01) {
@@ -1148,12 +1187,12 @@ class OrderService
                 ]);
             }
 
-            if (($calc['applied_offer_id'] ?? null) !== $lastOfferId) {
-                if ($lastOfferId) {
-                    Offer::where('id', $lastOfferId)->decrement('used_count');
+            if (($calc['selected_offer_id'] ?? null) !== $lastSelectedOfferId) {
+                if ($lastSelectedOfferId) {
+                    Offer::whereKey($lastSelectedOfferId)->where('used_count', '>', 0)->decrement('used_count');
                 }
-                if (! empty($calc['applied_offer_id'])) {
-                    Offer::where('id', $calc['applied_offer_id'])->increment('used_count');
+                if (! empty($calc['selected_offer_id'])) {
+                    Offer::whereKey($calc['selected_offer_id'])->increment('used_count');
                 }
             }
 

@@ -24,6 +24,7 @@ class StoreOrderRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'order_id' => 'nullable|integer|exists:orders,id',
             'type' => 'required|string|in:sale,purchase',
             'party_id' => 'required|exists:parties,id',
             'warehouse_id' => 'required|exists:warehouses,id',
@@ -76,7 +77,7 @@ class StoreOrderRequest extends FormRequest
             'order_date' => 'required|date',
             'items' => 'required|array|min:1',
             'items.*.product_id' => 'required|exists:products,id',
-            'items.*.product_variant_id' => 'nullable|integer',
+            'items.*.product_variant_id' => 'prohibited',
             'items.*.quantity' => 'required|numeric|gt:0',
             'items.*.unit_price' => 'required|numeric|min:0',
             'items.*.tax_rate' => 'nullable|numeric|min:0',
@@ -86,8 +87,10 @@ class StoreOrderRequest extends FormRequest
             'items.*.is_gift' => 'nullable|boolean',
             'items.*.gift_source' => 'nullable|string',
             'status' => 'nullable|string|in:pending,future_order,pending_confirmation,confirmed,processing,ready_to_ship,dispatched,delivered,cancelled,return_requested,returned',
-            'future_order_date' => 'nullable|date',
+            'future_order_date' => 'required_if:status,future_order|nullable|date',
             'coupon_code' => 'nullable|string',
+            'expected_quote' => 'nullable|string|size:64',
+            'expected_wallet_amount' => 'nullable|numeric|min:0',
             'applied_offer_id' => 'nullable|integer|exists:offers,id',
             'selected_offer_id' => 'nullable|integer|exists:offers,id',
             'applied_bogo_ids' => 'nullable|array',

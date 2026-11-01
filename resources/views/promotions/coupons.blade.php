@@ -11,7 +11,7 @@
             <p class="text-muted mb-0">Create and manage discount coupon codes for customers</p>
         </div>
         <div class="d-flex gap-2">
-            <button class="btn btn-primary" @click="openModal()">
+            <button class="btn btn-primary" @click="openModal()" @cannot('coupon-create') hidden @endcannot>
                 <i class="bi bi-plus-lg me-2"></i>New Coupon
             </button>
         </div>
@@ -81,6 +81,8 @@
         </div>
     </div>
 
+    <div class="alert alert-danger" role="alert" x-show="loadError" x-text="loadError" x-cloak></div>
+    <p class="small text-muted">Active/Inactive is the manual setting. Dates and usage limits determine whether a campaign can be redeemed.</p>
     <!-- Table -->
     <div class="card">
         <div class="card-header">
@@ -100,7 +102,7 @@
                             <option value="">All Types</option>
                             <option value="percentage">Percentage</option>
                             <option value="fixed">Fixed Amount</option>
-                            <option value="free_shipping">Free Shipping</option>
+                            <option value="free_shipping" disabled>Free Shipping (unavailable)</option>
                             <option value="free_product">Free Product</option>
                         </select>
                         <select class="form-select form-select-sm" x-model="filterStatus" @change="applyFilters()" style="width: 150px;">
@@ -124,9 +126,9 @@
                         </span>
                     </div>
                     <div class="d-flex gap-2">
-                        <button class="btn btn-sm btn-success" x-show="coupons.filter(c => selected.map(String).includes(String(c.id))).some(c => !c.is_active)" @click="bulkAction('activate')"><i class="bi bi-check-circle me-1"></i>Activate</button>
-                        <button class="btn btn-sm btn-warning" x-show="coupons.filter(c => selected.map(String).includes(String(c.id))).some(c => c.is_active)" @click="bulkAction('deactivate')"><i class="bi bi-pause-circle me-1"></i>Deactivate</button>
-                        <button class="btn btn-sm btn-danger" @click="bulkAction('delete')"><i class="bi bi-trash me-1"></i>Delete</button>
+                        <button class="btn btn-sm btn-success" x-show="coupons.filter(c => selected.map(String).includes(String(c.id))).some(c => !c.is_active)" @click="bulkAction('activate')" @cannot('coupon-edit') hidden @endcannot><i class="bi bi-check-circle me-1"></i>Activate</button>
+                        <button class="btn btn-sm btn-warning" x-show="coupons.filter(c => selected.map(String).includes(String(c.id))).some(c => c.is_active)" @click="bulkAction('deactivate')" @cannot('coupon-edit') hidden @endcannot><i class="bi bi-pause-circle me-1"></i>Deactivate</button>
+                        <button class="btn btn-sm btn-danger" @click="bulkAction('delete')" @cannot('coupon-delete') hidden @endcannot><i class="bi bi-trash me-1"></i>Delete</button>
                         <button class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center justify-content-center px-2" @click="selected = []" title="Clear selection">
                             <i class="bi bi-x-lg" style="margin-left: 7px"></i>
                         </button>
@@ -244,7 +246,7 @@
                                     <span class="badge bg-danger-subtle text-danger-emphasis border border-danger-subtle" x-show="c.is_expired" x-cloak><i class="bi bi-calendar-x me-1"></i>Expired</span>
                                     <span class="badge rounded-pill px-3 py-2 fw-medium border cursor-pointer"
                                           :class="c.is_active ? 'bg-success-subtle text-success-emphasis border-success-subtle' : 'bg-secondary-subtle text-secondary-emphasis border-secondary-subtle'"
-                                          @click="toggleStatus(c)">
+                                          @click="toggleStatus(c)" @cannot('coupon-edit') hidden @endcannot>
                                         <span class="d-inline-block rounded-circle me-1" 
                                               :class="c.is_active ? 'bg-success' : 'bg-secondary'" 
                                               style="width: 6px; height: 6px; vertical-align: middle;"></span>
@@ -259,19 +261,19 @@
                                         </button>
                                         <ul class="dropdown-menu dropdown-menu-end">
                                             <li>
-                                                <a class="dropdown-item" href="#" @click.prevent="toggleStatus(c)">
+                                                <a class="dropdown-item" href="#" @click.prevent="toggleStatus(c)" @cannot('coupon-edit') hidden @endcannot>
                                                     <i class="bi me-2" :class="c.is_active ? 'bi-pause-circle text-warning' : 'bi-check-circle text-success'"></i>
                                                     <span x-text="c.is_active ? 'Deactivate' : 'Activate'"></span>
                                                 </a>
                                             </li>
                                             <li>
-                                                <a class="dropdown-item" href="#" @click.prevent="openModal(c)">
+                                                <a class="dropdown-item" href="#" @click.prevent="openModal(c)" @cannot('coupon-edit') hidden @endcannot>
                                                     <i class="bi bi-pencil me-2"></i>Edit
                                                 </a>
                                             </li>
                                             <li><hr class="dropdown-divider"></li>
                                             <li>
-                                                <a class="dropdown-item text-danger" href="#" @click.prevent="deleteCoupon(c)">
+                                                <a class="dropdown-item text-danger" href="#" @click.prevent="deleteCoupon(c)" @cannot('coupon-delete') hidden @endcannot>
                                                     <i class="bi bi-trash me-2"></i>Delete
                                                 </a>
                                             </li>
@@ -351,7 +353,7 @@
                                                 <option value="none">None</option>
                                                 <option value="percentage">Percentage (%)</option>
                                                 <option value="fixed">Flat Amount (₹ )</option>
-                                                <option value="free_shipping">Free Shipping</option>
+                                                <option value="free_shipping" disabled>Free Shipping (unavailable)</option>
                                                 <option value="free_product">Free Product</option>
                                             </select>
                                             <small class="text-muted d-block mt-1" style="font-size: 10px;">Choose percentage or fixed rate.</small><div class="mt-1 p-2 bg-body rounded-2 border" style="font-size: 9px;"><strong class="text-primary">Use Case:</strong> Percentage discounts scale with cart size. Flat discounts are better for maintaining predictable profit margins on high-value carts.</div>
@@ -389,7 +391,7 @@
                                                         </div>
                                                     </template>
                                                     <div class="flex-grow-1" style="min-width: 150px;">
-                                                        <input x-ref="freeProductSearch" type="text" x-model="freeProductSearch" @focus="showFreeProductDropdown = true" @keydown.escape="showFreeProductDropdown = false" placeholder="Search product name or SKU..." class="border-0 w-100 outline-none bg-transparent fw-semibold text-body" style="font-size: 14px; outline: none !important; box-shadow: none;">
+                                                        <input x-ref="freeProductSearch" type="text" x-model="freeProductSearch" @input.debounce.300ms="lookupProducts(freeProductSearch)" @focus="showFreeProductDropdown = true" @keydown.escape="showFreeProductDropdown = false" placeholder="Search product name or SKU..." class="border-0 w-100 outline-none bg-transparent fw-semibold text-body" style="font-size: 14px; outline: none !important; box-shadow: none;">
                                                     </div>
                                                 </div>
                                                 <div x-show="showFreeProductDropdown" x-transition.opacity class="position-absolute w-100 bg-body border border-secondary border-opacity-25 rounded-4 shadow-sm mt-2 overflow-auto" style="max-height: 350px; z-index: 1060; top: 100%; left: 0; display: none;">
@@ -481,7 +483,19 @@
 
                         </div>
                     </div>
-                </div>
+                <div class="row g-3 mt-2">
+                        <div class="col-12"><input type="search" class="form-control" aria-label="Search targeting products" placeholder="Search products by name or SKU" @input.debounce.300ms="lookupProducts($event.target.value)"></div>
+                        <template x-for="field in ['applicable_products','excluded_products','applicable_categories','excluded_categories']" :key="field">
+                            <div class="col-md-6"><label class="form-label" x-text="field.replaceAll('_', ' ')"></label>
+                                <select multiple class="form-select" x-model="form[field]" :aria-label="field.replaceAll('_', ' ')">
+                                    <template x-for="entry in (field.endsWith('products') ? allProducts : allCategories)" :key="entry.id">
+                                        <option :value="String(entry.id)" x-text="entry.name"></option>
+                                    </template>
+                                </select><small class="text-muted">Empty includes apply to all. Exclusions take precedence.</small>
+                            </div>
+                        </template>
+                    </div>
+</div>
 
                 {{-- Form Actions --}}
                 <div class="modal-footer bg-body-tertiary border-top d-flex justify-content-end gap-3 p-3">
@@ -531,9 +545,9 @@ function couponsModule() {
         showFreeProductDropdown: false, freeProductSearch: '',
         coupons: [], loading: false, saving: false,
         search: '', filterType: '', filterStatus: 'active', page: 1, lastPage: 1,
-        total: 0, from: 0, to: 0, _fetchRequestId: 0,
+        total: 0, from: 0, to: 0, _fetchRequestId: 0, loadError: '',
         selected: [], stats: { total: 0, active: 0, inactive: 0, expired: 0, expiring_soon: 0 },
-        form: { id: null, code: '', type: 'percentage', display_type: 'percentage', value: '', min_spend: '', max_discount: '', cashback_type: 'none', cashback_val: '', free_product_id: '', free_qty: 1, expiry_date: '', usage_limit: '', is_active: true },
+        form: { applicable_products: [], excluded_products: [], applicable_categories: [], excluded_categories: [], id: null, code: '', type: 'percentage', display_type: 'percentage', value: '', min_spend: '', max_discount: '', cashback_type: 'none', cashback_val: '', free_product_id: '', free_qty: 1, expiry_date: '', usage_limit: '', is_active: true },
         formError: null,
 
         generateDescription(c) {
@@ -576,6 +590,22 @@ function couponsModule() {
 
         get allSelected() { return this.coupons.length > 0 && this.selected.length === this.coupons.length; },
 
+        allCategories: @json($categories),
+        _productRequestId: 0,
+        async lookupProducts(search = '') {
+            const requestId = ++this._productRequestId;
+            const selected = [...(this.form.applicable_products || []), ...(this.form.excluded_products || []), this.form.free_product_id];
+            const params = new URLSearchParams({search});
+            [...new Set(selected.filter(Boolean).map(String))].forEach(id => params.append('ids[]', id));
+            try {
+                const res = await fetch(`/api/promotions/product-options?${params}`, {headers:{'Accept':'application/json'}});
+                if (!res.ok) throw new Error(`Could not search products (${res.status}).`);
+                const json = await res.json();
+                if (requestId === this._productRequestId) this.allProducts = json.data || [];
+            } catch (error) {
+                if (requestId === this._productRequestId) this.formError = error.message;
+            }
+        },
         async init() { await this.fetchCoupons(); },
 
         applyFilters() {
@@ -593,7 +623,7 @@ function couponsModule() {
 
         async fetchCoupons() {
             const requestId = ++this._fetchRequestId;
-            this.loading = true;
+            this.loading = true; this.loadError = '';
             try {
                 const params = new URLSearchParams({ search: this.search, type: this.filterType, status: this.filterStatus, per_page: 15, page: this.page });
                 const res = await fetch(`/api/promotions/coupons?${params}`, { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
@@ -622,7 +652,7 @@ function couponsModule() {
                     this.stats.expiring_soon = this.coupons.filter(c => { if (!c.expiry_date) return false; const d = new Date(c.expiry_date); const n = new Date(); return d > n && (d - n) / 86400000 <= 7; }).length;
                 }
             } catch (e) {
-                if (requestId === this._fetchRequestId) console.error(e);
+                if (requestId === this._fetchRequestId) this.loadError = e.message || 'Could not load promotions. Please retry.';
             } finally {
                 if (requestId === this._fetchRequestId) this.loading = false;
             }
@@ -646,10 +676,11 @@ function couponsModule() {
                 if ((c.type === 'percentage' || c.type === 'fixed') && parseFloat(c.value) === 0) {
                     dType = 'none';
                 }
-                this.form = { id: c.id, code: c.code, type: c.type, display_type: dType, value: c.value, min_spend: c.min_spend || '', max_discount: c.max_discount || '', cashback_type: cType, cashback_val: cVal, free_product_id: c.free_product_id ? String(c.free_product_id) : '', free_qty: c.free_qty || 1, expiry_date: c.expiry_date || '', usage_limit: c.usage_limit || '', is_active: c.is_active };
+                this.form = { applicable_products: (c.applicable_products || []).map(String), excluded_products: (c.excluded_products || []).map(String), applicable_categories: (c.applicable_categories || []).map(String), excluded_categories: (c.excluded_categories || []).map(String), id: c.id, code: c.code, type: c.type, display_type: dType, value: c.value, min_spend: c.min_spend || '', max_discount: c.max_discount || '', cashback_type: cType, cashback_val: cVal, free_product_id: c.free_product_id ? String(c.free_product_id) : '', free_qty: c.free_qty || 1, expiry_date: c.expiry_date ? c.expiry_date.substring(0, 10) : '', usage_limit: c.usage_limit || '', is_active: c.is_active };
             } else {
-                this.form = { id: null, code: '', type: 'percentage', display_type: 'percentage', value: '', min_spend: '', max_discount: '', cashback_type: 'none', cashback_val: '', free_product_id: '', free_qty: 1, expiry_date: '', usage_limit: '', is_active: true };
+                this.form = { applicable_products: [], excluded_products: [], applicable_categories: [], excluded_categories: [], id: null, code: '', type: 'percentage', display_type: 'percentage', value: '', min_spend: '', max_discount: '', cashback_type: 'none', cashback_val: '', free_product_id: '', free_qty: 1, expiry_date: '', usage_limit: '', is_active: true };
             }
+            this.lookupProducts();
             new bootstrap.Modal(document.getElementById('couponModal')).show();
         },
 
@@ -701,8 +732,16 @@ function couponsModule() {
 
         async deleteCoupon(c) {
             if (!confirm(`Delete coupon "${c.code}"?`)) return;
-            await fetch(`/api/promotions/coupons/${c.id}`, { method: 'DELETE', headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, 'Accept': 'application/json' } });
-            this.fetchCoupons();
+            try {
+                const res = await fetch(`/api/promotions/coupons/${c.id}`, { method: 'DELETE', headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, 'Accept': 'application/json' } });
+                if (!res.ok) {
+                    const error = await res.json().catch(() => ({}));
+                    throw new Error(error.message || `Could not delete promotion (${res.status}).`);
+                }
+                await this.fetchCoupons();
+            } catch (error) {
+                this.loadError = error.message || 'Network error. Please retry.';
+            }
         },
 
         toggleAll(e) { this.selected = e.target.checked ? this.coupons.map(c => c.id) : []; },

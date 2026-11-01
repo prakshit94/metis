@@ -18,8 +18,9 @@ class ReferralProgramController extends Controller implements HasMiddleware
         return [
             new Middleware('permission:promotions-view', only: ['index']),
             new Middleware('permission:promotions-create', only: ['store']),
-            new Middleware('permission:promotions-edit', only: ['update', 'toggle', 'bulk']),
+            new Middleware('permission:promotions-edit', only: ['update', 'toggle']),
             new Middleware('permission:promotions-delete', only: ['destroy']),
+            new Middleware('permission:promotions-edit|promotions-delete', only: ['bulk']),
         ];
     }
 
@@ -31,38 +32,33 @@ class ReferralProgramController extends Controller implements HasMiddleware
         $statusFilter = array_key_exists('status', $request->query())
             ? ($filters['status'] ?? '')
             : 'active';
-        $allPrograms = ReferralProgram::with('milestones')->latest()->get();
         $today = today()->toDateString();
-        $programs = $allPrograms->filter(function (ReferralProgram $program) use ($statusFilter, $today) {
-            return match ($statusFilter) {
-                'active' => $program->is_active,
-                'inactive' => ! $program->is_active,
-                'expired' => $program->end_date !== null && $program->end_date->toDateString() < $today,
-                'scheduled' => $program->start_date !== null && $program->start_date->toDateString() > $today,
-                default => true,
-            };
-        })->values();
-        $programStats = [
-            'total' => $allPrograms->count(),
-            'active' => $allPrograms->where('is_active', true)->count(),
-            'inactive' => $allPrograms->where('is_active', false)->count(),
-            'permanent' => $allPrograms->whereNull('start_date')->whereNull('end_date')->count(),
-            'time_bound' => $allPrograms->filter(fn (ReferralProgram $program) => $program->start_date !== null || $program->end_date !== null)->count(),
-            'expired' => $allPrograms->filter(fn (ReferralProgram $program) => $program->end_date !== null && $program->end_date->toDateString() < $today)->count(),
-            'scheduled' => $allPrograms->filter(fn (ReferralProgram $program) => $program->start_date !== null && $program->start_date->toDateString() > $today)->count(),
-        ];
+        $query = ReferralProgram::with('milestones')->latest();
+        match ($statusFilter) {
+            'active' => $query->where('is_active', true),
+            'inactive' => $query->where('is_active', false),
+            'expired' => $query->whereDate('end_date', '<', $today),
+            'scheduled' => $query->whereDate('start_date', '>', $today),
+            default => null,
+        };
+        $pagination = $query->paginate(25)->withQueryString();
+        $programs = $pagination->getCollection();
+        $totals = ReferralProgram::query()->selectRaw('COUNT(*) as total,
+            COALESCE(SUM(is_active = 1), 0) as active, COALESCE(SUM(is_active = 0), 0) as inactive,
+            COALESCE(SUM(start_date IS NULL AND end_date IS NULL), 0) as permanent,
+            COALESCE(SUM(start_date IS NOT NULL OR end_date IS NOT NULL), 0) as time_bound,
+            COALESCE(SUM(end_date < ?), 0) as expired, COALESCE(SUM(start_date > ?), 0) as scheduled', [$today, $today])->first();
+        $programStats = collect($totals->getAttributes())->map(fn ($value) => (int) $value)->all();
 
-        $products = cache()->remember('referral_products_list', now()->addMinutes(60), function () {
-            return Product::where('status', '!=', 'draft')
-                ->orderBy('name')
-                ->get(['id', 'name', 'sku']);
-        });
+        $rewardProductIds = $programs->flatMap(fn ($program) => $program->milestones->where('reward_type', 'product')->pluck('reward_value'));
+        $products = Product::where('is_active', true)->whereIn('status', ['active', 'published'])->orderBy('name')->limit(50)->get(['id', 'name', 'sku'])
+            ->merge(Product::whereIn('id', $rewardProductIds)->get(['id', 'name', 'sku']))->unique('id')->values();
 
         if ($request->wantsJson() || $request->ajax()) {
-            return response()->json(compact('programs', 'products', 'programStats'));
+            return response()->json(compact('programs', 'products', 'programStats', 'pagination'));
         }
 
-        return view('promotions.referrals.index', compact('programs', 'products', 'programStats'));
+        return view('promotions.referrals.index', compact('programs', 'products', 'programStats', 'pagination'));
     }
 
     public function store(Request $request)
@@ -70,9 +66,9 @@ class ReferralProgramController extends Controller implements HasMiddleware
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'start_date' => 'nullable|date',
-            'end_date' => 'nullable|date|after_or_equal:start_date',
+            'end_date' => 'nullable|date'.($request->filled('start_date') ? '|after_or_equal:start_date' : ''),
             'is_active' => 'boolean',
-            'milestones' => 'required|array|min:1',
+            'milestones' => 'required|array|min:1|max:100',
             'milestones.*.required_referrals' => 'required|integer|min:0|distinct',
             'milestones.*.reward_type' => 'required|string|in:wallet,product,coupon',
             'milestones.*.reward_value' => 'required|string',
@@ -80,8 +76,10 @@ class ReferralProgramController extends Controller implements HasMiddleware
         $this->validateMilestoneValues($validated['milestones']);
 
         DB::transaction(function () use ($validated) {
+            $this->lockPrograms();
+            $this->validateActivation($validated);
             if (! empty($validated['is_active'])) {
-                ReferralProgram::where('is_active', true)->update(['is_active' => false]);
+                ReferralProgram::where('is_active', true)->get()->each->update(['is_active' => false]);
             }
 
             $program = ReferralProgram::create([
@@ -108,9 +106,9 @@ class ReferralProgramController extends Controller implements HasMiddleware
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'start_date' => 'nullable|date',
-            'end_date' => 'nullable|date|after_or_equal:start_date',
+            'end_date' => 'nullable|date'.($request->filled('start_date') ? '|after_or_equal:start_date' : ''),
             'is_active' => 'boolean',
-            'milestones' => 'required|array|min:1',
+            'milestones' => 'required|array|min:1|max:100',
             'milestones.*.required_referrals' => 'required|integer|min:0|distinct',
             'milestones.*.reward_type' => 'required|string|in:wallet,product,coupon',
             'milestones.*.reward_value' => 'required|string',
@@ -118,8 +116,11 @@ class ReferralProgramController extends Controller implements HasMiddleware
         $this->validateMilestoneValues($validated['milestones']);
 
         DB::transaction(function () use ($validated, $program) {
+            $this->lockPrograms();
+            $program->refresh();
+            $this->validateActivation($validated, $program->id);
             if (! empty($validated['is_active'])) {
-                ReferralProgram::where('id', '!=', $program->id)->where('is_active', true)->update(['is_active' => false]);
+                ReferralProgram::where('id', '!=', $program->id)->where('is_active', true)->get()->each->update(['is_active' => false]);
             }
 
             $program->update([
@@ -129,8 +130,17 @@ class ReferralProgramController extends Controller implements HasMiddleware
                 'is_active' => $validated['is_active'] ?? false,
             ]);
 
-            $program->milestones()->delete();
-            $program->milestones()->createMany($validated['milestones']);
+            $retained = [];
+            foreach ($validated['milestones'] as $values) {
+                $milestone = $program->milestones()->where('required_referrals', $values['required_referrals'])->first();
+                if ($milestone) {
+                    $milestone->update($values);
+                } else {
+                    $milestone = $program->milestones()->create($values);
+                }
+                $retained[] = $milestone->id;
+            }
+            $program->milestones()->whereNotIn('id', $retained)->get()->each->update(['retired_at' => now()]);
         });
 
         if (request()->is('api/*')) {
@@ -145,8 +155,11 @@ class ReferralProgramController extends Controller implements HasMiddleware
         $program = ReferralProgram::findOrFail($id);
 
         DB::transaction(function () use ($program) {
+            $this->lockPrograms();
+            $program->refresh();
+            $this->validateActivation(['is_active' => ! $program->is_active, 'start_date' => $program->start_date], $program->id);
             if (! $program->is_active) {
-                ReferralProgram::where('id', '!=', $program->id)->where('is_active', true)->update(['is_active' => false]);
+                ReferralProgram::where('id', '!=', $program->id)->where('is_active', true)->get()->each->update(['is_active' => false]);
             }
             $program->update(['is_active' => ! $program->is_active]);
         });
@@ -162,24 +175,28 @@ class ReferralProgramController extends Controller implements HasMiddleware
     {
         $validated = $request->validate([
             'action' => 'required|string|in:activate,deactivate,delete',
-            'ids' => 'required|array',
+            'ids' => 'required|array|min:1|max:100',
             'ids.*' => 'integer|exists:referral_programs,id',
         ]);
 
         $action = $validated['action'];
         $ids = $validated['ids'];
+        abort_unless($request->user()?->can($action === 'delete' ? 'promotions-delete' : 'promotions-edit'), 403);
 
         DB::transaction(function () use ($action, $ids) {
+            $this->lockPrograms();
             if ($action === 'delete') {
-                ReferralProgram::whereIn('id', $ids)->delete();
+                ReferralProgram::whereIn('id', $ids)->get()->each(fn ($program) => $this->deleteProgram($program));
             } elseif ($action === 'deactivate') {
-                ReferralProgram::whereIn('id', $ids)->update(['is_active' => false]);
+                ReferralProgram::whereIn('id', $ids)->get()->each->update(['is_active' => false]);
             } elseif ($action === 'activate') {
                 // Only one program can be active at a time — activate the first ID only.
                 $firstId = collect($ids)->first();
                 if ($firstId) {
-                    ReferralProgram::where('id', '!=', $firstId)->where('is_active', true)->update(['is_active' => false]);
-                    ReferralProgram::where('id', $firstId)->update(['is_active' => true]);
+                    $first = ReferralProgram::findOrFail($firstId);
+                    $this->validateActivation(['is_active' => true, 'start_date' => $first->start_date], $firstId);
+                    ReferralProgram::where('id', '!=', $firstId)->where('is_active', true)->get()->each->update(['is_active' => false]);
+                    ReferralProgram::findOrFail($firstId)->update(['is_active' => true]);
                 }
             }
         });
@@ -189,7 +206,10 @@ class ReferralProgramController extends Controller implements HasMiddleware
 
     public function destroy($id)
     {
-        ReferralProgram::findOrFail($id)->delete();
+        DB::transaction(function () use ($id) {
+            $this->lockPrograms();
+            $this->deleteProgram(ReferralProgram::findOrFail($id));
+        });
 
         if (request()->is('api/*')) {
             return response()->json(['message' => 'Referral program deleted.']);
@@ -198,19 +218,42 @@ class ReferralProgramController extends Controller implements HasMiddleware
         return back()->with('success', 'Referral program deleted.');
     }
 
+    private function lockPrograms(): void
+    {
+        DB::table('promotion_locks')->where('name', 'referral_program')->lockForUpdate()->first();
+    }
+
+    private function deleteProgram(ReferralProgram $program): void
+    {
+        if (DB::table('referral_rewards')->where('referral_program_id', $program->id)->exists()) {
+            throw ValidationException::withMessages(['program' => 'This program has issued rewards. Deactivate it to preserve its history.']);
+        }
+        $program->delete();
+    }
+
+    private function validateActivation(array $values, ?int $id = null): void
+    {
+        // Preserve the one-enabled-program policy without silently disabling today's rewards.
+        if (! empty($values['is_active']) && ! empty($values['start_date'])
+            && \Illuminate\Support\Carbon::parse($values['start_date'])->startOfDay()->gt(today())
+            && ReferralProgram::where('is_active', true)->when($id, fn ($q) => $q->whereKeyNot($id))->exists()) {
+            throw ValidationException::withMessages(['start_date' => 'Save the future program as inactive, then activate it at handover. The current program remains active.']);
+        }
+    }
+
     private function validateMilestoneValues(array $milestones): void
     {
         foreach ($milestones as $index => $milestone) {
             $value = $milestone['reward_value'] ?? '';
 
-            if ($milestone['reward_type'] === 'product' && ! Product::whereKey($value)->exists()) {
+            if ($milestone['reward_type'] === 'product' && ! Product::whereKey($value)->where('is_active', true)->whereIn('status', ['active', 'published'])->exists()) {
                 throw ValidationException::withMessages([
                     "milestones.{$index}.reward_value" => 'Select a valid reward product.',
                 ]);
             }
 
             if (in_array($milestone['reward_type'], ['wallet', 'coupon'], true)
-                && (! is_numeric($value) || (float) $value < 0)) {
+                && (! preg_match('/^\d{1,8}(?:\.\d{1,2})?$/', (string) $value) || (float) $value < 0)) {
                 throw ValidationException::withMessages([
                     "milestones.{$index}.reward_value" => 'Enter a valid non-negative reward amount.',
                 ]);

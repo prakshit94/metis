@@ -48,8 +48,8 @@ TODO.md
 
 # Environment files (keep .env.example)
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
 
 # Build output
 dist-modern/
@@ -75,3 +75,8 @@ test_dropdown.js
 # Preserved read-only source backup from local audit work
 /app/Services/.shipping-original/
 /app/.imports-original/
+
+# Local tooling, generated Python caches and production release artifacts
+__pycache__/
+*.py[cod]
+/releases/

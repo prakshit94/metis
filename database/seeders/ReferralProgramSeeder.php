@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\ReferralProgram;
+use App\Modules\Catalog\Models\Product;
 use Illuminate\Database\Seeder;
 
 class ReferralProgramSeeder extends Seeder
@@ -20,7 +21,7 @@ class ReferralProgramSeeder extends Seeder
             'is_active' => true,
         ]);
 
-        $standard->milestones()->createMany([
+        $standard->milestones()->createMany($this->availableRewards([
             [
                 'required_referrals' => 0, // 0 = Every successful referral gets this!
                 'reward_type' => 'wallet',
@@ -36,7 +37,7 @@ class ReferralProgramSeeder extends Seeder
                 'reward_type' => 'product',
                 'reward_value' => '2', // Free product with ID 2
             ],
-        ]);
+        ]));
 
         // 2. Summer Mega Drive (Time-bound, Inactive)
         $summer = ReferralProgram::create([
@@ -46,7 +47,7 @@ class ReferralProgramSeeder extends Seeder
             'is_active' => false,
         ]);
 
-        $summer->milestones()->createMany([
+        $summer->milestones()->createMany($this->availableRewards([
             [
                 'required_referrals' => 1,
                 'reward_type' => 'wallet',
@@ -57,6 +58,14 @@ class ReferralProgramSeeder extends Seeder
                 'reward_type' => 'product',
                 'reward_value' => '5', // Free product ID 5
             ],
-        ]);
+        ]));
+    }
+
+    private function availableRewards(array $milestones): array
+    {
+        // Demo product IDs are not guaranteed to exist on a fresh install.
+        return array_values(array_filter($milestones, fn ($milestone) => $milestone['reward_type'] !== 'product'
+            || Product::whereKey($milestone['reward_value'])->where('is_active', true)
+                ->whereIn('status', ['active', 'published'])->exists()));
     }
 }

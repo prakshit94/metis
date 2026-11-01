@@ -2195,22 +2195,22 @@
                         <div class="col-md-6 mt-3 mt-md-0">
                             <div class="p-3 bg-primary bg-opacity-10 border border-primary border-opacity-25 rounded h-100 shadow-sm">
                                 <h6 class="fw-bold text-primary mb-3" style="font-size:11px; text-transform:uppercase; letter-spacing:1px;"><i class="bi bi-receipt me-1"></i> Summary</h6>
-                                <div class="d-flex justify-content-between mb-1 small"><span class="text-body-secondary">Subtotal:</span> <span class="fw-bold" x-text="'₹ ' + Number(subtotal).toFixed(2)"></span></div>
+                                <div class="d-flex justify-content-between mb-1 small"><span class="text-body-secondary">Subtotal:</span> <span class="fw-bold" x-text="'₹ ' + Number(serverQuote?.subtotal ?? subtotal).toFixed(2)"></span></div>
                                 
-                                <div class="d-flex justify-content-between mb-1 small text-success" x-show="bogoDiscount > 0" x-cloak>
+                                <div class="d-flex justify-content-between mb-1 small text-success" x-show="(serverQuote?.bogo_discount ?? bogoDiscount) > 0" x-cloak>
                                     <div>
                                         <span>BOGO Savings:</span>
                                         <div style="font-size: 9px; opacity: 0.8;" x-text="appliedBogoOfferNames"></div>
                                     </div>
-                                    <span class="fw-bold" x-text="'- ₹ ' + Number(bogoDiscount).toFixed(2)"></span>
+                                    <span class="fw-bold" x-text="'- ₹ ' + Number(serverQuote?.bogo_discount ?? bogoDiscount).toFixed(2)"></span>
                                 </div>
 
-                                <div class="d-flex justify-content-between mb-1 small text-success" x-show="orderOfferDiscountAmount > 0" x-cloak>
+                                <div class="d-flex justify-content-between mb-1 small text-success" x-show="(serverQuote?.order_discount_amount ?? orderOfferDiscountAmount) > 0" x-cloak>
                                     <div>
                                         <span>Order Discount:</span>
                                         <div style="font-size: 9px; opacity: 0.8;" x-text="bestOrderOffer ? bestOrderOffer.name + ' (Offer ID: ' + bestOrderOffer.id + ')' : ''"></div>
                                     </div>
-                                    <span class="fw-bold" x-text="'- ₹ ' + Number(orderOfferDiscountAmount).toFixed(2)"></span>
+                                    <span class="fw-bold" x-text="'- ₹ ' + Number(serverQuote?.order_discount_amount ?? orderOfferDiscountAmount).toFixed(2)"></span>
                                 </div>
 
                                 <div class="d-flex justify-content-between mb-1 small text-success" x-show="couponApplied && appliedCouponObj && appliedCouponObj.type !== 'free_shipping' && appliedCouponObj.type !== 'free_product'" x-cloak>
@@ -2218,7 +2218,7 @@
                                         <span>Coupon Savings:</span>
                                         <div style="font-size: 9px; opacity: 0.8;" x-text="couponDisplayLabel"></div>
                                     </div>
-                                    <span class="fw-bold" x-text="'- ₹ ' + Number(couponDiscount).toFixed(2)"></span>
+                                    <span class="fw-bold" x-text="'- ₹ ' + Number(serverQuote?.coupon_discount ?? couponDiscount).toFixed(2)"></span>
                                 </div>
                                 
                                 <div class="d-flex justify-content-between mb-1 small text-success" x-show="couponApplied && appliedCouponObj && appliedCouponObj.type === 'free_product'" x-cloak>
@@ -2231,7 +2231,7 @@
 
                                 <div class="d-flex justify-content-between mb-1 small">
                                     <span class="text-body-secondary">Tax Amount (GST):</span> 
-                                    <span class="fw-bold" x-text="'₹ ' + Number(taxAmount).toFixed(2)"></span>
+                                    <span class="fw-bold" x-text="'₹ ' + Number(serverQuote?.tax_amount ?? taxAmount).toFixed(2)"></span>
                                 </div>
                                 
                                 <div class="d-flex justify-content-between mb-1 small text-success" x-show="couponApplied && appliedCouponObj && appliedCouponObj.type === 'free_shipping'" x-cloak>
@@ -2245,14 +2245,17 @@
                                     <span class="text-body-secondary">Shipping:</span> <span class="fw-bold" x-text="'₹ ' + Number(shippingFee).toFixed(2)"></span>
                                 </div>
 
-                                <div class="d-flex justify-content-between mb-1 small text-info" x-show="cashbackEarned > 0" x-cloak>
+                                <div class="d-flex justify-content-between mb-1 small text-info" x-show="(serverQuote?.cashback_earned ?? cashbackEarned) > 0" x-cloak>
                                     <div>
                                         <span class="text-info">Cashback Earned:</span>
                                         <div style="font-size: 9px; opacity: 0.8;" x-text="cashbackSources"></div>
                                     </div>
-                                    <span class="fw-bold" x-text="'+ ₹ ' + Number(cashbackEarned).toFixed(2)"></span>
+                                    <span class="fw-bold" x-text="'+ ₹ ' + Number(serverQuote?.cashback_earned ?? cashbackEarned).toFixed(2)"></span>
                                 </div>
                                 
+                                <div class="d-flex justify-content-between mb-1 small" x-show="serverQuote && serverQuote.rounding_adjustment" x-cloak>
+                                    <span>Rounding:</span><span x-text="'₹ ' + Number(serverQuote?.rounding_adjustment || 0).toFixed(2)"></span>
+                                </div>
                                 <div class="d-flex justify-content-between mt-2 pt-2 border-top border-primary border-opacity-25 fs-5">
                                     <div>
                                         <span class="fw-bold text-primary d-block">Grand Total:</span>
@@ -2260,20 +2263,20 @@
                                             <span>Est. Weight: <span class="fw-bold" :class="totalWeight > 35000 ? 'text-danger' : ''" x-text="(totalWeight / 1000).toFixed(2) + ' kg'"></span></span>
                                         </div>
                                     </div>
-                                    <span class="fw-bold text-primary" x-text="'₹ ' + Number(grandTotal).toFixed(2)"></span>
+                                    <span class="fw-bold text-primary" x-text="'₹ ' + Number(serverQuote?.grand_total ?? grandTotal).toFixed(2)"></span>
                                 </div>
-                                <template x-if="useWalletBalance && customerDetails && Number(customerDetails.wallet_balance) > 0">
+                                <template x-if="serverQuote ? serverQuote.wallet_amount_used > 0 : (useWalletBalance && customerDetails && Number(customerDetails.wallet_balance) > 0)">
                                     <div class="mt-2 pt-2 border-top border-primary border-opacity-25">
                                         <div class="d-flex justify-content-between mb-1 small text-success">
                                             <span>Wallet Applied:</span>
-                                            <span class="fw-bold" x-text="'- ₹ ' + Math.min(Number(grandTotal), Number(customerDetails.wallet_balance)).toFixed(2)"></span>
+                                            <span class="fw-bold" x-text="'- ₹ ' + (serverQuote?.wallet_amount_used ?? Math.min(Number(grandTotal), Number(customerDetails.wallet_balance))).toFixed(2)"></span>
                                         </div>
                                         <div class="d-flex justify-content-between fs-5 mt-1">
                                             <span class="fw-bold text-primary d-block">Net Payable:</span>
-                                            <span class="fw-bold text-primary" x-text="'₹ ' + Math.max(0, Number(grandTotal) - Number(customerDetails.wallet_balance)).toFixed(2)"></span>
+                                            <span class="fw-bold text-primary" x-text="'₹ ' + (serverQuote?.payable ?? Math.max(0, Number(grandTotal) - Number(customerDetails.wallet_balance))).toFixed(2)"></span>
                                         </div>
-                                        <div class="small text-body-secondary mt-1" x-show="(Number(grandTotal) - Number(customerDetails.wallet_balance)) < 0">
-                                            * Remaining wallet: ₹ <span x-text="Math.abs(Number(grandTotal) - Number(customerDetails.wallet_balance)).toFixed(2)"></span>
+                                        <div class="small text-body-secondary mt-1" x-show="serverQuote ? serverQuote.wallet_balance_after > 0 : (Number(grandTotal) - Number(customerDetails.wallet_balance)) < 0">
+                                            * Remaining wallet: ₹ <span x-text="(serverQuote?.wallet_balance_after ?? Math.abs(Number(grandTotal) - Number(customerDetails.wallet_balance))).toFixed(2)"></span>
                                         </div>
                                     </div>
                                 </template>
@@ -3510,7 +3513,7 @@ mapOrder(o) {
         searching: false, productPage: 1, productLastPage: 1, productTotal: 0, productFrom: 0, productTo: 0,
         cart: [], couponCode: '', couponApplied: false, appliedCouponObj: null, originalCouponCode: '', appliedOfferId: null,
         offerSelectionTouched: false,
-        placing: false, formErrors: [],
+        placing: false, formErrors: [], serverQuote: null, quoting: false, _couponRequestId: 0,
         warehouses: @json($warehouses->map(fn($w) => $w->toArray())),
         activeOffers: @json($offersArray),
         activeCoupons: @json($activeCoupons),
@@ -5005,7 +5008,7 @@ mapOrder(o) {
             });
         },
         get couponsForDisplay() {
-            const coupons = [...(this.activeCoupons || [])];
+            const coupons = [...(this.activeCoupons || [])].filter(c => !c.recipient_party_id || String(c.recipient_party_id) === String(this.partyId));
             const saved = this.appliedCouponObj;
             if (saved && saved.code && !coupons.some(coupon => String(coupon.code).toUpperCase() === String(saved.code).toUpperCase())) {
                 coupons.unshift(saved);
@@ -5240,6 +5243,7 @@ mapOrder(o) {
         async applyCoupon(codeToApply = null) {
             const code = (codeToApply || this.couponInputTemp || this.couponCode).toUpperCase().trim();
             if (!code) return;
+            const requestId = ++this._couponRequestId;
             if (this.editingOrderId && this.originalCouponCode && String(code).toUpperCase() === String(this.originalCouponCode).toUpperCase()) {
                 const savedCoupon = window.__INITIAL_ORDER_COUPON__;
                 if (savedCoupon && this.couponIsApplicable(savedCoupon)) {
@@ -5252,24 +5256,30 @@ mapOrder(o) {
                     return;
                 }
             }
-            const res = await fetch('/coupons/validate', {method:'POST', headers:{'Content-Type':'application/json','X-CSRF-TOKEN':document.querySelector('meta[name=csrf-token]').content,'Accept':'application/json'}, body:JSON.stringify({code,subtotal:this.subtotal,items:this.cart.map(item=>({product_id:item.id,quantity:item.quantity,is_gift:Boolean(item.is_gift)}))})});
-            const json = await res.json();
-            if (json.valid) { 
-                this.couponCode = code;
-                this.appliedCouponObj = json.coupon;
-                this.couponApplied = true; 
-                this.couponInputTemp = ''; // clear temp
-                bootstrap.Modal.getInstance(document.getElementById('promotionsModal'))?.hide();
-                await this.evaluateFreeProducts();
-            } else { 
-                this.appliedCouponObj = null;
-                this.couponApplied = false; 
-                await this.evaluateFreeProducts();
+            try {
+                const res = await fetch('/coupons/validate', {method:'POST', headers:{'Content-Type':'application/json','X-CSRF-TOKEN':document.querySelector('meta[name=csrf-token]').content,'Accept':'application/json'}, body:JSON.stringify({code,type:this.orderType,party_id:this.partyId,warehouse_id:this.warehouseId,selected_offer_id:this.activeOfferId,subtotal:this.subtotal,items:this.cart.map(item=>({product_id:item.id,quantity:item.quantity,is_gift:Boolean(item.is_gift),gift_source:item.gift_source || null}))})});
+                const json = await res.json();
+                if (requestId !== this._couponRequestId) return;
+                if (!res.ok) throw new Error(Object.values(json.errors || {}).flat().join(' ') || json.message || 'Could not validate coupon.');
+                if (json.valid) {
+                    this.couponCode = code;
+                    this.appliedCouponObj = json.coupon;
+                    this.couponApplied = true;
+                    this.couponInputTemp = ''; // clear temp
+                    bootstrap.Modal.getInstance(document.getElementById('promotionsModal'))?.hide();
+                    await this.evaluateFreeProducts();
+                } else {
+                    this.appliedCouponObj = null;
+                    this.couponApplied = false;
+                    await this.evaluateFreeProducts();
+                }
+                window.dispatchEvent(new CustomEvent('notify',{detail:{type:json.valid?'success':'error',message:json.message}}));
+            } catch (error) {
+                if (requestId === this._couponRequestId) window.dispatchEvent(new CustomEvent('notify', {detail:{type:'error',message:error.message || 'Could not validate coupon. Please retry.'}}));
             }
-            window.dispatchEvent(new CustomEvent('notify',{detail:{type:json.valid?'success':'error',message:json.message}}));
         },
 
-        async removeCoupon() { this.couponCode=''; this.appliedCouponObj=null; this.couponApplied=false; await this.evaluateFreeProducts(); },
+        async removeCoupon() { ++this._couponRequestId; this.couponCode=''; this.appliedCouponObj=null; this.couponApplied=false; await this.evaluateFreeProducts(); },
 
         editOrder(orderId) {
             const query = new URLSearchParams();
@@ -5324,17 +5334,9 @@ mapOrder(o) {
             });
         },
 
-        async saveOrderData() {
-            this.formErrors = [];
-            if (!this.partyId) { this.formErrors.push('Please select a customer.'); return false; }
-            if (!this.warehouseId) { this.formErrors.push('Please select a warehouse.'); return false; }
-            if (!this.shippingAddressId) { this.formErrors.push('Please select a shipping address.'); return false; }
-            if (!this.sameAsShipping && !this.billingAddressId) { this.formErrors.push('Please select a billing address.'); return false; }
-            if (this.cart.length === 0) { this.formErrors.push('Cart is empty.'); return false; }
-            if (this.orderStatus === 'future_order' && !this.futureOrderDate) { this.formErrors.push('Please set future order date.'); return false; }
-
-            try {
-                const payload = {
+        buildOrderPayload() {
+            return {
+                    order_id: this.editingOrderId || null,
                     type: this.orderType,
                     party_id: this.partyId,
                     warehouse_id: this.warehouseId,
@@ -5355,6 +5357,52 @@ mapOrder(o) {
                     cashback_earned: this.cashbackEarned,
                     use_wallet_balance: this.useWalletBalance ? 1 : 0,
                 };
+        },
+        async fetchServerQuote() {
+            if (this.quoting) return null;
+            this.quoting = true;
+            const payload = this.buildOrderPayload();
+            try {
+                const res = await fetch('/api/orders/preview', {
+                    method: 'POST', headers: {'Content-Type':'application/json', 'Accept':'application/json', 'X-CSRF-TOKEN':document.querySelector('meta[name=csrf-token]').content},
+                    body: JSON.stringify(payload)
+                });
+                const json = await res.json();
+                if (!res.ok) {
+                    this.formErrors = Object.values(json.errors || {}).flat();
+                    if (!this.formErrors.length) this.formErrors = [json.message || 'Could not calculate the current order total.'];
+                    return null;
+                }
+                if (JSON.stringify(this.buildOrderPayload()) !== JSON.stringify(payload)) {
+                    this.formErrors = ['The cart changed while calculating totals. Review it again.'];
+                    return null;
+                }
+                this.serverQuote = json.quote;
+                return json.quote;
+            } catch (error) {
+                this.formErrors = ['Could not fetch the order quote. Check your connection and retry.'];
+                return null;
+            } finally { this.quoting = false; }
+        },
+        async saveOrderData() {
+            this.formErrors = [];
+            if (!this.partyId) { this.formErrors.push('Please select a customer.'); return false; }
+            if (!this.warehouseId) { this.formErrors.push('Please select a warehouse.'); return false; }
+            if (!this.shippingAddressId) { this.formErrors.push('Please select a shipping address.'); return false; }
+            if (!this.sameAsShipping && !this.billingAddressId) { this.formErrors.push('Please select a billing address.'); return false; }
+            if (this.cart.length === 0) { this.formErrors.push('Cart is empty.'); return false; }
+            if (this.orderStatus === 'future_order' && !this.futureOrderDate) { this.formErrors.push('Please set future order date.'); return false; }
+
+            try {
+                const previousQuote = this.serverQuote?.quote_hash;
+                const quote = await this.fetchServerQuote();
+                if (!quote) return false;
+                if (!previousQuote || previousQuote !== quote.quote_hash) {
+                    this.formErrors = ['Please review the current server totals before saving. Prices or benefits may have changed.'];
+                    new bootstrap.Modal(document.getElementById('orderReviewModal')).show();
+                    return false;
+                }
+                const payload = { ...this.buildOrderPayload(), expected_quote: quote.quote_hash, expected_wallet_amount: quote.wallet_amount_used };
                 const url = this.editingOrderId ? `/orders/${this.editingOrderId}` : '/orders';
                 const res = await fetch(url, { 
                     method: this.editingOrderId ? 'PUT' : 'POST', 
@@ -5443,7 +5491,7 @@ mapOrder(o) {
             }
         },
         
-        openOrderReviewModal() {
+        async openOrderReviewModal() {
             this.formErrors = [];
             if (!this.partyId) { this.formErrors.push('Please select a customer.'); return; }
             if (this.cart.length === 0) { this.formErrors.push('Cart is empty.'); return; }
@@ -5468,6 +5516,7 @@ mapOrder(o) {
             }
             if (!this.warehouseId) { this.formErrors.push('Please select a warehouse.'); return; }
             
+            if (!await this.fetchServerQuote()) return;
             const modalEl = document.getElementById('orderReviewModal');
             if (modalEl) {
                 const modal = new bootstrap.Modal(modalEl);
@@ -5481,10 +5530,13 @@ mapOrder(o) {
                 const modal = bootstrap.Modal.getInstance(modalEl);
                 if (modal) modal.hide();
             }
-            await this.placeOrder();
+            if (this.isConfirmMode) await this.submitConfirmation();
+            else await this.placeOrder();
         },
 
         async placeOrder() {
+            const wasEditing = Boolean(this.editingOrderId);
+            if (this.placing) return;
             this.placing = true;
             try {
                 const isSaved = await this.saveOrderData();
@@ -5492,7 +5544,8 @@ mapOrder(o) {
                 
                 localStorage.removeItem(`ecommerce_create_order_cart_${this.partyId}`);
                 this.cart = [];
-                const successMsg = this.editingOrderId ? 'Order Updated!' : 'Order Placed!';
+                this.serverQuote = null;
+                const successMsg = wasEditing ? 'Order Updated!' : 'Order Placed!';
                 window.dispatchEvent(new CustomEvent('notify', { detail: { type: 'success', message: successMsg } }));
                 
                 // Clear the global order cache so old item quantities aren't artificially added to stock

@@ -11,7 +11,7 @@
             <p class="text-muted mb-0">Create BOGO deals and order-level discount offers</p>
         </div>
         <div class="d-flex gap-2">
-            <button class="btn btn-primary" @click="openModal()">
+            <button class="btn btn-primary" @click="openModal()" @cannot('promotions-create') hidden @endcannot>
                 <i class="bi bi-plus-lg me-2"></i>New Offer
             </button>
         </div>
@@ -81,6 +81,8 @@
         </div>
     </div>
 
+    <div class="alert alert-danger" role="alert" x-show="loadError" x-text="loadError" x-cloak></div>
+    <p class="small text-muted">Active/Inactive is the manual setting. Dates and usage limits determine whether a campaign can be redeemed.</p>
     <!-- Table -->
     <div class="card">
         <div class="card-header">
@@ -126,9 +128,9 @@
                         </span>
                     </div>
                     <div class="d-flex gap-2">
-                        <button class="btn btn-sm btn-success" x-show="offers.filter(o => selected.map(String).includes(String(o.id))).some(o => !o.is_active)" @click="bulkAction('activate')"><i class="bi bi-check-circle me-1"></i>Activate</button>
-                        <button class="btn btn-sm btn-warning" x-show="offers.filter(o => selected.map(String).includes(String(o.id))).some(o => o.is_active)" @click="bulkAction('deactivate')"><i class="bi bi-pause-circle me-1"></i>Deactivate</button>
-                        <button class="btn btn-sm btn-danger" @click="bulkAction('delete')"><i class="bi bi-trash me-1"></i>Delete</button>
+                        <button class="btn btn-sm btn-success" x-show="offers.filter(o => selected.map(String).includes(String(o.id))).some(o => !o.is_active)" @click="bulkAction('activate')" @cannot('promotions-edit') hidden @endcannot><i class="bi bi-check-circle me-1"></i>Activate</button>
+                        <button class="btn btn-sm btn-warning" x-show="offers.filter(o => selected.map(String).includes(String(o.id))).some(o => o.is_active)" @click="bulkAction('deactivate')" @cannot('promotions-edit') hidden @endcannot><i class="bi bi-pause-circle me-1"></i>Deactivate</button>
+                        <button class="btn btn-sm btn-danger" @click="bulkAction('delete')" @cannot('promotions-delete') hidden @endcannot><i class="bi bi-trash me-1"></i>Delete</button>
                         <button class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center justify-content-center px-2" @click="selected = []" title="Clear selection">
                             <i class="bi bi-x-lg" style="margin-left: 7px"></i>
                         </button>
@@ -262,7 +264,7 @@
                                         <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle" x-show="o.is_scheduled && !o.is_expired" x-cloak><i class="bi bi-calendar-event me-1"></i>Scheduled</span>
                                     <span class="badge rounded-pill px-3 py-2 fw-medium border cursor-pointer"
                                           :class="o.is_active ? 'bg-success-subtle text-success-emphasis border-success-subtle' : 'bg-secondary-subtle text-secondary-emphasis border-secondary-subtle'"
-                                          @click="toggleStatus(o)">
+                                          @click="toggleStatus(o)" @cannot('promotions-edit') hidden @endcannot>
                                         <span class="d-inline-block rounded-circle me-1" 
                                               :class="o.is_active ? 'bg-success' : 'bg-secondary'" 
                                               style="width: 6px; height: 6px; vertical-align: middle;"></span>
@@ -277,19 +279,19 @@
                                         </button>
                                         <ul class="dropdown-menu dropdown-menu-end">
                                             <li>
-                                                <a class="dropdown-item" href="#" @click.prevent="toggleStatus(o)">
+                                                <a class="dropdown-item" href="#" @click.prevent="toggleStatus(o)" @cannot('promotions-edit') hidden @endcannot>
                                                     <i class="bi me-2" :class="o.is_active ? 'bi-pause-circle text-warning' : 'bi-check-circle text-success'"></i>
                                                     <span x-text="o.is_active ? 'Deactivate' : 'Activate'"></span>
                                                 </a>
                                             </li>
                                             <li>
-                                                <a class="dropdown-item" href="#" @click.prevent="openModal(o)">
+                                                <a class="dropdown-item" href="#" @click.prevent="openModal(o)" @cannot('promotions-edit') hidden @endcannot>
                                                     <i class="bi bi-pencil me-2"></i>Edit
                                                 </a>
                                             </li>
                                             <li><hr class="dropdown-divider"></li>
                                             <li>
-                                                <a class="dropdown-item text-danger" href="#" @click.prevent="deleteOffer(o)">
+                                                <a class="dropdown-item text-danger" href="#" @click.prevent="deleteOffer(o)" @cannot('promotions-delete') hidden @endcannot>
                                                     <i class="bi bi-trash me-2"></i>Delete
                                                 </a>
                                             </li>
@@ -468,6 +470,18 @@
                                 </div>
                             </div>
 
+<div class="row g-3 mb-4">
+                                <div class="col-12"><input type="search" class="form-control" aria-label="Search targeting products" placeholder="Search products by name or SKU" @input.debounce.300ms="lookupProducts($event.target.value)"></div>
+                        <template x-for="field in ['excluded_products','excluded_categories']" :key="field">
+                                    <div class="col-md-6"><label class="form-label" x-text="field.replaceAll('_', ' ')"></label>
+                                        <select multiple class="form-select" x-model="form[field]" :aria-label="field.replaceAll('_', ' ')">
+                                            <template x-for="entry in (field.endsWith('products') ? allProducts : allCategories)" :key="entry.id">
+                                                <option :value="String(entry.id)" x-text="entry.name"></option>
+                                            </template>
+                                        </select><small class="text-muted">Excluded products never qualify.</small>
+                                    </div>
+                                </template>
+                            </div>
                             {{-- Card 3: Targeting & Scope --}}
                             <div class="card mb-4 border border-secondary border-opacity-25 shadow-sm rounded-4 bg-body-secondary position-relative" style="z-index: 20;">
                                 <div class="card-body p-4">
@@ -552,7 +566,7 @@
                                                     </template>
 
                                                     <div class="flex-grow-1" style="min-width: 150px;">
-                                                        <input x-ref="productSearch" type="text" x-model="productSearch" @focus="showProductsDropdown = true" placeholder="Search to add..." class="border-0 w-100 outline-none bg-transparent fw-semibold text-body" style="font-size: 14px; outline: none !important; box-shadow: none;">
+                                                        <input x-ref="productSearch" type="text" x-model="productSearch" @input.debounce.300ms="lookupProducts(productSearch)" @focus="showProductsDropdown = true" placeholder="Search to add..." class="border-0 w-100 outline-none bg-transparent fw-semibold text-body" style="font-size: 14px; outline: none !important; box-shadow: none;">
                                                     </div>
                                                 </div>
                                                 
@@ -592,7 +606,7 @@
                                                             </div>
                                                         </template>
                                                         <div class="flex-grow-1" style="min-width: 150px;">
-                                                            <input x-ref="giftProductSearch" type="text" x-model="giftProductSearch" @focus="showGiftProductDropdown = true" @keydown.escape="showGiftProductDropdown = false" placeholder="Search product name or SKU..." class="border-0 w-100 outline-none bg-transparent fw-semibold text-body" style="font-size: 14px; outline: none !important; box-shadow: none;">
+                                                            <input x-ref="giftProductSearch" type="text" x-model="giftProductSearch" @input.debounce.300ms="lookupProducts(giftProductSearch)" @focus="showGiftProductDropdown = true" @keydown.escape="showGiftProductDropdown = false" placeholder="Search product name or SKU..." class="border-0 w-100 outline-none bg-transparent fw-semibold text-body" style="font-size: 14px; outline: none !important; box-shadow: none;">
                                                         </div>
                                                     </div>
                                                     <div x-show="showGiftProductDropdown" x-transition.opacity class="position-absolute w-100 bg-body border border-secondary border-opacity-25 rounded-4 shadow-sm mt-2 overflow-auto" style="max-height: 350px; z-index: 1060; top: 100%; left: 0; display: none;">
@@ -627,7 +641,7 @@
                                     <div class="row g-4">
                                         <div class="col-md-4">
                                             <label class="form-label mb-2 fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.1em;">Starts At</label>
-                                            <input type="datetime-local" class="form-control form-control-lg fw-semibold rounded-3 bg-body border-secondary border-opacity-25 shadow-none px-3" x-model="form.starts_at" style="font-size: 14px;">
+                                            <input type="datetime-local" class="form-control form-control-lg fw-semibold rounded-3 bg-body border-secondary border-opacity-25 shadow-none px-3" x-model="form.starts_at" style="font-size: 14px;"><small class="text-muted">Timezone: {{ config('app.timezone') }}</small>
                                         </div>
                                         <div class="col-md-4">
                                             <label class="form-label mb-2 fw-bold text-muted text-uppercase" style="font-size: 10px; letter-spacing: 0.1em;">Ends At</label>
@@ -714,9 +728,9 @@ function offersModule() {
         showGiftProductDropdown: false, giftProductSearch: '',
         offers: [], loading: false, saving: false,
         search: '', filterType: '', filterStatus: 'active', page: 1, lastPage: 1,
-        total: 0, from: 0, to: 0, _fetchRequestId: 0,
+        total: 0, from: 0, to: 0, _fetchRequestId: 0, loadError: '',
         selected: [], stats: { total: 0, active: 0, expired: 0, scheduled: 0, bogo: 0, order_discount: 0 },
-        form: { id: null, name: '', type: 'order_discount', discount_type: 'percentage', display_discount_type: 'percentage', value: '', min_spend: '', max_discount: '', cashback_type: 'none', cashback_val: '', product_ids: [], product_id: '', applicable_categories: [], buy_qty: 1, get_qty: 1, starts_at: '', ends_at: '', priority: 0, is_active: true },
+        form: { excluded_products: [], excluded_categories: [], id: null, name: '', type: 'order_discount', discount_type: 'percentage', display_discount_type: 'percentage', value: '', min_spend: '', max_discount: '', cashback_type: 'none', cashback_val: '', product_ids: [], product_id: '', applicable_categories: [], buy_qty: 1, get_qty: 1, starts_at: '', ends_at: '', priority: 0, is_active: true },
         formError: null,
 
         generateDescription(o) {
@@ -772,6 +786,26 @@ function offersModule() {
             }
         },
 
+        localDateTime(value) {
+            const parts = new Intl.DateTimeFormat('sv-SE', { timeZone: @json(config('app.timezone')), year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', hourCycle:'h23' }).formatToParts(new Date(value));
+            const part = type => parts.find(p => p.type === type)?.value;
+            return `${part('year')}-${part('month')}-${part('day')}T${part('hour')}:${part('minute')}`;
+        },
+        _productRequestId: 0,
+        async lookupProducts(search = '') {
+            const requestId = ++this._productRequestId;
+            const selected = [...(this.form.product_ids || []), ...(this.form.excluded_products || []), this.form.product_id];
+            const params = new URLSearchParams({search});
+            [...new Set(selected.filter(Boolean).map(String))].forEach(id => params.append('ids[]', id));
+            try {
+                const res = await fetch(`/api/promotions/product-options?${params}`, {headers:{'Accept':'application/json'}});
+                if (!res.ok) throw new Error(`Could not search products (${res.status}).`);
+                const json = await res.json();
+                if (requestId === this._productRequestId) this.allProducts = json.data || [];
+            } catch (error) {
+                if (requestId === this._productRequestId) this.formError = error.message;
+            }
+        },
         async init() { await this.fetchOffers(); },
 
         applyFilters() {
@@ -789,7 +823,7 @@ function offersModule() {
 
         async fetchOffers() {
             const requestId = ++this._fetchRequestId;
-            this.loading = true;
+            this.loading = true; this.loadError = '';
             try {
                 const params = new URLSearchParams({ search: this.search, type: this.filterType, status: this.filterStatus, per_page: 15, page: this.page });
                 const res = await fetch(`/api/promotions/offers?${params}`, { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
@@ -820,7 +854,7 @@ function offersModule() {
                     this.stats.order_discount = this.offers.filter(o => o.type === 'order_discount').length;
                 }
             } catch (e) {
-                if (requestId === this._fetchRequestId) console.error(e);
+                if (requestId === this._fetchRequestId) this.loadError = e.message || 'Could not load promotions. Please retry.';
             } finally {
                 if (requestId === this._fetchRequestId) this.loading = false;
             }
@@ -850,10 +884,11 @@ function offersModule() {
                     dType = 'none';
                 }
 
-                this.form = { id: o.id, name: o.name, type: o.type, discount_type: o.discount_type, display_discount_type: dType, value: o.value, min_spend: o.min_spend || '', max_discount: o.max_discount || '', cashback_type: cType, cashback_val: cVal, product_ids: this.parseIdArray(o.applicable_products), product_id: o.type === 'free_product' && o.product_id ? String(o.product_id) : '', applicable_categories: this.parseIdArray(o.applicable_categories), buy_qty: o.buy_qty || 1, get_qty: o.get_qty || 1, starts_at: o.starts_at ? o.starts_at.substring(0,16) : '', ends_at: o.ends_at ? o.ends_at.substring(0,16) : '', priority: o.priority || 0, is_active: o.is_active };
+                this.form = { excluded_products: this.parseIdArray(o.excluded_products).map(String), excluded_categories: this.parseIdArray(o.excluded_categories).map(String), id: o.id, name: o.name, type: o.type, discount_type: o.discount_type, display_discount_type: dType, value: o.value, min_spend: o.min_spend || '', max_discount: o.max_discount || '', cashback_type: cType, cashback_val: cVal, product_ids: this.parseIdArray(o.applicable_products), product_id: o.type === 'free_product' && o.product_id ? String(o.product_id) : '', applicable_categories: this.parseIdArray(o.applicable_categories), buy_qty: o.buy_qty || 1, get_qty: o.get_qty || 1, starts_at: o.starts_at ? this.localDateTime(o.starts_at) : '', ends_at: o.ends_at ? this.localDateTime(o.ends_at) : '', priority: o.priority || 0, is_active: o.is_active };
             } else {
-                this.form = { id: null, name: '', type: 'order_discount', discount_type: 'percentage', display_discount_type: 'percentage', value: '', min_spend: '', max_discount: '', cashback_type: 'none', cashback_val: '', product_ids: [], product_id: '', applicable_categories: [], buy_qty: 1, get_qty: 1, starts_at: '', ends_at: '', priority: 0, is_active: true };
+                this.form = { excluded_products: [], excluded_categories: [], id: null, name: '', type: 'order_discount', discount_type: 'percentage', display_discount_type: 'percentage', value: '', min_spend: '', max_discount: '', cashback_type: 'none', cashback_val: '', product_ids: [], product_id: '', applicable_categories: [], buy_qty: 1, get_qty: 1, starts_at: '', ends_at: '', priority: 0, is_active: true };
             }
+            this.lookupProducts();
             new bootstrap.Modal(document.getElementById('offerModal')).show();
         },
 
@@ -908,8 +943,16 @@ function offersModule() {
 
         async deleteOffer(o) {
             if (!confirm(`Delete offer "${o.name}"?`)) return;
-            await fetch(`/api/promotions/offers/${o.id}`, { method: 'DELETE', headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, 'Accept': 'application/json' } });
-            this.fetchOffers();
+            try {
+                const res = await fetch(`/api/promotions/offers/${o.id}`, { method: 'DELETE', headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, 'Accept': 'application/json' } });
+                if (!res.ok) {
+                    const error = await res.json().catch(() => ({}));
+                    throw new Error(error.message || `Could not delete promotion (${res.status}).`);
+                }
+                await this.fetchOffers();
+            } catch (error) {
+                this.loadError = error.message || 'Network error. Please retry.';
+            }
         },
 
         toggleAll(e) { this.selected = e.target.checked ? this.offers.map(o => o.id) : []; },

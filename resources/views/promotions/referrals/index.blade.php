@@ -11,7 +11,7 @@
             <p class="text-muted mb-0">Manage tiered and time-based referral campaigns</p>
         </div>
         <div class="d-flex gap-2">
-            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createProgramModal">
+            <button @cannot('promotions-create') hidden @endcannot class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createProgramModal">
                 <i class="bi bi-plus-lg me-2"></i>New Program
             </button>
         </div>
@@ -34,6 +34,7 @@
         </div>
     @endif
 
+    <div class="alert alert-danger" role="alert" x-show="productError" x-text="productError" x-cloak></div>
     <!-- Stats Row -->
     <div class="row g-4 g-lg-5 g-xl-6 mb-5 mb-lg-5 mb-xl-6">
         <div class="col-xl-3 col-lg-6">
@@ -131,9 +132,9 @@
                         </span>
                     </div>
                     <div class="d-flex gap-2">
-                        <button class="btn btn-sm btn-success" x-show="programs.filter(p => selected.map(String).includes(String(p.id))).some(p => !p.is_active)" @click="bulkAction('activate')"><i class="bi bi-check-circle me-1"></i>Activate (First only)</button>
-                        <button class="btn btn-sm btn-warning" x-show="programs.filter(p => selected.map(String).includes(String(p.id))).some(p => p.is_active)" @click="bulkAction('deactivate')"><i class="bi bi-pause-circle me-1"></i>Deactivate</button>
-                        <button class="btn btn-sm btn-danger" @click="bulkAction('delete')"><i class="bi bi-trash me-1"></i>Delete</button>
+                        <button class="btn btn-sm btn-success" x-show="programs.filter(p => selected.map(String).includes(String(p.id))).some(p => !p.is_active)" @click="bulkAction('activate')" @cannot('promotions-edit') hidden @endcannot><i class="bi bi-check-circle me-1"></i>Activate (First only)</button>
+                        <button class="btn btn-sm btn-warning" x-show="programs.filter(p => selected.map(String).includes(String(p.id))).some(p => p.is_active)" @click="bulkAction('deactivate')" @cannot('promotions-edit') hidden @endcannot><i class="bi bi-pause-circle me-1"></i>Deactivate</button>
+                        <button class="btn btn-sm btn-danger" @click="bulkAction('delete')" @cannot('promotions-delete') hidden @endcannot><i class="bi bi-trash me-1"></i>Delete</button>
                         <button class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center justify-content-center px-2" @click="selected = []" title="Clear selection">
                             <i class="bi bi-x-lg" style="margin-left: 7px"></i>
                         </button>
@@ -190,13 +191,13 @@
                                     </div>
                                 </td>
                                 <td>
-                                    <form action="{{ route('referrals.programs.toggle', $program->id) }}" method="POST" class="d-inline m-0 p-0">
+                                    <form @cannot('promotions-edit') hidden @endcannot action="{{ route('referrals.programs.toggle', $program->id) }}" method="POST" class="d-inline m-0 p-0">
                                         @csrf
                                         @method('PATCH')
-                                        <span class="badge rounded-pill px-3 py-2 fw-medium border cursor-pointer custom-hover-opacity {{ $program->is_active ? 'bg-success-subtle text-success-emphasis border-success-subtle' : 'bg-secondary-subtle text-secondary-emphasis border-secondary-subtle' }}" onclick="this.closest('form').submit()" title="Click to toggle status">
+                                        <button type="submit" class="badge rounded-pill px-3 py-2 fw-medium border cursor-pointer custom-hover-opacity {{ $program->is_active ? 'bg-success-subtle text-success-emphasis border-success-subtle' : 'bg-secondary-subtle text-secondary-emphasis border-secondary-subtle' }}" title="Click to toggle status">
                                             <span class="d-inline-block rounded-circle me-1 {{ $program->is_active ? 'bg-success' : 'bg-secondary' }}" style="width: 6px; height: 6px; vertical-align: middle;"></span>
                                             {{ $program->is_active ? 'Active' : 'Inactive' }}
-                                        </span>
+                                        </button>
                                     </form>
                                 </td>
                                 <td>
@@ -222,13 +223,13 @@
                                         </button>
                                         <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
                                             <li>
-                                                <a class="dropdown-item" href="#" @click.prevent="editProgram(@js($program))">
+                                                <a class="dropdown-item" href="#" @cannot('promotions-edit') hidden @endcannot @click.prevent="editProgram(@js($program))">
                                                     <i class="bi bi-pencil me-2"></i>Edit
                                                 </a>
                                             </li>
                                             <li><hr class="dropdown-divider"></li>
                                             <li>
-                                                <form action="{{ route('referrals.programs.destroy', $program->id) }}" method="POST">
+                                                <form @cannot('promotions-delete') hidden @endcannot action="{{ route('referrals.programs.destroy', $program->id) }}" method="POST">
                                                     @csrf
                                                     @method('DELETE')
                                                     <button type="submit" class="dropdown-item text-danger" onclick="return confirm('Are you sure you want to delete this program?');">
@@ -255,6 +256,7 @@
     </div>
 
     <!-- Create Modal Glossy Style -->
+    {{ $pagination->links() }}
     <div class="modal fade" id="createProgramModal" tabindex="-1" aria-labelledby="createProgramModalLabel" aria-hidden="true" @hidden.bs.modal="resetForm()">
         <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
             <div class="modal-content shadow-lg rounded-4 bg-body">
@@ -275,6 +277,7 @@
 
                 <form :action="form.id ? `{{ url('/promotions/referral-programs') }}/${form.id}` : `{{ route('referrals.programs.store') }}`" method="POST">
                     @csrf
+                    <input type="hidden" name="program_id" :value="form.id || ''">
                     <input type="hidden" name="_method" :value="form.id ? 'PUT' : 'POST'">
                     <div class="modal-body p-4 p-md-5 pt-4">
                         
@@ -360,7 +363,7 @@
                                                             <span x-text="milestone.reward_type === 'product' ? 'Select Free Product' : 'Value (Amount)'"></span>
                                                         </label>
                                                         
-                                                        <input type="number" x-show="milestone.reward_type !== 'product'" x-model="milestone.reward_value" :name="milestone.reward_type !== 'product' ? `milestones[${index}][reward_value]` : ''" class="form-control fw-semibold border-secondary border-opacity-25 shadow-none" :required="milestone.reward_type !== 'product'" style="font-size: 13px;" :placeholder="milestone.reward_type === 'wallet' ? 'Enter Wallet Rs' : 'Enter Discount Rs'">
+                                                        <input type="number" min="0" step="0.01" x-show="milestone.reward_type !== 'product'" x-model="milestone.reward_value" :name="milestone.reward_type !== 'product' ? `milestones[${index}][reward_value]` : ''" class="form-control fw-semibold border-secondary border-opacity-25 shadow-none" :required="milestone.reward_type !== 'product'" style="font-size: 13px;" :placeholder="milestone.reward_type === 'wallet' ? 'Enter Wallet Rs' : 'Enter Discount Rs'">
                                                         
                                                         <div x-show="milestone.reward_type === 'product'" x-data="{ open: false, search: '', openUp: false }" class="position-relative" @click.away="open = false">
                                                             <input type="hidden" :name="milestone.reward_type === 'product' ? `milestones[${index}][reward_value]` : ''" :value="milestone.reward_value">
@@ -373,7 +376,7 @@
                                                             <div x-show="open" class="position-absolute w-100 bg-body border border-secondary border-opacity-25 rounded-3 shadow-lg overflow-hidden" :class="openUp ? 'mb-1' : 'mt-1'" :style="openUp ? 'display: none; z-index: 1050; bottom: 100%; left: 0;' : 'display: none; z-index: 1050; top: 100%; left: 0;'" role="listbox">
                                                                 <div class="p-2 bg-body-tertiary border-bottom border-secondary border-opacity-25">
                                                                     <div class="position-relative">
-                                                                        <input type="text" x-model="search" class="form-control form-control-sm border-secondary border-opacity-25 shadow-none pe-4" placeholder="Search product name or SKU..." @click.stop x-ref="searchInput" x-init="$watch('open', val => { if(val) setTimeout(() => $refs.searchInput.focus(), 50) })">
+                                                                        <input type="text" x-model="search" @input.debounce.300ms="lookupProducts(search)" class="form-control form-control-sm border-secondary border-opacity-25 shadow-none pe-4" placeholder="Search product name or SKU..." @click.stop x-ref="searchInput" x-init="$watch('open', val => { if(val) setTimeout(() => $refs.searchInput.focus(), 50) })">
                                                                         <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-2 text-muted" style="font-size: 10px;"></i>
                                                                     </div>
                                                                 </div>
@@ -531,12 +534,38 @@ function viewReferralDetails(mCount) {
                     if (res.ok) {
                         window.location.reload();
                     } else {
-                        alert('An error occurred while performing bulk action.');
+                        const error = await res.json().catch(() => ({}));
+                        alert(Object.values(error.errors || {}).flat().join(' ') || error.message || `Request failed (${res.status}).`);
                     }
                 } catch (e) {
                     alert('Network error.');
                 }
             },
+            init() {
+                const old = @json(session()->getOldInput());
+                if (Object.keys(old).length && old.milestones) {
+                    this.form = { id: old.program_id || null, name: old.name || '', start_date: old.start_date || '', end_date: old.end_date || '', is_active: String(old.is_active || '0') === '1' };
+                    this.milestones = Object.values(old.milestones);
+                    this.lookupProducts();
+                    this.$nextTick(() => new bootstrap.Modal(document.getElementById('createProgramModal')).show());
+                }
+            },
+        _productRequestId: 0,
+        async lookupProducts(search = '') {
+            const requestId = ++this._productRequestId;
+            const selected = this.milestones.filter(m => m.reward_type === 'product').map(m => m.reward_value);
+            const params = new URLSearchParams({search});
+            [...new Set(selected.filter(Boolean).map(String))].forEach(id => params.append('ids[]', id));
+            try {
+                const res = await fetch(`/api/promotions/product-options?${params}`, {headers:{'Accept':'application/json'}});
+                if (!res.ok) throw new Error(`Could not search products (${res.status}).`);
+                const json = await res.json();
+                if (requestId === this._productRequestId) this.allProducts = json.data || [];
+            } catch (error) {
+                if (requestId === this._productRequestId) this.productError = error.message;
+            }
+        },
+            productError: '',
             form: { id: null, name: '', start_date: '', end_date: '', is_active: true },
             milestones: [
                 { required_referrals: 0, reward_type: 'wallet', reward_value: '100' }
@@ -566,6 +595,7 @@ function viewReferralDetails(mCount) {
                     this.addMilestone();
                 }
 
+                this.lookupProducts();
                 new bootstrap.Modal(document.getElementById('createProgramModal')).show();
             },
             addMilestone() {

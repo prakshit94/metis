@@ -5,6 +5,10 @@ root=pathlib.Path(__file__).resolve().parents[3]
 backup=pathlib.Path('/home/user/dumps/metis120261029.sql')
 out=pathlib.Path(__file__).resolve().parent
 previous_audit=json.loads((out/'schema-audit.json').read_text()) if (out/'schema-audit.json').exists() else {}
+# A dated schema snapshot must never be combined with a different migration set.
+current_hashes={p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted((root/'database/migrations').glob('*.php'))}
+if previous_audit.get('migration_hashes') != current_hashes:
+    raise SystemExit('Migration sources differ from the dated schema audit. Re-audit the target schema and backup before regenerating the import; no artifacts were changed.')
 configured_staging=os.environ.get('METIS_IMPORT_STAGING_DATABASE',previous_audit.get('staging_database','metis_transition_backup_20261029'))
 source={};active=None; block=[]
 for line in backup.open():

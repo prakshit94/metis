@@ -23,7 +23,7 @@ class ReferralProgram extends Model implements Auditable
 
     public function milestones()
     {
-        return $this->hasMany(ReferralProgramMilestone::class);
+        return $this->hasMany(ReferralProgramMilestone::class)->whereNull('retired_at')->orderBy('required_referrals');
     }
 
     public function getActivitylogOptions(): LogOptions

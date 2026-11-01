@@ -13,7 +13,7 @@ class ReferralProgramMilestone extends Model implements Auditable
     use LogsActivity;
     use AuditableTrait;
 
-    protected $fillable = ['referral_program_id', 'required_referrals', 'reward_type', 'reward_value'];
+    protected $fillable = ['referral_program_id', 'required_referrals', 'reward_type', 'reward_value', 'retired_at'];
 
     public function program()
     {

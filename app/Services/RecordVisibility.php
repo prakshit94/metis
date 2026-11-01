@@ -48,6 +48,20 @@ class RecordVisibility
         return $query;
     }
 
+    /** Match the customer directory's existing ownership and state rules. */
+    public function customers(Builder $query, ?User $user): Builder
+    {
+        if (! $user) return $query->whereRaw('1 = 0');
+        $global = $user->hasAnyRole(['Super Admin', 'Admin']) || $user->can('view-all-data') || $user->can('view_all_customer');
+        return $query->when(! $global, fn ($q) => $q->where('created_by', $user->id))
+            ->when($user->lob_state_name, fn ($q, $state) => $q->whereHas('addresses', fn ($address) => $address->where('state', $state)->where('is_default', true)));
+    }
+
+    public function assertCustomer(int $id): void
+    {
+        abort_unless($this->customers(\App\Modules\Customers\Models\Party::query(), auth()->user())->whereKey($id)->exists(), 404);
+    }
+
     public function assertOrder(int $id): void
     {
         abort_unless($this->orders($this->globalViewer() ? Order::withTrashed() : Order::query(), auth()->user())->whereKey($id)->exists(), 404);

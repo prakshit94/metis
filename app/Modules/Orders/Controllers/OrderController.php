@@ -46,14 +46,14 @@ class OrderController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:orders.create', only: ['create']),
+            new Middleware('permission:orders.create|orders.edit', only: ['create']),
             new Middleware('permission:orders.deliver', only: ['importBulkDeliverTemplate']),
             new Middleware('permission:orders.return', only: ['importBulkReturnTemplate']),
             new Middleware('permission:orders.shipping_label', only: ['downloadShippingLabel']),
             new Middleware(EnsureRecordVisibility::class),
             new Middleware('permission:orders.view', only: ['index', 'show']),
-            new Middleware('permission:orders.create', only: ['store', 'preview', 'bulkImport']),
-            new Middleware('permission:orders.create|orders.edit', only: ['nearbySellingInsights']),
+            new Middleware('permission:orders.create', only: ['store', 'bulkImport']),
+            new Middleware('permission:orders.create|orders.edit', only: ['nearbySellingInsights', 'preview']),
             new Middleware('permission:orders.edit', only: ['edit', 'update']),
             new Middleware('permission:orders.delete', only: ['destroy']),
             new Middleware('permission:orders.confirm', only: ['confirm']),
@@ -803,6 +803,11 @@ class OrderController extends Controller implements HasMiddleware
         ));
     }
 
+    private function visibleCustomers(): \Illuminate\Database\Eloquent\Builder
+    {
+        return app(RecordVisibility::class)->customers(Party::query(), auth()->user());
+    }
+
     public function create()
     {
         $requiredPermission = request()->filled('order_id') ? 'orders.edit' : 'orders.create';
@@ -816,20 +821,13 @@ class OrderController extends Controller implements HasMiddleware
             ->get();
 
         $activeOffers = Offer::with('product')->active()->orderByDesc('priority')->orderBy('id')->get();
-        $activeCoupons = Coupon::active()
-            ->where(function ($query) {
-                $query->whereNull('usage_limit')
-                    ->orWhere('usage_limit', 0)
-                    ->orWhereColumn('used_count', '<', 'usage_limit');
-            })
-            ->get();
         $categories = Category::whereNull('parent_id')->with('children')->orderBy('name')->get();
         $initialCustomer = null;
         $initialOrder = null;
         $initialCoupon = null;
 
         if (request()->filled('customer_id')) {
-            $initialCustomer = Party::with([
+            $initialCustomer = $this->visibleCustomers()->with([
                 'addresses.village.services',
                 'referrals:id,firstname,lastname,phone,referred_by',
                 'referrals.addresses' => function ($q) {
@@ -847,6 +845,7 @@ class OrderController extends Controller implements HasMiddleware
                     $q->latest()->limit(15)->with(['agent', 'tagL1', 'tagL2', 'tagL3', 'metas']);
                 },
                 'orders' => function ($q) {
+                    app(RecordVisibility::class)->orders($q instanceof \Illuminate\Database\Eloquent\Builder ? $q : $q->getQuery(), auth()->user());
                     $q->latest()->limit(10)->withCount(['complaints', 'complaints as open_complaints_count' => function ($q) {
                         $q->whereIn('status', ['open', 'in_progress']);
                     }])->with([
@@ -878,14 +877,11 @@ class OrderController extends Controller implements HasMiddleware
                     $q->whereNotIn('status', ['resolved', 'closed']);
                 },
                 'orders' => function ($q) {
-                    $q->where('status', '!=', 'future_order');
+                    app(RecordVisibility::class)->orders($q, auth()->user())->where('status', '!=', 'future_order');
                 },
             ])->find(request()->integer('customer_id'));
 
-            if ($initialCustomer && empty($initialCustomer->referral_code)) {
-                $initialCustomer->referral_code = strtoupper(Str::random(8));
-                $initialCustomer->saveQuietly();
-            }
+
         }
 
         if (request()->filled('order_id')) {
@@ -959,7 +955,7 @@ class OrderController extends Controller implements HasMiddleware
             }
 
             if ($initialOrder && ! $initialCustomer) {
-                $initialCustomer = Party::with([
+                $initialCustomer = $this->visibleCustomers()->with([
                     'addresses.village.services',
                     'referrals:id,firstname,lastname,phone,referred_by',
                     'referrals.addresses' => function ($q) {
@@ -974,6 +970,7 @@ class OrderController extends Controller implements HasMiddleware
                         ]);
                     },
                     'orders' => function ($q) {
+                    app(RecordVisibility::class)->orders($q instanceof \Illuminate\Database\Eloquent\Builder ? $q : $q->getQuery(), auth()->user());
                         $q->latest()->limit(10)->withCount(['complaints', 'complaints as open_complaints_count' => function ($q) {
                             $q->whereIn('status', ['open', 'in_progress']);
                         }])->with([
@@ -1005,7 +1002,8 @@ class OrderController extends Controller implements HasMiddleware
                         $q->whereNotIn('status', ['resolved', 'closed']);
                     },
                     'orders' => function ($q) {
-                        $q->where('status', '!=', 'future_order');
+                    app(RecordVisibility::class)->orders($q instanceof \Illuminate\Database\Eloquent\Builder ? $q : $q->getQuery(), auth()->user());
+                        app(RecordVisibility::class)->orders($q, auth()->user())->where('status', '!=', 'future_order');
                     },
                 ])->find($initialOrder->party_id);
             }
@@ -1029,6 +1027,15 @@ class OrderController extends Controller implements HasMiddleware
             }
             $initialCustomer->setAttribute('calculated_outstanding', (float) $due);
         }
+
+        $activeCoupons = Coupon::active()->where('type', '!=', 'free_shipping')
+            ->where(fn ($q) => $q->whereNull('recipient_party_id')->orWhere('recipient_party_id', ($initialCustomer?->id ?? 0)))
+            ->where(function ($query) {
+                $query->whereNull('usage_limit')
+                    ->orWhere('usage_limit', 0)
+                    ->orWhereColumn('used_count', '<', 'usage_limit');
+            })
+            ->get();
 
         if (request()->is('api/*')) {
             return response()->json(compact('warehouses', 'activeOffers', 'activeCoupons', 'categories', 'initialCustomer', 'initialOrder', 'initialCoupon', 'rescheduleReasons', 'cancelReasons'));
@@ -1285,7 +1292,21 @@ class OrderController extends Controller implements HasMiddleware
     public function preview(StoreOrderRequest $request, OrderService $orderService)
     {
         $quote = DB::transaction(function () use ($request, $orderService) {
-            return $orderService->recalculateAndValidate($request->validated());
+            $data = $request->validated();
+            if ($data['type'] === 'sale') app(RecordVisibility::class)->assertCustomer((int) $data['party_id']);
+            $order = ! empty($data['order_id']) ? Order::findOrFail($data['order_id']) : null;
+            abort_unless($request->user()?->can($order ? 'orders.edit' : 'orders.create'), 403);
+            if ($order) {
+                app(RecordVisibility::class)->assertOrder($order->id);
+                abort_unless((int) $order->party_id === (int) $data['party_id'], 422);
+            }
+            $quote = $orderService->recalculateAndValidate($data, $order?->coupon_code, $order !== null, $order?->selected_offer_id ?: $order?->applied_offer_id);
+            $availableWallet = (float) Party::whereKey($data['party_id'])->value('wallet_balance') + (float) ($order?->wallet_amount_used ?? 0);
+            $quote['quote_hash'] = hash('sha256', json_encode($quote));
+            $quote['wallet_amount_used'] = ! empty($data['use_wallet_balance']) ? min($quote['grand_total'], max(0, $availableWallet)) : 0;
+            $quote['payable'] = $quote['grand_total'] - $quote['wallet_amount_used'];
+            $quote['wallet_balance_after'] = max(0, $availableWallet - $quote['wallet_amount_used']);
+            return $quote;
         }, 3);
 
         return response()->json([
@@ -1310,6 +1331,7 @@ class OrderController extends Controller implements HasMiddleware
         // held until the new order and usage counters commit.
         $order = DB::transaction(function () use ($request, $orderService) {
             $validated = $request->validated();
+            if ($validated['type'] === 'sale') app(RecordVisibility::class)->assertCustomer((int) $validated['party_id']);
 
             $calc = $orderService->recalculateAndValidate($validated);
             $validated['items'] = $calc['items'];
@@ -1331,6 +1353,7 @@ class OrderController extends Controller implements HasMiddleware
                 'success' => true,
                 'message' => 'Order created successfully.',
                 'order' => $order,
+                'data' => $order,
             ]);
         }
 
@@ -1417,7 +1440,8 @@ class OrderController extends Controller implements HasMiddleware
 
         $activeOffers = Offer::active()->orderByDesc('priority')->get();
         $this->includeSavedInactiveOffer($activeOffers, $order);
-        $activeCoupons = Coupon::active()
+        $activeCoupons = Coupon::active()->where('type', '!=', 'free_shipping')
+            ->where(fn ($q) => $q->whereNull('recipient_party_id')->orWhere('recipient_party_id', $order->party_id))
             ->where(function ($query) {
                 $query->whereNull('usage_limit')
                     ->orWhere('usage_limit', 0)

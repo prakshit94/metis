@@ -1299,6 +1299,16 @@ class InventoryService
                                 $milestonesToReward = array_filter([$baseMilestone, $specificMilestone]);
 
                                 foreach ($milestonesToReward as $milestone) {
+                                    $prior = DB::table('referral_rewards')->where('referrer_id', $referrer->id)
+                                        ->where('referral_program_id', $activeProgram->id)->where('status', '!=', 'revoked');
+                                    if ((int) $milestone->required_referrals === 0) {
+                                        $prior->where('referred_id', $party->id)->where('referral_threshold', 0);
+                                    } else {
+                                        $prior->where('referral_threshold', $milestone->required_referrals);
+                                    }
+                                    if ($prior->exists()) continue;
+                                    $entitlementKey = $referrer->id.':'.$activeProgram->id.':'.$milestone->required_referrals
+                                        .((int) $milestone->required_referrals === 0 ? ':'.$party->id : '');
                                     $rewardAmount = $milestone->reward_type === 'wallet' ? (float) $milestone->reward_value : 0;
 
                                     // Insert reward record first as 'pending' to allow atomic wallet update
@@ -1308,6 +1318,8 @@ class InventoryService
                                         'order_id' => $order->id,
                                         'referral_program_id' => $activeProgram->id,
                                         'milestone_id' => $milestone->id,
+                                        'referral_threshold' => $milestone->required_referrals,
+                                        'entitlement_key' => $entitlementKey,
                                         'reward_type' => $milestone->reward_type,
                                         'reward_amount' => $rewardAmount,
                                         'reward_value' => $milestone->reward_type !== 'wallet' ? $milestone->reward_value : null,
@@ -1337,6 +1349,7 @@ class InventoryService
                                         $couponCode = 'REF-'.strtoupper(Str::random(8));
                                         Coupon::create([
                                             'code' => $couponCode,
+                                            'recipient_party_id' => $referrer->id,
                                             'type' => 'fixed',
                                             'value' => (float) $milestone->reward_value,
                                             'usage_limit' => 1,
@@ -1352,11 +1365,13 @@ class InventoryService
                                         $couponCode = 'GIFT-'.strtoupper(Str::random(8));
                                         Coupon::create([
                                             'code' => $couponCode,
-                                            'type' => 'percentage',
-                                            'value' => 100.00,
+                                            'recipient_party_id' => $referrer->id,
+                                            'type' => 'free_product',
+                                            'value' => 0,
+                                            'free_product_id' => (int) $milestone->reward_value,
+                                            'free_qty' => 1,
                                             'usage_limit' => 1,
                                             'expiry_date' => now()->addMonths(6),
-                                            'applicable_products' => [$milestone->reward_value],
                                             'is_active' => true,
                                             'status' => 'active',
                                         ]);
@@ -1551,13 +1566,15 @@ class InventoryService
                 $referrer = Party::whereKey($reward->referrer_id)->lockForUpdate()->first();
                 if ($referrer) {
                     $balanceBefore = (float) $referrer->wallet_balance;
-                    $balanceAfter = max(0, $balanceBefore - $reward->reward_amount);
+                    $actualDebit = min(max(0, $balanceBefore), (float) $reward->reward_amount);
+                    $balanceAfter = $balanceBefore - $actualDebit;
+                    DB::table('referral_rewards')->where('id', $reward->id)->update(['recovery_due' => (float) $reward->reward_amount - $actualDebit]);
                     $referrer->wallet_balance = $balanceAfter;
                     $referrer->save();
 
                     WalletTransaction::create([
                         'party_id' => $referrer->id,
-                        'amount' => $reward->reward_amount,
+                        'amount' => $actualDebit,
                         'type' => 'debit',
                         'reference_type' => 'referral_revoked',
                         'reference_id' => $reward->id,
@@ -1579,6 +1596,7 @@ class InventoryService
 
             DB::table('referral_rewards')->where('id', $reward->id)->update([
                 'status' => 'revoked',
+                'entitlement_key' => null,
                 'updated_at' => now(),
             ]);
         }

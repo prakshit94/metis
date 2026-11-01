@@ -338,7 +338,11 @@ class CustomerController extends Controller implements HasMiddleware
      */
     public function show(Request $request, int|string $customer)
     {
+        $user = $request->user();
+        $global = $user && ($user->hasAnyRole(['Super Admin', 'Admin']) || $user->can('view-all-data') || $user->can('view_all_customer'));
         $customer = Customer::withTrashed()
+            ->when(! $global, fn ($query) => $query->where('created_by', $user?->id))
+            ->when($user?->lob_state_name, fn ($query, $state) => $query->whereHas('addresses', fn ($address) => $address->where('state', $state)->where('is_default', true)))
             ->withCount([
                 'referrals as total_farmers_referred',
                 'referredOrders as total_referred_orders_placed',
@@ -350,6 +354,7 @@ class CustomerController extends Controller implements HasMiddleware
                     $q->whereNotIn('status', ['resolved', 'closed']);
                 },
                 'orders' => function ($q) {
+                    app(\App\Services\RecordVisibility::class)->orders($q, auth()->user());
                     $q->where('status', '!=', 'future_order');
                 },
             ])
@@ -368,6 +373,7 @@ class CustomerController extends Controller implements HasMiddleware
                     ]);
                 },
                 'orders' => function ($q) {
+                    app(\App\Services\RecordVisibility::class)->orders($q instanceof \Illuminate\Database\Eloquent\Builder ? $q : $q->getQuery(), auth()->user());
                     $q->latest()->limit(10)->withCount(['complaints', 'complaints as open_complaints_count' => function ($q) {
                         $q->whereIn('status', ['open', 'in_progress']);
                     }])->with([
@@ -419,7 +425,7 @@ class CustomerController extends Controller implements HasMiddleware
             ->orderBy('id')
             ->get();
 
-        $activeCoupons = Coupon::where('is_active', true)->get();
+        $activeCoupons = Coupon::active()->where('type', '!=', 'free_shipping')->where(fn ($query) => $query->whereNull('recipient_party_id')->orWhere('recipient_party_id', $customer->id))->get();
 
         // Dynamic database parameters
         $crops = Crop::where('is_active', true)->get(['name']);

@@ -143,3 +143,15 @@ Run `php tests/regression/awb_log_search.php` with the isolated MySQL socket abo
 for office-scoped AWB log search, order/partial-barcode matching, literal wildcard
 handling, historical orders and bounded pagination. Fixtures are disposable and
 no carrier calls or production updates are made.
+
+Promotion and order entry regression checks:
+
+```sh
+METIS_TEST_MYSQL_SOCKET=/path/to/disposable/mysql.sock php tests/regression/promotions_orders.php
+```
+
+This creates and drops a random disposable schema. It checks pricing, gifts,
+recipient restrictions, sparse edits, activation concurrency, wallet rollback,
+order edit entry points, in-memory Blade rendering and migration repairs.
+The existing `concurrency_worker.php` also supports referral activation checks. Tests are
+excluded from production packages; the broader suite remains `audit_fixes.php`.

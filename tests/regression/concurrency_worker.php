@@ -28,6 +28,7 @@ if (isset($args['barrier'])) {
 }
 try {
     $result = match ($mode) {
+        'referral-activation' => app(\App\Http\Controllers\ReferralProgramController::class)->toggle($args['program'])->getStatusCode(),
         'sequence' => app(BusinessSequence::class)->next('concurrent-test', fn () => 0),
         'awb' => (new ReflectionMethod(IndiaPostProvider::class, 'generateBarcode'))
             ->invoke(new IndiaPostProvider),
