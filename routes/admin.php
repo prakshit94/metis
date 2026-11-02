@@ -153,6 +153,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('/orders/nearby-selling-insights', [OrderController::class, 'nearbySellingInsights'])
         ->name('orders.nearby-selling-insights')
         ->middleware('permission:orders.create|orders.edit');
+    Route::post('orders/preview', [OrderController::class, 'preview'])->name('orders.preview');
     Route::resource('orders', OrderController::class)->except(['index']);
 
     // Order Returns

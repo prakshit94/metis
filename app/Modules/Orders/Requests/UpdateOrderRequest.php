@@ -26,7 +26,9 @@ class UpdateOrderRequest extends FormRequest
         return [
             'type' => 'required|string|in:sale,purchase',
             'party_id' => [
+                'bail',
                 'required',
+                'integer',
                 'exists:parties,id',
                 function ($attribute, $value, $fail) {
                     $orderPartyId = $this->existingOrderPartyId();
@@ -35,8 +37,9 @@ class UpdateOrderRequest extends FormRequest
                     }
                 },
             ],
-            'warehouse_id' => 'required|exists:warehouses,id',
+            'warehouse_id' => 'bail|required|integer|exists:warehouses,id',
             'shipping_address_id' => [
+                'bail',
                 'required',
                 'integer',
                 'exists:party_addresses,id',
@@ -61,6 +64,7 @@ class UpdateOrderRequest extends FormRequest
                 },
             ],
             'billing_address_id' => [
+                'bail',
                 'required',
                 'integer',
                 'exists:party_addresses,id',
@@ -86,7 +90,8 @@ class UpdateOrderRequest extends FormRequest
             ],
             'order_date' => 'required|date',
             'items' => 'required|array|min:1',
-            'items.*.product_id' => 'required|exists:products,id',
+            'items.*' => 'required|array',
+            'items.*.product_id' => 'bail|required|integer|exists:products,id',
             'items.*.product_variant_id' => 'prohibited',
             'items.*.quantity' => 'required|numeric|gt:0',
             'items.*.unit_price' => 'required|numeric|min:0',
@@ -101,8 +106,8 @@ class UpdateOrderRequest extends FormRequest
             'coupon_code' => 'nullable|string',
             'expected_quote' => 'nullable|string|size:64',
             'expected_wallet_amount' => 'nullable|numeric|min:0',
-            'applied_offer_id' => 'nullable|integer|exists:offers,id',
-            'selected_offer_id' => 'nullable|integer|exists:offers,id',
+            'applied_offer_id' => 'bail|nullable|integer|exists:offers,id',
+            'selected_offer_id' => 'bail|nullable|integer|exists:offers,id',
             'applied_bogo_ids' => 'nullable|array',
             'applied_bogo_ids.*' => 'integer|exists:offers,id',
             'total_amount' => 'required|numeric',

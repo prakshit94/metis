@@ -5366,33 +5366,7 @@ mapOrder(o) {
                     use_wallet_balance: this.useWalletBalance ? 1 : 0,
                 };
         },
-        async fetchServerQuote() {
-            if (this.quoting) return null;
-            this.quoting = true;
-            const payload = this.buildOrderPayload();
-            try {
-                const res = await fetch('/api/orders/preview', {
-                    method: 'POST', headers: {'Content-Type':'application/json', 'Accept':'application/json', 'X-CSRF-TOKEN':document.querySelector('meta[name=csrf-token]').content},
-                    body: JSON.stringify(payload)
-                });
-                const json = await res.json();
-                if (!res.ok) {
-                    this.formErrors = Object.values(json.errors || {}).flat();
-                    if (!this.formErrors.length) this.formErrors = [json.message || 'Could not calculate the current order total.'];
-                    return null;
-                }
-                if (JSON.stringify(this.buildOrderPayload()) !== JSON.stringify(payload)) {
-                    this.formErrors = ['The cart changed while calculating totals. Review it again.'];
-                    return null;
-                }
-                this.serverQuote = json.quote;
-                return json.quote;
-            } catch (error) {
-                this.formErrors = ['Could not fetch the order quote. Check your connection and retry.'];
-                return null;
-            } finally { this.quoting = false; }
-        },
-        async saveOrderData() {
+        validateOrderDraft() {
             this.formErrors = [];
             if (!this.partyId) { this.formErrors.push('Please select a customer.'); return false; }
             if (!this.warehouseId) { this.formErrors.push('Please select a warehouse.'); return false; }
@@ -5400,6 +5374,57 @@ mapOrder(o) {
             if (!this.sameAsShipping && !this.billingAddressId) { this.formErrors.push('Please select a billing address.'); return false; }
             if (this.cart.length === 0) { this.formErrors.push('Cart is empty.'); return false; }
             if (this.orderStatus === 'future_order' && !this.futureOrderDate) { this.formErrors.push('Please set future order date.'); return false; }
+            if (!this.orderDate) this.formErrors.push('Please select an order date.');
+            if (this.cart.some(item => !Number.isFinite(Number(item.quantity)) || Number(item.quantity) <= 0)) {
+                this.formErrors.push('Every item must have a valid quantity greater than zero.');
+            }
+            return this.formErrors.length === 0;
+        },
+        async fetchServerQuote() {
+            if (this.quoting) return null;
+            if (!this.validateOrderDraft()) return null;
+            this.quoting = true;
+            this.serverQuote = null;
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 30000);
+            try {
+                const payload = this.buildOrderPayload();
+                const res = await fetch(@json(route('orders.preview', [], false)), {
+                    signal: controller.signal,
+                    credentials: 'same-origin',
+                    method: 'POST', headers: {'Content-Type':'application/json', 'Accept':'application/json', 'X-CSRF-TOKEN':document.querySelector('meta[name=csrf-token]').content},
+                    body: JSON.stringify(payload)
+                });
+                const json = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    const messages = {
+                        401: 'Your session has expired. Sign in again, then retry.',
+                        403: 'You do not have permission to calculate this order. Contact an administrator.',
+                        419: 'Your session has expired. Refresh this page and sign in again if required.',
+                        429: 'Too many requests. Please wait a moment and retry.',
+                    };
+                    this.formErrors = Object.values(json.errors || {}).flat();
+                    if (!this.formErrors.length) this.formErrors = [messages[res.status] || (res.status >= 500 ? 'The server could not calculate totals. Please retry or contact an administrator.' : json.message) || 'Could not calculate the current order total.'];
+                    return null;
+                }
+                if (JSON.stringify(this.buildOrderPayload()) !== JSON.stringify(payload)) {
+                    this.formErrors = ['The cart changed while calculating totals. Review it again.'];
+                    return null;
+                }
+                if (!json.quote || !/^[a-f0-9]{64}$/.test(json.quote.quote_hash || '') || !Number.isFinite(json.quote.grand_total)) {
+                    this.formErrors = ['The server returned an invalid order quote. Refresh the page and retry.'];
+                    return null;
+                }
+                this.serverQuote = json.quote;
+                return json.quote;
+            } catch (error) {
+                this.formErrors = [error.name === 'AbortError' ? 'Calculating totals timed out. Please retry.' : 'Could not fetch the order quote. Check your connection and retry.'];
+                return null;
+            } finally { clearTimeout(timeout); this.quoting = false; }
+        },
+        async saveOrderData() {
+            this.formErrors = [];
+            if (!this.validateOrderDraft()) return false;
 
             try {
                 const previousQuote = this.serverQuote?.quote_hash;
