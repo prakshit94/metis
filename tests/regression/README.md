@@ -230,3 +230,12 @@ a disposable schema and temporary public storage. Optional `METIS_PRODUCT_RENDER
 renders sample product pages/responses for visual inspection. The feature contract,
 audit findings and deployment notes are in
 `docs/audits/2026-11-02/product-catalog-gallery.md`.
+
+### Weekly roster matrix imports
+
+Run `php tests/regression/roster_matrix.php` with the disposable MySQL credentials
+used by the shared bootstrap. Covers CSV/XLSX employee grids, overnight shifts,
+blank cells, invalid dates/weekdays/times, duplicate employees/dates, access
+checks, preview signatures/stale data, reimports, legacy compatibility and
+unchanged leave/attendance/balances. `node tests/regression/hr_workspaces.mjs`
+also covers planned leave calendar markers, file validation and preview paging.

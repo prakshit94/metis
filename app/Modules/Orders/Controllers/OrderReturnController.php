@@ -105,6 +105,7 @@ class OrderReturnController extends Controller implements HasMiddleware
                 $subQuery->where('return_no', 'LIKE', "%{$s}%")
                     ->orWhereHas('order', function ($q) use ($s) {
                         $q->where('order_no', 'LIKE', "%{$s}%")
+                            ->orWhereHas('shipments', fn ($shipment) => $shipment->where('tracking_no', 'LIKE', "%{$s}%")->whereNull('deleted_at'))
                             ->orWhereHas('party', function ($q2) use ($s) {
                                 $q2->where('firstname', 'LIKE', "%{$s}%")
                                     ->orWhere('lastname', 'LIKE', "%{$s}%");
@@ -458,9 +459,11 @@ class OrderReturnController extends Controller implements HasMiddleware
         $request->validate([
             'file' => 'required|file|max:10240',
             'is_preview' => 'nullable|boolean',
+            'include_pending' => 'nullable|boolean',
         ]);
 
         $isPreview = $request->input('is_preview', false);
+        $includePending = $request->boolean('include_pending') && $request->boolean('is_preview');
         $file = $request->file('file');
 
         ini_set('auto_detect_line_endings', true);
@@ -481,23 +484,29 @@ class OrderReturnController extends Controller implements HasMiddleware
         }
 
         $headers = array_map('trim', array_map('strtolower', $firstRow));
-        $orderIdMode = in_array('order_id', $headers, true);
+        $trackingHeaders = array_values(array_intersect(['tracking_id', 'tracking_no', 'tracking_number', 'awb'], $headers));
+        $trackingMode = count($trackingHeaders) > 0;
+        if (count($trackingHeaders) > 1 || ($trackingMode && array_intersect(['order_id', 'order_no'], $headers))) {
+            fclose($handle);
+            return response()->json(['error' => 'Use either an order identifier or one tracking_id column, not both.'], 422);
+        }
+        $orderIdMode = in_array('order_id', $headers, true) || $trackingMode;
         if (! $orderIdMode) {
             $required = ['order_no', 'sku', 'received_qty', 'restocked_qty', 'damaged_qty'];
             foreach ($required as $req) {
                 if (! in_array($req, $headers, true)) {
                     fclose($handle);
 
-                    return response()->json(['error' => "Missing required column: {$req}. Use an order_id-only CSV to fetch return items automatically."], 400);
+                    return response()->json(['error' => "Missing required column: {$req}. Use an order_id or tracking_id CSV to fetch return items automatically."], 400);
                 }
             }
         } elseif (! $isPreview) {
             fclose($handle);
 
-            return response()->json(['error' => 'Order ID imports must be previewed and submitted through the QC review form.'], 422);
+            return response()->json(['error' => 'Identifier imports must be previewed and submitted through the QC review form.'], 422);
         }
 
-        $idxOrderId = array_search('order_id', $headers, true);
+        $idxOrderId = array_search($trackingMode ? $trackingHeaders[0] : 'order_id', $headers, true);
         $idxReturnNo = array_search('order_no', $headers, true);
         $idxSku = array_search('sku', $headers, true);
         $idxReceived = array_search('received_qty', $headers, true);
@@ -514,9 +523,9 @@ class OrderReturnController extends Controller implements HasMiddleware
                     continue;
                 }
                 // Accept both the numeric orders.id and the visible order_no (for example ORD-20260922-0011).
-                $lookupKey = ctype_digit($orderIdentifier) && (int) $orderIdentifier > 0
+                $lookupKey = $trackingMode ? 'tracking:'.$orderIdentifier : (ctype_digit($orderIdentifier) && (int) $orderIdentifier > 0
                     ? 'id:'.(int) $orderIdentifier
-                    : 'number:'.$orderIdentifier;
+                    : 'number:'.$orderIdentifier);
                 $rowsByReturn[$lookupKey] = [['order_identifier' => $orderIdentifier]];
 
                 continue;
@@ -559,12 +568,35 @@ class OrderReturnController extends Controller implements HasMiddleware
                 if ($orderIdMode) {
                     $isDatabaseId = str_starts_with($returnNo, 'id:');
                     $identifier = substr($returnNo, $isDatabaseId ? 3 : 7);
-                    $returnQuery = OrderReturn::with(['items.product', 'order'])->whereIn('status', ['approved', 'received', 'qc_in_progress']);
-                    $return = $isDatabaseId
-                        ? $returnQuery->where('order_id', (int) $identifier)->latest('id')->first()
-                        : $returnQuery->whereHas('order', function ($q) use ($identifier) {
-                            $q->where('order_no', $identifier);
-                        })->latest('id')->first();
+                    $returnQuery = OrderReturn::with(['items.product', 'order'])->whereIn('status', ['approved', 'received', 'qc_in_progress', ...($includePending ? ['pending'] : [])]);
+                    $lookupError = null;
+                    if ($trackingMode) {
+                        $tracking = substr($returnNo, 9);
+                        $orders = app(\App\Services\RecordVisibility::class)->orders(Order::query(), $request->user())
+                            ->whereHas('shipments', fn ($shipment) => $shipment->where('tracking_no', $tracking)->whereNull('deleted_at'))
+                            ->limit(2)->pluck('id');
+                        $return = $orders->count() === 1 ? $returnQuery->where('order_id', $orders[0])->latest('id')->first() : null;
+                        if ($orders->count() > 1) {
+                            $lookupError = 'Ambiguous tracking ID: multiple orders match. Use the order ID instead.';
+                        }
+                        if ($orders->count() === 1 && ! $return) {
+                            $candidate = OrderReturn::where('order_id', $orders[0])->latest('id')->first();
+                            if ($candidate) {
+                                app(EnsureRecordVisibility::class)->assertVisible($candidate);
+                                $lookupError = $candidate->status === 'pending'
+                                    ? 'Return '.$candidate->return_no.' is pending approval. Approve it in Returns & QC, then upload the tracking ID again.'
+                                    : 'Return '.$candidate->return_no.' is '.$candidate->status.'. QC requires an approved, received, or QC-in-progress return.';
+                            } else {
+                                $lookupError = 'No return request exists for this tracking ID. Create and approve a return before QC.';
+                            }
+                        }
+                    } else {
+                        $return = $isDatabaseId
+                            ? $returnQuery->where('order_id', (int) $identifier)->latest('id')->first()
+                            : $returnQuery->whereHas('order', function ($q) use ($identifier) {
+                                $q->where('order_no', $identifier);
+                            })->latest('id')->first();
+                    }
                 } else {
                     $return = OrderReturn::with(['items.product', 'order'])->whereHas('order', function ($q) use ($returnNo) {
                         $q->where('order_no', $returnNo);
@@ -590,10 +622,10 @@ class OrderReturnController extends Controller implements HasMiddleware
                     })->all();
                 }
 
-                $isValidReturn = $return && in_array($return->status, ['approved', 'received', 'qc_in_progress'], true);
+                $isValidReturn = $return && (in_array($return->status, ['approved', 'received', 'qc_in_progress'], true) || ($orderIdMode && $includePending && $return->status === 'pending'));
                 $returnError = null;
                 if (! $return) {
-                    $returnError = $orderIdMode ? 'No QC-eligible return found for this order ID' : 'Return not found';
+                    $returnError = $trackingMode ? ($lookupError ?? 'No QC-eligible return found for this tracking ID') : ($orderIdMode ? 'No QC-eligible return found for this order ID' : 'Return not found');
                 } elseif (! $isValidReturn) {
                     $returnError = 'Invalid status: '.$return->status;
                 }
@@ -650,8 +682,11 @@ class OrderReturnController extends Controller implements HasMiddleware
 
                     if ($isPreview) {
                         $previewData[] = [
+                            'return_id' => $return?->id,
+                            'requires_approval' => $return?->status === 'pending',
+                            'tracking_id' => $trackingMode ? substr($returnNo, 9) : null,
                             'order_id' => $orderIdMode && str_starts_with($returnNo, 'id:') ? (int) substr($returnNo, 3) : null,
-                            'order_no' => $return?->order?->order_no ?? (str_starts_with($returnNo, 'number:') ? substr($returnNo, 7) : $returnNo),
+                            'order_no' => $return?->order?->order_no ?? ($trackingMode ? substr($returnNo, 9) : (str_starts_with($returnNo, 'number:') ? substr($returnNo, 7) : $returnNo)),
                             'sku' => $csvItem['sku'],
                             'requested_qty' => $matchedItem ? $matchedItem->requested_qty : 0,
                             'received_qty' => $csvItem['received_qty'],
@@ -711,8 +746,13 @@ Skipped '.count($skipped).' return(s):
 
     public function processQc(Request $request, OrderReturn $return, InventoryService $inventoryService)
     {
+        $request->validate(['bypass_approval' => 'nullable|boolean']);
+        $bypassApproval = $request->boolean('bypass_approval');
+        if ($bypassApproval) {
+            abort_unless(auth()->user()?->can('returns.approve') && auth()->user()?->can('returns.qc'), 403);
+        }
         // Guard: only allow QC on returns that have not already been completed or rejected
-        if (! in_array($return->status, ['approved', 'received', 'qc_in_progress'])) {
+        if (! in_array($return->status, ['approved', 'received', 'qc_in_progress']) && ! ($bypassApproval && $return->status === 'pending')) {
             return response()->json(['message' => 'Cannot process QC on a return that is not approved, received, or already in QC.'], 422);
         }
 
@@ -735,10 +775,10 @@ Skipped '.count($skipped).' return(s):
             }
         }
 
-        DB::transaction(function () use ($validated, $return, $inventoryService) {
+        DB::transaction(function () use ($validated, $return, $inventoryService, $bypassApproval) {
             $order = Order::lockForUpdate()->findOrFail($return->order_id);
             $return = OrderReturn::lockForUpdate()->findOrFail($return->id);
-            if (! in_array($return->status, ['approved', 'received', 'qc_in_progress'], true)) {
+            if (! in_array($return->status, ['approved', 'received', 'qc_in_progress'], true) && ! ($bypassApproval && $return->status === 'pending')) {
                 throw ValidationException::withMessages(['status' => 'This return has already been processed or is not approved.']);
             }
             $return->setRelation('order', $order);
@@ -758,6 +798,15 @@ Skipped '.count($skipped).' return(s):
                 if (! $item || (float) $data['received_qty'] > (float) $item->requested_qty + 0.00001) {
                     throw ValidationException::withMessages(['items' => 'Received quantity exceeds the requested return quantity.']);
                 }
+            }
+
+            if ($return->status === 'pending' && $bypassApproval) {
+                $return->update(['status' => 'approved']);
+                $order->statusLogs()->create([
+                    'status' => $order->status,
+                    'notes' => 'Approval bypass explicitly selected for return '.$return->return_no.' during QC.',
+                    'changed_by' => auth()->id(),
+                ]);
             }
 
             $orderItems = OrderItem::where('order_id', $return->order_id)

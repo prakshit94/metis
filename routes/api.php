@@ -346,6 +346,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::apiResource('attendances', AttendanceController::class);
 
         Route::get('/rosters', [RosterController::class, 'index']);
+        Route::get('/rosters/export', [RosterController::class, 'export']);
         Route::post('/rosters/import', [RosterController::class, 'import']);
         Route::get('/rosters/co', [RosterController::class, 'claims']);
         Route::post('/rosters/co', [RosterController::class, 'claim']);

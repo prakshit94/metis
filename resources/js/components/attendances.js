@@ -60,6 +60,21 @@ function showToast(message, type = 'success') {
   setTimeout(() => el.remove(), 4000);
 }
 
+async function downloadRoster(params) {
+  try {
+    const response = await fetch('/api/rosters/export?' + params, {headers: {Accept:'application/json'}});
+    if (!response.ok) {
+      const result = await response.json().catch(() => ({}));
+      throw new Error(result.errors ? Object.values(result.errors).flat().join(' ') : result.message || 'Roster export failed.');
+    }
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a'); link.href = url;
+    link.download = 'editable-roster-' + params.get('start_date') + '-to-' + params.get('end_date') + '.xlsx';
+    link.click(); URL.revokeObjectURL(url);
+  } catch (error) { showToast(error.message, 'danger'); }
+}
+
 async function confirmDelete({ title, text, confirmButtonText = 'Yes, delete it' }) {
   const result = await Swal.fire({
     title,
@@ -119,15 +134,59 @@ async function loadUserOptions(currentUserId) {
 
 document.addEventListener('alpine:init', () => {
   Alpine.data('rosterManager', () => ({
-    file: null, preview: [], hash: '', busy: false, error: '', message: '', claims: [], page: 1, pages: 1,
+    file: null, preview: [], previewDates: [], previewPage: 1, templateMode: 'month', templateMonth: new Date().getFullYear() + '-' + String(new Date().getMonth()+1).padStart(2,'0'), templateStart: '', templateEnd: '', hash: '', busy: false, error: '', message: '', claims: [], page: 1, pages: 1,
     date: '', reason: '',
     _onSaved: null,
     init() { this.loadClaims(); this._onSaved = () => this.loadClaims(); window.addEventListener('attendance-saved', this._onSaved); },
     destroy() { window.removeEventListener('attendance-saved', this._onSaved); },
-    choose(event) { this.file = event.target.files[0] || null; this.preview = []; this.hash = ''; this.message = ''; },
-    template(systemIds = false) {
-      const url = URL.createObjectURL(new Blob([systemIds ? 'user_id,date,day_type\nUSER_ID_1,2026-10-18,Week Off\nUSER_ID_2,2026-10-18,Working\n' : 'employee_id,date,day_type\nEMP001,2026-10-18,Week Off\nEMP002,2026-10-18,Working\n'], {type:'text/csv'}));
-      const link = document.createElement('a'); link.href = url; link.download = 'roster-template.csv'; link.click(); URL.revokeObjectURL(url);
+    get previewPages() { return Math.max(1, Math.ceil(this.preview.length / 100)); },
+    get visiblePreview() { return this.preview.slice((this.previewPage - 1) * 100, this.previewPage * 100); },
+    choose(event) {
+      this.file = event.target.files[0] || null; this.preview = []; this.previewDates = []; this.previewPage = 1; this.hash = ''; this.message = ''; this.error = '';
+      if (this.file && (this.file.size > 2 * 1024 * 1024 || !/\.(csv|xlsx)$/i.test(this.file.name))) {
+        this.error = 'Choose a CSV or XLSX file no larger than 2 MB.'; this.file = null;
+      }
+    },
+    get gridEmployees() {
+      const employees = new Map();
+      for (const row of this.preview) {
+        if (!employees.has(row.user_id)) employees.set(row.user_id, {id: row.user_id, employee_id: row.employee_id, name: row.name, lob: row.lob || '', days: {}});
+        employees.get(row.user_id).days[row.date] = row;
+      }
+      return [...employees.values()];
+    },
+    get gridDates() { return this.previewDates.length ? this.previewDates : [...new Set(this.preview.map(row => row.date))].sort(); },
+    get gridPages() { return Math.max(1, Math.ceil(this.gridEmployees.length / 25)); },
+    get visibleGrid() { return this.gridEmployees.slice((this.previewPage - 1) * 25, this.previewPage * 25); },
+    cellLabel(row) {
+      if (!row) return '—';
+      if (row.shift_start) return row.shift_start.slice(0,5) + '–' + row.shift_end.slice(0,5);
+      return ({'Week Off':'WO', 'Comp Off':'C/OFF', 'Planned Leave':'L'})[row.day_type] || row.day_type;
+    },
+    dateLabel(date, weekday = false) {
+      return new Date(date + 'T12:00:00Z').toLocaleDateString('en-GB', {timeZone:'UTC', ...(weekday ? {weekday:'long'} : {day:'2-digit',month:'short',year:'2-digit'})});
+    },
+    async matrixTemplate(existing = false) {
+      this.error = '';
+      let start = this.templateStart, end = this.templateEnd;
+      if (this.templateMode === 'month') {
+        if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(this.templateMonth)) { this.error = 'Choose a valid template month.'; return; }
+        start = this.templateMonth + '-01';
+        const next = new Date(start + 'T12:00:00Z'); next.setUTCMonth(next.getUTCMonth() + 1); next.setUTCDate(0);
+        end = next.toISOString().slice(0,10);
+      }
+      const first = new Date(start + 'T12:00:00Z'), last = new Date(end + 'T12:00:00Z');
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(start) || !/^\d{4}-\d{2}-\d{2}$/.test(end) || !Number.isFinite(+first) || !Number.isFinite(+last) || first.toISOString().slice(0,10) !== start || last.toISOString().slice(0,10) !== end || last < first || (last-first)/86400000 >= 366 || first.getUTCFullYear() < 1000) {
+        this.error = 'Choose a valid date range of up to 366 days.'; return;
+      }
+      const dates = [];
+      for (const day = new Date(first); day <= last; day.setUTCDate(day.getUTCDate()+1)) dates.push(day.toISOString().slice(0,10));
+      if (existing) { await downloadRoster(new URLSearchParams({start_date:start, end_date:end})); return; }
+      const samples = ['08:00-17:00', '22:00-06:00', 'WO', 'C/OFF', 'L'];
+      const sampleRows = samples.map((_, index) => ['EMP00' + (index + 1), 'Sample employee ' + (index + 1), 'Sales', ...dates.map((date, day) => samples[(day + index) % samples.length])]);
+      const csv = [['EMP. ID','Advisor Name','LOB',...dates], ['', '', '', ...dates.map(date => this.dateLabel(date, true))], ...sampleRows].map(row => row.join(',')).join('\n') + '\n';
+      const url = URL.createObjectURL(new Blob([csv], {type:'text/csv;charset=utf-8'}));
+      const link = document.createElement('a'); link.href = url; link.download = `roster-${start}-to-${end}.csv`; link.click(); URL.revokeObjectURL(url);
     },
     async upload(commit = false) {
       if(this.busy || !this.file || (commit && !this.hash)) return;
@@ -135,10 +194,10 @@ document.addEventListener('alpine:init', () => {
       try {
         const body = new FormData(); body.append('file', this.file); body.append('commit', commit ? '1':'0'); if(commit) body.append('preview_hash',this.hash);
         const response = await fetch('/api/rosters/import', {method:'POST', headers:{Accept:'application/json','X-CSRF-TOKEN':getCsrfToken()}, body});
-        const result = await response.json();
+        const result = await response.json().catch(() => ({message: response.status === 413 ? 'Upload exceeds the server file-size limit.' : 'The server could not read this request. Please retry or sign in again.'}));
         if(!response.ok) throw new Error(result.errors ? Object.values(result.errors).flat().join(' ') : result.message);
-        this.preview = result.data; this.hash = commit ? '' : result.preview_hash; this.message = result.message;
-        if(commit) window.dispatchEvent(new CustomEvent('attendance-saved'));
+        this.preview = result.data; this.previewDates = result.dates || []; this.previewPage = 1; this.hash = commit ? '' : result.preview_hash; this.message = result.message;
+        if(commit) { showToast(result.message || 'Roster imported successfully.', 'success'); window.dispatchEvent(new CustomEvent('attendance-saved')); }
       } catch(error) { this.error = error.message; this.hash = ''; }
       finally { this.busy = false; }
     },
@@ -403,6 +462,17 @@ document.addEventListener('alpine:init', () => {
       }
       return params;
     },
+    async exportRoster() {
+      const month = this.currentMonthDate;
+      const localDate = date => date.getFullYear() + '-' + String(date.getMonth()+1).padStart(2,'0') + '-' + String(date.getDate()).padStart(2,'0');
+      let start = localDate(new Date(month.getFullYear(), month.getMonth(), 1));
+      let end = localDate(new Date(month.getFullYear(), month.getMonth()+1, 0));
+      if (this.currentView !== 'calendar') {
+        start = this.dateFilter || this.rangeStart || start;
+        end = this.dateFilter || this.rangeEnd || end;
+      }
+      await downloadRoster(new URLSearchParams({start_date:start, end_date:end, ...(this.userFilter ? {user_id:this.userFilter} : {})}));
+    },
     exportFiltered() {
       window.open('/api/attendances/export/filtered?' + this.reportParams(true), '_blank');
     },
@@ -637,7 +707,7 @@ document.addEventListener('alpine:init', () => {
           const d = new Date(year, month - 1, date);
 
           const roster = day.rosters?.find(row => String(row.user_id) === String(this.userFilter));
-          const hasDayOff = roster?.day_type === 'Week Off' || day.holidays?.length > 0;
+          const hasDayOff = ['Week Off', 'Comp Off', 'Planned Leave'].includes(roster?.day_type) || day.holidays?.length > 0;
           if (!hasDayOff && (roster?.day_type === 'Working' || (d.getDay() !== 0 && d.getDay() !== 6))) {
             day.events.push({
               id: 'no-record-' + day.date,

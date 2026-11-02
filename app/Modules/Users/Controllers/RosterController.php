@@ -6,6 +6,7 @@ use App\Modules\Core\Controllers\Controller;
 use App\Modules\Users\Models\Attendance;
 use App\Modules\Users\Models\LeaveBalance;
 use App\Modules\Users\Models\User;
+use App\Modules\Users\Services\RosterImport;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -50,50 +51,117 @@ class RosterController extends Controller
         return response()->json(['data' => $query->orderBy('date')->get()]);
     }
 
+    public function export(Request $request)
+    {
+        abort_unless($request->user()?->can('attendance-export') && $request->user()?->can('attendance-view'), 403);
+        $data = $request->validate([
+            'start_date' => 'required|date_format:Y-m-d|after_or_equal:1000-01-01',
+            'end_date' => 'required|date_format:Y-m-d|after_or_equal:start_date',
+            'user_id' => 'nullable|integer',
+        ]);
+        $start = new \DateTimeImmutable($data['start_date']);
+        $end = new \DateTimeImmutable($data['end_date']);
+        if ($start->diff($end)->days > 365) {
+            throw ValidationException::withMessages(['end_date' => 'Export up to 366 days at a time.']);
+        }
+        $query = $this->users($request)->when(isset($data['user_id']), fn ($q) => $q->whereKey($data['user_id']))
+            ->whereNotNull('employee_id')->whereRaw("TRIM(employee_id) != ''");
+        $employees = $query->orderBy('name')->orderBy('id')->limit(2001)->get(['id', 'name', 'employee_id']);
+        if ($employees->isEmpty() || $employees->count() > 2000) {
+            throw ValidationException::withMessages(['user_id' => 'Select 1–2,000 accessible employees with assigned employee IDs.']);
+        }
+        // Use the same identifier resolution as import; never export ambiguous IDs.
+        foreach ($employees as $employee) {
+            if ($this->users($request)->where('employee_id', trim($employee->employee_id))->count() !== 1) {
+                throw ValidationException::withMessages(['user_id' => 'Employee IDs must be unique before exporting a reusable roster.']);
+            }
+        }
+        $dates = [];
+        for ($date = $start; $date <= $end; $date = $date->modify('+1 day')) $dates[] = $date->format('Y-m-d');
+        $rosters = DB::table('employee_rosters')->whereIn('user_id', $employees->pluck('id'))
+            ->whereBetween('date', [$data['start_date'], $data['end_date']])->get();
+        if ($rosters->count() > 10000) {
+            throw ValidationException::withMessages(['end_date' => 'Export up to 10,000 roster entries at a time. Select fewer employees or dates.']);
+        }
+        $byEmployee = $rosters->groupBy('user_id');
+        $book = new \PhpOffice\PhpSpreadsheet\Spreadsheet;
+        $sheet = $book->getActiveSheet();
+        $sheet->setTitle('Employee roster');
+        $headers = ['EMP. ID', 'Advisor Name', 'LOB', ...$dates];
+        foreach ($headers as $column => $value) {
+            $sheet->setCellValueExplicit([$column + 1, 1], $value, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+        }
+        foreach ($dates as $column => $date) $sheet->setCellValue([$column + 4, 2], (new \DateTimeImmutable($date))->format('l'));
+        foreach ($employees as $index => $employee) {
+            $row = $index + 3;
+            $sheet->setCellValueExplicit([1, $row], $employee->employee_id, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+            $sheet->setCellValueExplicit([2, $row], $employee->name, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+            foreach ($byEmployee->get($employee->id, collect()) as $roster) {
+                $value = match ($roster->day_type) {
+                    'Week Off' => 'WO', 'Comp Off' => 'C/OFF', 'Planned Leave' => 'L',
+                    'Working' => $roster->shift_start && $roster->shift_end ? substr($roster->shift_start, 0, 5).'-'.substr($roster->shift_end, 0, 5) : 'Working',
+                    default => null,
+                };
+                if ($value === null) throw ValidationException::withMessages(['file' => 'An existing roster value cannot be exported. Review its day type first.']);
+                $column = array_search($roster->date, $dates, true) + 4;
+                $sheet->setCellValueExplicit([$column, $row], $value, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+            }
+        }
+        $lastColumn = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex(count($headers));
+        $sheet->getStyle('A1:'.$lastColumn.'2')->getFill()->setFillType('solid')->getStartColor()->setARGB('FF548235');
+        $sheet->getStyle('A1:'.$lastColumn.'2')->getFont()->setBold(true)->getColor()->setARGB('FFFFFFFF');
+        $sheet->freezePane('D3');
+        $sheet->getColumnDimension('A')->setWidth(16);
+        $sheet->getColumnDimension('B')->setWidth(28);
+        $sheet->getColumnDimension('C')->setWidth(16);
+        for ($column = 4; $column <= count($headers); $column++) $sheet->getColumnDimension(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($column))->setWidth(18);
+        $path = tempnam(sys_get_temp_dir(), 'roster-export-');
+        try {
+            (new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($book))->save($path);
+            if (filesize($path) > 2 * 1024 * 1024) throw ValidationException::withMessages(['end_date' => 'Export exceeds the 2 MB import limit. Select fewer employees or dates.']);
+            $contents = file_get_contents($path);
+        } finally {
+            $book->disconnectWorksheets();
+            if (is_file($path)) unlink($path);
+        }
+        return response($contents, 200, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition' => 'attachment; filename="editable-roster-'.$data['start_date'].'-to-'.$data['end_date'].'.xlsx"',
+            'Cache-Control' => 'private, no-store',
+        ]);
+    }
+
     public function import(Request $request)
     {
         abort_unless($request->user()->can('attendance-roster-import'), 403);
         $request->validate(['file' => 'required|file|max:2048', 'commit' => 'nullable|boolean', 'preview_hash' => 'nullable|string']);
         $file = $request->file('file');
         $hash = hash_file('sha256', $file->getRealPath());
-        $handle = fopen($file->getRealPath(), 'r');
-        $header = fgetcsv($handle);
-        if ($header) {
-            $header[0] = preg_replace('/^\xEF\xBB\xBF/', '', $header[0]);
-        }
-        if (! in_array($header, [['employee_id', 'date', 'day_type'], ['user_id', 'date', 'day_type']], true)) {
-            fclose($handle);
-            throw ValidationException::withMessages(['file' => 'Expected CSV header: employee_id,date,day_type or user_id,date,day_type']);
-        }
+        $parser = app(RosterImport::class);
+        $entries = $parser->parse($file);
         $rows = [];
         $seen = [];
         $errors = [];
-        $line = 1;
-        while (($row = fgetcsv($handle)) !== false) {
-            $line++;
-            if ($row === [null]) {
-                continue;
+        $employees = [];
+        foreach ($entries as $entry) {
+            $line = $entry['line'];
+            $employee = $entry['identifier'];
+            $cacheKey = $entry['identifier_field'].':'.$employee;
+            if (! array_key_exists($cacheKey, $employees)) {
+                $employees[$cacheKey] = $employee === '' || ($entry['identifier_field'] === 'id' && ! ctype_digit($employee))
+                    ? collect() : $this->users($request)->where($entry['identifier_field'], $employee)->get(['id', 'name']);
             }
-            if (count($rows) + count($errors) >= 2000) {
-                $errors[] = 'Maximum 2000 rows per import.';
-                break;
-            }
-            if (count($row) !== 3) {
-                $errors[] = "Row $line: expected 3 columns.";
+            $users = $employees[$cacheKey];
+            if ($users->count() !== 1) {
+                $errors[] = "Row $line: employee '$employee' is unknown, ambiguous or outside your access.";
 
                 continue;
             }
-            [$employee,$date,$type] = array_map('trim', $row);
-            $users = $this->users($request)->where($header[0] === 'user_id' ? 'id' : 'employee_id', $header[0] === 'user_id' && ! ctype_digit($employee) ? -1 : $employee)->get(['id', 'name']);
-            $parsed = \DateTimeImmutable::createFromFormat('!Y-m-d', $date);
-            if ($employee === '' || $users->count() !== 1 || ! $parsed || $parsed->format('Y-m-d') !== $date || ! in_array($type, ['Working', 'Week Off'], true)) {
-                $errors[] = "Row $line: invalid/unauthorized employee, date or day_type.";
-
-                continue;
-            }
+            $date = $entry['date'];
+            $type = $entry['day_type'];
             $key = $users[0]->id.':'.$date;
             if (isset($seen[$key])) {
-                $errors[] = "Row $line: duplicate employee/date.";
+                $errors[] = "Row $line: duplicate employee/date $date.";
 
                 continue;
             }
@@ -104,15 +172,26 @@ class RosterController extends Controller
 
                 continue;
             }
-            $rows[] = ['user_id' => $users[0]->id, 'employee_id' => $employee, 'name' => $users[0]->name, 'date' => $date, 'day_type' => $type, 'action' => $existing ? ($existing->day_type === $type ? 'Unchanged' : 'Update') : 'Create'];
-        }
-        fclose($handle);
-        if (! $rows && ! $errors) {
-            $errors[] = 'CSV contains no roster rows.';
+            // Legacy day-only imports preserve any existing shift on a Working day.
+            $start = $entry['shift_start'];
+            $end = $entry['shift_end'];
+            if ($type === 'Working' && $start === null) {
+                $start = isset($existing->shift_start) ? substr($existing->shift_start, 0, 5) : null;
+                $end = isset($existing->shift_end) ? substr($existing->shift_end, 0, 5) : null;
+            }
+            $unchanged = $existing && $existing->day_type === $type
+                && ($existing->shift_start ? substr($existing->shift_start, 0, 5) : null) === $start
+                && ($existing->shift_end ? substr($existing->shift_end, 0, 5) : null) === $end;
+            $rows[] = ['user_id' => $users[0]->id, 'employee_id' => $employee, 'name' => $users[0]->name, 'lob' => $entry['lob'],
+                'date' => $date, 'day_type' => $type, 'shift_start' => $start, 'shift_end' => $end,
+                'action' => ! $existing ? 'Create' : ($unchanged ? 'Unchanged' : 'Update'),
+                'version' => $existing ? hash('sha256', json_encode($existing)) : null];
         }
         if ($errors) {
-            throw ValidationException::withMessages(['file' => $errors]);
+            throw ValidationException::withMessages(['file' => array_slice($errors, 0, 50)]);
         }
+        // Bind confirmation to the actor, parsed data and current stored rows, not just file bytes.
+        $hash = hash_hmac('sha256', $hash.':'.$request->user()->id.':'.json_encode($rows), config('app.key'));
         if ($request->boolean('commit')) {
             abort_unless(hash_equals($hash, (string) $request->input('preview_hash')), 422, 'Preview this file before importing.');
             DB::transaction(function () use ($rows, $request) {
@@ -122,16 +201,20 @@ class RosterController extends Controller
                 foreach ($rows as $row) {
                     $existing = DB::table('employee_rosters')->where('user_id', $row['user_id'])->where('date', $row['date'])->lockForUpdate()->first();
                     abort_if($existing && in_array($existing->co_status, ['Pending', 'Approved']) && $existing->day_type !== $row['day_type'], 409, 'Roster changed; preview again.');
-                    DB::table('employee_rosters')->updateOrInsert(['user_id' => $row['user_id'], 'date' => $row['date']], ['day_type' => $row['day_type'], 'updated_at' => now(), ...(! $existing ? ['created_at' => now()] : [])]);
+                    abort_unless(($existing ? hash('sha256', json_encode($existing)) : null) === $row['version'], 409, 'Roster changed; preview again.');
+                    if ($row['action'] === 'Unchanged') {
+                        continue;
+                    }
+                    DB::table('employee_rosters')->updateOrInsert(['user_id' => $row['user_id'], 'date' => $row['date']], ['day_type' => $row['day_type'], 'shift_start' => $row['shift_start'], 'shift_end' => $row['shift_end'], 'updated_at' => now(), ...(! $existing ? ['created_at' => now()] : [])]);
                     $rosterId = DB::table('employee_rosters')->where('user_id', $row['user_id'])->where('date', $row['date'])->value('id');
-                    if (! $existing || $existing->day_type !== $row['day_type']) {
-                        $this->event($request, $rosterId, 'Imported', ['previous' => $existing?->day_type, 'day_type' => $row['day_type']]);
+                    if ($row['action'] !== 'Unchanged') {
+                        $this->event($request, $rosterId, 'Imported', ['previous' => $existing, 'day_type' => $row['day_type'], 'shift_start' => $row['shift_start'], 'shift_end' => $row['shift_end']]);
                     }
                 }
             });
         }
 
-        return response()->json(['data' => $rows, 'preview_hash' => $hash, 'message' => $request->boolean('commit') ? 'Roster imported.' : 'Preview ready. Existing employee/date rows will be updated; other dates remain unchanged.']);
+        return response()->json(['data' => $rows, 'dates' => $parser->dates ?: array_values(array_unique(array_column($rows, 'date'))), 'preview_hash' => $hash, 'message' => $request->boolean('commit') ? 'Roster imported.' : 'Preview ready. Blank and omitted dates stay unchanged. Planned leave does not create requests or change balances.']);
     }
 
     public function claims(Request $request)

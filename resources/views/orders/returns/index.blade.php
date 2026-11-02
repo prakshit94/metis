@@ -10,9 +10,10 @@
         <div class="overflow-hidden" style="min-width: 0;">
             <h1 class="h3 mb-1 fw-bold"><i class="bi bi-arrow-return-left text-primary me-2"></i>Returns &amp; QC</h1>
         </div>
-        <div class="d-flex gap-2">
+        <div class="d-flex flex-wrap gap-2">
             @can('returns.qc')
-<button class="btn btn-outline-secondary shadow-sm" @click="downloadBulkQcTemplate()" title="CSV template with one order_id column; accepts database ID or order number">
+<label for="qcIdentifier" class="visually-hidden">QC lookup identifier</label><select id="qcIdentifier" class="form-select w-auto" x-model="qcIdentifier"><option value="order_id">Order ID / number</option><option value="tracking_id">Tracking ID / AWB</option></select>
+<button class="btn btn-outline-secondary shadow-sm" @click="downloadBulkQcTemplate()" title="Download a CSV for the selected identifier">
                 <i class="bi bi-file-earmark-spreadsheet me-1"></i>Template
             </button>
 @endcan
@@ -26,6 +27,22 @@
             <input type="file" x-ref="importQcFile" class="d-none" accept=".csv" @change="uploadBulkQc($event)">
         </div>
     </div>
+    @can('returns.qc')
+    <section class="card border-warning mb-4" x-show="importReviewData &amp;&amp; pendingImportedReturns.length" x-cloak>
+        <div class="card-body">
+            <h2 class="h5">Pending returns: choose an action</h2>
+            <p class="small text-muted">Only checked returns bypass approval when QC is submitted. Unchecked returns stay pending. Eligible approved returns continue normally.</p>
+            <div class="table-responsive"><table class="table table-sm align-middle"><thead><tr><th>Bypass for QC</th><th>Return / order</th><th>Action</th></tr></thead><tbody>
+                <template x-for="ret in pendingImportedReturns" :key="ret.id"><tr>
+                    <td>@can('returns.approve')<input type="checkbox" class="form-check-input" :value="String(ret.id)" x-model="bypassReturnIds" :disabled="isSubmitting" :aria-label="'Bypass approval for ' + ret.return_no">@else<span class="small text-muted">Approval permission required</span>@endcan</td>
+                    <td><strong x-text="ret.return_no"></strong><small class="d-block text-muted" x-text="ret.order?.order_no || ret.order_no"></small></td>
+                    <td>@can('returns.cancel')<button type="button" class="btn btn-sm btn-outline-danger" @click="rejectImportedReturn(ret)" :disabled="isSubmitting">Reject / cancel return</button>@endcan</td>
+                </tr></template>
+            </tbody></table></div>
+            <div class="d-flex flex-wrap gap-2"><button type="button" class="btn btn-primary" @click="continueImportedQc()" :disabled="isSubmitting">Review selected QC</button><button type="button" class="btn btn-outline-secondary" @click="importReviewData = null; bypassReturnIds = []" :disabled="isSubmitting">Dismiss</button></div>
+        </div>
+    </section>
+    @endcan
     {{-- Stats Cards --}}
     <div class="row g-3 mb-4">
         <div class="col-xl-3 col-lg-6">
@@ -149,7 +166,7 @@
                 <div class="col-auto">
                     <div class="d-flex flex-wrap gap-2 justify-content-end">
                         <div class="position-relative">
-                            <input type="search" class="form-control form-control-sm pe-4" placeholder="Search RMA / Order…" x-model="searchQuery" @input.debounce.400ms="filterReturns()" style="width:220px;">
+                            <input type="search" class="form-control form-control-sm pe-4" placeholder="Search RMA / Order / Tracking…" x-model="searchQuery" @input.debounce.400ms="filterReturns()" style="width:220px;">
                             <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-2 text-muted small"></i>
                         </div>
                         <select class="form-select form-select-sm" x-model="statusFilter" @change="filterReturns()" style="width:160px;">
@@ -232,6 +249,7 @@
                                 <i class="bi bi-arrow-return-left me-1 text-secondary"></i>RMA # <i class="bi ms-1" :class="sortField==='return_no'?(sortDirection==='asc'?'bi-sort-up':'bi-sort-down'):'bi-sort'"></i>
                             </th>
                             <th><i class="bi bi-hash me-1 text-secondary"></i>Order #</th>
+                            <th>Tracking ID / AWB</th>
                             <th><i class="bi bi-person me-1 text-secondary"></i>Customer</th>
                             <th><i class="bi bi-truck me-1 text-secondary"></i>Carrier</th>
                             <th><i class="bi bi-chat-left-text me-1 text-secondary"></i>Reason</th>
@@ -251,6 +269,7 @@
                                 </td>
                                 <td><span class="fw-semibold font-monospace small" x-text="ret.return_no"></span></td>
                                 <td><span class="text-muted font-monospace small" x-text="ret.order_no"></span></td>
+                                <td style="min-width:160px;max-width:240px"><span class="font-monospace small text-break" x-text="[...new Set((ret.order?.shipments || []).filter(shipment => !shipment.deleted_at).map(shipment => shipment.tracking_no?.trim()).filter(Boolean))].join(' · ') || '—'"></span></td>
                                 <td><span class="small" x-text="ret.customer?.name"></span></td>
                                 <td>
                                     <span class="badge bg-body-tertiary text-body-emphasis border small" x-text="ret.order?.shipments?.length ? ret.order.shipments[ret.order.shipments.length - 1].carrier_name || '—' : '—'"></span>
@@ -318,7 +337,7 @@
                         </template>
                         <template x-if="!isLoading && returns.length === 0">
                             <tr>
-                                <td colspan="10" class="text-center py-5 text-muted">
+                                <td colspan="11" class="text-center py-5 text-muted">
                                     <i class="bi bi-inbox fs-1 d-block mb-2 opacity-50"></i>
                                     No returns found.
                                 </td>
@@ -630,6 +649,7 @@
                     {{-- Modal Body --}}
                     <div class="modal-body px-4 px-lg-5 py-4">
 
+                        <div class="alert alert-warning small" x-show="bypassReturnIds.length" x-cloak>Approval bypass selected for <strong x-text="bypassReturnIds.length"></strong> pending return(s). Applied only when QC succeeds.</div>
                         {{-- Summary alert --}}
                         <div class="alert alert-info border-0 py-2 small mb-4" role="alert">
                             <i class="bi bi-info-circle me-1"></i>

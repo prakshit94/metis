@@ -92,6 +92,7 @@ document.addEventListener('alpine:init', () => {
 
     // --- Filters ---
     searchQuery: '',
+    qcIdentifier: 'order_id',
     statusFilter: '',
     statusOptions: ['pending', 'approved', 'received', 'qc_in_progress', 'completed', 'rejected'],
     financialFilter: '',
@@ -122,6 +123,8 @@ document.addEventListener('alpine:init', () => {
     // --- Bulk QC Modal state ---
     bulkQcItems: [],
     selectedReturnsForBulk: [],
+    importReviewData: null,
+    bypassReturnIds: [],
 
     // --- Finance Modal state ---
     financeAction: 'refund',
@@ -132,11 +135,11 @@ document.addEventListener('alpine:init', () => {
 
     downloadBulkQcTemplate() {
       // The backend expands each order ID into its return items and product details.
-      const csvContent = 'order_id\n';
+      const csvContent = (this.qcIdentifier === 'tracking_id' ? 'tracking_id' : 'order_id') + '\n';
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
-      link.download = 'bulk_qc_template.csv';
+      link.download = `bulk_qc_${this.qcIdentifier}_template.csv`;
       document.body.appendChild(link);
       link.click();
       URL.revokeObjectURL(link.href);
@@ -148,9 +151,11 @@ document.addEventListener('alpine:init', () => {
       if (!file) return;
 
       this.importingQc = true;
+      this.importReviewData = null; this.bypassReturnIds = [];
       const formData = new FormData();
       formData.append('file', file);
       formData.append('is_preview', 1);
+      formData.append('include_pending', 1);
 
       try {
         const res = await fetch('/admin/returns/bulk-qc-import', {
@@ -170,15 +175,52 @@ document.addEventListener('alpine:init', () => {
 
         if (data.preview && data.returns) {
           if (data.preview.length === 0) {
-            showToast('The CSV does not contain any order IDs.', 'warning');
+            showToast('The CSV does not contain any order or tracking IDs.', 'warning');
             return;
           }
           const errors = data.preview.filter(r => !r.is_valid);
           if (errors.length > 0) {
-              showToast("CSV Error on " + (errors[0].order_no || errors[0].order_id || 'order') + (errors[0].sku ? " (" + errors[0].sku + ")" : '') + ": " + errors[0].error, 'danger');
+              showToast("CSV Error on " + (errors[0].order_no || errors[0].tracking_id || errors[0].order_id || 'order') + (errors[0].sku ? " (" + errors[0].sku + ")" : '') + ": " + errors[0].error, 'danger');
               return;
           }
 
+          this.bypassReturnIds = [];
+          this.importReviewData = data;
+          if (!data.returns.some(ret => ret.status === 'pending')) this.continueImportedQc();
+        }
+      } catch (err) {
+        showToast(err.message || 'Error uploading QC CSV preview.', 'danger');
+      } finally {
+        this.importingQc = false;
+        event.target.value = '';
+      }
+    },
+
+    get pendingImportedReturns() { return this.importReviewData?.returns.filter(ret => ret.status === 'pending') || []; },
+    async rejectImportedReturn(ret) {
+      if (this.isSubmitting) return;
+      const result = await Swal.fire({title:'Reject / cancel this return?', text:'This uses the existing cancellation process and restores the order to its previous status.', icon:'warning', showCancelButton:true, confirmButtonText:'Reject / cancel return'});
+      if (!result.isConfirmed) return;
+      this.isSubmitting = true;
+      try {
+        await apiFetch(`/admin/returns/${ret.id}/cancel`, {method:'POST'});
+        this.importReviewData.returns = this.importReviewData.returns.filter(row => row.id !== ret.id);
+        this.bypassReturnIds = this.bypassReturnIds.filter(id => String(id) !== String(ret.id));
+        showToast('Return cancelled.'); this.loadReturns();
+        this.isSubmitting = false;
+        if (!this.pendingImportedReturns.length) {
+          if (this.importReviewData.returns.length) this.continueImportedQc();
+          else this.importReviewData = null;
+        }
+      } catch (error) { showToast(error.message, 'danger'); }
+      finally { this.isSubmitting = false; }
+    },
+    continueImportedQc() {
+      if (!this.importReviewData || this.isSubmitting) return;
+      const selected = this.importReviewData.returns.filter(ret => ret.status !== 'pending' || this.bypassReturnIds.includes(String(ret.id)));
+      if (!selected.length) { showToast('Select a pending return to bypass, or leave it unprocessed.', 'warning'); return; }
+      const ids = new Set(selected.map(ret => ret.id));
+      const data = {...this.importReviewData, returns:selected, preview:this.importReviewData.preview.filter(row => ids.has(row.return_id))};
           this.selectedReturnsForBulk = data.returns;
           
           const aggregationMap = {};
@@ -226,13 +268,6 @@ document.addEventListener('alpine:init', () => {
           });
 
           this.$nextTick(() => getModal('bulkQcModal')?.show());
-        }
-      } catch (err) {
-        showToast(err.message || 'Error uploading QC CSV preview.', 'danger');
-      } finally {
-        this.importingQc = false;
-        event.target.value = '';
-      }
     },
 
     init() {
@@ -480,7 +515,7 @@ document.addEventListener('alpine:init', () => {
       return {
         approve: selected.some((r) => r.status === 'pending'),
         cancel: selected.some((r) => r.status === 'pending'),
-        qc: selected.some((r) => ['approved', 'qc_in_progress', 'received'].includes(r.status)),
+        qc: selected.some((r) => ['pending', 'approved', 'qc_in_progress', 'received'].includes(r.status)),
       };
     },
 
@@ -750,6 +785,12 @@ document.addEventListener('alpine:init', () => {
 
     // ─── Bulk QC Inspect Modal ────────────────────────────────────────────────
     openBulkQcModal() {
+      this.importReviewData = null; this.bypassReturnIds = [];
+      const candidates = this.returns.filter(ret => this.selectedReturns.includes(String(ret.id)) && ['pending','approved','received','qc_in_progress'].includes(ret.status));
+      if (candidates.some(ret => ret.status === 'pending')) {
+        this.importReviewData = {returns:candidates, preview:candidates.flatMap(ret => (ret.items || []).map(item => ({return_id:ret.id, sku:item.product?.sku || '', received_qty:item.requested_qty, restocked_qty:item.requested_qty, damaged_qty:0})))};
+        return;
+      }
       // Find selected pending returns
       this.selectedReturnsForBulk = this.returns.filter(
         (r) =>
@@ -805,6 +846,7 @@ document.addEventListener('alpine:init', () => {
       setTimeout(() => {
         this.selectedReturnsForBulk = [];
         this.bulkQcItems = [];
+        this.importReviewData = null; this.bypassReturnIds = [];
       }, 300);
     },
 
@@ -912,6 +954,7 @@ document.addEventListener('alpine:init', () => {
       for (const returnId of Object.keys(returnPayloads)) {
         try {
           const payload = returnPayloads[returnId];
+          if (this.bypassReturnIds.includes(String(returnId))) payload.bypass_approval = true;
           await apiFetch(`/admin/returns/${returnId}/qc`, {
             method: 'POST',
             body: JSON.stringify(payload),

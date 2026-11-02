@@ -27,7 +27,7 @@
 @endphp
 <div class="attendance-workspace" x-data="{ workspaceSection: 'attendance' }">
     <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
-        <div><span class="text-primary small fw-semibold">TIME &amp; LEAVE</span><h1 class="h3 mt-1 mb-2">Attendance workspace</h1><p class="text-muted mb-0">Review daily activity, manage rosters, and track requests in one place.</p></div>
+        <div><h1 class="h3 mb-0">Attendance</h1></div>
         @can('leave-view')<a href="{{ url('/admin/leaves') }}" class="btn btn-outline-secondary">Leave management</a>@endcan
     </div>
     <nav class="attendance-workspace-nav d-flex gap-2 mb-4 p-2 border rounded-3 bg-body" aria-label="Attendance workspace sections">
@@ -41,7 +41,6 @@
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
         <div>
             <h2 class="h5 mb-1">Daily attendance</h2>
-            <p class="text-muted mb-0">Track employee check-ins, check-outs, and daily presence</p>
         </div>
         <div class="d-flex flex-wrap gap-2">
             <div class="btn-group me-2 shadow-sm">
@@ -58,6 +57,8 @@
                     <i class="bi bi-download me-2"></i>Export
                 </button>
                 <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="exportDropdown">
+                    <li><button class="dropdown-item" @click="exportRoster()">Editable roster (XLSX)</button></li>
+                    <li><hr class="dropdown-divider"></li>
                     <li><button class="dropdown-item" @click="exportFiltered()">Current filtered results (CSV)</button></li>
                     <li><button class="dropdown-item" @click="exportSummary()"><i class="bi bi-grid-3x3 me-2"></i>Summary Grid — displayed month (CSV)</button></li>
                     <li><button class="dropdown-item" @click="exportDetailed()"><i class="bi bi-list-task me-2"></i>Detailed Log — displayed month (CSV)</button></li>
@@ -102,7 +103,7 @@
         <div class="col-6 col-lg-3"><div class="border rounded p-3 h-100"><span class="small text-muted">Recorded employee-days</span><strong class="d-block fs-5" x-text="insights.recorded_days"></strong></div></div>
         <div class="col-6 col-lg-3"><div class="border rounded p-3 h-100"><span class="small text-muted">Open sessions</span><strong class="d-block fs-5" x-text="insights.open_sessions"></strong></div></div>
         <div class="col-6 col-lg-3"><div class="border rounded p-3 h-100"><span class="small text-muted">Check-out without check-in</span><strong class="d-block fs-5" x-text="insights.incomplete_sessions"></strong></div></div>
-        <div class="col-12 small text-muted">These totals cover all matching records, including records beyond the current list page. Open sessions are excluded from completed time.</div>
+        <div class="col-12 small text-muted">Totals include all matching records. Completed time excludes open sessions.</div>
     </div>
     <div class="d-flex flex-wrap gap-3 small mb-4 px-1" aria-label="Loaded attendance status counts">
         <span>Loaded records <strong x-text="stats.total"></strong></span><span class="text-success">Present <strong x-text="stats.present"></strong></span><span class="text-danger">Absent <strong x-text="stats.absent"></strong></span><span class="text-warning-emphasis">Late / Half-Day <strong x-text="stats.late + stats.halfDay"></strong></span>
@@ -192,7 +193,7 @@
                 <button type="button" class="btn btn-outline-secondary btn-sm" @click="resetFilters()">Reset attendance filters</button>
             </div>
         </div>
-        <p class="small text-muted px-3 pt-3 mb-0" x-show="currentView === 'calendar'">Select a day number to see all sessions. “No record” means no attendance was logged; it is not a recorded absence.</p>
+        <p class="small text-muted px-3 pt-3 mb-0" x-show="currentView === 'calendar'">Select a date for details. “No record” means no attendance was logged.</p>
         <p class="small text-warning px-3" x-show="holidayError" x-text="holidayError"></p>
         <div class="card-body p-0">
             <!-- List View -->
@@ -387,7 +388,7 @@
                                      'has-events': day.events && day.events.length > 0
                                  }"
                                  @dblclick="addEventForDay(day)">
-                                <button type="button" class="day-number border-0 bg-transparent" @click.stop="inspectDay(day)" :aria-label="'View attendance details for ' + day.date" x-text="day.day"></button><template x-for="roster in day.rosters || []" :key="roster.id"><span class="badge d-block my-1 text-wrap" :class="roster.day_type === 'Week Off' ? 'bg-info-subtle text-info-emphasis' : 'bg-secondary-subtle text-secondary-emphasis'" x-text="roster.day_type + (!userFilter ? ' · Employee #' + roster.user_id : '')"></span></template><template x-for="holiday in day.holidays || []" :key="holiday.id"><span class="badge bg-primary-subtle text-primary small text-wrap d-block my-1" :title="holiday.name" x-text="holiday.name"></span></template>
+                                <button type="button" class="day-number border-0 bg-transparent" @click.stop="inspectDay(day)" :aria-label="'View attendance details for ' + day.date" x-text="day.day"></button><template x-for="roster in day.rosters || []" :key="roster.id"><span class="badge d-block my-1 text-wrap" :class="roster.day_type === 'Week Off' ? 'bg-info-subtle text-info-emphasis' : 'bg-secondary-subtle text-secondary-emphasis'" x-text="roster.day_type + (roster.shift_start ? ' · ' + roster.shift_start.slice(0,5) + '–' + roster.shift_end.slice(0,5) : '') + (!userFilter ? ' · Employee #' + roster.user_id : '')"></span></template><template x-for="holiday in day.holidays || []" :key="holiday.id"><span class="badge bg-primary-subtle text-primary small text-wrap d-block my-1" :title="holiday.name" x-text="holiday.name"></span></template>
                                 <div class="day-events" style="height: 100%; overflow: visible;">
                                     <template x-for="event in day.events" :key="event.id">
                                         <div class="day-event mb-1 p-2 rounded shadow-sm"
@@ -423,7 +424,7 @@
 </div>
 
 <div x-show="workspaceSection === 'corrections'" x-cloak>
-    <div class="mb-3"><h2 class="h5">Attendance corrections</h2><p class="text-muted small">Submit corrections to your own records or review requests assigned to you.</p></div>
+    <div class="mb-3"><h2 class="h5">Attendance corrections</h2></div>
     @include('users.partials.attendance-corrections')
 </div>
 <div x-show="workspaceSection === 'co' || workspaceSection === 'roster'" x-cloak>
@@ -481,7 +482,6 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body p-4">
-                <p class="small text-muted mb-4">Record the attendance date, session times, and status. Fields marked * are required.</p>
                 <div class="alert alert-danger" role="alert" x-show="error" x-text="error" style="display: none;"></div>
 
                 <div class="row g-3 mb-3">

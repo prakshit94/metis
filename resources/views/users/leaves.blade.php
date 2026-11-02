@@ -45,6 +45,8 @@
         </div>
     </div>
 
+    <div class="alert alert-info small">Roster codes L and C/OFF indicate planned leave only. They do not create a leave request or deduct a balance. Submit requests here and follow the existing approval process.</div>
+
     <nav class="leave-workspace-nav d-flex gap-2 mb-4 p-2 border rounded-3 bg-body" aria-label="Leave workspace sections">
         <button type="button" class="btn" :class="currentTab === 'requests' ? 'btn-primary' : 'btn-light'" :aria-current="currentTab === 'requests' ? 'page' : null" @click="currentTab = 'requests'">Pending Requests</button>
         <button type="button" class="btn" :class="currentTab === 'history' ? 'btn-primary' : 'btn-light'" :aria-current="currentTab === 'history' ? 'page' : null" @click="currentTab = 'history'">History</button>
