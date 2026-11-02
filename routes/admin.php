@@ -153,6 +153,8 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('/orders/nearby-selling-insights', [OrderController::class, 'nearbySellingInsights'])
         ->name('orders.nearby-selling-insights')
         ->middleware('permission:orders.create|orders.edit');
+    // Use the staff web session for quotes, just as for creating/updating orders.
+    Route::post('orders/preview', [OrderController::class, 'preview'])->name('orders.preview');
     Route::resource('orders', OrderController::class)->except(['index']);
 
     // Order Returns
