@@ -10,6 +10,8 @@ Artisan::call('migrate', ['--force' => true]);
 $mediaDir = '/tmp/metis-media-'.bin2hex(random_bytes(6));
 mkdir($mediaDir.'/app/public/products', 0700, true);
 $app->useStoragePath($mediaDir);
+config(['filesystems.disks.public.root' => $mediaDir.'/app/public']);
+Illuminate\Support\Facades\Storage::forgetDisk('public');
 register_shutdown_function(function () use ($mediaDir) {
     foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator($mediaDir, FilesystemIterator::SKIP_DOTS), RecursiveIteratorIterator::CHILD_FIRST) as $file) {
         $file->isDir() ? rmdir($file->getPathname()) : unlink($file->getPathname());

@@ -67,6 +67,7 @@ class Product extends Model implements Auditable
     ];
 
     protected $casts = [
+        'gallery_image_paths' => 'array',
         'storefront_visible' => 'boolean', 'is_featured' => 'boolean',
         'min_order_qty' => 'integer', 'max_order_qty' => 'integer',
         'purchase_price' => 'decimal:2',
@@ -255,6 +256,24 @@ class Product extends Model implements Auditable
     public function getAvailableStockAttribute(): float
     {
         return max(0.0, $this->total_stock - $this->total_reserved);
+    }
+
+    /** Primary first; legacy single-image products require no backfill. */
+    public function imagePaths(): array
+    {
+        return array_values(array_unique(array_filter([
+            $this->image_path,
+            ...($this->gallery_image_paths ?? []),
+        ], fn ($path) => is_string($path) && $path !== '')));
+    }
+
+    public function mediaImages(): array
+    {
+        return array_map(fn ($path) => [
+            'id' => hash('sha256', $path),
+            'url' => '/storage/'.ltrim($path, '/'),
+            'is_primary' => $path === $this->image_path,
+        ], $this->imagePaths());
     }
 
     public function getImageUrlAttribute(): ?string

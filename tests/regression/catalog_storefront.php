@@ -74,7 +74,7 @@ $csvResult=$controller->import(csvRequest("name,sku,category_id,tax_rate_id,sell
 check($csvResult['imported']===1 && Product::where('sku','EXACT-IMPORT')->firstOrFail()->selling_price_inc_gst===2000.0,'CSV accepts an authoritative inclusive price without trusting the supplied base');
 $coupon=App\Modules\Orders\Models\Coupon::create(['code'=>'EXACT-TYPE','type'=>'percentage','value'=>10,'is_active'=>true]);
 $couponData=app(App\Modules\Orders\Controllers\CouponController::class)->validateApi(catalogRequest(['code'=>'EXACT-TYPE','subtotal'=>'999999','items'=>[['product_id'=>(string)$exactProduct->id,'quantity'=>'1.25']]]))->getData(true);
-check($couponData['valid'] && abs($couponData['eligible_subtotal']-(2000/1.18*1.25))<0.000001,'coupon preview retains exact inclusive pricing with string IDs and fractional quantities');
+check($couponData['valid'] && abs($couponData['discount']-(2000/1.18*1.25*.10))<0.000001,'coupon preview retains exact inclusive pricing with string IDs and fractional quantities');
 $exactProduct->update(['selling_price'=>100]);check($exactProduct->fresh()->selling_price_including_tax===null && $exactProduct->fresh()->selling_price==='100.00','legacy base-price writes clear obsolete inclusive pricing');
 invalid(fn()=>$controller->store(catalogRequest(array_merge($inclusivePayload,['sku'=>'BAD-PRECISION','selling_price_including_tax'=>'2000.001']))),'inclusive amounts reject fractions smaller than one paisa');
 echo "Catalog/storefront regression checks complete.\n";

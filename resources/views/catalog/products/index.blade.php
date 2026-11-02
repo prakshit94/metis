@@ -484,6 +484,7 @@
                 </div>
                 <div class="modal-body pt-3">
                     <form @submit.prevent="saveProduct($event)" novalidate>
+                        <div class="alert alert-danger" role="alert" x-show="saveError" x-text="saveError" x-cloak></div>
                                                 <div class="d-flex flex-column flex-md-row border-top">
                             <!-- Sidebar Tabs -->
                             <div class="bg-body-tertiary border-end p-3" style="min-width: 240px;">
@@ -828,6 +829,7 @@
                                         </div>
                                         
                                         <div class="col-12">
+                                            @include('catalog.products.partials.image-gallery')
                                             <section class="border rounded-3 p-3 mb-4" aria-label="Storefront settings">
                                                 <h6>Customer storefront</h6>
                                                 <p class="small text-muted" x-show="editingProductId">The saved product URL stays the same when its name changes.</p>
@@ -836,21 +838,6 @@
                                                 <div class="form-check form-switch mb-3"><input id="product-storefront-featured" class="form-check-input" type="checkbox" x-model="form.is_featured"><label class="form-check-label" for="product-storefront-featured">Featured pick</label></div>
                                                 <div class="row g-3"><div class="col-sm-6"><label for="product-shop-min" class="form-label">Minimum per order</label><input id="product-shop-min" class="form-control" type="number" min="1" max="1000" step="1" x-model.number="form.min_order_qty" required></div><div class="col-sm-6"><label for="product-shop-max" class="form-label">Maximum per order</label><input id="product-shop-max" class="form-control" type="number" :min="form.min_order_qty || 1" max="1000" step="1" x-model.number="form.max_order_qty" required></div></div>
                                             </section>
-                                            <label class="form-label fw-medium text-muted small">Product Image</label>
-                                            <div class="border border-dashed rounded-3 p-4 text-center bg-body-secondary d-flex flex-column align-items-center justify-content-center" style="min-height: 200px; border-style: dashed !important; border-width: 2px !important; transition: all 0.2s;">
-                                                <div class="mb-3 position-relative">
-                                                    <template x-if="form.image">
-                                                        <img :src="form.image" alt="Preview" class="rounded border shadow" style="width: 120px; height: 120px; object-fit: cover;">
-                                                    </template>
-                                                    <template x-if="!form.image">
-                                                        <div class="bg-body d-flex align-items-center justify-content-center rounded-circle shadow-sm" style="width: 80px; height: 80px;">
-                                                            <i class="bi bi-cloud-arrow-up fs-1 text-primary"></i>
-                                                        </div>
-                                                    </template>
-                                                </div>
-                                                <input type="file" class="form-control shadow-none border-secondary border-opacity-25" style="max-width: 300px;" accept="image/*" @change="handleImageUpload($event)">
-                                                <small class="text-muted mt-2 d-block">Recommended size: 800x800px (Max 5MB)</small>
-                                            </div>
                                         </div>
                                     </div>
                                     
@@ -938,6 +925,8 @@
     <div class="modal-dialog modal-xl modal-dialog-scrollable">
         <div class="modal-content bg-body border-0 shadow-lg" x-data="{ 
             get product() { return Alpine.store('productTable')?.previewProduct },
+            previewImageId: '',
+            get previewImage() { return this.product?.images?.find(image => image.id === this.previewImageId)?.url || this.product?.image || '/assets/images/product-placeholder.svg'; },
             get applicablePromotions() {
                 return window.getApplicablePromotions(this.product);
             }
@@ -959,8 +948,13 @@
                     <!-- Left: Image & Meta (sticky panel) -->
                     <div class="pvm-left bg-body-tertiary border-end p-3">
                         <div class="card border-start border-4 border-danger shadow-sm mb-3 rounded-4 overflow-hidden position-relative" style="aspect-ratio:1;width:100%;">
-                            <img :src="product ? (product?.image || '/assets/images/product-placeholder.svg') : ''" class="w-100 h-100 object-fit-cover" x-on:error="if ($el.getAttribute('src') !== '/assets/images/product-placeholder.svg') $el.src='/assets/images/product-placeholder.svg'">
+                            <img :src="previewImage" :alt="product?.name || 'Product image'" class="w-100 h-100 object-fit-cover" x-on:error="if ($el.getAttribute('src') !== '/assets/images/product-placeholder.svg') $el.src='/assets/images/product-placeholder.svg'">
                             <span class="position-absolute top-0 end-0 m-2 badge bg-success shadow-sm" x-show="product && product?.default_discount > 0" x-text="product ? product?.default_discount + (product?.default_discount_type === 'percent' ? '%' : '') + ' OFF' : ''"></span>
+                        </div>
+                        <div class="d-flex flex-wrap gap-2 mb-3" x-show="product?.images?.length > 1" aria-label="Product image gallery">
+                            <template x-for="image in product?.images || []" :key="image.id">
+                                <button type="button" class="btn p-1 border" @click="previewImageId = image.id" :aria-label="'View product image ' + (product.images.indexOf(image) + 1)"><img :src="image.url" alt="" style="width:48px;height:48px;object-fit:cover" loading="lazy"></button>
+                            </template>
                         </div>
                         <div x-show="product">
                             <div class="d-flex flex-wrap gap-2 mb-3">

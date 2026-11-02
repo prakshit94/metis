@@ -63,10 +63,11 @@ class StorefrontController extends Controller
     public function image(Request $request, int $id, int $image)
     {
         // Keep public visibility checks without loading catalog/tax data for a file request.
-        $product = Product::storefrontAvailable()->select(['id', 'image_path'])->findOrFail($id);
-        abort_unless($image === 1 && $product->image_path, 404);
-        $base = realpath(storage_path('app/public'));
-        $path = $base ? realpath($base.'/'.ltrim($product->image_path, '/')) : false;
+        $product = Product::storefrontAvailable()->select(['id', 'image_path', 'gallery_image_paths'])->findOrFail($id);
+        $imagePath = $product->imagePaths()[$image - 1] ?? null;
+        abort_unless($image >= 1 && $imagePath, 404);
+        $base = realpath(\Illuminate\Support\Facades\Storage::disk('public')->path(''));
+        $path = $base ? realpath($base.'/'.ltrim($imagePath, '/')) : false;
         abort_unless($path && str_starts_with($path, $base.DIRECTORY_SEPARATOR) && is_file($path), 404);
         abort_unless(in_array(mime_content_type($path), ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif'], true), 404);
 

@@ -1,10 +1,6 @@
 <?php
 // Disposable MySQL only. No live account, password, email delivery or order is used.
-require dirname(__DIR__,2).'/vendor/autoload.php';
-putenv('APP_ENV=testing'); $_ENV['APP_ENV']='testing';
-$app=require dirname(__DIR__,2).'/bootstrap/app.php';
-$app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
-set_exception_handler(function(Throwable $e){fwrite(STDERR,get_class($e).': '.$e->getMessage().' at '.$e->getFile().':'.$e->getLine()."\n".$e->getTraceAsString()."\n");exit(1);});
+require __DIR__.'/bootstrap.php';
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schema;
@@ -12,17 +8,7 @@ use Illuminate\Http\Request;
 use App\Storefront\Models\CustomerAccount;
 use App\Storefront\Models\Product;
 use App\Modules\Customers\Models\Customer;
-function check($condition,$message){if(!$condition)throw new RuntimeException('FAIL: '.$message);echo "PASS: $message\n";}
-$socket=getenv('METIS_TEST_MYSQL_SOCKET')?:'/tmp/metis-audit-mysql/mysql.sock';
-$database='metis_regression_'.getmypid().'_'.bin2hex(random_bytes(3));
-$pdo=new PDO('mysql:unix_socket='.$socket,'root','');$pdo->exec('CREATE DATABASE `'.$database.'`');
-config(['database.default'=>'regression','database.connections.regression'=>['driver'=>'mysql','unix_socket'=>$socket,'database'=>$database,'username'=>'root','password'=>'','charset'=>'utf8mb4','collation'=>'utf8mb4_unicode_ci','prefix'=>'','strict'=>true], 'activitylog.enabled'=>true,'audit.enabled'=>true,'audit.console'=>true,'cache.default'=>'array','session.driver'=>'array','queue.default'=>'sync']);
-// Root providers resolve rate limiting during boot; keep every test cache private.
-$limiter=app(\Illuminate\Cache\RateLimiter::class);
-(new ReflectionProperty($limiter,'cache'))->setValue($limiter,app('cache')->store('array'));
-config(['permission.cache.store'=>'array','permission.cache.key'=>$database.'.permissions']);
-app(\Spatie\Permission\PermissionRegistrar::class)->initializeCache();
-register_shutdown_function(function()use($pdo,$database){DB::disconnect('regression');$pdo->exec('DROP DATABASE IF EXISTS `'.$database.'`');});
+config(['activitylog.enabled'=>true,'audit.enabled'=>true,'audit.console'=>true]);
 Artisan::call('migrate',['--path'=>dirname(__DIR__,2).'/database/migrations','--realpath'=>true,'--force'=>true]);
 check(is_subclass_of(config('audit.user.resolver'), OwenIt\Auditing\Contracts\UserResolver::class), 'shared dependency discovery registers a valid audit resolver');
 check(Schema::hasTable('customer_accounts') && Schema::hasTable('storefront_checkouts'),'additive migrations run against full existing schema');

@@ -124,10 +124,13 @@ async function apiFetch(url, options = {}) {
   }
 
   const res = await fetch(url, {
+    credentials: 'same-origin',
     headers: fetchHeaders,
     ...otherOptions,
   });
 
+  if (res.redirected || res.status === 401 || res.status === 419) throw new Error('Your session expired. Refresh the page and sign in again.');
+  if (res.status === 413) throw new Error('The upload exceeds the server request limit. Select fewer images and retry.');
   const text = await res.text();
   let data = {};
   try { data = text ? JSON.parse(text) : {}; }
@@ -136,15 +139,9 @@ async function apiFetch(url, options = {}) {
   if (!res.ok) {
     const validation = data?.errors ? Object.values(data.errors).flat().join(' ') : '';
     const message = validation || data?.message || data?.error || 'Request failed';
-    if (
-      res.status === 403 ||
-      (typeof message === 'string' &&
-        (message.toLowerCase().includes('authoriz') || message.toLowerCase().includes('forbidden')))
-    ) {
-      window.location.href = '/admin';
-      return;
-    }
-    throw new Error(message);
+    const error = new Error(message);
+    error.errors = data?.errors || {};
+    throw error;
   }
 
   return data;
@@ -830,15 +827,7 @@ document.addEventListener('alpine:init', () => {
     },
 
     handleImageUpload(event) {
-      const file = event?.target?.files?.[0];
-      if (!file) return;
-
-      const form = this._getProductForm();
-      if (!form) return;
-
-      if (form.form.image?.startsWith('blob:')) URL.revokeObjectURL(form.form.image);
-      form.form.image = URL.createObjectURL(file);
-      form.form.imageFile = file;
+      this._getProductForm()?.handleImageUpload(event);
     },
 
     async fetchProductDetails(product, scoped = true) {
@@ -886,10 +875,9 @@ document.addEventListener('alpine:init', () => {
           }
         }
 
-        if (form.form.image?.startsWith('blob:')) URL.revokeObjectURL(form.form.image);
+        form.setImages(product.images || []);
         form.form = mapped;
         form.originalProduct = product;
-        form.form.imageFile = null;
 
         const title = document.querySelector('#productModal .modal-title');
         if (title) title.textContent = `Edit ${product.name}`;
@@ -925,10 +913,9 @@ document.addEventListener('alpine:init', () => {
         mapped.warehouse_overselling_qty = null;
         mapped.warehouse_is_sku_enabled = null;
 
-        if (form.form.image?.startsWith('blob:')) URL.revokeObjectURL(form.form.image);
+        form.setImages([]);
         form.form = mapped;
         form.originalProduct = null;
-        form.form.imageFile = null;
 
         const title = document.querySelector('#productModal .modal-title');
         if (title) title.textContent = `Clone ${product.name} (Select Warehouse)`;
@@ -1351,6 +1338,13 @@ document.addEventListener('alpine:init', () => {
   Alpine.data('productForm', () => ({
     editingProductId: null,
     originalProduct: null,
+    images: [],
+    removedImageIds: [],
+    primaryImageId: '',
+    mediaError: '',
+    saveError: '',
+    _onModalHidden: null,
+    _imageSequence: 0,
     get options() {
       return (
         Alpine.store('productTable')?.options || {
@@ -1411,7 +1405,6 @@ document.addEventListener('alpine:init', () => {
       status: 'published',
       grade: '',
       image: '/assets/images/product-placeholder.svg',
-      imageFile: null,
       attributes: [],
       warehouse_allow_overselling: null,
       warehouse_overselling_qty: null,
@@ -1421,7 +1414,8 @@ document.addEventListener('alpine:init', () => {
     saving: false,
 
     resetForm() {
-      if (this.form.image?.startsWith('blob:')) URL.revokeObjectURL(this.form.image);
+      this.setImages([]);
+      this.saveError = '';
       this.activeTab = 'general';
       this.editingProductId = null;
       this.originalProduct = null;
@@ -1461,8 +1455,7 @@ document.addEventListener('alpine:init', () => {
         status: 'published',
         grade: '',
         image: '/assets/images/product-placeholder.svg',
-        imageFile: null,
-        attributes: [],
+          attributes: [],
         warehouse_allow_overselling: null,
         warehouse_overselling_qty: null,
         warehouse_is_sku_enabled: null,
@@ -1476,6 +1469,8 @@ document.addEventListener('alpine:init', () => {
     },
 
     init() {
+      this._onModalHidden = () => this.setImages([]);
+      document.querySelector('#productModal')?.addEventListener('hidden.bs.modal', this._onModalHidden);
       this.$watch('form.default_warehouse_id', (newVal) => {
         if (!this.editingProductId) this.form.warehouse_config_id = newVal;
       });
@@ -1500,34 +1495,70 @@ document.addEventListener('alpine:init', () => {
       });
     },
 
-    handleImageUpload(event) {
-      const file = event?.target?.files?.[0];
-      if (!file) return;
+    setImages(images) {
+      this.saveError = '';
+      this.images.forEach(image => { if (image.file) URL.revokeObjectURL(image.url); });
+      this.images = images.map(image => ({id: image.id, url: image.url, file: null}));
+      this.removedImageIds = [];
+      this.primaryImageId = images.find(image => image.is_primary)?.id || images[0]?.id || '';
+      this.mediaError = '';
+    },
 
-      if (file.size > 5 * 1024 * 1024) {
-        if (typeof Swal !== 'undefined') {
-          Swal.fire({
-            title: 'Image too large',
-            text: 'The selected image exceeds the maximum size limit of 5MB.',
-            icon: 'warning',
-            confirmButtonColor: '#3085d6',
-          });
-        } else {
-          alert('The selected image exceeds the maximum size limit of 5MB.');
-        }
-        event.target.value = '';
+    destroy() {
+      document.querySelector('#productModal')?.removeEventListener('hidden.bs.modal', this._onModalHidden);
+      this.images.forEach(image => { if (image.file) URL.revokeObjectURL(image.url); });
+    },
+
+    handleImageUpload(event) {
+      const files = Array.from(event?.target?.files || []);
+      if (event?.target) event.target.value = '';
+      if (this.saving || !files.length) return;
+      this.mediaError = '';
+      if (this.images.length + files.length > 10) {
+        this.mediaError = 'A product can have up to 10 images. Remove an image before adding more.';
         return;
       }
+      if (files.some(file => !['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(file.type) || file.size > 5 * 1024 * 1024)) {
+        this.mediaError = 'Choose JPG, PNG, WebP or GIF images, each no larger than 5 MB.';
+        return;
+      }
+      const pendingBytes = this.images.reduce((sum, image) => sum + (image.file?.size || 0), 0);
+      if (pendingBytes + files.reduce((sum, file) => sum + file.size, 0) > 25 * 1024 * 1024) {
+        this.mediaError = 'Upload no more than 25 MB of images per save.';
+        return;
+      }
+      for (const file of files) {
+        this.images.push({id: 'new:' + ++this._imageSequence, url: URL.createObjectURL(file), file});
+      }
+      if (!this.primaryImageId) this.primaryImageId = this.images[0].id;
+    },
 
-      if (this.form.image?.startsWith('blob:')) URL.revokeObjectURL(this.form.image);
-      this.form.image = URL.createObjectURL(file);
-      this.form.imageFile = file;
+    removeImage(id) {
+      if (this.saving) return;
+      const image = this.images.find(image => image.id === id);
+      if (!image) return;
+      if (image.file) URL.revokeObjectURL(image.url);
+      else this.removedImageIds.push(image.id);
+      this.images = this.images.filter(image => image.id !== id);
+      if (this.primaryImageId === id) this.primaryImageId = this.images[0]?.id || '';
+      this.mediaError = '';
+    },
+
+    appendImages(formData) {
+      let uploadIndex = 0;
+      for (const image of this.images) {
+        const reference = image.file ? 'upload:' + uploadIndex++ : image.id;
+        if (image.file) formData.append('images[]', image.file);
+        if (image.id === this.primaryImageId) formData.append('primary_image_id', reference);
+      }
+      this.removedImageIds.forEach(id => formData.append('remove_image_ids[]', id));
     },
 
     async saveProduct(event) {
       if (this.saving) return;
       const table = Alpine.store('productTable');
       if (!table) return;
+      this.saveError = '';
 
       if (event && event.target && typeof event.target.reportValidity === 'function') {
         const firstInvalid = event.target.querySelector(':invalid');
@@ -1688,13 +1719,7 @@ document.addEventListener('alpine:init', () => {
         formData.append('attributes[]', String(attributeId));
       });
 
-      if (this.form.imageFile instanceof File) {
-        if (this.form.imageFile.size > 5 * 1024 * 1024) {
-          showToast('Selected image is too large. Maximum size allowed is 5MB.', 'warning');
-          return;
-        }
-        formData.append('image', this.form.imageFile);
-      }
+      this.appendImages(formData);
 
       this.saving = true;
       try {
@@ -1715,13 +1740,17 @@ document.addEventListener('alpine:init', () => {
           showToast(`Created ${String(this.form.name).trim()} successfully.`, 'success');
         }
 
-        await table.loadProductsFromApi();
-        table.filterProducts();
-        table.calculateStats();
+        try {
+          await table.loadProductsFromApi();
+          table.filterProducts();
+          table.calculateStats();
+        } catch { showToast('Product saved. Refresh the product list to see the latest changes.', 'warning'); }
         this.resetForm();
         getModal('#productModal')?.hide();
       } catch (error) {
-        showToast(error.message || 'Failed to save product.', 'danger');
+        this.saveError = error.message || 'Failed to save product.';
+        if (Object.keys(error.errors || {}).some(key => /^(images?|remove_image_ids|primary_image_id)(\.|$)/.test(key))) this.activeTab = 'media';
+        showToast(this.saveError, 'danger');
       } finally {
         this.saving = false;
       }

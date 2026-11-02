@@ -13,6 +13,7 @@ use App\Modules\Catalog\Models\ProductAttributeValue;
 use App\Modules\Catalog\Models\TaxRate;
 use App\Modules\Catalog\Models\UnitOfMeasure;
 use App\Modules\Catalog\Models\Warehouse;
+use App\Modules\Catalog\Services\ProductMedia;
 use App\Modules\Core\Controllers\Controller;
 use App\Modules\Inventory\Models\Stock;
 use App\Modules\Inventory\Models\Supplier;
@@ -20,9 +21,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -335,11 +334,13 @@ class ProductController extends Controller
                 continue;
             }
 
-            $imagePath = $product->image_path;
-            DB::transaction(fn () => $product->forceDelete());
-            if ($imagePath) {
-                $this->deleteUnusedImage($imagePath);
-            }
+            $imagePaths = $product->imagePaths();
+            DB::transaction(function () use ($product, $imagePaths) {
+                $product->forceDelete();
+                DB::afterCommit(function () use ($imagePaths) {
+                    foreach ($imagePaths as $path) $this->deleteUnusedImage($path);
+                });
+            });
             $deleted[] = $id;
         }
 
@@ -522,11 +523,13 @@ class ProductController extends Controller
             return response()->json(['message' => $reason], 409);
         }
 
-        $imagePath = $product->image_path;
-        DB::transaction(fn () => $product->forceDelete());
-        if ($imagePath) {
-            $this->deleteUnusedImage($imagePath);
-        }
+        $imagePaths = $product->imagePaths();
+        DB::transaction(function () use ($product, $imagePaths) {
+            $product->forceDelete();
+            DB::afterCommit(function () use ($imagePaths) {
+                foreach ($imagePaths as $path) $this->deleteUnusedImage($path);
+            });
+        });
 
         return response()->json([
             'message' => 'Product permanently deleted.',
@@ -977,6 +980,9 @@ class ProductController extends Controller
 
     private function validatePayload(Request $request, ?Product $product = null): array
     {
+        foreach (['name', 'sku'] as $field) {
+            if (is_string($request->input($field))) $request->merge([$field => trim($request->input($field))]);
+        }
         $validated = $request->validate([
             'storefront_visible' => ['sometimes', 'boolean'],
             'is_featured' => ['sometimes', 'boolean'],
@@ -989,7 +995,7 @@ class ProductController extends Controller
             'uom_id' => ['required', 'integer', 'exists:units_of_measure,id'],
             'supplier_id' => ['nullable', 'integer', 'exists:suppliers,id'],
             'default_warehouse_id' => [
-                'required',
+                'bail', 'required',
                 'integer',
                 'exists:warehouses,id',
                 function ($attribute, $value, $fail) use ($request, $product) {
@@ -1008,9 +1014,9 @@ class ProductController extends Controller
             'tax_rate_id' => ['required', 'integer', 'exists:tax_rates,id'],
             'hsn_code_id' => ['required', 'integer', 'exists:hsn_codes,id'],
             'barcode' => ['nullable', 'string', 'max:255'],
-            'purchase_price' => ['required', 'numeric', 'min:0'],
-            'mrp' => ['nullable', 'numeric', 'min:0'],
-            'selling_price' => ['required', 'numeric', 'min:0'],
+            'purchase_price' => ['required', 'numeric', 'min:0', 'max:9999999999999.99'],
+            'mrp' => ['nullable', 'numeric', 'min:0', 'max:9999999999999.99'],
+            'selling_price' => ['required', 'numeric', 'min:0', 'max:9999999999999.99'],
             'selling_price_including_tax' => ['sometimes', 'nullable', 'numeric', 'min:0', 'max:9999999999999.99', 'decimal:0,2'],
             // stock / stock_quantity are accepted interchangeably
             'stock' => ['nullable', 'integer', 'min:0'],
@@ -1024,19 +1030,24 @@ class ProductController extends Controller
             'expiry_tracking' => ['nullable', 'boolean'],
             'application_instructions' => ['nullable', 'string'],
             'description' => ['nullable', 'string'],
-            'image' => ['nullable', 'image', 'max:5120'],
+            'image' => ['nullable', 'prohibits:images,remove_image_ids,primary_image_id', 'image', 'dimensions:min_width=1,min_height=1', 'max:5120'],
+            'images' => ['sometimes', 'array', 'max:10'],
+            'images.*' => ['required', 'image', 'mimes:jpg,jpeg,png,webp,gif', 'dimensions:min_width=1,min_height=1', 'max:5120'],
+            'remove_image_ids' => ['sometimes', 'array', 'max:10'],
+            'remove_image_ids.*' => ['required', 'string', 'regex:/^[a-f0-9]{64}$/', 'distinct'],
+            'primary_image_id' => ['nullable', 'string', 'max:64', 'regex:/^(?:[a-f0-9]{64}|upload:(?:0|[1-9][0-9]*))$/'],
             'attributes' => ['nullable', 'array'],
             'attributes.*' => ['integer', 'exists:product_attribute_values,id'],
             'overselling_qty' => ['nullable', 'integer', 'min:0'],
-            'default_discount' => ['nullable', 'numeric', 'min:0'],
+            'default_discount' => ['nullable', 'numeric', 'min:0', 'max:999.99'],
             'default_discount_type' => ['nullable', 'in:percent,flat'],
             'grade' => ['nullable', 'in:A,B,C,D'],
-            'weight_g' => ['nullable', 'numeric', 'min:0'],
-            'length_cm' => ['nullable', 'numeric', 'min:0'],
-            'width_cm' => ['nullable', 'numeric', 'min:0'],
-            'height_cm' => ['nullable', 'numeric', 'min:0'],
+            'weight_g' => ['nullable', 'numeric', 'min:0', 'max:999999.99'],
+            'length_cm' => ['nullable', 'numeric', 'min:0', 'max:999999.99'],
+            'width_cm' => ['nullable', 'numeric', 'min:0', 'max:999999.99'],
+            'height_cm' => ['nullable', 'numeric', 'min:0', 'max:999999.99'],
             'warehouse_config_id' => [
-                'nullable', 'integer', 'exists:warehouses,id',
+                'bail', 'nullable', 'integer', 'exists:warehouses,id',
                 function ($attribute, $value, $fail) use ($request) {
                     if ($state = $request->user()?->lob_state_name) {
                         if (Warehouse::find($value)?->state !== $state) {
@@ -1120,48 +1131,6 @@ if (($validated['default_discount_type'] ?? $product?->default_discount_type ?? 
         $product->default_discount_type = (string) ($data['default_discount_type'] ?? 'percent');
         $product->grade = $this->nullableString($data['grade'] ?? null);
 
-        if ($request?->hasFile('image')) {
-            $file = $request->file('image');
-            $extension = $file->extension() ?: 'jpg';
-            $filename = Str::slug($product->sku).'-'.Str::uuid().'.'.$extension;
-            $disk = Storage::disk('public');
-            if (! $disk->directoryExists('products') && ! $disk->makeDirectory('products')) {
-                Log::error('Unable to create product image storage directory.', [
-                    'disk' => config('filesystems.disks.public.driver'),
-                    'directory' => storage_path('app/public/products'),
-                    'directory_exists' => is_dir(storage_path('app/public/products')),
-                    'directory_writable' => is_writable(storage_path('app/public')),
-                ]);
-
-                throw ValidationException::withMessages([
-                    'image' => 'Product image storage is unavailable. Please contact support.',
-                ]);
-            }
-            $imagePath = $file->storeAs('products', $filename, 'public');
-
-            // Some production filesystem adapters return false on write failure instead
-            // of throwing. Do not report a successful product save with a broken image URL.
-            if (! $imagePath || ! $disk->exists($imagePath)) {
-                Log::error('Unable to persist uploaded product image.', [
-                    'disk' => config('filesystems.disks.public.driver'),
-                    'directory' => storage_path('app/public/products'),
-                    'directory_exists' => is_dir(storage_path('app/public/products')),
-                    'directory_writable' => is_writable(storage_path('app/public/products')),
-                    'returned_path' => $imagePath,
-                    'file_exists_on_disk' => $imagePath ? $disk->exists($imagePath) : false,
-                ]);
-
-                if ($imagePath) {
-                    $disk->delete($imagePath);
-                }
-
-                throw ValidationException::withMessages([
-                    'image' => 'The image could not be saved to product storage. Please try again or contact support.',
-                ]);
-            }
-
-            $product->image_path = $imagePath;
-        }
     }
 
     private function getEagerLoads(?Request $request = null): array
@@ -1397,6 +1366,7 @@ if (($validated['default_discount_type'] ?? $product?->default_discount_type ?? 
             'status' => $product->status,
             'created' => optional($product->created_at)->toDateString(),
             'image' => $product->image_url ?? '/assets/images/product-placeholder.svg',
+            'images' => $product->mediaImages(),
             'description' => $product->description,
             'deleted_at' => optional($product->deleted_at)?->toDateTimeString(),
             'slug' => $product->slug,
@@ -1677,18 +1647,22 @@ if (($validated['default_discount_type'] ?? $product?->default_discount_type ?? 
 
     private function deleteUnusedImage(?string $path): void
     {
-        if ($path && str_starts_with($path, 'products/')
-            && !Product::withTrashed()->where('image_path', $path)->exists()) {
-            Storage::disk('public')->delete($path);
-        }
+        app(ProductMedia::class)->deleteUnused($path);
     }
 
     private function persistProduct(Product $product, array $data, Request $request): void
     {
-        $originalImage = $product->image_path;
+        $media = app(ProductMedia::class);
+        $uploaded = [];
         try {
-            DB::transaction(function () use ($product, $data, $request, $originalImage) {
+            DB::transaction(function () use ($product, $data, $request, $media, &$uploaded) {
+                if ($product->exists) {
+                    $locked = Product::query()->lockForUpdate()->findOrFail($product->id);
+                    $product->setRawAttributes($locked->getAttributes(), true);
+                }
+                $originalPaths = $product->imagePaths();
                 $this->fillProduct($product, $data, $request);
+                $media->apply($product, $data, $request, $uploaded);
                 $product->save();
                 if (array_key_exists('attributes', $data)) $this->syncAttributes($product, $data['attributes']);
                 $stockConfig = [];
@@ -1696,10 +1670,13 @@ if (($validated['default_discount_type'] ?? $product?->default_discount_type ?? 
                     if (array_key_exists('warehouse_'.$field, $data)) $stockConfig[$field] = $data['warehouse_'.$field];
                 }
                 $this->syncStockConfig($product, $stockConfig, isset($data['warehouse_config_id']) ? (int)$data['warehouse_config_id'] : null);
-                if ($originalImage !== $product->image_path) DB::afterCommit(fn () => $this->deleteUnusedImage($originalImage));
+                $removed = array_diff($originalPaths, $product->imagePaths());
+                DB::afterCommit(function () use ($removed, $media) {
+                    foreach ($removed as $path) $media->deleteUnused($path);
+                });
             });
         } catch (\Throwable $error) {
-            if ($product->image_path !== $originalImage) $this->deleteUnusedImage($product->image_path);
+            foreach ($uploaded as $path) $media->deleteUnused($path);
             throw $error;
         }
     }
