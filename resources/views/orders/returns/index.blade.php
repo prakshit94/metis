@@ -28,15 +28,16 @@
         </div>
     </div>
     @can('returns.qc')
-    <section class="card border-warning mb-4" x-show="importReviewData &amp;&amp; pendingImportedReturns.length" x-cloak>
+    <section class="card border-warning mb-4" x-show="importReviewData?.returns?.length" x-cloak>
         <div class="card-body">
-            <h2 class="h5">Pending returns: choose an action</h2>
-            <p class="small text-muted">Only checked returns bypass approval when QC is submitted. Unchecked returns stay pending. Eligible approved returns continue normally.</p>
-            <div class="table-responsive"><table class="table table-sm align-middle"><thead><tr><th>Bypass for QC</th><th>Return / order</th><th>Action</th></tr></thead><tbody>
-                <template x-for="ret in pendingImportedReturns" :key="ret.id"><tr>
-                    <td>@can('returns.approve')<input type="checkbox" class="form-check-input" :value="String(ret.id)" x-model="bypassReturnIds" :disabled="isSubmitting" :aria-label="'Bypass approval for ' + ret.return_no">@else<span class="small text-muted">Approval permission required</span>@endcan</td>
+            <h2 class="h5">Imported QC returns</h2>
+            <p class="small text-muted">Approved returns are included automatically. Check only the pending returns you want to bypass; unchecked pending returns stay unchanged.</p>
+            <div class="table-responsive"><table class="table table-sm align-middle"><thead><tr><th>QC selection @can('returns.approve')<label class="d-block small fw-normal mt-1" x-show="pendingImportedReturns.length"><input type="checkbox" class="form-check-input me-1" :checked="allPendingBypassSelected" x-effect="$el.indeterminate = pendingBypassSelectionCount > 0 &amp;&amp; !allPendingBypassSelected" :disabled="isSubmitting" @change="toggleAllPendingBypass($event.target.checked)">Select all pending</label>@endcan</th><th>Return / order</th><th>Status</th><th>Action</th></tr></thead><tbody>
+                <template x-for="ret in (importReviewData?.returns || [])" :key="ret.id"><tr>
+                    <td><template x-if="ret.status === 'pending'"><span>@can('returns.approve')<input type="checkbox" class="form-check-input" :value="String(ret.id)" x-model="bypassReturnIds" :disabled="isSubmitting" :aria-label="'Bypass approval for ' + ret.return_no">@else<span class="small text-muted">Approval permission required</span>@endcan</span></template><span class="badge bg-success" x-show="ret.status !== 'pending'">Included</span></td>
                     <td><strong x-text="ret.return_no"></strong><small class="d-block text-muted" x-text="ret.order?.order_no || ret.order_no"></small></td>
-                    <td>@can('returns.cancel')<button type="button" class="btn btn-sm btn-outline-danger" @click="rejectImportedReturn(ret)" :disabled="isSubmitting">Reject / cancel return</button>@endcan</td>
+                    <td><span class="badge" :class="ret.status === 'pending' ? 'bg-warning text-dark' : 'bg-success'" x-text="getStatusLabel(ret.status)"></span></td>
+                    <td>@can('returns.cancel')<button type="button" class="btn btn-sm btn-outline-danger" x-show="ret.status === 'pending'" @click="rejectImportedReturn(ret)" :disabled="isSubmitting">Reject / cancel return</button>@endcan</td>
                 </tr></template>
             </tbody></table></div>
             <div class="d-flex flex-wrap gap-2"><button type="button" class="btn btn-primary" @click="continueImportedQc()" :disabled="isSubmitting">Review selected QC</button><button type="button" class="btn btn-outline-secondary" @click="importReviewData = null; bypassReturnIds = []" :disabled="isSubmitting">Dismiss</button></div>
@@ -227,7 +228,7 @@
                             </button>
 @endcan
                         </template>
-                        <button class="btn btn-sm btn-outline-secondary" @click="selectedReturns = []"><i class="bi bi-x-lg"></i></button>
+                        <button class="btn btn-sm btn-outline-secondary" @click="clearSelection()"><i class="bi bi-x-lg"></i></button>
                     </div>
                 </div>
             </div>
@@ -265,7 +266,7 @@
                         <template x-for="ret in returns" :key="ret.id">
                             <tr :class="{ 'table-active': selectedReturns.includes(String(ret.id)) }">
                                 <td>
-                                    <input type="checkbox" class="form-check-input border-secondary" :value="String(ret.id)" x-model="selectedReturns" style="cursor:pointer;">
+                                    <input type="checkbox" class="form-check-input border-secondary" :checked="selectedReturns.includes(String(ret.id))" @change="toggleReturn(ret, $event.target.checked)" style="cursor:pointer;">
                                 </td>
                                 <td><span class="fw-semibold font-monospace small" x-text="ret.return_no"></span></td>
                                 <td><span class="text-muted font-monospace small" x-text="ret.order_no"></span></td>
@@ -650,6 +651,7 @@
                     <div class="modal-body px-4 px-lg-5 py-4">
 
                         <div class="alert alert-warning small" x-show="bypassReturnIds.length" x-cloak>Approval bypass selected for <strong x-text="bypassReturnIds.length"></strong> pending return(s). Applied only when QC succeeds.</div>
+                        <details class="mb-3"><summary>Included returns (<span x-text="selectedReturnsForBulk.length"></span>)</summary><div class="mt-2 d-flex flex-wrap gap-2"><template x-for="ret in selectedReturnsForBulk" :key="ret.id"><span class="badge bg-secondary" x-text="ret.return_no + ' · ' + (ret.order?.order_no || ret.order_no || '')"></span></template></div></details>
                         {{-- Summary alert --}}
                         <div class="alert alert-info border-0 py-2 small mb-4" role="alert">
                             <i class="bi bi-info-circle me-1"></i>

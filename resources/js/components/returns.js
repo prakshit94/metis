@@ -197,6 +197,16 @@ document.addEventListener('alpine:init', () => {
     },
 
     get pendingImportedReturns() { return this.importReviewData?.returns.filter(ret => ret.status === 'pending') || []; },
+    get pendingBypassSelectionCount() {
+      return this.pendingImportedReturns.filter(ret => this.bypassReturnIds.includes(String(ret.id))).length;
+    },
+    get allPendingBypassSelected() {
+      return this.pendingImportedReturns.length > 0 && this.pendingBypassSelectionCount === this.pendingImportedReturns.length;
+    },
+    toggleAllPendingBypass(checked) {
+      if (this.isSubmitting) return;
+      this.bypassReturnIds = checked ? this.pendingImportedReturns.map(ret => String(ret.id)) : [];
+    },
     async rejectImportedReturn(ret) {
       if (this.isSubmitting) return;
       const result = await Swal.fire({title:'Reject / cancel this return?', text:'This uses the existing cancellation process and restores the order to its previous status.', icon:'warning', showCancelButton:true, confirmButtonText:'Reject / cancel return'});
@@ -219,8 +229,8 @@ document.addEventListener('alpine:init', () => {
       if (!this.importReviewData || this.isSubmitting) return;
       const selected = this.importReviewData.returns.filter(ret => ret.status !== 'pending' || this.bypassReturnIds.includes(String(ret.id)));
       if (!selected.length) { showToast('Select a pending return to bypass, or leave it unprocessed.', 'warning'); return; }
-      const ids = new Set(selected.map(ret => ret.id));
-      const data = {...this.importReviewData, returns:selected, preview:this.importReviewData.preview.filter(row => ids.has(row.return_id))};
+      const ids = new Set(selected.map(ret => String(ret.id)));
+      const data = {...this.importReviewData, returns:selected, preview:this.importReviewData.preview.filter(row => ids.has(String(row.return_id)))};
           this.selectedReturnsForBulk = data.returns;
           
           const aggregationMap = {};
@@ -252,8 +262,13 @@ document.addEventListener('alpine:init', () => {
 
           this.bulkQcItems = Object.values(aggregationMap).map((p) => {
             let csvRecv = 0; let csvRest = 0; let csvDmg = 0; let csvNotes = '';
+            const seenItems = new Set();
             for (const row of data.preview) {
-               if (row.sku === p.product.sku) {
+               if (row.product_id != null ? String(row.product_id) === String(p.product_id) : row.sku === p.product.sku) {
+                  if (row.identifier_lookup && row.return_item_id != null) {
+                    if (seenItems.has(String(row.return_item_id))) continue;
+                    seenItems.add(String(row.return_item_id));
+                  }
                   csvRecv += parseFloat(row.received_qty || 0);
                   csvRest += parseFloat(row.restocked_qty || 0);
                   csvDmg += parseFloat(row.damaged_qty || 0);
@@ -277,6 +292,7 @@ document.addEventListener('alpine:init', () => {
     // ─── Data Loading ─────────────────────────────────────────────────────────
 
     loadReturns() {
+      const requestId = this._loadRequestId = (this._loadRequestId || 0) + 1;
       this.isLoading = true;
       const params = new URLSearchParams();
 
@@ -290,9 +306,13 @@ document.addEventListener('alpine:init', () => {
       params.append('sort_field', this.sortField);
       params.append('sort_direction', this.sortDirection);
 
-      apiFetch(`/admin/returns?${params.toString()}`)
+      return apiFetch(`/admin/returns?${params.toString()}`)
         .then((data) => {
+          if (requestId !== this._loadRequestId) return;
           this.returns = (data.returns?.data || []).map((r) => this.mapReturn(r));
+          for (const ret of this.returns) {
+            if (this.selectedReturns.includes(String(ret.id))) this.selectedReturnsMap[String(ret.id)] = ret;
+          }
           this.currentPage = data.returns?.current_page || 1;
           this.totalPages = data.returns?.last_page || 1;
           this.totalReturns = data.returns?.total || 0;
@@ -307,9 +327,9 @@ document.addEventListener('alpine:init', () => {
             this.statusOptions = data.statuses;
           }
         })
-        .catch((err) => showToast(err.message, 'danger'))
+        .catch((err) => { if (requestId === this._loadRequestId) showToast(err.message, 'danger'); })
         .finally(() => {
-          this.isLoading = false;
+          if (requestId === this._loadRequestId) this.isLoading = false;
         });
     },
 
@@ -474,6 +494,13 @@ document.addEventListener('alpine:init', () => {
 
     // ─── Selection / Bulk ─────────────────────────────────────────────────────
 
+    get selectedReturnRecords() {
+      return [...new Set(this.selectedReturns.map(String))]
+        .map(id => this.returns.find(ret => String(ret.id) === id) || this.selectedReturnsMap[id])
+        .filter(Boolean);
+    },
+    clearSelection() { this.selectedReturns = []; this.selectedReturnsMap = {}; },
+
     toggleAll(checked) {
       if (checked) {
         this.returns.forEach((r) => {
@@ -511,7 +538,7 @@ document.addEventListener('alpine:init', () => {
     },
 
     get bulkAvailableActions() {
-      const selected = this.returns.filter((r) => this.selectedReturns.includes(String(r.id)));
+      const selected = this.selectedReturnRecords;
       return {
         approve: selected.some((r) => r.status === 'pending'),
         cancel: selected.some((r) => r.status === 'pending'),
@@ -520,9 +547,7 @@ document.addEventListener('alpine:init', () => {
     },
 
     async bulkApprove() {
-      const pending = this.returns.filter(
-        (r) => this.selectedReturns.includes(String(r.id)) && r.status === 'pending'
-      );
+      const pending = this.selectedReturnRecords.filter(r => r.status === 'pending');
       if (!pending.length) return;
 
       const confirmed = await Swal.fire({
@@ -565,9 +590,7 @@ document.addEventListener('alpine:init', () => {
     },
 
     async bulkCancel() {
-      const pending = this.returns.filter(
-        (r) => this.selectedReturns.includes(String(r.id)) && r.status === 'pending'
-      );
+      const pending = this.selectedReturnRecords.filter(r => r.status === 'pending');
       if (!pending.length) return;
 
       const confirmed = await Swal.fire({
@@ -616,9 +639,7 @@ document.addEventListener('alpine:init', () => {
     async bulkUpdateStatus(action) {
       if (!this.selectedReturns.length) return;
 
-      const pendingReturns = this.returns.filter(
-        (r) => this.selectedReturns.includes(String(r.id)) && r.status === 'pending'
-      );
+      const pendingReturns = this.selectedReturnRecords.filter(r => r.status === 'pending');
 
       if (!pendingReturns.length) {
         showToast('No pending returns selected.', 'warning');
@@ -786,17 +807,13 @@ document.addEventListener('alpine:init', () => {
     // ─── Bulk QC Inspect Modal ────────────────────────────────────────────────
     openBulkQcModal() {
       this.importReviewData = null; this.bypassReturnIds = [];
-      const candidates = this.returns.filter(ret => this.selectedReturns.includes(String(ret.id)) && ['pending','approved','received','qc_in_progress'].includes(ret.status));
+      const candidates = this.selectedReturnRecords.filter(ret => ['pending','approved','received','qc_in_progress'].includes(ret.status));
       if (candidates.some(ret => ret.status === 'pending')) {
         this.importReviewData = {returns:candidates, preview:candidates.flatMap(ret => (ret.items || []).map(item => ({return_id:ret.id, sku:item.product?.sku || '', received_qty:item.requested_qty, restocked_qty:item.requested_qty, damaged_qty:0})))};
         return;
       }
       // Find selected pending returns
-      this.selectedReturnsForBulk = this.returns.filter(
-        (r) =>
-          this.selectedReturns.includes(String(r.id)) &&
-          ['approved', 'qc_in_progress', 'received'].includes(r.status)
-      );
+      this.selectedReturnsForBulk = this.selectedReturnRecords.filter(r => ['approved', 'qc_in_progress', 'received'].includes(r.status));
 
       if (!this.selectedReturnsForBulk.length) {
         showToast('No approved returns selected.', 'warning');

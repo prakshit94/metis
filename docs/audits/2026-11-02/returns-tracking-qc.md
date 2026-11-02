@@ -53,3 +53,19 @@ quantity constraints, permission checks, failed-inventory rollback, audit
 history, duplicate submission protection and existing cancellation behavior.
 Frontend checks ensure excluded returns do not contribute to quantities or API
 payloads, and bypass consent is not retained across selections.
+
+## Mixed approved/pending import review
+
+The review table now lists every imported return with its status. Approved,
+received and QC-in-progress returns are marked Included; only pending rows offer
+bypass checkboxes or cancellation. The previous pending-only table hid approved
+rows from view, although the selection code retained them. The QC modal also
+lists the included return/order references; product rows remain aggregated as
+before rather than showing one restock row per order.
+
+Preview rows now include product/return-item identity. Selection compares return
+IDs consistently as strings, aggregation uses product identity, and repeated
+identifier references to one return item contribute quantities once. Detailed
+quantity CSV behavior remains unchanged. Frontend regression and the mixed QC
+database suite cover approved and pending rows together, preserving existing
+bypass, inventory, financial, rollback and permission checks.

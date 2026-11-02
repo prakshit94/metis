@@ -683,6 +683,9 @@ class OrderReturnController extends Controller implements HasMiddleware
                     if ($isPreview) {
                         $previewData[] = [
                             'return_id' => $return?->id,
+                            'return_item_id' => $matchedItem?->id,
+                            'product_id' => $matchedItem?->product_id,
+                            'identifier_lookup' => $orderIdMode,
                             'requires_approval' => $return?->status === 'pending',
                             'tracking_id' => $trackingMode ? substr($returnNo, 9) : null,
                             'order_id' => $orderIdMode && str_starts_with($returnNo, 'id:') ? (int) substr($returnNo, 3) : null,
