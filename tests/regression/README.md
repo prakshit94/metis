@@ -202,3 +202,31 @@ The media suite uses a disposable schema and temporary upload directory to test
 real HTTP image responses, cache revalidation, uploaded logo paths, product
 visibility and path protection. Shopping session and CSRF middleware are checked
 separately from the session-free GET-only media endpoints.
+
+Attendance and leave workspace checks:
+
+```sh
+node tests/regression/hr_workspaces.mjs
+METIS_TEST_MYSQL_SOCKET=/path/to/test/mysql.sock php tests/regression/hr_workspaces.php
+```
+
+The PHP suite uses the disposable schema from `bootstrap.php`. It checks overnight
+sessions, timestamps whose dates cannot be persisted, invalid filters, inclusive
+leave days, approval balance adjustments, and processed-record permissions.
+Set `METIS_HR_RENDER_DIR` to a temporary directory to render sample admin and
+restricted-staff pages for visual review; rendered pages contain test data only.
+The JS suite covers calendar gaps, holiday/roster markers, overnight checkout
+ordering, loaded counts, invalid date ranges, read errors, and timeout cleanup.
+
+Product gallery checks:
+
+```sh
+node tests/regression/product_gallery.mjs
+METIS_TEST_MYSQL_SOCKET=/path/to/test/mysql.sock php tests/regression/product_gallery.php
+```
+
+The PHP suite includes the existing catalog/storefront regressions and uses only
+a disposable schema and temporary public storage. Optional `METIS_PRODUCT_RENDER_DIR`
+renders sample product pages/responses for visual inspection. The feature contract,
+audit findings and deployment notes are in
+`docs/audits/2026-11-02/product-catalog-gallery.md`.
