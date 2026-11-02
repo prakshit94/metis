@@ -132,10 +132,10 @@ class LeaveController extends Controller
         abort_unless($request->user()?->can('leave-create'), 403);
 
         $validated = $request->validate([
-            'user_id' => 'required|exists:users,id',
-            'leave_type' => 'required|string',
-            'start_date' => 'required|date',
-            'end_date' => 'required|date|after_or_equal:start_date',
+            'user_id' => 'bail|required|integer|exists:users,id',
+            'leave_type' => 'required|string|max:255',
+            'start_date' => 'required|date_format:Y-m-d',
+            'end_date' => 'required|date_format:Y-m-d|after_or_equal:start_date',
             'reason' => 'nullable|string',
         ]);
 
@@ -179,10 +179,10 @@ class LeaveController extends Controller
             }
 
             $validated = $request->validate([
-                'user_id' => 'required|exists:users,id',
-                'leave_type' => 'required|string',
-                'start_date' => 'required|date',
-                'end_date' => 'required|date|after_or_equal:start_date',
+                'user_id' => 'bail|required|integer|exists:users,id',
+                'leave_type' => 'required|string|max:255',
+                'start_date' => 'required|date_format:Y-m-d',
+                'end_date' => 'required|date_format:Y-m-d|after_or_equal:start_date',
                 'reason' => 'nullable|string',
                 'status' => 'required|in:Pending,Approved,Rejected',
             ]);
@@ -357,7 +357,7 @@ class LeaveController extends Controller
 
         $balance = LeaveBalance::where('user_id', $leave->user_id)
             ->where('leave_type', $leave->leave_type)
-            ->first();
+            ->lockForUpdate()->first();
 
         if ($balance) {
             if ($action === 'deduct') {

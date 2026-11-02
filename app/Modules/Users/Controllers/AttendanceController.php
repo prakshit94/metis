@@ -37,6 +37,11 @@ class AttendanceController extends Controller implements HasMiddleware
             'per_page' => 'nullable|integer',
             'page' => 'nullable|integer|min:1',
             'user_id' => 'nullable|integer',
+            'search' => 'nullable|string|max:200',
+            'status' => 'nullable|in:Present,Absent,Half-Day,Late',
+            'sort_by' => 'nullable|in:date,user,status,check_in,check_out',
+            'sort_dir' => 'nullable|in:asc,desc',
+            'deleted' => 'nullable|in:with,only',
         ]);
 
         $sortMap = [
@@ -208,18 +213,45 @@ class AttendanceController extends Controller implements HasMiddleware
         return response()->json($responsePayload);
     }
 
+    private function validateAttendance(Request $request): array
+    {
+        $validated = $request->validate([
+            'user_id' => 'bail|required|integer|exists:users,id',
+            'date' => 'required|date_format:Y-m-d',
+            'check_in_time' => 'nullable|date_format:Y-m-d\TH:i',
+            'check_out_time' => ['nullable', 'date_format:Y-m-d\TH:i', ...($request->filled('check_in_time') ? ['after:check_in_time'] : [])],
+            'status' => 'required|in:Present,Absent,Half-Day,Late',
+            'notes' => 'nullable|string',
+        ]);
+
+        // Only times are persisted: reject dates that would be silently discarded.
+        foreach (['check_in_time', 'check_out_time'] as $field) {
+            if (empty($validated[$field])) {
+                continue;
+            }
+            $time = Carbon::parse($validated[$field]);
+            if (($field === 'check_in_time' || empty($validated['check_in_time']))
+                && $time->toDateString() !== $validated['date']) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    $field => 'The session time must use the selected attendance date.',
+                ]);
+            }
+        }
+        if (! empty($validated['check_in_time']) && ! empty($validated['check_out_time'])
+            && Carbon::parse($validated['check_in_time'])->diffInMinutes(Carbon::parse($validated['check_out_time'])) >= 1440) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'check_out_time' => 'A session must be shorter than 24 hours. Use separate records for separate days.',
+            ]);
+        }
+
+        return $validated;
+    }
+
     public function store(Request $request): JsonResponse
     {
         abort_unless($request->user()?->can('attendance-create'), 403);
 
-        $validated = $request->validate([
-            'user_id' => 'required|exists:users,id',
-            'date' => 'required|date',
-            'check_in_time' => 'nullable|date_format:Y-m-d\TH:i',
-            'check_out_time' => 'nullable|date_format:Y-m-d\TH:i|after:check_in_time',
-            'status' => 'required|in:Present,Absent,Half-Day,Late',
-            'notes' => 'nullable|string',
-        ]);
+        $validated = $this->validateAttendance($request);
 
         $isGlobalView = $request->user() && ($request->user()->hasRole(['Super Admin', 'Admin']) || $request->user()->can('view-all-data'));
         if (! $isGlobalView) {
@@ -252,14 +284,7 @@ class AttendanceController extends Controller implements HasMiddleware
             abort(403, 'Unauthorized to modify this attendance record.');
         }
 
-        $validated = $request->validate([
-            'user_id' => 'required|exists:users,id',
-            'date' => 'required|date',
-            'check_in_time' => 'nullable|date_format:Y-m-d\TH:i',
-            'check_out_time' => 'nullable|date_format:Y-m-d\TH:i|after:check_in_time',
-            'status' => 'required|in:Present,Absent,Half-Day,Late',
-            'notes' => 'nullable|string',
-        ]);
+        $validated = $this->validateAttendance($request);
 
         if (! $isGlobalView) {
             $validated['user_id'] = $request->user()->id;

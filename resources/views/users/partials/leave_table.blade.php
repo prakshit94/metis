@@ -1,4 +1,4 @@
-<div class="card">
+<div class="card" :aria-busy="isLoading">
     <div class="card-header">
         <div class="row align-items-center g-3">
             <div class="col">
@@ -13,15 +13,16 @@
             </div>
         </div>
     </div>
+    <div class="alert alert-danger m-3" x-show="error" x-text="error" x-cloak role="alert"></div>
     <div class="card-body border-bottom report-summary">
         <div class="row g-3" aria-label="Leave report totals" aria-live="polite">
             <div class="col-6 col-lg-3"><span class="small text-muted">Matching requests</span><strong class="fs-5 d-block" x-text="summary.requests"></strong></div>
             <div class="col-6 col-lg-3"><span class="small text-muted">Requested days</span><strong class="fs-5 d-block" x-text="summary.requested_days"></strong></div>
-            <div class="col-6 col-lg-3"><span class="small text-muted">Approved</span><strong class="fs-5 text-success d-block" x-text="summary.approved"></strong></div>
+            <div class="col-6 col-lg-3"><span class="small text-muted" x-text="mode === 'pending' ? 'Awaiting decision' : 'Approved'"></span><strong class="fs-5 d-block" :class="mode === 'pending' ? 'text-warning-emphasis' : 'text-success'" x-text="mode === 'pending' ? summary.pending : summary.approved"></strong></div>
             <div class="col-6 col-lg-3"><span class="small text-muted">Rejected</span><strong class="fs-5 text-danger d-block" x-text="summary.rejected"></strong></div>
         </div>
     </div>
-    <div class="card-body border-bottom">
+    <div class="card-body border-bottom hr-filter-panel">
         <div class="row g-3 align-items-end">
             <div class="col-md-6 col-xl-4"><label class="form-label small">Search requests</label><input type="search" class="form-control form-control-sm" x-model="search" @input.debounce.350ms="filterItems()" placeholder="Employee, employee ID, leave type or reason" aria-label="Search {{ $title }}"></div>
             <div class="col-md-6 col-xl-4"><label class="form-label small">Employee</label>
@@ -64,15 +65,15 @@
                 </div>
                 <div class="d-flex gap-2">
                     @can('leave-approve')
-                    <button class="btn btn-sm btn-success" @click="bulkAction('approve')" x-show="canReviewSelection">
+                    <button class="btn btn-sm btn-success" @click="bulkAction('approve')" :disabled="busy" x-show="canReviewSelection">
                         <i class="bi bi-check-circle me-1"></i>Approve
                     </button>
-                    <button class="btn btn-sm btn-warning" @click="bulkAction('reject')" x-show="canReviewSelection">
+                    <button class="btn btn-sm btn-warning" @click="bulkAction('reject')" :disabled="busy" x-show="canReviewSelection">
                         <i class="bi bi-x-circle me-1"></i>Reject
                     </button>
                     @endcan
                     @can('leave-delete')
-                    <button class="btn btn-sm btn-danger" @click="bulkAction('delete')" x-show="canDeleteSelection">
+                    <button class="btn btn-sm btn-danger" @click="bulkAction('delete')" :disabled="busy" x-show="canDeleteSelection">
                         <i class="bi bi-trash me-1"></i>Delete
                     </button>
                     @endcan
@@ -111,10 +112,10 @@
                             </td>
                         </tr>
                     </template>
-                    <template x-if="!isLoading && items.length === 0">
+                    <template x-if="!isLoading && !error && items.length === 0">
                         <tr>
                             <td colspan="8" class="text-center py-4 text-muted">
-                                No leave requests found.
+                                No requests match these filters. Try a different employee or date range.
                             </td>
                         </tr>
                     </template>
@@ -200,7 +201,7 @@
         </div>
 
         <!-- Pagination -->
-        <div class="d-flex justify-content-between align-items-center p-3 border-top" x-show="totalItems > 0" style="display: none;">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 p-3 border-top" x-show="totalItems > 0" style="display: none;">
             <div class="text-muted small">
                 Showing <span x-text="pageFrom"></span> to
                 <span x-text="pageTo"></span> of
@@ -243,8 +244,8 @@
         </div>
         <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
             @can('leave-approve')
-            <button type="button" class="btn btn-success" x-show="viewingItem && canReview(viewingItem)" @click="reviewItem(viewingItem, 'Approved')">Approve</button>
-            <button type="button" class="btn btn-warning" x-show="viewingItem && canReview(viewingItem)" @click="reviewItem(viewingItem, 'Rejected')">Reject</button>
+            <button type="button" class="btn btn-success" x-show="viewingItem && canReview(viewingItem)" @click="reviewItem(viewingItem, 'Approved')" :disabled="busy">Approve</button>
+            <button type="button" class="btn btn-warning" x-show="viewingItem && canReview(viewingItem)" @click="reviewItem(viewingItem, 'Rejected')" :disabled="busy">Reject</button>
             @endcan
         </div>
     </div></div>

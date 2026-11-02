@@ -4,6 +4,7 @@
 @section('page', 'leaves')
 
 @push('head')
+@include('users.partials.time-leave-styles')
 <style>
 .leave-workspace-nav { overflow-x: auto; }
 .leave-workspace-nav .btn { flex-shrink: 0; white-space: nowrap; }
@@ -18,7 +19,7 @@
 @php
     $isGlobalHr = auth()->user()->hasRole(['Super Admin', 'Admin']) || auth()->user()->can('view-all-data');
 @endphp
-<div class="user-management leave-workspace" x-data="{ currentTab: new URLSearchParams(window.location.search).has('user_id') ? 'requests' : (['requests', 'history', 'balances', 'holidays'].includes(sessionStorage.getItem('leavesTab')) ? sessionStorage.getItem('leavesTab') : 'requests') }" x-init="$watch('currentTab', val => { sessionStorage.setItem('leavesTab', val); window.dispatchEvent(new CustomEvent('refresh-tab-' + val)); })">
+<div class="user-management leave-workspace" x-data="{ currentTab: new URLSearchParams(window.location.search).has('user_id') ? 'requests' : (@js(array_values(array_filter(['requests', 'history', auth()->user()->can('leavebalance-view') ? 'balances' : null, auth()->user()->can('holiday-view') ? 'holidays' : null]))).includes(sessionStorage.getItem('leavesTab')) ? sessionStorage.getItem('leavesTab') : 'requests') }" x-init="$watch('currentTab', val => { sessionStorage.setItem('leavesTab', val); window.dispatchEvent(new CustomEvent('refresh-tab-' + val)); })">
     <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
         <div>
             <span class="text-primary small fw-semibold">TIME &amp; LEAVE</span><h1 class="h3 mt-1 mb-2">Leave workspace</h1>
@@ -30,9 +31,13 @@
             <button type="button" class="btn btn-primary" x-show="currentTab === 'requests'" @click="$dispatch('open-leave-modal')">
                 <i class="bi bi-plus-circle me-2"></i>Request Leave
             </button>
+            @endcan
+            @can('leavebalance-create')
             <button type="button" class="btn btn-primary" x-show="currentTab === 'balances'" style="display: none;" @click="$dispatch('open-balance-modal')">
                 <i class="bi bi-plus-circle me-2"></i>Add Leave Balance
             </button>
+            @endcan
+            @can('holiday-create')
             <button type="button" class="btn btn-primary" x-show="currentTab === 'holidays'" style="display: none;" @click="$dispatch('open-holiday-modal')">
                 <i class="bi bi-plus-circle me-2"></i>Add Holiday
             </button>
@@ -43,8 +48,12 @@
     <nav class="leave-workspace-nav d-flex gap-2 mb-4 p-2 border rounded-3 bg-body" aria-label="Leave workspace sections">
         <button type="button" class="btn" :class="currentTab === 'requests' ? 'btn-primary' : 'btn-light'" :aria-current="currentTab === 'requests' ? 'page' : null" @click="currentTab = 'requests'">Pending Requests</button>
         <button type="button" class="btn" :class="currentTab === 'history' ? 'btn-primary' : 'btn-light'" :aria-current="currentTab === 'history' ? 'page' : null" @click="currentTab = 'history'">History</button>
+        @can('leavebalance-view')
         <button type="button" class="btn" :class="currentTab === 'balances' ? 'btn-primary' : 'btn-light'" :aria-current="currentTab === 'balances' ? 'page' : null" @click="currentTab = 'balances'">Leave Balances</button>
+        @endcan
+        @can('holiday-view')
         <button type="button" class="btn" :class="currentTab === 'holidays' ? 'btn-primary' : 'btn-light'" :aria-current="currentTab === 'holidays' ? 'page' : null" @click="currentTab = 'holidays'">Holidays</button>
+        @endcan
     </nav>
 
     <!-- PENDING REQUESTS TAB -->
@@ -57,6 +66,7 @@
         @include('users.partials.leave_table', ['title' => 'Leave History', 'statusFilter' => 'History'])
     </div>
 
+    @can('leavebalance-view')
     <!-- BALANCES TAB -->
     <div x-show="currentTab === 'balances'" style="display: none;" x-data="balancesTable">
         <div class="card">
@@ -72,6 +82,7 @@
                     </div>
                 </div>
             </div>
+            <div class="alert alert-danger m-3" x-show="error" x-text="error" x-cloak role="alert"></div>
             <div class="card-body p-0">
                 <!-- Bulk Actions -->
                 <div class="bulk-actions-bar p-3 bg-primary bg-opacity-10 border-bottom border-primary border-opacity-25"
@@ -84,7 +95,7 @@
                             </span>
                         </div>
                         <div class="d-flex gap-2">
-                            @can('leave-delete')
+                            @can('leavebalance-delete')
                             <button class="btn btn-sm btn-danger" @click="bulkAction('delete')">
                                 <i class="bi bi-trash me-1"></i>Delete
                             </button>
@@ -140,11 +151,11 @@
                                         <div class="dropdown">
                                             <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></button>
                                             <ul class="dropdown-menu">
-                                                @can('leave-edit')
+                                                @can('leavebalance-edit')
                                                 <li><a class="dropdown-item" href="#" @click.prevent="editItem(item)"><i class="bi bi-pencil me-2"></i>Edit</a></li>
                                                 <li><hr class="dropdown-divider"></li>
                                                 @endcan
-                                                @can('leave-delete')
+                                                @can('leavebalance-delete')
                                                 <li><a class="dropdown-item text-danger" href="#" @click.prevent="deleteItem(item.id)"><i class="bi bi-trash me-2"></i>Delete</a></li>
                                                 @endcan
                                             </ul>
@@ -159,6 +170,9 @@
         </div>
     </div>
 
+    @endcan
+
+    @can('holiday-view')
     <!-- HOLIDAYS TAB -->
     <div x-show="currentTab === 'holidays'" style="display: none;" x-data="holidaysTable">
         <div class="card">
@@ -174,6 +188,7 @@
                     </div>
                 </div>
             </div>
+            <div class="alert alert-danger m-3" x-show="error" x-text="error" x-cloak role="alert"></div>
             <div class="card-body p-0">
                 <div class="table-responsive">
                     <table class="table table-hover align-middle mb-0">
@@ -207,11 +222,11 @@
                                         <div class="dropdown">
                                             <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></button>
                                             <ul class="dropdown-menu">
-                                                @can('leave-edit')
+                                                @can('holiday-edit')
                                                 <li><a class="dropdown-item" href="#" @click.prevent="editItem(item)"><i class="bi bi-pencil me-2"></i>Edit</a></li>
                                                 <li><hr class="dropdown-divider"></li>
                                                 @endcan
-                                                @can('leave-delete')
+                                                @can('holiday-delete')
                                                 <li><a class="dropdown-item text-danger" href="#" @click.prevent="deleteItem(item.id)"><i class="bi bi-trash me-2"></i>Delete</a></li>
                                                 @endcan
                                             </ul>
@@ -225,11 +240,13 @@
             </div>
         </div>
     </div>
+    @endcan
+
 </div>
 
 <!-- Leave Modal -->
 <div class="modal fade" id="leaveModal" tabindex="-1" aria-labelledby="leaveModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" x-data="leaveForm">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg" x-data="leaveForm">
         <form class="modal-content" @submit.prevent="saveItem()">
             <div class="modal-header">
                 <h5 class="modal-title d-flex align-items-center" id="leaveModalLabel">
@@ -238,71 +255,7 @@
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body">
-                <div class="alert alert-danger" x-show="error" x-text="error" style="display: none;"></div>
-
-                <div class="mb-3">
-<label class="form-label" for="leaveUser">Employee <span class="text-danger">*</span></label>
-<x-searchable-select model="form.user_id" label="Leave employee">
-<select x-ref="native" aria-hidden="true" tabindex="-1" @focus="$refs.trigger.focus()" @invalid.prevent="validationMessage = $event.target.validationMessage; $refs.trigger.focus()" class="visually-hidden" id="leaveUser" x-model="form.user_id" required @disabled(!$isGlobalHr)>
-                        <option value="">Select Employee</option>
-                        <template x-for="user in users" :key="user.id">
-                            <option :value="user.id" :selected="String(user.id) === String(form.user_id)" x-text="user.name"></option>
-                        </template>
-                    </select>
-</x-searchable-select>
-</div>
-
-                <div class="mb-3">
-<label class="form-label" for="leaveType">Leave Type <span class="text-danger">*</span></label>
-                    <div class="form-text text-warning" x-show="form.user_id && userBalances.length === 0 && !isLoadingBalances">
-                        No active leave balances found for this employee.
-                    </div>
-                </div>
-
-                <div class="row">
-                    <div class="col-6">
-                        <div class="form-floating mb-3">
-                            <input type="date" class="form-control" id="leaveStart" x-model="form.start_date" required>
-                            <label for="leaveStart">Start Date <span class="text-danger">*</span></label>
-<x-searchable-select model="form.leave_type" label="Leave type">
-<select x-ref="native" aria-hidden="true" tabindex="-1" @focus="$refs.trigger.focus()" @invalid.prevent="validationMessage = $event.target.validationMessage; $refs.trigger.focus()" class="visually-hidden" id="leaveType" x-model="form.leave_type" required :disabled="isLoadingBalances || userBalances.length === 0">
-                        <option value="">Select Leave Type</option>
-                        <template x-for="balance in userBalances" :key="balance.id">
-                            <option :value="balance.leave_type"
-                                    x-text="`${balance.leave_type} Leave (Balance: ${balance.balance})`"
-                                    :disabled="balance.balance <= 0 && balance.leave_type !== originalLeaveType"></option>
-                        </template>
-                    </select>
-</x-searchable-select>
-</div>
-                    </div>
-                    <div class="col-6">
-                        <div class="form-floating mb-3">
-                            <input type="date" class="form-control" id="leaveEnd" x-model="form.end_date" :min="form.start_date" required>
-                            <label for="leaveEnd">End Date <span class="text-danger">*</span></label>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="form-floating mb-3">
-                    <textarea class="form-control" id="leaveReason" x-model="form.reason" style="height: 100px;" required></textarea>
-                    <label for="leaveReason">Reason <span class="text-danger">*</span></label>
-                </div>
-
-                @if($isGlobalHr && auth()->user()->can('leave-approve'))
-                <div class="mb-3" x-show="editingId" x-cloak>
-<label class="form-label" for="leaveStatus">Status</label>
-<x-searchable-select model="form.status" label="Leave status">
-<select x-ref="native" aria-hidden="true" tabindex="-1" @focus="$refs.trigger.focus()" @invalid.prevent="validationMessage = $event.target.validationMessage; $refs.trigger.focus()" class="visually-hidden" id="leaveStatus" x-model="form.status">
-                        <option value="Pending">Pending</option>
-                        <option value="Approved">Approved</option>
-                        <option value="Rejected">Rejected</option>
-                    </select>
-</x-searchable-select>
-</div>
-                @endif
-            </div>
+            @include('users.partials.leave-request-fields')
             <div class="modal-footer">
                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
                 <button type="submit" class="btn btn-primary px-4" :disabled="saving">
@@ -431,7 +384,10 @@
 @push('scripts')
 <script>
     async function hrFetch(url, options = {}) {
-        const response = await fetch(url, { ...options, headers: { Accept: 'application/json', ...(options.headers || {}) } });
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 30000);
+        try {
+        const response = await fetch(url, { credentials: 'same-origin', ...options, signal: controller.signal, headers: { Accept: 'application/json', ...(options.headers || {}) } });
         if (response.redirected || response.status === 401 || response.status === 419) {
             throw new Error('Your session has expired. Reload the page and sign in again.');
         }
@@ -440,6 +396,10 @@
             throw new Error(data.errors ? Object.values(data.errors).flat().join(' ') : data.message || 'Request failed. Please retry.');
         }
         return response;
+        } catch (error) {
+            if (error.name === 'AbortError') throw new Error('The request timed out. Please retry.');
+            throw error;
+        } finally { clearTimeout(timeout); }
     }
     async function hrAll(url) {
         const items = [];
@@ -455,8 +415,11 @@
         return items;
     }
     async function hrUsers() {
-        try { return await hrAll('/api/users'); }
-        catch { return [@json(['id' => auth()->id(), 'name' => auth()->user()->name])]; }
+        const current = @json(['id' => auth()->id(), 'name' => auth()->user()->name]);
+        let users = [];
+        try { users = await hrAll('/api/users'); } catch {}
+        if (!users.some(user => String(user.id) === String(current.id))) users.unshift(current);
+        return users;
     }
     function hrFailure(error) {
         window.Swal.fire({ icon: 'error', title: 'Unable to complete request', text: error.message || 'Please retry.' });
@@ -482,6 +445,8 @@
             search: '', employeeFilter: /^\d+$/.test(new URLSearchParams(window.location.search).get('user_id') || '') ? new URLSearchParams(window.location.search).get('user_id') : '', typeFilter: '', statusFilter: '',
             fromDate: '', toDate: '', directTeam: false,
             employeeOptions: [], leaveTypes: [], viewingItem: null,
+            error: '',
+            busy: false,
             summary: { requests: 0, requested_days: 0, pending: 0, approved: 0, rejected: 0 },
 
             init() {
@@ -504,6 +469,7 @@
             async loadItems() {
                 const requestId = this._requestId = (this._requestId || 0) + 1;
                 this.isLoading = true;
+                this.error = '';
                 try {
                     const url = '/api/leaves?' + this.reportParams();
 
@@ -524,7 +490,7 @@
                         this.totalItems = json.total || 0;
                     }
                 } catch(e) {
-                    if (requestId === this._requestId) hrFailure(e);
+                    if (requestId === this._requestId) this.error = e.message;
                 }
                 if (requestId === this._requestId) this.isLoading = false;
             },
@@ -541,7 +507,7 @@
                 if (this.directTeam) params.set('team', 'direct');
                 return params;
             },
-            filterItems() { this.currentPage = 1; this.selectedItems = []; this.loadItems(); },
+            filterItems() { if (this.fromDate && this.toDate && this.toDate < this.fromDate) { this.error = 'The end date must be on or after the start date.'; return; } this.currentPage = 1; this.selectedItems = []; this.loadItems(); },
             resetFilters() {
                 this.search = ''; this.employeeFilter = ''; this.typeFilter = ''; this.statusFilter = '';
                 this.fromDate = ''; this.toDate = ''; this.directTeam = false; this.filterItems();
@@ -558,12 +524,13 @@
             },
             get canDeleteSelection() {
                 const selected = this.items.filter(item => this.selectedItems.includes(String(item.id)));
-                return selected.length > 0 && selected.every(item => {{ $isGlobalHr ? 'true' : 'false' }} || String(item.user_id) === '{{ auth()->id() }}');
+                return selected.length > 0 && selected.every(item => item.status === 'Pending' && ({{ $isGlobalHr ? 'true' : 'false' }} || String(item.user_id) === '{{ auth()->id() }}'));
             },
             async reviewItem(item, status) {
-                if (!this.canReview(item)) return;
+                if (this.busy || !this.canReview(item)) return;
                 const result = await window.Swal.fire({ title: status === 'Approved' ? 'Approve leave?' : 'Reject leave?', text: item.user?.name || 'Employee leave request', icon: 'question', showCancelButton: true });
-                if (!result.isConfirmed) return;
+                if (!result.isConfirmed || this.busy) return;
+                this.busy = true;
                 try {
                     await hrFetch(`/api/leaves/${item.id}/status`, {
                         method: 'PATCH', headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
@@ -571,7 +538,7 @@
                     });
                     bootstrap.Modal.getOrCreateInstance(document.getElementById('leaveDetails-' + this.mode)).hide();
                     window.dispatchEvent(new CustomEvent('leave-saved'));
-                } catch (error) { hrFailure(error); }
+                } catch (error) { hrFailure(error); } finally { this.busy = false; }
             },
 
             goToPage(page) {
@@ -606,6 +573,7 @@
             },
 
             async deleteItem(id) {
+                if (this.busy) return;
                 const result = await window.Swal.fire({
                     title: 'Are you sure?',
                     text: 'Are you sure you want to delete this leave request?',
@@ -617,7 +585,8 @@
                     reverseButtons: true,
                     focusCancel: true
                 });
-                if (!result.isConfirmed) return;
+                if (!result.isConfirmed || this.busy) return;
+                this.busy = true;
                 try {
                     const res = await hrFetch(`/api/leaves/${id}`, {
                         method: 'DELETE',
@@ -631,7 +600,7 @@
                     }
                 } catch(e) {
                     hrFailure(e);
-                }
+                } finally { this.busy = false; }
             },
 
             toggleAll(checked) {
@@ -643,7 +612,7 @@
             },
 
             async bulkAction(action) {
-                if (this.selectedItems.length === 0) return;
+                if (this.busy || this.selectedItems.length === 0) return;
                 let message = 'Are you sure you want to perform this action?';
                 let confirmBtnText = 'Yes, proceed';
                 let confirmBtnColor = '#0d6efd';
@@ -674,7 +643,8 @@
                     focusCancel: true
                 });
 
-                if (!result.isConfirmed) return;
+                if (!result.isConfirmed || this.busy) return;
+                this.busy = true;
 
                 try {
                     const res = await hrFetch('/api/leaves/bulk-action', {
@@ -693,12 +663,13 @@
                     }
                 } catch(e) {
                     hrFailure(e);
-                }
+                } finally { this.busy = false; }
             }
         }));
 
         Alpine.data('balancesTable', () => ({
             items: [],
+            error: '',
             selectedItems: [],
             isLoading: true,
             _requestId: 0,
@@ -727,12 +698,13 @@
             async loadItems() {
                 const requestId = this._requestId = (this._requestId || 0) + 1;
                 this.isLoading = true;
+                this.error = '';
                 try {
                     const items = await hrAll('/api/leave-balances');
                     if (requestId !== this._requestId) return;
                     this.items = items;
                     if (this.selectedItems) this.selectedItems = [];
-                } catch(e) { hrFailure(e); }
+                } catch(e) { if (requestId === this._requestId) this.error = e.message; }
                 if (requestId === this._requestId) this.isLoading = false;
             },
 
@@ -789,6 +761,7 @@
 
         Alpine.data('holidaysTable', () => ({
             items: [],
+            error: '',
             isLoading: true,
             _requestId: 0,
 
@@ -816,12 +789,13 @@
             async loadItems() {
                 const requestId = this._requestId = (this._requestId || 0) + 1;
                 this.isLoading = true;
+                this.error = '';
                 try {
                     const items = await hrAll('/api/holidays');
                     if (requestId !== this._requestId) return;
                     this.items = items;
                     if (this.selectedItems) this.selectedItems = [];
-                } catch(e) { hrFailure(e); }
+                } catch(e) { if (requestId === this._requestId) this.error = e.message; }
                 if (requestId === this._requestId) this.isLoading = false;
             },
 
@@ -862,12 +836,13 @@
 
             init() {
                 this.loadUsers();
+                leaveModalInstance = bootstrap.Modal.getOrCreateInstance(document.getElementById('leaveModal'));
                 window.addEventListener('open-leave-modal', () => {
                     this.error = null;
                     this.editingId = null;
                     this.originalLeaveType = null;
                     this.form.user_id = '{{ auth()->id() }}';
-                    this.form.leave_type = 'Sick';
+                    this.form.leave_type = '';
                     this.form.start_date = '';
                     this.form.end_date = '';
                     this.form.reason = '';
@@ -925,8 +900,12 @@
 
             async saveItem() {
                 if (this.saving) return;
-                this.saving = true;
                 this.error = null;
+                if (!this.form.leave_type || !this.form.start_date || !this.form.end_date || this.form.end_date < this.form.start_date) {
+                    this.error = 'Select a leave type and valid start and end dates.';
+                    return;
+                }
+                this.saving = true;
 
                 try {
                     const method = this.editingId ? 'PUT' : 'POST';

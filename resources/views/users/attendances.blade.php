@@ -4,6 +4,7 @@
 @section('page', 'attendances')
 
 @push('head')
+@include('users.partials.time-leave-styles')
 <style>
 .attendance-workspace .card { border-left-width: 1px !important; }
 .attendance-workspace-nav { flex-wrap: nowrap; overflow-x: auto; }
@@ -27,16 +28,16 @@
 <div class="attendance-workspace" x-data="{ workspaceSection: 'attendance' }">
     <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
         <div><span class="text-primary small fw-semibold">TIME &amp; LEAVE</span><h1 class="h3 mt-1 mb-2">Attendance workspace</h1><p class="text-muted mb-0">Review daily activity, manage rosters, and track requests in one place.</p></div>
-        <a href="{{ url('/admin/leaves') }}" class="btn btn-outline-secondary">Leave management</a>
+        @can('leave-view')<a href="{{ url('/admin/leaves') }}" class="btn btn-outline-secondary">Leave management</a>@endcan
     </div>
     <nav class="attendance-workspace-nav d-flex gap-2 mb-4 p-2 border rounded-3 bg-body" aria-label="Attendance workspace sections">
         <button type="button" class="btn" :class="workspaceSection === 'attendance' ? 'btn-primary' : 'btn-light'" :aria-current="workspaceSection === 'attendance' ? 'page' : null" @click="workspaceSection = 'attendance'">Attendance</button>
         <button type="button" class="btn" :class="workspaceSection === 'corrections' ? 'btn-primary' : 'btn-light'" :aria-current="workspaceSection === 'corrections' ? 'page' : null" @click="workspaceSection = 'corrections'">Corrections</button>
         <button type="button" class="btn" :class="workspaceSection === 'co' ? 'btn-primary' : 'btn-light'" :aria-current="workspaceSection === 'co' ? 'page' : null" @click="workspaceSection = 'co'">Compensatory off</button>
         @can('attendance-roster-import')<button type="button" class="btn" :class="workspaceSection === 'roster' ? 'btn-primary' : 'btn-light'" :aria-current="workspaceSection === 'roster' ? 'page' : null" @click="workspaceSection = 'roster'">Roster import</button>@endcan
-        @can('leave-view')<button type="button" class="btn" :class="workspaceSection === 'balances' ? 'btn-primary' : 'btn-light'" :aria-current="workspaceSection === 'balances' ? 'page' : null" @click="workspaceSection = 'balances'">My leave balances</button>@endcan
+        @can('leavebalance-view')<button type="button" class="btn" :class="workspaceSection === 'balances' ? 'btn-primary' : 'btn-light'" :aria-current="workspaceSection === 'balances' ? 'page' : null" @click="workspaceSection = 'balances'">My leave balances</button>@endcan
     </nav>
-<div class="user-management" x-show="workspaceSection === 'attendance'" x-data="attendancesTable({{ auth()->id() }}, { global: @js($isGlobalHr), edit: @js(auth()->user()->can('attendance-edit')), create: @js(auth()->user()->can('attendance-create')), leaveEdit: @js(auth()->user()->can('leave-edit')), holidays: @js(auth()->user()->can('leave-view')), timeZone: @js(config('app.timezone')) })">
+<div class="user-management" x-show="workspaceSection === 'attendance'" x-data="attendancesTable({{ auth()->id() }}, { global: @js($isGlobalHr), edit: @js(auth()->user()->can('attendance-edit')), create: @js(auth()->user()->can('attendance-create')), leaveEdit: @js(auth()->user()->can('leave-edit')), holidays: @js(auth()->user()->can('holiday-view')), timeZone: @js(config('app.timezone')) })">
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
         <div>
             <h2 class="h5 mb-1">Daily attendance</h2>
@@ -45,10 +46,10 @@
         <div class="d-flex flex-wrap gap-2">
             <div class="btn-group me-2 shadow-sm">
                 <button type="button" class="btn btn-outline-secondary" aria-label="Attendance list view" :class="{ 'active': currentView === 'list' }" @click="switchView('list')">
-                    <i class="bi bi-list-ul"></i>
+                    <i class="bi bi-list-ul me-1"></i> List
                 </button>
                 <button type="button" class="btn btn-outline-secondary" aria-label="Attendance calendar view" :class="{ 'active': currentView === 'calendar' }" @click="switchView('calendar')">
-                    <i class="bi bi-calendar3"></i>
+                    <i class="bi bi-calendar3 me-1"></i> Calendar
                 </button>
             </div>
             @can('attendance-export')
@@ -96,7 +97,7 @@
             <div class="small mt-1">Manager: <span x-text="selectedEmployee?.manager?.name || 'Unassigned'"></span> · LOB: <span x-text="selectedEmployee?.lob_team_code || 'Global'"></span> · Joined: <span x-text="employeeJoined"></span></div>
         </div>@can('user-view')<a href="{{ url('/admin/users') }}" class="btn btn-outline-secondary btn-sm align-self-start">Manage employees and reporting</a>@endcan
     </div></div>
-    <div class="row g-3 mb-4" aria-live="polite">
+    <div class="row g-3 mb-4 hr-summary" aria-live="polite">
         <div class="col-6 col-lg-3"><div class="border rounded p-3 h-100"><span class="small text-muted">Completed session time</span><strong class="d-block fs-5" x-text="completedTime"></strong></div></div>
         <div class="col-6 col-lg-3"><div class="border rounded p-3 h-100"><span class="small text-muted">Recorded employee-days</span><strong class="d-block fs-5" x-text="insights.recorded_days"></strong></div></div>
         <div class="col-6 col-lg-3"><div class="border rounded p-3 h-100"><span class="small text-muted">Open sessions</span><strong class="d-block fs-5" x-text="insights.open_sessions"></strong></div></div>
@@ -105,49 +106,22 @@
     </div>
     <div class="d-flex flex-wrap gap-3 small mb-4 px-1" aria-label="Loaded attendance status counts">
         <span>Loaded records <strong x-text="stats.total"></strong></span><span class="text-success">Present <strong x-text="stats.present"></strong></span><span class="text-danger">Absent <strong x-text="stats.absent"></strong></span><span class="text-warning-emphasis">Late / Half-Day <strong x-text="stats.late + stats.halfDay"></strong></span>
-        <span class="text-muted">Status counts cover loaded employee-days.</span>
+        <span class="text-muted">Status counts cover loaded employee-days. Missing records are not counted as absences.</span>
     </div>
 
-    <div class="card shadow-sm">
+    <div class="card shadow-sm" :aria-busy="isLoading">
         <div class="card-header bg-body d-flex flex-column flex-md-row justify-content-between align-items-center p-3 p-lg-4 border-bottom-0">
             <h2 class="h5 card-title mb-3 mb-md-0 d-flex align-items-center">
                 <i class="bi bi-list-ul text-primary me-2"></i><span x-text="currentView === 'calendar' ? 'Attendance calendar' : 'Attendance records'"></span>
             </h2>
-            <div class="d-flex flex-column flex-md-row gap-2 w-100 w-md-auto align-items-md-center">
+            <div class="d-flex flex-wrap gap-2 align-items-center hr-attendance-toolbar">
 
                 <!-- Month Nav (Calendar View Only) -->
                 <div class="btn-group input-group-sm me-2" x-show="currentView === 'calendar'">
-                    <button class="btn btn-outline-secondary" @click="previousMonth()"><i class="bi bi-chevron-left"></i></button>
+                    <button class="btn btn-outline-secondary" aria-label="Previous month" @click="previousMonth()"><i class="bi bi-chevron-left"></i></button>
                     <button class="btn btn-outline-secondary fw-bold" style="width: 150px;" x-text="currentMonthYear" @click="goToToday()"></button>
-                    <button class="btn btn-outline-secondary" @click="nextMonth()"><i class="bi bi-chevron-right"></i></button>
+                    <button class="btn btn-outline-secondary" aria-label="Next month" @click="nextMonth()"><i class="bi bi-chevron-right"></i></button>
                 </div>
-
-                <div class="input-group input-group-sm" style="max-width: 250px;" x-show="currentView === 'list'">
-                    <span class="input-group-text bg-body-tertiary border-end-0"><i class="bi bi-search"></i></span>
-                    <input type="text" class="form-control border-start-0 ps-0" placeholder="Search by name/ID..." aria-label="Search attendance by employee name or ID"
-                           x-model="searchQuery" @keyup.debounce.300ms="filterItems()">
-                </div>
-
-                <input type="date" class="form-control form-control-sm" aria-label="Attendance date filter" x-model="dateFilter" @change="filterItems()" style="max-width: 150px;" x-show="currentView === 'list'">
-
-                <x-searchable-select model="statusFilter" label="Attendance status filter" small width="150px">
-<select x-ref="native" aria-hidden="true" tabindex="-1" @focus="$refs.trigger.focus()" @invalid.prevent="validationMessage = $event.target.validationMessage; $refs.trigger.focus()" class="visually-hidden" x-model="statusFilter" @change="filterItems()">
-                    <option value="">All Statuses</option>
-                    <option value="Present">Present</option>
-                    <option value="Absent">Absent</option>
-                    <option value="Late">Late</option>
-                    <option value="Half-Day">Half-Day</option>
-                </select>
-</x-searchable-select>
-
-                <x-searchable-select model="userFilter" label="Attendance employee filter" small width="200px">
-<select x-ref="native" aria-hidden="true" tabindex="-1" @focus="$refs.trigger.focus()" @invalid.prevent="validationMessage = $event.target.validationMessage; $refs.trigger.focus()" class="visually-hidden" x-model="userFilter" @change="filterItems()" x-show="usersList.length > 0" aria-label="Attendance employee">
-                    <option value="" disabled selected>Select Employee</option>
-                    <template x-for="u in usersList" :key="u.id">
-                        <option :value="u.id" :selected="String(u.id) === String(userFilter)" x-text="u.name"></option>
-                    </template>
-                </select>
-</x-searchable-select>
 
                 @canany(['attendance-delete', 'attendance-permanent-delete'])
                 <div class="dropdown" x-show="currentView === 'list'">
@@ -169,12 +143,47 @@
                 </div>
                 @endcanany
 
-                <button class="btn btn-sm btn-outline-secondary" type="button" @click="loadItems()" :disabled="isLoading" title="Refresh">
+                <button class="btn btn-sm btn-outline-secondary" type="button" @click="loadItems()" :disabled="isLoading" title="Refresh attendance" aria-label="Refresh attendance">
                     <i class="bi bi-arrow-clockwise" :class="isLoading ? 'spin' : ''"></i>
                 </button>
             </div>
         </div>
 
+        <div class="card-body border-bottom hr-filter-panel">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-6 col-xl-4"><label class="form-label small">Employee</label>                <x-searchable-select model="userFilter" label="Attendance employee filter" small>
+<select x-ref="native" aria-hidden="true" tabindex="-1" @focus="$refs.trigger.focus()" @invalid.prevent="validationMessage = $event.target.validationMessage; $refs.trigger.focus()" class="visually-hidden" x-model="userFilter" @change="filterItems()" x-show="usersList.length > 0" aria-label="Attendance employee">
+                    <option value="" disabled selected>Select Employee</option>
+                    <template x-for="u in usersList" :key="u.id">
+                        <option :value="u.id" :selected="String(u.id) === String(userFilter)" x-text="u.name"></option>
+                    </template>
+                </select>
+</x-searchable-select>
+
+</div>
+                <div class="col-md-6 col-xl-4"><label class="form-label small">Attendance status</label>                <x-searchable-select model="statusFilter" label="Attendance status filter" small>
+<select x-ref="native" aria-hidden="true" tabindex="-1" @focus="$refs.trigger.focus()" @invalid.prevent="validationMessage = $event.target.validationMessage; $refs.trigger.focus()" class="visually-hidden" x-model="statusFilter" @change="filterItems()">
+                    <option value="">All Statuses</option>
+                    <option value="Present">Present</option>
+                    <option value="Absent">Absent</option>
+                    <option value="Late">Late</option>
+                    <option value="Half-Day">Half-Day</option>
+                </select>
+</x-searchable-select>
+
+</div>
+                <div class="col-md-6 col-xl-4" x-show="currentView === 'list'"><label class="form-label small">Search employee name or ID</label>                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-body-tertiary border-end-0"><i class="bi bi-search"></i></span>
+                    <input type="text" class="form-control border-start-0 ps-0" placeholder="Search by name/ID..." aria-label="Search attendance by employee name or ID"
+                           x-model="searchQuery" @keyup.debounce.300ms="filterItems()">
+                </div>
+
+</div>
+                <div class="col-md-6 col-xl-4" x-show="currentView === 'list'"><label class="form-label small">Specific date</label>                <input type="date" class="form-control form-control-sm" aria-label="Attendance date filter" x-model="dateFilter" @change="rangeStart = ''; rangeEnd = ''; filterItems()">
+
+</div>
+            </div>
+        </div>
         <div class="card-body border-bottom" x-show="currentView === 'list'">
             <div class="d-flex flex-wrap gap-3 align-items-end">
                 <div><label class="form-label small" for="attendanceFrom">From date</label><input id="attendanceFrom" type="date" class="form-control form-control-sm" x-model="rangeStart" @change="dateFilter = ''; filterItems()"></div>
@@ -183,7 +192,7 @@
                 <button type="button" class="btn btn-outline-secondary btn-sm" @click="resetFilters()">Reset attendance filters</button>
             </div>
         </div>
-        <p class="small text-muted px-3 pt-3 mb-0" x-show="currentView === 'calendar'">Select a day number to inspect all sessions. Holiday markers are informational.</p>
+        <p class="small text-muted px-3 pt-3 mb-0" x-show="currentView === 'calendar'">Select a day number to see all sessions. “No record” means no attendance was logged; it is not a recorded absence.</p>
         <p class="small text-warning px-3" x-show="holidayError" x-text="holidayError"></p>
         <div class="card-body p-0">
             <!-- List View -->
@@ -242,7 +251,7 @@
                             </tr>
                         </template>
                         <template x-for="item in items" :key="item.id">
-                            <tr :class="selectedItems.includes(String(item.id)) ? 'table-primary' : ''">
+                            <tr x-show="!isLoading" :class="selectedItems.includes(String(item.id)) ? 'table-primary' : ''">
                                 <td class="ps-4">
                                     <div class="form-check">
                                         <input class="form-check-input" type="checkbox"
@@ -351,8 +360,9 @@
                 </div>
             </div>
 
+            <div x-show="isLoading && currentView === 'calendar'" class="text-center py-4" role="status"><span class="spinner-border spinner-border-sm text-primary me-2"></span>Loading attendance calendar…</div>
             <!-- Calendar View -->
-            <div class="calendar-page pb-0" x-show="currentView === 'calendar'" style="display: none; height: auto;">
+            <div class="calendar-page pb-0" x-show="currentView === 'calendar' && !isLoading" style="display: none; height: auto;">
                 <div class="calendar-container m-0 border-0 shadow-none rounded-0">
                     <div class="calendar-layout bg-transparent">
                         <div class="calendar-main bg-transparent">
@@ -419,7 +429,7 @@
 <div x-show="workspaceSection === 'co' || workspaceSection === 'roster'" x-cloak>
     @include('users.partials.attendance-roster')
 </div>
-@can('leave-view')
+@can('leavebalance-view')
 <div x-show="workspaceSection === 'balances'" x-cloak>
     <!-- My Leave Balances Widget -->
     @php
@@ -541,75 +551,7 @@
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body p-4">
-                <p class="small text-muted mb-4">Choose the employee and leave type, then enter the requested dates and reason.</p>
-                <div class="alert alert-danger" role="alert" x-show="error" x-text="error" style="display: none;"></div>
-
-                <div class="row g-3 mb-4">
-                <div class="col-md-6">
-<label class="form-label" for="leaveUser">Employee <span class="text-danger">*</span></label>
-<x-searchable-select model="form.user_id" label="Leave employee">
-<select x-ref="native" aria-hidden="true" tabindex="-1" @focus="$refs.trigger.focus()" @invalid.prevent="validationMessage = $event.target.validationMessage; $refs.trigger.focus()" class="visually-hidden" id="leaveUser" x-model="form.user_id" required @disabled(!$isGlobalHr)>
-                        <option value="">Select Employee</option>
-                        <template x-for="user in users" :key="user.id">
-                            <option :value="user.id" :selected="String(user.id) === String(form.user_id)" x-text="user.name"></option>
-                        </template>
-                    </select>
-</x-searchable-select>
-</div>
-
-                <div class="col-md-6">
-<label class="form-label" for="leaveType">Leave Type <span class="text-danger">*</span></label>
-<x-searchable-select model="form.leave_type" label="Leave type">
-<select x-ref="native" aria-hidden="true" tabindex="-1" @focus="$refs.trigger.focus()" @invalid.prevent="validationMessage = $event.target.validationMessage; $refs.trigger.focus()" class="visually-hidden" id="leaveType" x-model="form.leave_type" required :disabled="isLoadingBalances || userBalances.length === 0">
-                        <option value="">Select Leave Type</option>
-                        <template x-for="balance in userBalances" :key="balance.id">
-                            <option :value="balance.leave_type"
-                                    x-text="`${balance.leave_type} Leave (Balance: ${balance.balance})`"
-                                    :disabled="balance.balance <= 0 && balance.leave_type !== originalLeaveType"></option>
-                        </template>
-                    </select>
-</x-searchable-select>
-                    <div class="form-text text-warning" x-show="form.user_id && userBalances.length === 0 && !isLoadingBalances">
-                        No active leave balances found for this employee.
-                    </div>
-                </div>
-
-                </div>
-                <div class="row g-3 mb-3">
-                    <div class="col-md-6">
-                        <div>
-                            <label class="form-label fw-semibold" for="leaveStart">Start date <span class="text-danger">*</span></label>
-                            <input type="date" class="form-control" id="leaveStart" x-model="form.start_date" required>
-
-</div>
-                    </div>
-                    <div class="col-md-6">
-                        <div>
-                            <label class="form-label fw-semibold" for="leaveEnd">End date <span class="text-danger">*</span></label>
-                            <input type="date" class="form-control" id="leaveEnd" x-model="form.end_date" :min="form.start_date" required>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label fw-semibold" for="leaveReason">Reason <span class="text-danger">*</span></label>
-                    <textarea class="form-control" id="leaveReason" x-model="form.reason" rows="3" placeholder="Explain the reason for your leave request" required></textarea>
-                </div>
-
-                @if($isGlobalHr && auth()->user()->can('leave-approve'))
-                <div class="mb-3" x-show="editingId" x-cloak>
-<label class="form-label" for="leaveStatus">Status</label>
-<x-searchable-select model="form.status" label="Leave status">
-<select x-ref="native" aria-hidden="true" tabindex="-1" @focus="$refs.trigger.focus()" @invalid.prevent="validationMessage = $event.target.validationMessage; $refs.trigger.focus()" class="visually-hidden" id="leaveStatus" x-model="form.status">
-                        <option value="Pending">Pending</option>
-                        <option value="Approved">Approved</option>
-                        <option value="Rejected">Rejected</option>
-                    </select>
-</x-searchable-select>
-</div>
-                @endif
-            </div>
+            @include('users.partials.leave-request-fields')
             <div class="modal-footer bg-body-tertiary">
                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
                 <button type="submit" class="btn btn-primary px-4" :disabled="saving">

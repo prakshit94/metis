@@ -15,22 +15,29 @@ async function apiFetch(url, options = {}) {
     ...(headers || {}),
   };
 
-  const res = await fetch(url, { headers: fetchHeaders, ...otherOptions });
-  if (res.status === 401 || res.status === 419 || res.redirected) {
-    throw new Error('Your session has expired. Reload the page and sign in again.');
-  }
-  const text = await res.text();
-  let data;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 30000);
   try {
-    data = text ? JSON.parse(text) : {};
-  } catch {
-    throw new Error('The server returned an unexpected response. Please retry.');
-  }
-  if (!res.ok) {
-    const validation = data?.errors ? Object.values(data.errors).flat().join(' ') : '';
-    throw new Error(validation || data?.message || data?.error || 'Request failed');
-  }
-  return data;
+    const res = await fetch(url, { credentials: 'same-origin', headers: fetchHeaders, ...otherOptions, signal: controller.signal });
+    if (res.status === 401 || res.status === 419 || res.redirected) {
+      throw new Error('Your session has expired. Reload the page and sign in again.');
+    }
+    const text = await res.text();
+    let data;
+    try {
+      data = text ? JSON.parse(text) : {};
+    } catch {
+      throw new Error('The server returned an unexpected response. Please retry.');
+    }
+    if (!res.ok) {
+      const validation = data?.errors ? Object.values(data.errors).flat().join(' ') : '';
+      throw new Error(validation || data?.message || data?.error || 'Request failed');
+    }
+    return data;
+  } catch (error) {
+    if (error.name === 'AbortError') throw new Error('The request timed out. Please retry.');
+    throw error;
+  } finally { clearTimeout(timeout); }
 }
 
 function showToast(message, type = 'success') {
@@ -278,7 +285,7 @@ document.addEventListener('alpine:init', () => {
 
       const uniqueStatuses = Object.values(uniqueDays);
 
-      this.stats.total = this.totalItems;
+      this.stats.total = this.items.length;
       this.stats.present = uniqueStatuses.filter((s) => s === 'Present').length;
       this.stats.absent = uniqueStatuses.filter((s) => s === 'Absent').length;
       this.stats.late = uniqueStatuses.filter((s) => s === 'Late').length;
@@ -367,6 +374,7 @@ document.addEventListener('alpine:init', () => {
         this.calendarDays.forEach((day) => {
           day.holidays = holidays.filter((holiday) => holiday.date === day.date);
         });
+        if (this.currentView === 'calendar') this.mapEventsToCalendar();
       } catch (error) {
         this.holidayError = 'Holiday markers could not be loaded: ' + error.message;
       }
@@ -548,6 +556,7 @@ document.addEventListener('alpine:init', () => {
           Object.values(userGroups).forEach((items) => {
             let firstCheckIn = null;
             let lastCheckOut = null;
+            let lastCheckOutMinute = -1;
             let totalMins = 0;
             let overallStatus = 'Absent';
             let hasActiveSession = false;
@@ -559,7 +568,12 @@ document.addEventListener('alpine:init', () => {
                 if (!firstCheckIn || item.check_in < firstCheckIn) firstCheckIn = item.check_in;
               }
               if (item.check_out) {
-                if (!lastCheckOut || item.check_out > lastCheckOut) lastCheckOut = item.check_out;
+                const [hours, minutes] = item.check_out.split(':').map(Number);
+                const checkoutMinute = hours * 60 + minutes + (item.check_in && item.check_out < item.check_in ? 1440 : 0);
+                if (checkoutMinute > lastCheckOutMinute) {
+                  lastCheckOut = item.check_out;
+                  lastCheckOutMinute = checkoutMinute;
+                }
               } else if (item.check_in) {
                 hasActiveSession = true;
               }
@@ -622,15 +636,17 @@ document.addEventListener('alpine:init', () => {
           const [year, month, date] = day.date.split('-');
           const d = new Date(year, month - 1, date);
 
-          if (d.getDay() !== 0 && d.getDay() !== 6) {
+          const roster = day.rosters?.find(row => String(row.user_id) === String(this.userFilter));
+          const hasDayOff = roster?.day_type === 'Week Off' || day.holidays?.length > 0;
+          if (!hasDayOff && (roster?.day_type === 'Working' || (d.getDay() !== 0 && d.getDay() !== 6))) {
             day.events.push({
-              id: 'auto-absent-' + day.date,
-              status: 'Absent',
-              type: this.getEventClass('Absent'),
+              id: 'no-record-' + day.date,
+              status: 'No record',
+              type: 'bg-body-secondary text-body-secondary border',
               checkIn: '--:--',
               checkOut: '--:--',
               totalTime: '--h --m',
-              raw: { date: day.date, status: 'Absent' },
+              raw: { date: day.date },
             });
           }
         }
@@ -1034,8 +1050,12 @@ document.addEventListener('alpine:init', () => {
 
     async saveItem() {
       if (this.saving) return;
-      this.saving = true;
       this.error = null;
+      if (!this.form.leave_type || !this.form.start_date || !this.form.end_date || this.form.end_date < this.form.start_date) {
+        this.error = 'Select a leave type and valid start and end dates.';
+        return;
+      }
+      this.saving = true;
 
       try {
         const method = this.editingId ? 'PUT' : 'POST';
@@ -1142,6 +1162,7 @@ document.addEventListener('alpine:init', () => {
 
     async saveItem() {
       if (this.saving) return;
+      this.error = null;
       this.saving = true;
       try {
         const method = this.editingId ? 'PUT' : 'POST';
