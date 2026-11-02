@@ -828,7 +828,7 @@ class OrderController extends Controller implements HasMiddleware
 
         if (request()->filled('customer_id')) {
             // Phone lookup is global: loading its customer must not reapply directory
-            // ownership/LOB filters. Order history and mutations retain their own guards.
+            // ownership/LOB filters. Its history is customer-scoped; mutations retain their guards.
             $initialCustomer = Party::query()->where('type', 'customer')->with([
                 'addresses.village.services',
                 'referrals:id,firstname,lastname,phone,referred_by',
@@ -847,7 +847,6 @@ class OrderController extends Controller implements HasMiddleware
                     $q->latest()->limit(15)->with(['agent', 'tagL1', 'tagL2', 'tagL3', 'metas']);
                 },
                 'orders' => function ($q) {
-                    app(RecordVisibility::class)->orders($q instanceof \Illuminate\Database\Eloquent\Builder ? $q : $q->getQuery(), auth()->user());
                     $q->latest()->limit(10)->withCount(['complaints', 'complaints as open_complaints_count' => function ($q) {
                         $q->whereIn('status', ['open', 'in_progress']);
                     }])->with([
@@ -879,7 +878,7 @@ class OrderController extends Controller implements HasMiddleware
                     $q->whereNotIn('status', ['resolved', 'closed']);
                 },
                 'orders' => function ($q) {
-                    app(RecordVisibility::class)->orders($q, auth()->user())->where('status', '!=', 'future_order');
+                    $q->where('status', '!=', 'future_order');
                 },
             ])->find(request()->integer('customer_id'));
 
@@ -972,7 +971,6 @@ class OrderController extends Controller implements HasMiddleware
                         ]);
                     },
                     'orders' => function ($q) {
-                    app(RecordVisibility::class)->orders($q instanceof \Illuminate\Database\Eloquent\Builder ? $q : $q->getQuery(), auth()->user());
                         $q->latest()->limit(10)->withCount(['complaints', 'complaints as open_complaints_count' => function ($q) {
                             $q->whereIn('status', ['open', 'in_progress']);
                         }])->with([
@@ -1004,8 +1002,7 @@ class OrderController extends Controller implements HasMiddleware
                         $q->whereNotIn('status', ['resolved', 'closed']);
                     },
                     'orders' => function ($q) {
-                    app(RecordVisibility::class)->orders($q instanceof \Illuminate\Database\Eloquent\Builder ? $q : $q->getQuery(), auth()->user());
-                        app(RecordVisibility::class)->orders($q, auth()->user())->where('status', '!=', 'future_order');
+                        $q->where('status', '!=', 'future_order');
                     },
                 ])->find($initialOrder->party_id);
             }

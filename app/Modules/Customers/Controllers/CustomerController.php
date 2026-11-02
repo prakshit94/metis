@@ -353,8 +353,8 @@ class CustomerController extends Controller implements HasMiddleware
                 'complaints as active_complaints' => function ($q) {
                     $q->whereNotIn('status', ['resolved', 'closed']);
                 },
+                // Profile history belongs to the selected customer, across agents and states.
                 'orders' => function ($q) {
-                    app(\App\Services\RecordVisibility::class)->orders($q, auth()->user());
                     $q->where('status', '!=', 'future_order');
                 },
             ])
@@ -373,7 +373,6 @@ class CustomerController extends Controller implements HasMiddleware
                     ]);
                 },
                 'orders' => function ($q) {
-                    app(\App\Services\RecordVisibility::class)->orders($q instanceof \Illuminate\Database\Eloquent\Builder ? $q : $q->getQuery(), auth()->user());
                     $q->latest()->limit(10)->withCount(['complaints', 'complaints as open_complaints_count' => function ($q) {
                         $q->whereIn('status', ['open', 'in_progress']);
                     }])->with([
