@@ -827,7 +827,9 @@ class OrderController extends Controller implements HasMiddleware
         $initialCoupon = null;
 
         if (request()->filled('customer_id')) {
-            $initialCustomer = $this->visibleCustomers()->with([
+            // Phone lookup is global: loading its customer must not reapply directory
+            // ownership/LOB filters. Order history and mutations retain their own guards.
+            $initialCustomer = Party::query()->where('type', 'customer')->with([
                 'addresses.village.services',
                 'referrals:id,firstname,lastname,phone,referred_by',
                 'referrals.addresses' => function ($q) {

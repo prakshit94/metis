@@ -58,7 +58,7 @@
                         <span class="input-group-text border-0 bg-transparent fw-semibold text-body px-4" style="border-right: 1px solid var(--bs-border-color) !important;">
                             <i class="bi bi-phone me-2"></i> Mobile
                         </span>
-                        <input type="text" class="form-control border-0 shadow-none px-4 bg-transparent text-body" placeholder="Enter 10-digit mobile number..." x-model="searchPhone" @keydown.enter.prevent="searchCustomer()" maxlength="10">
+                        <input type="text" class="form-control border-0 shadow-none px-4 bg-transparent text-body" placeholder="Enter 10-digit mobile number..." x-model="searchPhone" @keydown.enter.prevent="searchCustomer()" inputmode="tel" autocomplete="tel">
                         <button class="btn btn-primary px-4 px-md-5 fw-bold" type="button" @click="searchCustomer()" :disabled="isLoading">
                             <span x-show="!isLoading"><i class="bi bi-search me-1 d-none d-sm-inline"></i> Search</span>
                             <span x-show="isLoading" class="spinner-border spinner-border-sm" role="status" aria-hidden="true" style="display: none;"></span>
@@ -593,6 +593,7 @@
                             searchCustomer() {
                                 if (this.isLoading) return;
                                 this.searchPhone = this.searchPhone.replace(/\D/g, '');
+                                if (this.searchPhone.length > 10) this.searchPhone = this.searchPhone.slice(-10);
                                 if (this.searchPhone.length !== 10) {
                                     this.errorMsg = 'Please enter exactly 10 digits.';
                                     setTimeout(() => { this.errorMsg = ''; }, 3000);
