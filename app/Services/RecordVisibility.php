@@ -59,12 +59,20 @@ class RecordVisibility
 
     public function assertCustomer(int $id): void
     {
-        abort_unless($this->customers(\App\Modules\Customers\Models\Party::query(), auth()->user())->whereKey($id)->exists(), 404);
+        abort_unless(
+            $this->customers(\App\Modules\Customers\Models\Party::query(), auth()->user())->whereKey($id)->exists(),
+            404,
+            'The selected customer is unavailable under your customer access permissions. Ask an administrator to check the customer assignment and your state access.'
+        );
     }
 
     public function assertOrder(int $id): void
     {
-        abort_unless($this->orders($this->globalViewer() ? Order::withTrashed() : Order::query(), auth()->user())->whereKey($id)->exists(), 404);
+        abort_unless(
+            $this->orders($this->globalViewer() ? Order::withTrashed() : Order::query(), auth()->user())->whereKey($id)->exists(),
+            404,
+            'The selected order is unavailable under your order access permissions. Refresh the order list or ask an administrator to check your access.'
+        );
     }
 
     public function financial(Builder $query): Builder
@@ -91,7 +99,11 @@ class RecordVisibility
     public function assertWarehouse(int $id): void
     {
         if ($state = auth()->user()?->lob_state_name) {
-            abort_unless(Warehouse::withTrashed()->whereKey($id)->where('state', $state)->exists(), 404);
+            abort_unless(
+                Warehouse::withTrashed()->whereKey($id)->where('state', $state)->exists(),
+                404,
+                'The selected warehouse is unavailable under your state access permissions. Select an available warehouse or ask an administrator to check your state access.'
+            );
         }
     }
 }

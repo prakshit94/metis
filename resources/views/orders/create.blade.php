@@ -5371,24 +5371,14 @@ mapOrder(o) {
             this.quoting = true;
             const payload = this.buildOrderPayload();
             try {
-                const res = await fetch(@json(route('orders.preview', [], false)), {
+                const res = await fetch('/api/orders/preview', {
                     method: 'POST', headers: {'Content-Type':'application/json', 'Accept':'application/json', 'X-CSRF-TOKEN':document.querySelector('meta[name=csrf-token]').content},
                     body: JSON.stringify(payload)
                 });
-                const json = await res.json().catch(() => ({}));
+                const json = await res.json();
                 if (!res.ok) {
                     this.formErrors = Object.values(json.errors || {}).flat();
-                    const statusMessages = {
-                        401: 'Your session has expired. Sign in again, then retry.',
-                        403: 'You do not have permission to calculate totals for this order.',
-                        419: 'Your session has expired. Refresh the page, then retry.',
-                        429: 'Too many requests. Wait a moment, then retry.',
-                    };
-                    if (!this.formErrors.length) this.formErrors = [statusMessages[res.status] || json.message || `Could not calculate the current order total (HTTP ${res.status}). Please retry.`];
-                    return null;
-                }
-                if (!json.quote || !json.quote.quote_hash) {
-                    this.formErrors = ['The server returned an invalid order quote. Refresh the page and retry.'];
+                    if (!this.formErrors.length) this.formErrors = [json.message || 'Could not calculate the current order total.'];
                     return null;
                 }
                 if (JSON.stringify(this.buildOrderPayload()) !== JSON.stringify(payload)) {
