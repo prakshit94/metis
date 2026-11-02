@@ -18,6 +18,32 @@ $user->givePermissionTo('orders.create');
 auth()->setUser($user);
 $id = DB::table('parties')->insertGetId(['type' => 'customer', 'firstname' => 'Other owner', 'phone' => '8980145587', 'alternatemobile' => '9876543210', 'is_active' => false, 'is_blacklisted' => true]);
 check(! app(RecordVisibility::class)->customers(App\Modules\Customers\Models\Party::query(), $user)->whereKey($id)->exists(), 'customer directory still hides another owners customer');
+app(RecordVisibility::class)->assertOrderCustomer($id);
+check(true, 'order entry accepts a globally found customer outside directory ownership');
+$nonCustomer = DB::table('parties')->insertGetId(['type' => 'supplier', 'firstname' => 'Supplier']);
+$deletedCustomer = DB::table('parties')->insertGetId(['type' => 'customer', 'firstname' => 'Deleted', 'deleted_at' => now()]);
+foreach ([$nonCustomer, $deletedCustomer, 2147483647] as $unavailable) {
+    try {
+        app(RecordVisibility::class)->assertOrderCustomer($unavailable);
+        throw new RuntimeException('Invalid order customer was accepted');
+    } catch (Symfony\Component\HttpKernel\Exception\HttpException $e) {
+        check($e->getStatusCode() === 404, 'order entry rejects suppliers, deleted and missing customers');
+    }
+}
+// Override only state resolution to exercise a real state-scoped staff account.
+$stateUser = new class extends User {
+    public function getLobStateNameAttribute(): ?string { return 'Gujarat'; }
+};
+$stateUser->setRawAttributes($user->getAttributes(), true);
+$stateUser->exists = true;
+auth()->setUser($stateUser);
+DB::table('parties')->where('id', $id)->update(['created_by' => $user->id]);
+check(! app(RecordVisibility::class)->customers(App\Modules\Customers\Models\Party::query(), $stateUser)->whereKey($id)->exists(), 'directory still requires a default address in the assigned state');
+app(RecordVisibility::class)->assertOrderCustomer($id);
+check(true, 'order entry accepts customers outside the assigned state');
+DB::table('parties')->where('id', $id)->update(['created_by' => null]);
+auth()->setUser($user);
+
 foreach (['8980145587', '9876543210', '+91 89801 45587'] as $phone) {
     $result = app(CustomerController::class)->searchByPhone(requestFor(['phone' => $phone]))->getData(true);
     check($result['found'] && str_contains($result['redirect'], 'customer_id='.$id), 'primary, alternate and country-prefixed phone lookup finds existing customer');

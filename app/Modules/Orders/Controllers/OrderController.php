@@ -1292,7 +1292,7 @@ class OrderController extends Controller implements HasMiddleware
     {
         $quote = DB::transaction(function () use ($request, $orderService) {
             $data = $request->validated();
-            if ($data['type'] === 'sale') app(RecordVisibility::class)->assertCustomer((int) $data['party_id']);
+            if ($data['type'] === 'sale') app(RecordVisibility::class)->assertOrderCustomer((int) $data['party_id']);
             $order = ! empty($data['order_id']) ? Order::findOrFail($data['order_id']) : null;
             abort_unless($request->user()?->can($order ? 'orders.edit' : 'orders.create'), 403);
             if ($order) {
@@ -1330,7 +1330,7 @@ class OrderController extends Controller implements HasMiddleware
         // held until the new order and usage counters commit.
         $order = DB::transaction(function () use ($request, $orderService) {
             $validated = $request->validated();
-            if ($validated['type'] === 'sale') app(RecordVisibility::class)->assertCustomer((int) $validated['party_id']);
+            if ($validated['type'] === 'sale') app(RecordVisibility::class)->assertOrderCustomer((int) $validated['party_id']);
 
             $calc = $orderService->recalculateAndValidate($validated);
             $validated['items'] = $calc['items'];

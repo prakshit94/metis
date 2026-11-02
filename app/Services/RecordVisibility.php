@@ -66,6 +66,16 @@ class RecordVisibility
         );
     }
 
+    /** Order entry follows global phone lookup, independently of directory ownership/state. */
+    public function assertOrderCustomer(int $id): void
+    {
+        abort_unless(
+            \App\Modules\Customers\Models\Party::query()->where('type', 'customer')->whereKey($id)->exists(),
+            404,
+            'The selected customer no longer exists. Search for the customer again before placing the order.'
+        );
+    }
+
     public function assertOrder(int $id): void
     {
         abort_unless(
