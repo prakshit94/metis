@@ -147,16 +147,18 @@
                         @can('user-view')
                         { name: 'Users', path: '{{ route('users') }}', icon: 'bi bi-person-fill-gear', group: 'User & Customer Admin' },
                         @endcan
-                        @can('role-view')
+                        @canany(['role-view', 'permission-view'])
                         { name: 'Roles & Permissions', path: '{{ route('roles-permissions') }}', icon: 'bi bi-shield-lock-fill', group: 'User & Customer Admin' },
-                        @endcan
+                        @endcanany
                         @can('team-view')
                         { name: 'States & Offices', path: '{{ route('teams') }}', icon: 'bi bi-buildings-fill', group: 'User & Customer Admin' },
                         @endcan
-                        @role('Super Admin')
+                        @can('customer-view')
                         { name: 'Customers', path: '{{ route('customers') }}', icon: 'bi bi-person-lines-fill', group: 'User & Customer Admin' },
+                        @endcan
+                        @can('settings-view')
                         { name: 'Customer Settings', path: '{{ route('customer-settings.index') }}', icon: 'bi bi-gear-wide-connected', group: 'User & Customer Admin' },
-                        @endrole
+                        @endcan
                         @can('department-view')
                         { name: 'Departments', path: '{{ route('departments') }}', icon: 'bi bi-diagram-3-fill', group: 'User & Customer Admin' },
                         @endcan
@@ -181,25 +183,31 @@
                         @can('chat-view')
                         { name: 'Team Chat', path: '{{ route('chat.index') }}', icon: 'bi bi-chat-text-fill', group: 'Utilities & Tools' },
                         @endcan
-                        @role('Super Admin')
+                        @can('messages-view')
                         { name: 'Messages', path: '{{ route('messages') }}', icon: 'bi bi-chat-dots-fill', group: 'Utilities & Tools' },
+                        @endcan
+                        @can('calendar-view')
                         { name: 'Calendar', path: '{{ route('calendar') }}', icon: 'bi bi-calendar-week-fill', group: 'Utilities & Tools' },
-                        @endrole
+                        @endcan
                         @can('files-view')
                         { name: 'Files', path: '{{ route('files') }}', icon: 'bi bi-folder2-open', group: 'Utilities & Tools' },
                         @endcan
-                        @role('Super Admin')
+                        @can('forms-view')
                         { name: 'Forms', path: '{{ route('forms') }}', icon: 'bi bi-ui-checks-grid', group: 'Utilities & Tools' },
-                        @endrole
+                        @endcan
                         @can('settings-view')
                         { name: 'UI Elements', path: '{{ route('elements') }}', icon: 'bi bi-puzzle-fill', group: 'Utilities & Tools' },
                         @endcan
-                        @role('Super Admin')
-                        { name: 'Security', path: '{{ route('security') }}', icon: 'bi bi-shield-fill-check', group: 'Utilities & Tools' },
+                        { name: 'My Security', path: '{{ route('security') }}', icon: 'bi bi-shield-fill-check', group: 'Utilities & Tools' },
+                        @can('audit-log-view')
                         { name: 'Audit Logs', path: '{{ route('admin.audit-logs.index') }}', icon: 'bi bi-journal-medical', group: 'Utilities & Tools' },
+                        @endcan
+                        @can('help-view')
                         { name: 'Help & Support', path: '{{ route('help') }}', icon: 'bi bi-question-circle-fill', group: 'Utilities & Tools' },
+                        @endcan
+                        @canany(['messages-view', 'calendar-view', 'forms-view', 'settings-view', 'help-view'])
                         { name: 'API Documentation', path: '/docs/api', icon: 'bi bi-file-earmark-code-fill', group: 'Utilities & Tools' }
-                        @endrole
+                        @endcanany
                     ],
                     selectedIndex: -1,
                     get filteredItems() {
