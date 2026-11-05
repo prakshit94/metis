@@ -278,8 +278,8 @@
                         <thead class="table-group-divider">
                             <tr class="table-light">
                                 <th colspan="3" class="text-center border-end">Product Info</th>
-                                <th colspan="4" class="text-center border-end bg-primary bg-opacity-10">Physical Inventory</th>
-                                <th colspan="11" class="text-center border-end bg-info bg-opacity-10">Order Pipeline (Chronological)</th>
+                                <th colspan="5" class="text-center border-end bg-primary bg-opacity-10">Physical Inventory</th>
+                                <th colspan="10" class="text-center border-end bg-info bg-opacity-10">Order Pipeline (Chronological)</th>
                                 <th colspan="6" class="text-center bg-warning bg-opacity-10">Returns Pipeline</th>
                                 @can('stocktransfer-create')
                                 <th class="border-start"></th>
@@ -297,13 +297,13 @@
                                 
                                 <!-- Physical Inventory -->
                                 <th @click="sortBy('quantity')" class="sortable text-center" title="Total physical stock"><i class="bi bi-inboxes me-1 text-secondary"></i>In Stock</th>
+                                <th @click="sortBy('pending_qty')" class="sortable text-center" title="Order Placed (Pending)"><i class="bi bi-hourglass-split me-1 text-secondary"></i>Order Placed</th>
                                 <th @click="sortBy('reserved_qty')" class="sortable text-center" title="Stock reserved for orders"><i class="bi bi-bookmark-dash me-1 text-secondary"></i>Reserved</th>
                                 <th @click="sortBy('available')" class="sortable text-center" title="Availability forecast: stock minus reserved and pending demand, plus configured overselling"><i class="bi bi-check-circle me-1 text-secondary"></i>Available For Sell</th>
                                 <th @click="sortBy('damaged_qty')" class="sortable text-center border-end" title="Damaged or bad quantity"><i class="bi bi-exclamation-octagon me-1 text-secondary"></i>Bad Qty</th>
                                 
                                 <!-- Order Statuses Pipeline -->
                                 <th class="text-center" title="Future Order"><i class="bi bi-calendar-event me-1 text-secondary"></i>Future</th>
-                                <th @click="sortBy('pending_qty')" class="sortable text-center" title="Order Placed (Pending)"><i class="bi bi-hourglass-split me-1 text-secondary"></i>Order Placed</th>
                                 <th class="text-center" title="Unfulfillable (Out of Stock)"><i class="bi bi-x-octagon me-1 text-secondary"></i>Unfulfillable</th>
                                 <th class="text-center" title="Pending Confirmation"><i class="bi bi-clock-history me-1 text-secondary"></i>Pending Conf</th>
                                 <th class="text-center" title="Confirmed"><i class="bi bi-check2-circle me-1 text-secondary"></i>Confirmed</th>
@@ -396,6 +396,9 @@
                                         </div>
                                     </td>
                                     <td class="text-center">
+                                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle"><i class="bi bi-hourglass-split me-1"></i><span x-text="parseFloat(item.pending_qty||0).toFixed(2)"></span></span>
+                                    </td>
+                                    <td class="text-center">
                                         <span class="badge bg-warning-subtle text-warning border border-warning-subtle"><i class="bi bi-bookmark-dash me-1"></i><span x-text="parseFloat(item.reserved_qty || 0).toFixed(2)"></span></span>
                                     </td>
                                     <td class="text-center">
@@ -412,9 +415,6 @@
                                     <!-- Order Statuses Pipeline -->
                                     <td class="text-center">
                                         <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle"><i class="bi bi-calendar-event me-1"></i><span x-text="parseFloat(item.future_order_qty || 0).toFixed(2)"></span></span>
-                                    </td>
-                                    <td class="text-center">
-                                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle"><i class="bi bi-hourglass-split me-1"></i><span x-text="parseFloat(item.pending_qty||0).toFixed(2)"></span></span>
                                     </td>
                                     <td class="text-center">
                                         <span class="badge bg-danger-subtle text-danger border border-danger-subtle"><i class="bi bi-x-octagon me-1"></i><span x-text="parseFloat(Math.max(0, parseFloat(item.pending_qty||0) - Math.max(0, parseFloat(item.quantity||0) - parseFloat(item.reserved_qty||0)))).toFixed(2)"></span></span>
