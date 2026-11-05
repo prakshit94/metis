@@ -1,6 +1,20 @@
+@php($dashboardAmountHelp = [
+    'booked' => 'Sum of stored net payable for eligible sales orders. Excludes cancelled, future, returned and completed-return orders. Wallet used is separate. Matches Net sales in Summary.',
+    'delivered' => 'Net payable for eligible sales orders currently delivered or completed, excluding orders with completed returns.',
+    'dispatched' => 'Net payable for eligible sales orders currently dispatched, excluding orders with completed returns.',
+    'paid' => 'Sum of completed, non-deleted payments linked to the non-cancelled sales orders placed in the selected dates. Payment dates may be outside that range. Wallet usage is separate.',
+    'refunded' => 'Sum of completed refunds linked to the non-cancelled sales orders placed in the selected dates. Refund dates may be outside that range.',
+    'outstanding' => 'For each non-cancelled sales order, net payable minus completed payments, with a minimum of zero. These per-order amounts are added. Wallet is already deducted from net payable; return and refund adjustments are not applied here.',
+    'gross' => 'Sum of the stored total_amount field for non-cancelled sales orders in this date range. This displays the saved subtotal, without recalculating item prices.',
+    'discount' => 'Sum of stored order discount amounts for non-cancelled sales orders in this date range.',
+    'tax' => 'Sum of stored order tax amounts for non-cancelled sales orders in this date range.',
+    'payable' => 'Sum of stored net payable for all non-cancelled sales orders in this range, including future and returned orders. Unlike Net sales, this breakdown does not exclude completed returns.',
+    'wallet' => 'Sum of wallet credit applied to the non-cancelled sales orders in this date range. This credit has already been deducted from stored net payable.',
+    'value' => 'Sum of stored net payable plus wallet used for non-cancelled sales orders, including future and returned orders. This differs from Net sales because of wallet usage and eligibility rules.',
+])
 <section class="mb-4 dashboard-sales-section" x-data="dashboardOrderValues(@js($orderValueReport))" aria-label="Sales and order value report">
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-        <div><h2 class="h5 mb-1">Sales summary</h2><span class="small text-muted">{{ $reportPeriod['from'] }} — {{ $reportPeriod['to'] }} · Orders placed in this date range · Cancelled orders excluded</span></div>
+        <div><h2 class="h5 mb-1">Sales summary <x-dashboard-info title="Sales summary" description="Sales orders placed in the selected date range, grouped by shipping state, saved order office or current status. Cancelled orders are excluded from every amount and count. State, office and status totals use the same orders. Search and pagination only change which groups are displayed." /></h2><span class="small text-muted">{{ $reportPeriod['from'] }} — {{ $reportPeriod['to'] }} · Orders placed in this date range · Cancelled orders excluded</span></div>
         <details class="small sales-report-help" style="max-width:620px"><summary class="text-primary">How amounts are calculated</summary><div class="text-muted mt-2">
             <ul class="mb-0 ps-3">
                 <li><strong>Net sales:</strong> the same amount as the Summary card above. Uses net payable and excludes cancelled, future and returned orders, and orders with completed returns.</li>
@@ -15,12 +29,12 @@
     <div class="row g-3 mb-3">
         @foreach(['booked'=>'Net sales','delivered'=>'Delivered','dispatched'=>'Shipped','paid'=>'Payments received','refunded'=>'Refunds paid','outstanding'=>'Amount due'] as $key=>$label)
         @php($metricColor = ['booked'=>'primary','delivered'=>'success','dispatched'=>'info','paid'=>'success','refunded'=>'danger','outstanding'=>'warning'][$key])
-        <div class="col-6 col-lg-4 col-xxl-2"><div class="card sales-value-metric h-100 border-start border-3 border-{{ $metricColor }}"><div class="card-body p-3"><span class="small text-muted">{{ $label }}</span><strong class="d-block fs-5 mt-1" x-text="money(report.totals.{{ $key }})"></strong></div></div></div>
+        <div class="col-6 col-lg-4 col-xxl-2"><div class="card sales-value-metric h-100 border-start border-3 border-{{ $metricColor }}"><div class="card-body p-3"><span class="small text-muted">{{ $label }} <x-dashboard-info :title="$label" :description="$dashboardAmountHelp[$key]" /></span><strong class="d-block fs-5 mt-1" x-text="money(report.totals.{{ $key }})"></strong></div></div></div>
         @endforeach
     </div>
     <details class="card mb-3"><summary class="p-3 fw-semibold">Order amounts · <span x-text="report.totals.orders"></span> sales orders</summary><div class="card-body pt-0"><div class="row g-3">
         @foreach(['gross'=>'Subtotal','discount'=>'Discount','tax'=>'Tax','payable'=>'Net payable','wallet'=>'Wallet used','value'=>'Order value incl. wallet'] as $key=>$label)
-        <div class="col-6 col-lg-4 col-xl-2"><span class="small text-muted">{{ $label }}</span><strong class="d-block" x-text="money(report.totals.{{ $key }})"></strong></div>
+        <div class="col-6 col-lg-4 col-xl-2"><span class="small text-muted">{{ $label }} <x-dashboard-info :title="$label" :description="$dashboardAmountHelp[$key]" /></span><strong class="d-block" x-text="money(report.totals.{{ $key }})"></strong></div>
         @endforeach
     </div></div></details>
     <div class="card">

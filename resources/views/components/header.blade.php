@@ -48,33 +48,33 @@
                     searchQuery: '',
                     items: [
                         @can('dashboard-view')
-                        { name: 'Dashboard', path: '{{ route('dashboard') }}', icon: 'bi bi-grid-1x2-fill', group: 'Main' },
+                        { name: 'Dashboard', path: '{{ route('dashboard') }}', icon: 'bi bi-grid-1x2-fill', group: 'Overview' },
                         @endcan
                         @can('warehouse-dashboard-view')
-                        { name: 'Command Center', path: '{{ route('inventory.dashboard') }}', icon: 'bi bi-buildings', group: 'Main' },
+                        { name: 'Warehouse Dashboard', path: '{{ route('inventory.dashboard') }}', icon: 'bi bi-buildings', group: 'Overview' },
                         @endcan
                         @can('analytics-view')
-                        { name: 'Analytics', path: '{{ route('analytics') }}', icon: 'bi bi-bar-chart-line-fill', group: 'Main' },
+                        { name: 'Business Analytics', path: '{{ route('analytics') }}', icon: 'bi bi-bar-chart-line-fill', group: 'Overview' },
                         @endcan
                         @can('reports-view')
-                        { name: 'Reports', path: '{{ route('reports') }}', icon: 'bi bi-file-earmark-bar-graph-fill', group: 'Main' },
+                        { name: 'Reports', path: '{{ route('reports') }}', icon: 'bi bi-file-earmark-bar-graph-fill', group: 'Overview' },
                         @endcan
                         @canany(['target-view', 'target-view-all'])
-                        { name: 'Targets & Achv.', path: '{{ route('targets.index') }}', icon: 'bi bi-award-fill', group: 'Main' },
+                        { name: 'Targets & Progress', path: '{{ route('targets.index') }}', icon: 'bi bi-award-fill', group: 'Overview' },
                         @endcanany
                         
                         @can('orders.view')
-                        { name: 'Orders', path: '{{ route('orders') }}', icon: 'bi bi-bag-check-fill', group: 'Sales & Marketing' },
+                        { name: 'Orders', path: '{{ route('orders') }}', icon: 'bi bi-bag-check-fill', group: 'Sales & Promotions' },
                         @endcan
                         @can('complaints.view')
-                        { name: 'Complaints', path: '{{ route('complaints.index') }}', icon: 'bi bi-headset', group: 'Sales & Marketing' },
+                        { name: 'Customer Complaints', path: '{{ route('complaints.index') }}', icon: 'bi bi-headset', group: 'Sales & Promotions' },
                         @endcan
                         @can('coupon-view')
-                        { name: 'Coupon Codes', path: '{{ route('promotions.coupons') }}', icon: 'bi bi-ticket-perforated-fill', group: 'Sales & Marketing' },
+                        { name: 'Discount Coupons', path: '{{ route('promotions.coupons') }}', icon: 'bi bi-ticket-perforated-fill', group: 'Sales & Promotions' },
                         @endcan
                         @can('promotions-view')
-                        { name: 'Offers & Deals', path: '{{ route('promotions.offers') }}', icon: 'bi bi-star-fill', group: 'Sales & Marketing' },
-                        { name: 'Referral Programs', path: '{{ route('referrals.programs.index') }}', icon: 'bi bi-diagram-3-fill', group: 'Sales & Marketing' },
+                        { name: 'Offers', path: '{{ route('promotions.offers') }}', icon: 'bi bi-star-fill', group: 'Sales & Promotions' },
+                        { name: 'Customer Referrals', path: '{{ route('referrals.programs.index') }}', icon: 'bi bi-diagram-3-fill', group: 'Sales & Promotions' },
                         @endcan
                         
                         @can('invoices.view')
@@ -87,126 +87,126 @@
                         { name: 'Refunds', path: '{{ route('refunds.index') }}', icon: 'bi bi-cash-coin', group: 'Billing & Payments' },
                         @endcan
                         @can('returns.view')
-                        { name: 'Returns', path: '{{ route('returns.index') }}', icon: 'bi bi-arrow-return-left', group: 'Billing & Payments' },
+                        { name: 'Product Returns', path: '{{ route('returns.index') }}', icon: 'bi bi-arrow-return-left', group: 'Billing & Payments' },
                         @endcan
                         @can('credit-notes.view')
                         { name: 'Credit Notes', path: '{{ route('credit-notes.index') }}', icon: 'bi bi-receipt-cutoff', group: 'Billing & Payments' },
                         @endcan
                         
                         @can('shipping-view')
-                        { name: 'Shipments & Tracking', path: '{{ route('shipping.shipments') }}', icon: 'bi bi-geo-alt-fill', group: 'Logistics & Warehouses' },
-                        { name: 'Shipping Services', path: '{{ route('shipping.services') }}', icon: 'bi bi-gear-wide-connected', group: 'Logistics & Warehouses' },
-                        { name: 'Shipping Settings', path: '{{ route('shipping.settings') }}', icon: 'bi bi-sliders', group: 'Logistics & Warehouses' },
+                        { name: 'Shipment Tracking', path: '{{ route('shipping.shipments') }}', icon: 'bi bi-geo-alt-fill', group: 'Warehouses & Shipping' },
+                        { name: 'Delivery Services', path: '{{ route('shipping.services') }}', icon: 'bi bi-gear-wide-connected', group: 'Warehouses & Shipping' },
+                        { name: 'Shipping Settings', path: '{{ route('shipping.settings') }}', icon: 'bi bi-sliders', group: 'Warehouses & Shipping' },
                         @endcan
                         @can('warehouse-view')
-                        { name: 'Warehouses', path: '{{ route('catalog.warehouses') }}', icon: 'bi bi-buildings-fill', group: 'Logistics & Warehouses' },
+                        { name: 'Warehouses', path: '{{ route('catalog.warehouses') }}', icon: 'bi bi-buildings-fill', group: 'Warehouses & Shipping' },
                         @endcan
                         
                         @can('stockmanagement-view')
-                        { name: 'Stock Levels', path: '{{ route('inventory.stock-management') }}', icon: 'bi bi-box-seam-fill', group: 'Inventory & Stock' },
+                        { name: 'Stock Overview', path: '{{ route('inventory.stock-management') }}', icon: 'bi bi-box-seam-fill', group: 'Stock Management' },
                         @endcan
                         @can('stocktransfer-view')
-                        { name: 'Stock Transfers', path: '{{ route('inventory.stock-transfers') }}', icon: 'bi bi-arrow-left-right', group: 'Inventory & Stock' },
+                        { name: 'Stock Transfers', path: '{{ route('inventory.stock-transfers') }}', icon: 'bi bi-arrow-left-right', group: 'Stock Management' },
                         @endcan
                         @can('inventoryadjustment-view')
-                        { name: 'Adjustments', path: '{{ route('inventory.adjustments') }}', icon: 'bi bi-sliders2', group: 'Inventory & Stock' },
+                        { name: 'Stock Adjustments', path: '{{ route('inventory.adjustments') }}', icon: 'bi bi-sliders2', group: 'Stock Management' },
                         @endcan
                         
                         @can('supplier-view')
-                        { name: 'Suppliers', path: '{{ route('procurement.suppliers.index') }}', icon: 'bi bi-truck-flatbed', group: 'Procurement' },
+                        { name: 'Suppliers', path: '{{ route('procurement.suppliers.index') }}', icon: 'bi bi-truck-flatbed', group: 'Purchasing' },
                         @endcan
                         @can('purchaseorder-view')
-                        { name: 'Purchase Orders', path: '{{ route('procurement.purchase-orders.index') }}', icon: 'bi bi-receipt', group: 'Procurement' },
+                        { name: 'Purchase Orders', path: '{{ route('procurement.purchase-orders.index') }}', icon: 'bi bi-receipt', group: 'Purchasing' },
                         @endcan
                         @can('goodsreceipt-view')
-                        { name: 'Goods Receipts', path: '{{ route('procurement.goods-receipts.index') }}', icon: 'bi bi-clipboard-check', group: 'Procurement' },
+                        { name: 'Stock Received', path: '{{ route('procurement.goods-receipts.index') }}', icon: 'bi bi-clipboard-check', group: 'Purchasing' },
                         @endcan
                         
                         @can('product-view')
-                        { name: 'Products', path: '{{ route('catalog.products') }}', icon: 'bi bi-box-seam-fill', group: 'Catalog Management' },
+                        { name: 'Products', path: '{{ route('catalog.products') }}', icon: 'bi bi-box-seam-fill', group: 'Product Catalog' },
                         @endcan
                         @can('category-view')
-                        { name: 'Categories', path: '{{ route('catalog.categories') }}', icon: 'bi bi-diagram-3-fill', group: 'Catalog Management' },
+                        { name: 'Product Categories', path: '{{ route('catalog.categories') }}', icon: 'bi bi-diagram-3-fill', group: 'Product Catalog' },
                         @endcan
                         @can('brand-view')
-                        { name: 'Brands', path: '{{ route('catalog.brands') }}', icon: 'bi bi-patch-check-fill', group: 'Catalog Management' },
+                        { name: 'Brands', path: '{{ route('catalog.brands') }}', icon: 'bi bi-patch-check-fill', group: 'Product Catalog' },
                         @endcan
                         @can('productattribute-view')
-                        { name: 'Attributes', path: '{{ route('catalog.attributes') }}', icon: 'bi bi-sliders2', group: 'Catalog Management' },
+                        { name: 'Product Attributes', path: '{{ route('catalog.attributes') }}', icon: 'bi bi-sliders2', group: 'Product Catalog' },
                         @endcan
                         @can('unitofmeasure-view')
-                        { name: 'Units of Measure', path: '{{ route('catalog.uom') }}', icon: 'bi bi-rulers', group: 'Catalog Management' },
+                        { name: 'Measurement Units', path: '{{ route('catalog.uom') }}', icon: 'bi bi-rulers', group: 'Product Catalog' },
                         @endcan
                         @can('taxrate-view')
-                        { name: 'Tax Rates', path: '{{ route('catalog.tax-rates') }}', icon: 'bi bi-percent', group: 'Catalog Management' },
+                        { name: 'Tax Rates', path: '{{ route('catalog.tax-rates') }}', icon: 'bi bi-percent', group: 'Product Catalog' },
                         @endcan
                         @can('hsncode-view')
-                        { name: 'HSN Codes', path: '{{ route('catalog.hsn-codes') }}', icon: 'bi bi-upc-scan', group: 'Catalog Management' },
+                        { name: 'HSN Tax Codes', path: '{{ route('catalog.hsn-codes') }}', icon: 'bi bi-upc-scan', group: 'Product Catalog' },
                         @endcan
                         
                         @can('user-view')
-                        { name: 'Users', path: '{{ route('users') }}', icon: 'bi bi-person-fill-gear', group: 'User & Customer Admin' },
+                        { name: 'Users', path: '{{ route('users') }}', icon: 'bi bi-person-fill-gear', group: 'Customers & Users' },
                         @endcan
                         @canany(['role-view', 'permission-view'])
-                        { name: 'Roles & Permissions', path: '{{ route('roles-permissions') }}', icon: 'bi bi-shield-lock-fill', group: 'User & Customer Admin' },
+                        { name: 'Roles & Access', path: '{{ route('roles-permissions') }}', icon: 'bi bi-shield-lock-fill', group: 'Customers & Users' },
                         @endcanany
                         @can('team-view')
-                        { name: 'States & Offices', path: '{{ route('teams') }}', icon: 'bi bi-buildings-fill', group: 'User & Customer Admin' },
+                        { name: 'States & Offices', path: '{{ route('teams') }}', icon: 'bi bi-buildings-fill', group: 'Customers & Users' },
                         @endcan
                         @can('customer-view')
-                        { name: 'Customers', path: '{{ route('customers') }}', icon: 'bi bi-person-lines-fill', group: 'User & Customer Admin' },
+                        { name: 'Customers', path: '{{ route('customers') }}', icon: 'bi bi-person-lines-fill', group: 'Customers & Users' },
                         @endcan
                         @can('settings-view')
-                        { name: 'Customer Settings', path: '{{ route('customer-settings.index') }}', icon: 'bi bi-gear-wide-connected', group: 'User & Customer Admin' },
+                        { name: 'Customer Settings', path: '{{ route('customer-settings.index') }}', icon: 'bi bi-gear-wide-connected', group: 'Customers & Users' },
                         @endcan
                         @can('department-view')
-                        { name: 'Departments', path: '{{ route('departments') }}', icon: 'bi bi-diagram-3-fill', group: 'User & Customer Admin' },
+                        { name: 'Departments', path: '{{ route('departments') }}', icon: 'bi bi-diagram-3-fill', group: 'Customers & Users' },
                         @endcan
                         
                         @can('attendance-view')
-                        { name: 'Attendances', path: '{{ route('attendances') }}', icon: 'bi bi-calendar-check-fill', group: 'Time Management' },
+                        { name: 'Attendance', path: '{{ route('attendances') }}', icon: 'bi bi-calendar-check-fill', group: 'Attendance & Leave' },
                         @endcan
                         @can('leave-view')
-                        { name: 'Leave Management', path: '{{ route('leaves') }}', icon: 'bi bi-calendar-minus-fill', group: 'Time Management' },
+                        { name: 'Leave Requests', path: '{{ route('leaves') }}', icon: 'bi bi-calendar-minus-fill', group: 'Attendance & Leave' },
                         @endcan
                         
                         @can('village-view')
-                        { name: 'Villages', path: '{{ route('villages') }}', icon: 'bi bi-geo-alt-fill', group: 'System Settings' },
+                        { name: 'Village Directory', path: '{{ route('villages') }}', icon: 'bi bi-geo-alt-fill', group: 'System Settings' },
                         @endcan
                         @can('orderreason-view')
                         { name: 'Order Reasons', path: '{{ route('order.reasons') }}', icon: 'bi bi-list-task', group: 'System Settings' },
                         @endcan
                         @can('calltag-view')
-                        { name: 'Call Tags', path: '{{ route('call-tags.index') }}', icon: 'bi bi-tags', group: 'System Settings' },
+                        { name: 'Call Labels', path: '{{ route('call-tags.index') }}', icon: 'bi bi-tags', group: 'System Settings' },
                         @endcan
                         
                         @can('chat-view')
-                        { name: 'Team Chat', path: '{{ route('chat.index') }}', icon: 'bi bi-chat-text-fill', group: 'Utilities & Tools' },
+                        { name: 'Team Chat', path: '{{ route('chat.index') }}', icon: 'bi bi-chat-text-fill', group: 'Tools & Support' },
                         @endcan
                         @can('messages-view')
-                        { name: 'Messages', path: '{{ route('messages') }}', icon: 'bi bi-chat-dots-fill', group: 'Utilities & Tools' },
+                        { name: 'Messages', path: '{{ route('messages') }}', icon: 'bi bi-chat-dots-fill', group: 'Tools & Support' },
                         @endcan
                         @can('calendar-view')
-                        { name: 'Calendar', path: '{{ route('calendar') }}', icon: 'bi bi-calendar-week-fill', group: 'Utilities & Tools' },
+                        { name: 'Calendar', path: '{{ route('calendar') }}', icon: 'bi bi-calendar-week-fill', group: 'Tools & Support' },
                         @endcan
                         @can('files-view')
-                        { name: 'Files', path: '{{ route('files') }}', icon: 'bi bi-folder2-open', group: 'Utilities & Tools' },
+                        { name: 'Files', path: '{{ route('files') }}', icon: 'bi bi-folder2-open', group: 'Tools & Support' },
                         @endcan
                         @can('forms-view')
-                        { name: 'Forms', path: '{{ route('forms') }}', icon: 'bi bi-ui-checks-grid', group: 'Utilities & Tools' },
+                        { name: 'Forms', path: '{{ route('forms') }}', icon: 'bi bi-ui-checks-grid', group: 'Tools & Support' },
                         @endcan
                         @can('settings-view')
-                        { name: 'UI Elements', path: '{{ route('elements') }}', icon: 'bi bi-puzzle-fill', group: 'Utilities & Tools' },
+                        { name: 'Interface Components', path: '{{ route('elements') }}', icon: 'bi bi-puzzle-fill', group: 'Tools & Support' },
                         @endcan
-                        { name: 'My Security', path: '{{ route('security') }}', icon: 'bi bi-shield-fill-check', group: 'Utilities & Tools' },
+                        { name: 'My Account Security', path: '{{ route('security') }}', icon: 'bi bi-shield-fill-check', group: 'Tools & Support' },
                         @can('audit-log-view')
-                        { name: 'Audit Logs', path: '{{ route('admin.audit-logs.index') }}', icon: 'bi bi-journal-medical', group: 'Utilities & Tools' },
+                        { name: 'Activity Logs', path: '{{ route('admin.audit-logs.index') }}', icon: 'bi bi-journal-medical', group: 'Tools & Support' },
                         @endcan
                         @can('help-view')
-                        { name: 'Help & Support', path: '{{ route('help') }}', icon: 'bi bi-question-circle-fill', group: 'Utilities & Tools' },
+                        { name: 'Help & Support', path: '{{ route('help') }}', icon: 'bi bi-question-circle-fill', group: 'Tools & Support' },
                         @endcan
                         @canany(['messages-view', 'calendar-view', 'forms-view', 'settings-view', 'help-view'])
-                        { name: 'API Documentation', path: '/docs/api', icon: 'bi bi-file-earmark-code-fill', group: 'Utilities & Tools' }
+                        { name: 'API Documentation', path: '/docs/api', icon: 'bi bi-file-earmark-code-fill', group: 'Tools & Support' }
                         @endcanany
                     ],
                     selectedIndex: -1,

@@ -65,7 +65,7 @@
                 {{-- ── MAIN ───────────────────────────────────────── --}}
                 @canany(['dashboard-view', 'analytics-view', 'reports-view'])
                 <li class="nav-item sidebar-section-label">
-                    <small class="text-muted px-3 text-uppercase fw-bold">Main</small>
+                    <small class="text-muted px-3 text-uppercase fw-bold">Overview</small>
                 </li>
                 @endcanany
 
@@ -81,7 +81,7 @@
                 <li class="nav-item">
                     <a class="nav-link {{ $current === 'analytics' ? 'active' : '' }}" href="{{ route('analytics') }}">
                         <i class="bi bi-bar-chart-line-fill"></i>
-                        <span class="text-truncate flex-grow-1" style="min-width: 0;">Analytics</span>
+                        <span class="text-truncate flex-grow-1" style="min-width: 0;">Business Analytics</span>
                     </a>
                 </li>
                 @endcan
@@ -98,7 +98,7 @@
                 <li class="nav-item">
                     <a class="nav-link {{ $current === 'targets.index' ? 'active' : '' }}" href="{{ route('targets.index') }}">
                         <i class="bi bi-award-fill"></i>
-                        <span class="text-truncate flex-grow-1" style="min-width: 0;">Targets & Achv.</span>
+                        <span class="text-truncate flex-grow-1" style="min-width: 0;">Targets &amp; Progress</span>
                     </a>
                 </li>
 
@@ -107,7 +107,7 @@
                 {{-- ── COMMERCE & SALES ─────────────────────────── --}}
                 @canany(['product-view', 'category-view', 'brand-view', 'productattribute-view', 'unitofmeasure-view', 'taxrate-view', 'hsncode-view', 'orders.view', 'invoices.view', 'payments.view', 'returns.view', 'refunds.view', 'credit-notes.view', 'complaints.view', 'coupon-view', 'promotions-view'])
                 <li class="nav-item sidebar-section-label mt-3">
-                    <small class="text-muted px-3 text-uppercase fw-bold">Commerce &amp; Sales</small>
+                    <small class="text-muted px-3 text-uppercase fw-bold">Products &amp; Sales</small>
                 </li>
                 @endcanany
 
@@ -121,7 +121,7 @@
                        aria-expanded="{{ in_array($current, ['catalog.products', 'catalog.categories', 'catalog.brands', 'catalog.attributes', 'catalog.uom', 'catalog.tax-rates', 'catalog.hsn-codes']) ? 'true' : 'false' }}"
                        aria-controls="catalogSubmenu">
                         <i class="bi bi-shop-window"></i>
-                        <span class="text-truncate flex-grow-1" style="min-width: 0;">Catalog Management</span>
+                        <span class="text-truncate flex-grow-1" style="min-width: 0;">Product Catalog</span>
                         <i class="bi bi-chevron-down ms-auto"></i>
                     </a>
                     <div class="collapse {{ in_array($current, ['catalog.products', 'catalog.categories', 'catalog.brands', 'catalog.attributes', 'catalog.uom', 'catalog.tax-rates', 'catalog.hsn-codes']) ? 'show' : '' }}" id="catalogSubmenu">
@@ -138,7 +138,7 @@
                             <li class="nav-item">
                                 <a class="nav-link {{ $current === 'catalog.categories' ? 'active' : '' }}" href="{{ route('catalog.categories') }}">
                                     <i class="bi bi-diagram-3-fill"></i>
-                                    <span class="text-truncate flex-grow-1" style="min-width: 0;">Categories</span>
+                                    <span class="text-truncate flex-grow-1" style="min-width: 0;">Product Categories</span>
                                 </a>
                             </li>
                             @endcan
@@ -154,7 +154,7 @@
                             <li class="nav-item">
                                 <a class="nav-link {{ $current === 'catalog.attributes' ? 'active' : '' }}" href="{{ route('catalog.attributes') }}">
                                     <i class="bi bi-sliders2"></i>
-                                    <span class="text-truncate flex-grow-1" style="min-width: 0;">Attributes</span>
+                                    <span class="text-truncate flex-grow-1" style="min-width: 0;">Product Attributes</span>
                                 </a>
                             </li>
                             @endcan
@@ -162,7 +162,7 @@
                             <li class="nav-item">
                                 <a class="nav-link {{ $current === 'catalog.uom' ? 'active' : '' }}" href="{{ route('catalog.uom') }}">
                                     <i class="bi bi-rulers"></i>
-                                    <span class="text-truncate flex-grow-1" style="min-width: 0;">Units of Measure</span>
+                                    <span class="text-truncate flex-grow-1" style="min-width: 0;">Measurement Units</span>
                                 </a>
                             </li>
                             @endcan
@@ -178,7 +178,7 @@
                             <li class="nav-item">
                                 <a class="nav-link {{ $current === 'catalog.hsn-codes' ? 'active' : '' }}" href="{{ route('catalog.hsn-codes') }}">
                                     <i class="bi bi-upc-scan"></i>
-                                    <span class="text-truncate flex-grow-1" style="min-width: 0;">HSN Codes</span>
+                                    <span class="text-truncate flex-grow-1" style="min-width: 0;">HSN Tax Codes</span>
                                 </a>
                             </li>
                             @endcan
@@ -197,7 +197,7 @@
                        aria-expanded="{{ in_array($current, ['orders', 'invoices.index', 'payments.index', 'returns.index', 'refunds.index', 'credit-notes.index', 'complaints.index']) ? 'true' : 'false' }}"
                        aria-controls="orderManagementSubmenu">
                         <i class="bi bi-cart-check-fill"></i>
-                        <span class="text-truncate flex-grow-1" style="min-width: 0;">Order Management</span>
+                        <span class="text-truncate flex-grow-1" style="min-width: 0;">Orders &amp; Payments</span>
                         <i class="bi bi-chevron-down ms-auto"></i>
                     </a>
                     <div class="collapse {{ in_array($current, ['orders', 'invoices.index', 'payments.index', 'returns.index', 'refunds.index', 'credit-notes.index', 'complaints.index']) ? 'show' : '' }}" id="orderManagementSubmenu">
@@ -230,7 +230,7 @@
                             <li class="nav-item">
                                 <a class="nav-link {{ $current === 'returns.index' ? 'active' : '' }}" href="{{ route('returns.index') }}">
                                     <i class="bi bi-arrow-return-left"></i>
-                                    <span class="text-truncate flex-grow-1" style="min-width: 0;">Returns</span>
+                                    <span class="text-truncate flex-grow-1" style="min-width: 0;">Product Returns</span>
                                 </a>
                             </li>
                             @endcan
@@ -238,7 +238,7 @@
                             <li class="nav-item">
                                 <a class="nav-link {{ $current === 'complaints.index' ? 'active' : '' }}" href="{{ route('complaints.index') }}">
                                     <i class="bi bi-headset"></i>
-                                    <span class="text-truncate flex-grow-1" style="min-width: 0;">Complaints</span>
+                                    <span class="text-truncate flex-grow-1" style="min-width: 0;">Customer Complaints</span>
                                 </a>
                             </li>
                             @endcan
@@ -273,7 +273,7 @@
                        aria-expanded="{{ in_array($current, ['promotions.coupons', 'promotions.offers', 'referrals.programs.index']) ? 'true' : 'false' }}"
                        aria-controls="marketingSubmenu">
                         <i class="bi bi-megaphone-fill"></i>
-                        <span class="text-truncate flex-grow-1" style="min-width: 0;">Marketing &amp; Promos</span>
+                        <span class="text-truncate flex-grow-1" style="min-width: 0;">Offers &amp; Promotions</span>
                         <i class="bi bi-chevron-down ms-auto"></i>
                     </a>
                     <div class="collapse {{ in_array($current, ['promotions.coupons', 'promotions.offers', 'referrals.programs.index']) ? 'show' : '' }}" id="marketingSubmenu">
@@ -282,7 +282,7 @@
                             <li class="nav-item">
                                 <a class="nav-link {{ $current === 'promotions.offers' ? 'active' : '' }}" href="{{ route('promotions.offers') }}">
                                     <i class="bi bi-star-fill"></i>
-                                    <span class="text-truncate flex-grow-1" style="min-width: 0;">Offers &amp; Deals</span>
+                                    <span class="text-truncate flex-grow-1" style="min-width: 0;">Offers</span>
                                 </a>
                             </li>
                             @endcan
@@ -290,7 +290,7 @@
                             <li class="nav-item">
                                 <a class="nav-link {{ $current === 'promotions.coupons' ? 'active' : '' }}" href="{{ route('promotions.coupons') }}">
                                     <i class="bi bi-ticket-perforated-fill"></i>
-                                    <span class="text-truncate flex-grow-1" style="min-width: 0;">Coupon Codes</span>
+                                    <span class="text-truncate flex-grow-1" style="min-width: 0;">Discount Coupons</span>
                                 </a>
                             </li>
                             @endcan
@@ -298,7 +298,7 @@
                             <li class="nav-item">
                                 <a class="nav-link {{ $current === 'referrals.programs.index' ? 'active' : '' }}" href="{{ route('referrals.programs.index') }}">
                                     <i class="bi bi-diagram-3-fill"></i>
-                                    <span class="text-truncate flex-grow-1" style="min-width: 0;">Referral Programs</span>
+                                    <span class="text-truncate flex-grow-1" style="min-width: 0;">Customer Referrals</span>
                                 </a>
                             </li>
                             @endcan
@@ -310,7 +310,7 @@
                 {{-- ── SUPPLY CHAIN ─────────────────────────── --}}
                 @canany(['supplier-view', 'purchaseorder-view', 'goodsreceipt-view', 'stockmanagement-view', 'stocktransfer-view', 'inventoryadjustment-view', 'warehouse-dashboard-view', 'shipping-view', 'warehouse-view'])
                 <li class="nav-item sidebar-section-label mt-3">
-                    <small class="text-muted px-3 text-uppercase fw-bold">Supply Chain</small>
+                    <small class="text-muted px-3 text-uppercase fw-bold">Stock &amp; Shipping</small>
                 </li>
                 @endcanany
 
@@ -324,7 +324,7 @@
                        aria-expanded="{{ in_array($current, ['inventory.dashboard', 'procurement.suppliers.index', 'procurement.purchase-orders.index', 'procurement.goods-receipts.index', 'inventory.stock-management', 'inventory.stock-transfers', 'inventory.adjustments']) ? 'true' : 'false' }}"
                        aria-controls="inventorySubmenu">
                         <i class="bi bi-archive-fill"></i>
-                        <span class="text-truncate flex-grow-1" style="min-width: 0;">Procurement &amp; Inventory</span>
+                        <span class="text-truncate flex-grow-1" style="min-width: 0;">Purchasing &amp; Stock</span>
                         <i class="bi bi-chevron-down ms-auto"></i>
                     </a>
                     <div class="collapse {{ in_array($current, ['inventory.dashboard', 'procurement.suppliers.index', 'procurement.purchase-orders.index', 'procurement.goods-receipts.index', 'inventory.stock-management', 'inventory.stock-transfers', 'inventory.adjustments']) ? 'show' : '' }}" id="inventorySubmenu">
@@ -333,7 +333,7 @@
                             <li class="nav-item">
                                 <a class="nav-link {{ $current === 'inventory.dashboard' ? 'active' : '' }}" href="{{ route('inventory.dashboard') }}">
                                     <i class="bi bi-buildings"></i>
-                                    <span class="text-truncate flex-grow-1" style="min-width: 0;">Command Center</span>
+                                    <span class="text-truncate flex-grow-1" style="min-width: 0;">Warehouse Dashboard</span>
                                 </a>
                             </li>
                             @endcan
@@ -357,7 +357,7 @@
                             <li class="nav-item">
                                 <a class="nav-link {{ $current === 'procurement.goods-receipts.index' ? 'active' : '' }}" href="{{ route('procurement.goods-receipts.index') }}">
                                     <i class="bi bi-clipboard-check"></i>
-                                    <span class="text-truncate flex-grow-1" style="min-width: 0;">Goods Receipts</span>
+                                    <span class="text-truncate flex-grow-1" style="min-width: 0;">Stock Received</span>
                                 </a>
                             </li>
                             @endcan
@@ -365,7 +365,7 @@
                             <li class="nav-item">
                                 <a class="nav-link {{ $current === 'inventory.stock-management' ? 'active' : '' }}" href="{{ route('inventory.stock-management') }}">
                                     <i class="bi bi-box-seam-fill"></i>
-                                    <span class="text-truncate flex-grow-1" style="min-width: 0;">Stock Levels</span>
+                                    <span class="text-truncate flex-grow-1" style="min-width: 0;">Stock Overview</span>
                                 </a>
                             </li>
                             @endcan
@@ -381,7 +381,7 @@
                             <li class="nav-item">
                                 <a class="nav-link {{ $current === 'inventory.adjustments' ? 'active' : '' }}" href="{{ route('inventory.adjustments') }}">
                                     <i class="bi bi-sliders2"></i>
-                                    <span class="text-truncate flex-grow-1" style="min-width: 0;">Adjustments</span>
+                                    <span class="text-truncate flex-grow-1" style="min-width: 0;">Stock Adjustments</span>
                                 </a>
                             </li>
                             @endcan
@@ -400,7 +400,7 @@
                        aria-expanded="{{ in_array($current, ['shipping.shipments', 'shipping.services', 'catalog.warehouses']) ? 'true' : 'false' }}"
                        aria-controls="shippingSubmenu">
                         <i class="bi bi-truck"></i>
-                        <span class="text-truncate flex-grow-1" style="min-width: 0;">Logistics &amp; Warehouses</span>
+                        <span class="text-truncate flex-grow-1" style="min-width: 0;">Warehouses &amp; Shipping</span>
                         <i class="bi bi-chevron-down ms-auto"></i>
                     </a>
                     <div class="collapse {{ in_array($current, ['shipping.shipments', 'shipping.services', 'catalog.warehouses']) ? 'show' : '' }}" id="shippingSubmenu">
@@ -417,13 +417,13 @@
                             <li class="nav-item">
                                 <a class="nav-link {{ $current === 'shipping.shipments' ? 'active' : '' }}" href="{{ route('shipping.shipments') }}">
                                     <i class="bi bi-geo-alt-fill"></i>
-                                    <span class="text-truncate flex-grow-1" style="min-width: 0;">Shipments &amp; Tracking</span>
+                                    <span class="text-truncate flex-grow-1" style="min-width: 0;">Shipment Tracking</span>
                                 </a>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link {{ $current === 'shipping.services' ? 'active' : '' }}" href="{{ route('shipping.services') }}">
                                     <i class="bi bi-gear-wide-connected"></i>
-                                    <span class="text-truncate flex-grow-1" style="min-width: 0;">Shipping Services</span>
+                                    <span class="text-truncate flex-grow-1" style="min-width: 0;">Delivery Services</span>
                                 </a>
                             </li>
                             <li class="nav-item">
@@ -455,7 +455,7 @@
                        aria-expanded="{{ in_array($current, ['users', 'roles-permissions', 'teams', 'customers', 'customer-settings.index', 'departments']) ? 'true' : 'false' }}"
                        aria-controls="crmSubmenu">
                         <i class="bi bi-people-fill"></i>
-                        <span class="text-truncate flex-grow-1" style="min-width: 0;">CRM &amp; People</span>
+                        <span class="text-truncate flex-grow-1" style="min-width: 0;">Customers &amp; Users</span>
                         <i class="bi bi-chevron-down ms-auto"></i>
                     </a>
                     <div class="collapse {{ in_array($current, ['users', 'roles-permissions', 'teams', 'customers', 'customer-settings.index', 'departments']) ? 'show' : '' }}" id="crmSubmenu">
@@ -480,7 +480,7 @@
                             <li class="nav-item">
                                 <a class="nav-link {{ $current === 'users' ? 'active' : '' }}" href="{{ route('users') }}">
                                     <i class="bi bi-person-fill-gear"></i>
-                                    <span class="text-truncate flex-grow-1" style="min-width: 0;">System Users</span>
+                                    <span class="text-truncate flex-grow-1" style="min-width: 0;">Users</span>
                                 </a>
                             </li>
                             @endcan
@@ -488,7 +488,7 @@
                             <li class="nav-item">
                                 <a class="nav-link {{ $current === 'roles-permissions' ? 'active' : '' }}" href="{{ route('roles-permissions') }}">
                                     <i class="bi bi-shield-lock-fill"></i>
-                                    <span class="text-truncate flex-grow-1" style="min-width: 0;">Roles &amp; Permissions</span>
+                                    <span class="text-truncate flex-grow-1" style="min-width: 0;">Roles &amp; Access</span>
                                 </a>
                             </li>
                             @endcanany
@@ -496,7 +496,7 @@
                             <li class="nav-item">
                                 <a class="nav-link {{ $current === 'teams' ? 'active' : '' }}" href="{{ route('teams') }}">
                                     <i class="bi bi-buildings-fill"></i>
-                                    <span class="text-truncate flex-grow-1" style="min-width: 0;">Teams (State/LOB)</span>
+                                    <span class="text-truncate flex-grow-1" style="min-width: 0;">States &amp; Offices</span>
                                 </a>
                             </li>
                             @endcan
@@ -504,7 +504,7 @@
                             <li class="nav-item">
                                 <a class="nav-link {{ $current === 'departments' ? 'active' : '' }}" href="{{ route('departments') }}">
                                     <i class="bi bi-diagram-3-fill"></i>
-                                    <span class="text-truncate flex-grow-1" style="min-width: 0;">Organization Structure</span>
+                                    <span class="text-truncate flex-grow-1" style="min-width: 0;">Departments</span>
                                 </a>
                             </li>
                             @endcan
@@ -523,7 +523,7 @@
                        aria-expanded="{{ in_array($current, ['attendances', 'leaves']) ? 'true' : 'false' }}"
                        aria-controls="timeManagementSubmenu">
                         <i class="bi bi-clock-history"></i>
-                        <span class="text-truncate flex-grow-1" style="min-width: 0;">Time Management</span>
+                        <span class="text-truncate flex-grow-1" style="min-width: 0;">Attendance &amp; Leave</span>
                         <i class="bi bi-chevron-down ms-auto"></i>
                     </a>
                     <div class="collapse {{ in_array($current, ['attendances', 'leaves']) ? 'show' : '' }}" id="timeManagementSubmenu">
@@ -532,7 +532,7 @@
                             <li class="nav-item">
                                 <a class="nav-link {{ $current === 'attendances' ? 'active' : '' }}" href="{{ route('attendances') }}">
                                     <i class="bi bi-calendar-check-fill"></i>
-                                    <span class="text-truncate flex-grow-1" style="min-width: 0;">Attendances</span>
+                                    <span class="text-truncate flex-grow-1" style="min-width: 0;">Attendance</span>
                                 </a>
                             </li>
                             @endcan
@@ -540,7 +540,7 @@
                             <li class="nav-item">
                                 <a class="nav-link {{ $current === 'leaves' ? 'active' : '' }}" href="{{ route('leaves') }}">
                                     <i class="bi bi-calendar-minus-fill"></i>
-                                    <span class="text-truncate flex-grow-1" style="min-width: 0;">Leave Management</span>
+                                    <span class="text-truncate flex-grow-1" style="min-width: 0;">Leave Requests</span>
                                 </a>
                             </li>
                             @endcan
@@ -549,7 +549,7 @@
                 </li>
                 @endcanany
 
-                <li class="nav-item"><a class="nav-link {{ $current === 'security' ? 'active' : '' }}" href="{{ route('security') }}"><i class="bi bi-shield-fill-check"></i><span>My Security</span></a></li>
+                <li class="nav-item"><a class="nav-link {{ $current === 'security' ? 'active' : '' }}" href="{{ route('security') }}"><i class="bi bi-shield-fill-check"></i><span>My Account Security</span></a></li>
 
                 {{-- System Settings Dropdown --}}
                 @canany(['village-view', 'orderreason-view', 'calltag-view', 'files-view', 'audit-log-view', 'security-mail-view'])
@@ -570,7 +570,7 @@
                             <li class="nav-item">
                                 <a class="nav-link {{ $current === 'villages' ? 'active' : '' }}" href="{{ route('villages') }}">
                                     <i class="bi bi-geo-alt-fill"></i>
-                                    <span class="text-truncate flex-grow-1" style="min-width: 0;">Villages</span>
+                                    <span class="text-truncate flex-grow-1" style="min-width: 0;">Village Directory</span>
                                 </a>
                             </li>
                             @endcan
@@ -586,7 +586,7 @@
                             <li class="nav-item">
                                 <a class="nav-link {{ $current === 'call-tags.index' ? 'active' : '' }}" href="{{ route('call-tags.index') }}">
                                     <i class="bi bi-tags"></i>
-                                    <span class="text-truncate flex-grow-1" style="min-width: 0;">Call Tags</span>
+                                    <span class="text-truncate flex-grow-1" style="min-width: 0;">Call Labels</span>
                                 </a>
                             </li>
                             @endcan
@@ -594,7 +594,7 @@
                             <li class="nav-item">
                                 <a class="nav-link {{ $current === 'admin.audit-logs.index' ? 'active' : '' }}" href="{{ route('admin.audit-logs.index') }}">
                                     <i class="bi bi-journal-medical"></i>
-                                    <span class="text-truncate flex-grow-1" style="min-width: 0;">Audit Logs</span>
+                                    <span class="text-truncate flex-grow-1" style="min-width: 0;">Activity Logs</span>
                                 </a>
                             </li>
                             @endcan
@@ -602,7 +602,7 @@
                             <li class="nav-item">
                                 <a class="nav-link {{ $current === 'files' ? 'active' : '' }}" href="{{ route('files') }}">
                                     <i class="bi bi-folder2-open"></i>
-                                    <span class="text-truncate flex-grow-1" style="min-width: 0;">File Manager</span>
+                                    <span class="text-truncate flex-grow-1" style="min-width: 0;">Files</span>
                                 </a>
                             </li>
                             @endcan
@@ -626,7 +626,7 @@
                        aria-expanded="{{ in_array($current, ['messages', 'calendar', 'forms', 'settings', 'help']) || Str::startsWith($current, 'elements') ? 'true' : 'false' }}"
                        aria-controls="toolsSubmenu">
                         <i class="bi bi-wrench-adjustable-circle-fill"></i>
-                        <span class="text-truncate flex-grow-1" style="min-width: 0;">Utilities &amp; Tools</span>
+                        <span class="text-truncate flex-grow-1" style="min-width: 0;">Tools &amp; Support</span>
                         <i class="bi bi-chevron-down ms-auto"></i>
                     </a>
                     <div class="collapse {{ in_array($current, ['messages', 'calendar', 'forms', 'settings', 'help']) || Str::startsWith($current, 'elements') ? 'show' : '' }}" id="toolsSubmenu">
@@ -660,7 +660,7 @@
                             <li class="nav-item">
                                 <a class="nav-link {{ Str::startsWith($current, 'elements') ? 'active' : '' }}" href="{{ route('elements') }}">
                                     <i class="bi bi-puzzle-fill"></i>
-                                    <span class="text-truncate flex-grow-1" style="min-width: 0;">UI Elements</span>
+                                    <span class="text-truncate flex-grow-1" style="min-width: 0;">Interface Components</span>
                                 </a>
                             </li>
                             @endcan
@@ -687,3 +687,19 @@
         </nav>
     </div>
 </aside>
+
+<style>
+/* Sidebar presentation only; routes, visibility gates and collapse behaviour stay intact. */
+#admin-sidebar .sidebar-nav { padding-inline: .125rem; }
+#admin-sidebar .sidebar-section-label small { font-size: .7rem; letter-spacing: .06em; opacity: 1; padding-top: .75rem; padding-bottom: .5rem; }
+#admin-sidebar .sidebar-nav .nav-link { min-height: 42px; line-height: 1.4; }
+#admin-sidebar .sidebar-nav .nav-link > .text-truncate { white-space: normal !important; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; }
+#admin-sidebar .sidebar-nav .nav-link > i { flex-shrink: 0; }
+#admin-sidebar .sidebar-nav .nav-link > .bi-chevron-down { font-size: .7rem; }
+#admin-sidebar .sidebar-nav .nav-submenu { margin-left: .5rem; padding-left: .625rem; margin-bottom: .75rem; }
+#admin-sidebar .sidebar-nav .nav-submenu > .nav-item::before { left: -.625rem; width: .4rem; }
+#admin-sidebar .sidebar-nav .nav-submenu .nav-link { padding-block: .5rem !important; }
+@media (max-width: 991.98px) {
+    #admin-sidebar .sidebar-nav .nav-link { min-height: 44px; }
+}
+</style>

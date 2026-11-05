@@ -46,6 +46,8 @@
     .business-dashboard .customer-search-submit { width: 100%; }
     .business-dashboard .customer-search-heading { font-size: 1.5rem; }
 }
+.business-dashboard .dashboard-info-button { font-size: .85rem; line-height: 1; border-radius: 50%; text-transform: none; letter-spacing: normal; vertical-align: middle; }
+.business-dashboard .dashboard-info-button:focus-visible { outline: 2px solid var(--bs-primary); outline-offset: 2px; }
 </style>
 <script>
 window.dashboardDateFilter = function(period, from, to) {
@@ -167,7 +169,7 @@ window.dashboardDateFilter = function(period, from, to) {
     <!-- Tab 2: Dashboard -->
     <div x-show="activeTab === 'dashboard'" x-transition.opacity.duration.300ms x-cloak>
 
-                <h2 class="dashboard-section-title">Summary</h2>
+                <h2 class="dashboard-section-title">Summary <x-dashboard-info title="Summary" description="Figures use your existing access permissions and selected date range. Orders are filtered by the date they were placed; new customers use the profile creation date. Each card has its own inclusion rules." /></h2>
                 <!-- Stats Cards with Alpine.js -->
                 <div class="row g-3 mb-4">
                     <div class="col-xl-3 col-lg-6" x-data="statsCounter({{ $totalCustomers }}, 5)">
@@ -175,7 +177,7 @@ window.dashboardDateFilter = function(period, from, to) {
                             <div class="card-body p-3 p-lg-4">
                                 <div class="d-flex align-items-center justify-content-between">
                                     <div>
-                                        <h6 class="text-muted mb-1">New customers</h6>
+                                        <h6 class="text-muted mb-1">New customers <x-dashboard-info title="New customers" description="Count of customer profiles created during the selected dates that are visible under your existing customer access permissions." /></h6>
                                         <div class="h3 mb-0" aria-live="polite"><span x-text="value.toLocaleString()">{{ number_format($totalCustomers) }}</span></div>
                                         <small class="text-muted">For selected dates</small>
                                     </div>
@@ -192,7 +194,7 @@ window.dashboardDateFilter = function(period, from, to) {
                             <div class="card-body p-3 p-lg-4">
                                 <div class="d-flex align-items-center justify-content-between">
                                     <div>
-                                        <h6 class="text-muted mb-1" title="Same as Net sales in the Sales summary. Excludes cancelled, future and returned orders, and orders with completed returns. Wallet payments are shown separately.">Net sales</h6>
+                                        <h6 class="text-muted mb-1" title="Same as Net sales in the Sales summary. Excludes cancelled, future and returned orders, and orders with completed returns. Wallet payments are shown separately.">Net sales <x-dashboard-info title="Net sales" description="Sum of stored net payable for sales orders in the selected dates. Excludes cancelled, future and returned orders, and any order with a completed return. Wallet used is not added. This is the same total as Net sales in Sales summary, not cash collected." /></h6>
                                         <div class="h3 mb-0" aria-live="polite"><span x-text="'₹' + value.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})">₹{{ number_format($totalRevenue, 2) }}</span></div>
                                         <small class="text-muted">For selected dates</small>
                                     </div>
@@ -209,7 +211,7 @@ window.dashboardDateFilter = function(period, from, to) {
                             <div class="card-body p-3 p-lg-4">
                                 <div class="d-flex align-items-center justify-content-between">
                                     <div>
-                                        <h6 class="text-muted mb-1">Order count</h6>
+                                        <h6 class="text-muted mb-1">Order count <x-dashboard-info title="Order count" description="Count of visible orders placed during the selected dates, excluding future orders. Cancelled and returned orders remain in this count. This count has different inclusion rules from Net sales." /></h6>
                                         <div class="h3 mb-0" aria-live="polite"><span x-text="value.toLocaleString()">{{ number_format($totalOrders) }}</span></div>
                                         <small class="text-muted">For selected dates</small>
                                     </div>
@@ -226,7 +228,7 @@ window.dashboardDateFilter = function(period, from, to) {
                             <div class="card-body p-3 p-lg-4">
                                 <div class="d-flex align-items-center justify-content-between">
                                     <div>
-                                        <h6 class="text-muted mb-1">Product variants / Units</h6>
+                                        <h6 class="text-muted mb-1">Product variants / Units <x-dashboard-info title="Product variants / Units" description="First number: distinct product and variant combinations on sales orders. Second number: total item quantity, displayed as a whole number. Excludes cancelled and returned statuses, but includes future orders within the selected order-date range. Completed returns do not deduct item quantities here." /></h6>
                                         <div class="h3 mb-0" aria-live="polite">
                                             <span x-data="statsCounter({{ $totalVariants }}, 5)" x-text="value.toLocaleString()">{{ number_format($totalVariants) }}</span>
                                             <span class="text-muted fs-5 fw-normal mx-1">/</span>
@@ -252,7 +254,7 @@ window.dashboardDateFilter = function(period, from, to) {
                             <div class="card-body p-3 p-lg-4">
                                 <div class="d-flex align-items-center mb-3 border-bottom border-info border-opacity-25 pb-2">
                                     <i class="bi bi-cart-plus text-info fs-5 me-2"></i>
-                                    <h6 class="fw-bold text-info mb-0" style="text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;">Order progress</h6>
+                                    <h6 class="fw-bold text-info mb-0" style="text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;">Order progress <x-dashboard-info title="Order progress" description="Counts orders by their current status in the selected order-date range. Orders with a completed return are moved from their current status into Returned for these status counts. Each percentage is the status count divided by Order count, rounded to a whole percent; zero orders gives 0%." /></h6>
                                 </div>
                                 <div class="d-flex justify-content-between align-items-center mb-2">
                                     <span class="text-muted small fw-semibold">Pending</span>
@@ -292,7 +294,7 @@ window.dashboardDateFilter = function(period, from, to) {
                             <div class="card-body p-3 p-lg-4">
                                 <div class="d-flex align-items-center mb-3 border-bottom border-primary border-opacity-25 pb-2">
                                     <i class="bi bi-truck text-primary fs-5 me-2"></i>
-                                    <h6 class="fw-bold text-primary mb-0" style="text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;">Shipping</h6>
+                                    <h6 class="fw-bold text-primary mb-0" style="text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;">Shipping <x-dashboard-info title="Shipping" description="Counts orders currently Ready to Ship or Dispatched in the selected order-date range, after moving completed-return orders into Returned. Each percentage is that status count divided by Order count, rounded to a whole percent." /></h6>
                                 </div>
                                 <div class="d-flex justify-content-between align-items-center mb-2">
                                     <span class="text-muted small fw-semibold">Ready to Ship</span>
@@ -318,7 +320,7 @@ window.dashboardDateFilter = function(period, from, to) {
                             <div class="card-body p-3 p-lg-4">
                                 <div class="d-flex align-items-center mb-3 border-bottom border-success border-opacity-25 pb-2">
                                     <i class="bi bi-check-circle text-success fs-5 me-2"></i>
-                                    <h6 class="fw-bold text-success mb-0" style="text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;">Delivery</h6>
+                                    <h6 class="fw-bold text-success mb-0" style="text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;">Delivery <x-dashboard-info title="Delivery" description="Delivered combines delivered and legacy completed orders without a completed return. Completed is the separate legacy status count and may overlap Delivered. Rev. Delivered sums stored net payable for the Delivered group. Delivered percentage = Delivered divided by Order count, rounded to a whole percent." /></h6>
                                 </div>
                                 <div class="d-flex justify-content-between align-items-center mb-2">
                                     <span class="text-muted small fw-semibold">Delivered</span>
@@ -348,7 +350,7 @@ window.dashboardDateFilter = function(period, from, to) {
                             <div class="card-body p-3 p-lg-4">
                                 <div class="d-flex align-items-center mb-3 border-bottom border-danger border-opacity-25 pb-2">
                                     <i class="bi bi-x-circle text-danger fs-5 me-2"></i>
-                                    <h6 class="fw-bold text-danger mb-0" style="text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;">Orders needing attention</h6>
+                                    <h6 class="fw-bold text-danger mb-0" style="text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;">Orders needing attention <x-dashboard-info title="Orders needing attention" description="Returned counts distinct orders with at least one completed return, including partial returns. Rev. Returned sums their full stored net payable, not the returned item value or refund amount. Cancelled uses the current cancelled count after completed-return reclassification. Percentages divide each count by Order count and round to a whole percent." /></h6>
                                 </div>
                                 <div class="d-flex justify-content-between align-items-center mb-2">
                                     <span class="text-muted small fw-semibold">Returned</span>
@@ -380,7 +382,7 @@ window.dashboardDateFilter = function(period, from, to) {
                     <div class="col-lg-12">
                         <div class="card" x-data="dashboardTableApp()">
                             <div class="card-header d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
-                                <h2 class="h5 card-title mb-0">Orders</h2>
+                                <h2 class="h5 card-title mb-0">Orders <x-dashboard-info title="Orders" description="Recent lists visible orders in the selected order-date range except future orders, including cancelled and returned orders. Future lists scheduled orders using the existing future-order rules. Amount shows stored net payable. Search and pagination narrow the displayed list only; they do not recalculate summary cards." /></h2>
                                 <div class="d-flex flex-wrap align-items-center gap-3">
                                     <div class="position-relative">
                                         <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-2 text-muted z-1" style="font-size: 0.85rem;"></i>
@@ -537,7 +539,7 @@ window.dashboardDateFilter = function(period, from, to) {
                     <div class="col-lg-8">
                         <div class="card h-100 border-start border-4 border-success">
                             <div class="card-header d-flex flex-wrap gap-2 justify-content-between align-items-center">
-                                <h2 class="h5 card-title mb-0">Sales trend</h2>
+                                <h2 class="h5 card-title mb-0">Sales trend <x-dashboard-info title="Sales trend" description="Sums stored net payable by order date, excluding cancelled, returned and future statuses. Uses the selected dashboard dates intersected with the chart window. The profit series is an estimate of 20% of that amount. This chart does not apply the Sales summary completed-return exclusion and may differ from Net sales." /></h2>
                                 <div class="btn-group btn-group-sm" role="group">
                                     <button type="button" class="btn btn-outline-secondary active" data-chart-period="7d">7 days</button>
                                     <button type="button" class="btn btn-outline-secondary" data-chart-period="30d">30 days</button>
@@ -556,7 +558,7 @@ window.dashboardDateFilter = function(period, from, to) {
                     <div class="col-lg-4">
                         <div class="card h-100 border-start border-4 border-warning">
                             <div class="card-header">
-                                <h2 class="h5 card-title mb-0">Orders by status</h2>
+                                <h2 class="h5 card-title mb-0">Orders by status <x-dashboard-info title="Orders by status" description="Completed = delivered + legacy completed. Processing = processing + ready to ship + dispatched. Pending = pending + confirmed. Cancelled = cancelled + returned. Completed-return orders are first moved into Returned. Other statuses are not shown in this chart." /></h2>
                             </div>
                             <div class="card-body p-3 p-lg-4">
                                 <div id="orderStatusChart" style="min-height: 280px;" class="mb-4"></div>
@@ -570,7 +572,7 @@ window.dashboardDateFilter = function(period, from, to) {
                     <div class="col-lg-6">
                         <div class="card h-100 border-start border-4 border-primary">
                             <div class="card-header">
-                                <h2 class="h5 card-title mb-0">New users · Last 7 days</h2>
+                                <h2 class="h5 card-title mb-0">New users · Last 7 days <x-dashboard-info title="New users · Last 7 days" description="Counts new customer profiles by creation date for the most recent 7 days in the customer-growth series, within the selected dashboard dates and your customer access scope. These are customers, not staff accounts." /></h2>
                             </div>
                             <div class="card-body p-3 p-lg-4">
                                 <div id="userGrowthChart" style="min-height: 280px;"></div>
@@ -581,7 +583,7 @@ window.dashboardDateFilter = function(period, from, to) {
                     <div class="col-lg-6">
                         <div class="card h-100 border-start border-4 border-info">
                             <div class="card-header">
-                                <h2 class="h5 card-title mb-0">Storage usage</h2>
+                                <h2 class="h5 card-title mb-0">Storage usage <x-dashboard-info title="Storage usage" description="This chart currently displays a fixed demo value of 76%. It is not calculated from live disk usage or warehouse stock." /></h2>
                             </div>
                             <div class="card-body p-3 p-lg-4">
                                 <div id="storageStatusChart"></div>
@@ -596,7 +598,7 @@ window.dashboardDateFilter = function(period, from, to) {
                     <div class="col-12">
                         <div class="card h-100 border-start border-4 border-secondary">
                             <div class="card-header">
-                                <h2 class="h5 card-title mb-0">Sales by state</h2>
+                                <h2 class="h5 card-title mb-0">Sales by state <x-dashboard-info title="Sales by state" description="Shows the top 10 locations by stored net payable, excluding cancelled, returned and future statuses. Location uses shipping district first, then city, then state when the earlier field is null. Despite the section title, entries can be districts or cities. Completed returns do not receive a separate exclusion here." /></h2>
                             </div>
                             <div class="card-body p-3 p-lg-4">
                                 <div id="salesByLocationChart" style="min-height: 400px; width: 100%;"></div>
@@ -748,6 +750,20 @@ window.dashboardDateFilter = function(period, from, to) {
     });
 </script>
 @endif
+
+<div class="modal fade" id="dashboardCalculationHelp" tabindex="-1" aria-labelledby="dashboardCalculationHelpTitle" aria-describedby="dashboardCalculationHelpText" aria-hidden="true" x-data="{ helpTitle: '', helpDescription: '' }" x-init="$el.addEventListener('show.bs.modal', (event) => { helpTitle = event.relatedTarget?.dataset.helpTitle || 'Calculation details'; helpDescription = event.relatedTarget?.dataset.helpDescription || 'Select an information icon to view the rules for that value.'; })">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content rounded-4">
+            <div class="modal-header align-items-start">
+                <h2 class="modal-title h5" id="dashboardCalculationHelpTitle" x-text="helpTitle"></h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close calculation details"></button>
+            </div>
+            <div class="modal-body"><p id="dashboardCalculationHelpText" class="mb-0" x-text="helpDescription" style="line-height: 1.7;"></p></div>
+            <div class="modal-footer"><button type="button" class="btn btn-primary" data-bs-dismiss="modal">Got it</button></div>
+        </div>
+    </div>
+</div>
+
 @endsection
 
 @push('modals')

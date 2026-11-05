@@ -32,17 +32,17 @@ Gate::before(function ($user, $ability) use (&$allowed) { return in_array($abili
 $cases = [
     'customer-view' => 'Customers',
     'settings-view' => 'Customer Settings',
-    'permission-view' => 'Roles & Permissions',
-    'role-view' => 'Roles & Permissions',
+    'permission-view' => 'Roles & Access',
+    'role-view' => 'Roles & Access',
     'messages-view' => 'Messages',
     'calendar-view' => 'Calendar',
     'forms-view' => 'Forms',
-    'audit-log-view' => 'Audit Logs',
+    'audit-log-view' => 'Activity Logs',
     'help-view' => 'Help & Support',
 ];
 $allowed = [];
 $baseline = Blade::render($items);
-navigationCheck(str_contains($baseline, "name: 'My Security'"), 'personal security matches the always-visible sidebar entry');
+navigationCheck(str_contains($baseline, "name: 'My Account Security'"), 'personal security matches the always-visible sidebar entry');
 navigationCheck(! str_contains($baseline, "name: 'API Documentation'"), 'API docs respect the sidebar workspace visibility gate');
 foreach ($cases as $permission => $label) {
     $allowed = [$permission];

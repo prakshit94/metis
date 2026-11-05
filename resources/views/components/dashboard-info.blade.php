@@ -1,0 +1,2 @@
+@props(['title', 'description'])
+<button type="button" class="btn btn-link dashboard-info-button p-1 text-muted align-middle" aria-label="{{ $title }}: calculation details" title="{{ $description }}" data-help-title="{{ $title }}" data-help-description="{{ $description }}" data-bs-toggle="modal" data-bs-target="#dashboardCalculationHelp"><i class="bi bi-info-circle" aria-hidden="true"></i></button>
