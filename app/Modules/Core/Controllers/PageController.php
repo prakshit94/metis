@@ -136,7 +136,12 @@ class PageController extends Controller implements HasMiddleware
 
         $baseOrderQuery = clone $orderQuery;
 
-        $filter = $request->input('filter', 'today');
+        $request->validate([
+            'filter' => 'nullable|string|in:today,yesterday,this_week,this_month,prev_month,this_year,last_7_days,last_30_days,custom',
+            'from' => 'required_if:filter,custom|nullable|date_format:Y-m-d',
+            'to' => 'required_if:filter,custom|nullable|date_format:Y-m-d|after_or_equal:from',
+        ]);
+        $filter = $request->input('filter') ?: 'today';
         if ($filter === 'today') {
             $filterStart = Carbon::today();
             $filterEnd = $filterStart->copy()->addDay();
@@ -157,10 +162,23 @@ class PageController extends Controller implements HasMiddleware
             $filterEnd = $filterStart->copy()->addYear();
         }
 
+        if ($filter === 'last_7_days' || $filter === 'last_30_days') {
+            $filterStart = Carbon::today()->subDays($filter === 'last_7_days' ? 6 : 29);
+            $filterEnd = Carbon::tomorrow();
+        } elseif ($filter === 'custom') {
+            $filterStart = Carbon::parse($request->input('from'))->startOfDay();
+            $filterEnd = Carbon::parse($request->input('to'))->startOfDay()->addDay();
+            if ($filterEnd->greaterThan($filterStart->copy()->addMonthNoOverflow())) {
+                throw \Illuminate\Validation\ValidationException::withMessages(['to'=>'Custom dates may cover at most one month.']);
+            }
+        }
         if (isset($filterStart, $filterEnd)) {
             $orderQuery->where('order_date', '>=', $filterStart)->where('order_date', '<', $filterEnd);
             $customerQuery->where('created_at', '>=', $filterStart)->where('created_at', '<', $filterEnd);
         }
+
+        $orderValueReport = app(\App\Modules\Core\Services\DashboardOrderReport::class)->build(clone $orderQuery);
+        $reportPeriod = ['from'=>$filterStart->toDateString(), 'to'=>$filterEnd->copy()->subDay()->toDateString()];
 
         // 1. Top Metrics
         $totalCustomers = (clone $customerQuery)->count();
@@ -169,7 +187,6 @@ class PageController extends Controller implements HasMiddleware
             ->leftJoin(DB::raw('(SELECT DISTINCT order_id FROM order_returns WHERE status = "completed") as returns_sq'), 'orders.id', '=', 'returns_sq.order_id')
             ->selectRaw('
                 SUM(CASE WHEN orders.status != "future_order" THEN 1 ELSE 0 END) as total_orders,
-                SUM(CASE WHEN orders.status NOT IN ("cancelled", "future_order") AND returns_sq.order_id IS NULL THEN orders.net_amount ELSE 0 END) as total_revenue,
                 SUM(CASE WHEN orders.status IN ("delivered", "completed") AND returns_sq.order_id IS NULL THEN 1 ELSE 0 END) as total_delivered,
                 SUM(CASE WHEN orders.status IN ("delivered", "completed") AND returns_sq.order_id IS NULL THEN orders.net_amount ELSE 0 END) as rev_delivered,
                 SUM(CASE WHEN returns_sq.order_id IS NOT NULL THEN 1 ELSE 0 END) as total_returned,
@@ -178,7 +195,8 @@ class PageController extends Controller implements HasMiddleware
             ->first();
 
         $totalOrders = (int) ($orderStats->total_orders ?? 0);
-        $totalRevenue = (float) ($orderStats->total_revenue ?? 0);
+        // Reuse the authorized sales report so the headline and Booked sales reconcile.
+        $totalRevenue = (float) $orderValueReport['totals']['booked'];
         $totalDelivered = (int) ($orderStats->total_delivered ?? 0);
         $revDelivered = (float) ($orderStats->rev_delivered ?? 0);
         $totalReturned = (int) ($orderStats->total_returned ?? 0);
@@ -199,7 +217,7 @@ class PageController extends Controller implements HasMiddleware
 
         // Revenue (Last 12 Months for simplicity)
         $revenueData = [];
-        $twelveMonthsAgo = Carbon::now()->subMonths(11)->startOfMonth();
+        $twelveMonthsAgo = Carbon::now()->subMonthsNoOverflow(11)->startOfMonth();
 
         $monthlyRevenueRaw = (clone $orderQuery)->whereNotIn('status', ['cancelled', 'returned', 'future_order'])
             ->where('order_date', '>=', $twelveMonthsAgo)
@@ -212,7 +230,7 @@ class PageController extends Controller implements HasMiddleware
             ->toArray();
 
         for ($i = 11; $i >= 0; $i--) {
-            $month = Carbon::now()->subMonths($i);
+            $month = Carbon::now()->subMonthsNoOverflow($i);
             $key = $month->format('Y-m');
             $revenue = (float) ($monthlyRevenueRaw[$key] ?? 0);
             $profit = $revenue * 0.2; // Simulated profit margin for UI
@@ -224,12 +242,12 @@ class PageController extends Controller implements HasMiddleware
             ];
         }
 
-        // Daily Revenue (Last 30 Days)
-        $dailyRevenueData = [];
+        // Daily series supports actual 7 / 30 / 90-day chart windows.
+        $dailyRevenueData90 = [];
         $thirtyDaysAgo = Carbon::now()->subDays(29)->startOfDay();
 
         $dailyRevenueRaw = (clone $orderQuery)->whereNotIn('status', ['cancelled', 'returned', 'future_order'])
-            ->where('order_date', '>=', $thirtyDaysAgo)
+            ->where('order_date', '>=', Carbon::now()->subDays(89)->startOfDay())
             ->select(
                 DB::raw('DATE(order_date) as date'),
                 DB::raw('SUM(net_amount) as total')
@@ -238,18 +256,20 @@ class PageController extends Controller implements HasMiddleware
             ->pluck('total', 'date')
             ->toArray();
 
-        for ($i = 29; $i >= 0; $i--) {
+        for ($i = 89; $i >= 0; $i--) {
             $date = Carbon::now()->subDays($i);
             $key = $date->toDateString();
             $revenue = (float) ($dailyRevenueRaw[$key] ?? 0);
             $profit = $revenue * 0.2;
 
-            $dailyRevenueData[] = [
+            $dailyRevenueData90[] = [
                 'month' => $date->format('M d'),
                 'revenue' => round($revenue, 2),
                 'profit' => round($profit, 2),
             ];
         }
+
+        $dailyRevenueData = array_slice($dailyRevenueData90, -30);
 
         // Customer Growth (Last 30 Days)
         $customerGrowth = [];
@@ -557,11 +577,14 @@ class PageController extends Controller implements HasMiddleware
         $dashboardData = [
             'revenue_monthly' => $revenueData,
             'revenue_daily' => $dailyRevenueData,
+            'revenue_daily_90' => $dailyRevenueData90,
             'users' => $customerGrowth,
             'orders' => $orderStatusDistribution,
             'salesByLocation' => $salesByLocation,
             'recentOrders' => $recentOrders,
             'futureOrders' => $futureOrders,
+            'orderValueReport' => $orderValueReport,
+            'reportPeriod' => $reportPeriod,
         ];
 
         if ($request->wantsJson() || $request->ajax()) {
@@ -588,6 +611,8 @@ class PageController extends Controller implements HasMiddleware
 
         return view('dashboard', compact(
             'filter',
+            'orderValueReport',
+            'reportPeriod',
             'totalCustomers',
             'totalRevenue',
             'totalOrders',

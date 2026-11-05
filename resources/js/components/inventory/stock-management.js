@@ -26,6 +26,8 @@ export default () => ({
   stats: { total_products: 0, total_warehouses: 0, low_stock_count: 0, out_of_stock: 0 },
   warehouses: [],
   isLoading: false,
+  exporting: false,
+  error: '',
   dataRequestController: null,
   searchQuery: new URLSearchParams(window.location.search).get('search') || '',
   warehouseFilter: new URLSearchParams(window.location.search).get('warehouse_id') ? parseInt(new URLSearchParams(window.location.search).get('warehouse_id')) : '',
@@ -41,13 +43,12 @@ export default () => ({
   selectedItems: [],
 
   async init() {
-    await this.loadOptions();
-    await this.loadData();
+    if (await this.loadOptions()) await this.loadData();
   },
 
   async apiRequest(url, options = {}) {
     const { headers, ...otherOptions } = options;
-    const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
     const reqHeaders = {
       'X-CSRF-TOKEN': csrfToken,
       'X-Requested-With': 'XMLHttpRequest',
@@ -58,7 +59,9 @@ export default () => ({
       reqHeaders['Content-Type'] = 'application/json';
     const response = await fetch(url, { headers: reqHeaders, ...otherOptions });
     const text = await response.text();
-    const payload = text ? JSON.parse(text) : {};
+    let payload;
+    try { payload = text ? JSON.parse(text) : {}; }
+    catch { throw new Error(response.status === 401 || response.status === 419 ? 'Your session expired. Please sign in again.' : 'The server could not complete this request. Please retry.'); }
     if (!response.ok) {
       const msg = payload?.errors
         ? Object.values(payload.errors).flat().join(' ')
@@ -86,8 +89,10 @@ export default () => ({
           this.warehouseFilter = defaultWh.id;
         }
       }
+      return true;
     } catch (e) {
-      console.error(e);
+      this.error = 'Warehouse options could not be loaded: ' + e.message;
+      return false;
     }
   },
 
@@ -96,6 +101,7 @@ export default () => ({
     const requestController = new AbortController();
     this.dataRequestController = requestController;
     this.isLoading = true;
+    this.error = '';
     try {
       const params = new URLSearchParams({
         per_page: this.itemsPerPage,
@@ -112,6 +118,9 @@ export default () => ({
       window.history.pushState({}, '', currentUrl);
 
       const data = await this.apiRequest(`/api/inventory/stocks?${params}`, { signal: requestController.signal });
+      if (this.dataRequestController !== requestController) return;
+      const lastPage = data.meta?.last_page || 1;
+      if (this.currentPage > lastPage) { this.currentPage = lastPage; return await this.loadData(); }
       this.items = data.data || [];
       this.stats = data.stats || this.stats;
       this.totalItems = data.meta?.total || 0;
@@ -120,7 +129,7 @@ export default () => ({
       // Clear selection on page load
       this.selectedItems = [];
     } catch (e) {
-      if (e.name !== 'AbortError') showToast(e.message, 'error');
+      if (e.name !== 'AbortError' && this.dataRequestController === requestController) { this.error = e.message; showToast(e.message, 'error'); }
     } finally {
       if (this.dataRequestController === requestController) {
         this.isLoading = false;
@@ -155,20 +164,20 @@ export default () => ({
     return this.items;
   },
 
+  getPhysicalAvailable(item) { return Number(item.physical_available ?? Math.max(0, Number(item.quantity || 0) - Number(item.reserved_qty || 0))); },
+  getAlertLevel(item) { return Number(item.min_stock_level ?? item.product?.min_stock_level ?? 5); },
   getAvailableForSell(item) {
-    const rawAvailable = parseFloat(item.quantity || 0) - parseFloat(item.reserved_qty || 0) - parseFloat(item.pending_qty || 0);
-    const netAvailable = Math.max(0, rawAvailable);
-    
-    // Check if overselling is allowed (warehouse override takes precedence, fallback to product)
-    const allowOverselling = item.allow_overselling !== null ? item.allow_overselling : (item.product?.allow_overselling ?? false);
-    
-    if (allowOverselling) {
-      const limit = item.overselling_qty !== null ? parseInt(item.overselling_qty || 999) : parseInt(item.product?.overselling_qty || 999);
-      return Math.max(0, rawAvailable + limit);
-    }
-    
-    return netAvailable;
+    if (item.available_for_sell != null) return Number(item.available_for_sell);
+    const raw = Number(item.quantity || 0) - Number(item.reserved_qty || 0) - Number(item.pending_qty || 0);
+    const enabled = item.allow_overselling ?? item.product?.allow_overselling ?? false;
+    const extra = enabled ? Number(item.overselling_qty ?? item.product?.overselling_qty ?? 999) : 0;
+    return Math.max(0, raw + extra);
   },
+  stockBadgeClass(item) {
+    const available = this.getAvailableForSell(item);
+    return available <= 0 ? 'out-of-stock' : available <= this.getAlertLevel(item) ? 'low-stock' : 'in-stock';
+  },
+  destroy() { this.dataRequestController?.abort(); },
 
   onSearch() {
     this.currentPage = 1;
@@ -222,140 +231,27 @@ export default () => ({
     }
   },
 
-  // CSV Export
-  async fetchAllFiltered() {
-    const params = new URLSearchParams({
-      per_page: 1000,
-      sort_by: this.sortField,
-      sort_dir: this.sortDirection,
-    });
-    if (this.searchQuery) params.set('search', this.searchQuery);
-    if (this.warehouseFilter) params.set('warehouse_id', this.warehouseFilter);
-    if (this.stockLevelFilter) params.set('stock_level', this.stockLevelFilter);
-    const data = await this.apiRequest(`/api/inventory/stocks?${params}`);
-    return data.data || [];
-  },
-
+  // Export every filtered row server-side in bounded chunks.
   async exportStock(selectedOnly = false) {
+    if (this.exporting) return;
+    if (selectedOnly && !this.selectedItems.length) { showToast('No items selected for export.', 'warning'); return; }
+    this.exporting = true;
     try {
-      let exportItems = [];
-      if (selectedOnly) {
-        exportItems = this.items.filter((item) => this.selectedItems.includes(item.id));
-        if (exportItems.length === 0) {
-          showToast('No items selected for export.', 'warning');
-          return;
-        }
-      } else {
-        exportItems = await this.fetchAllFiltered();
+      const params = new URLSearchParams({sort_by:this.sortField,sort_dir:this.sortDirection});
+      if (this.searchQuery) params.set('search',this.searchQuery);
+      if (this.warehouseFilter) params.set('warehouse_id',this.warehouseFilter);
+      if (this.stockLevelFilter) params.set('stock_level',this.stockLevelFilter);
+      if (selectedOnly) this.selectedItems.forEach(id => params.append('ids[]',id));
+      const response = await fetch('/api/inventory/stocks/export?' + params, {headers:{Accept:'text/csv, application/json','X-Requested-With':'XMLHttpRequest'}});
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}));
+        throw new Error(payload.errors ? Object.values(payload.errors).flat().join(' ') : payload.message || 'Export failed.');
       }
-
-      const headers = [
-        'Product Name',
-        'SKU',
-        'Warehouse',
-        'In Stock',
-        'Reserved',
-        'Available For Sell',
-        'Bad Qty',
-        'Future',
-        'Order Placed',
-        'Unfulfillable',
-        'Pending Conf',
-        'Confirmed',
-        'Processing',
-        'Ready to Ship',
-        'Dispatched',
-        'Delivery Att',
-        'Delivered',
-        'Cancelled',
-        'Return Req',
-        'Ret Pending',
-        'Ret Approved',
-        'Ret Received',
-        'Ret QC',
-        'Ret Rejected',
-        'Alert Level',
-        'Status',
-      ];
-      const rows = exportItems.map((item) => {
-        const qty = parseFloat(item.quantity || 0);
-        const reserved = parseFloat(item.reserved_qty || 0);
-        const pending = Math.min(parseFloat(item.pending_qty || 0), Math.max(0, qty - reserved));
-        const unfulfillable = Math.max(0, parseFloat(item.pending_qty || 0) - Math.max(0, qty - reserved));
-        
-        const inTransit = parseFloat(item.in_transit_qty || 0);
-        const dispatched = parseFloat(item.dispatched_qty || 0) + inTransit;
-        
-        const future = parseFloat(item.future_order_qty || 0);
-        const pendingConf = parseFloat(item.pending_confirmation_qty || 0);
-        const confirmed = parseFloat(item.confirmed_qty || 0);
-        const processing = parseFloat(item.processing_qty || 0);
-        const readyToShip = parseFloat(item.ready_to_ship_qty || 0);
-        const deliveryAtt = parseFloat(item.delivery_attempted_qty || 0);
-        const delivered = parseFloat(item.delivered_qty || 0);
-        const cancelled = parseFloat(item.cancelled_qty || 0);
-        
-        const returnReq = parseFloat(item.return_requested_qty || 0);
-        const retPending = parseFloat(item.return_pending_qty || 0);
-        const retApproved = parseFloat(item.return_approved_qty || 0);
-        const retReceived = parseFloat(item.return_received_qty || 0);
-        const retQc = parseFloat(item.return_qc_qty || 0);
-        const retRejected = parseFloat(item.return_rejected_qty || 0);
-        
-        const damaged = parseFloat(item.damaged_qty || 0);
-        const available = this.getAvailableForSell(item);
-        const alert = parseFloat(item.product?.min_stock_level || item.product?.alert_quantity || 5);
-        
-        let status = 'In Stock';
-        if (available <= 0) status = 'Out of Stock';
-        else if (available <= alert) status = 'Low Stock';
-
-        return [
-          item.product?.name || '',
-          item.product?.sku || '',
-          item.warehouse?.name || '',
-          qty,
-          reserved,
-          available,
-          damaged,
-          future,
-          pending,
-          unfulfillable,
-          pendingConf,
-          confirmed,
-          processing,
-          readyToShip,
-          dispatched,
-          deliveryAtt,
-          delivered,
-          cancelled,
-          returnReq,
-          retPending,
-          retApproved,
-          retReceived,
-          retQc,
-          retRejected,
-          alert,
-          status,
-        ];
-      });
-
-      const csvEscape = (val) => `"${String(val ?? '').replace(/"/g, '""')}"`;
-      const csvContent = [headers, ...rows].map((r) => r.map(csvEscape).join(',')).join('\n');
-
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(blob);
-      link.download = `stock-levels-export.csv`;
-      document.body.appendChild(link);
-      link.click();
-      URL.revokeObjectURL(link.href);
-      document.body.removeChild(link);
-
-      showToast(`Exported ${exportItems.length} record(s) successfully.`);
-    } catch (e) {
-      showToast('Export failed: ' + e.message, 'danger');
-    }
+      const url = URL.createObjectURL(await response.blob());
+      const link = document.createElement('a'); link.href = url; link.download = 'stock-levels-export.csv';
+      document.body.appendChild(link); link.click(); URL.revokeObjectURL(url); link.remove();
+      showToast('Stock export downloaded successfully.');
+    } catch (e) { showToast('Export failed: ' + e.message,'danger'); }
+    finally { this.exporting = false; }
   },
-
 });

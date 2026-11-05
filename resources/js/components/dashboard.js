@@ -98,6 +98,7 @@ export class DashboardManager {
     if (window.dashboardData) {
       this.data.revenue = window.dashboardData.revenue_monthly || [];
       this.data.dailyRevenue = window.dashboardData.revenue_daily || [];
+      this.data.dailyRevenue90 = window.dashboardData.revenue_daily_90 || this.data.dailyRevenue;
       this.data.users = window.dashboardData.users || [];
       this.data.orders = window.dashboardData.orders || {
         completed: 0,
@@ -124,7 +125,7 @@ export class DashboardManager {
       },
       series: [
         { name: 'Revenue', data: this.data.revenue.map((item) => item.revenue) },
-        { name: 'Profit', data: this.data.revenue.map((item) => item.profit) },
+        { name: 'Estimated profit (20%)', data: this.data.revenue.map((item) => item.profit) },
       ],
       xaxis: {
         categories: this.data.revenue.map((item) => item.month),
@@ -384,7 +385,7 @@ export class DashboardManager {
     chart.updateOptions({
       series: [
         { name: 'Revenue', data: slice.map((d) => d.revenue) },
-        { name: 'Profit', data: slice.map((d) => d.profit) },
+        { name: 'Estimated profit (20%)', data: slice.map((d) => d.profit) },
       ],
       xaxis: { categories: slice.map((d) => d.month) }, // month contains the formatted date (e.g., M d)
     });
@@ -397,7 +398,7 @@ export class DashboardManager {
     chart.updateOptions({
       series: [
         { name: 'Revenue', data: slice.map((d) => d.revenue) },
-        { name: 'Profit', data: slice.map((d) => d.profit) },
+        { name: 'Estimated profit (20%)', data: slice.map((d) => d.profit) },
       ],
       xaxis: { categories: slice.map((d) => d.month) },
     });
@@ -406,24 +407,13 @@ export class DashboardManager {
   loadQuarterlyData() {
     const chart = this.charts.get('revenue');
     if (!chart) return;
-    // Group months into quarters
-    const quarters = [
-      { label: 'Q1', revenue: 0, profit: 0 },
-      { label: 'Q2', revenue: 0, profit: 0 },
-      { label: 'Q3', revenue: 0, profit: 0 },
-      { label: 'Q4', revenue: 0, profit: 0 },
-    ];
-    this.data.revenue.forEach((d, i) => {
-      const q = Math.floor(i / 3);
-      quarters[q].revenue += d.revenue;
-      quarters[q].profit += d.profit;
-    });
+    const days = (this.data.dailyRevenue90 || this.data.dailyRevenue || []).slice(-90);
     chart.updateOptions({
       series: [
-        { name: 'Revenue', data: quarters.map((q) => q.revenue) },
-        { name: 'Profit', data: quarters.map((q) => q.profit) },
+        { name: 'Revenue', data: days.map(day => day.revenue) },
+        { name: 'Estimated profit (20%)', data: days.map(day => day.profit) },
       ],
-      xaxis: { categories: quarters.map((q) => q.label) },
+      xaxis: { categories: days.map(day => day.month) },
     });
   }
 
@@ -440,9 +430,9 @@ export class DashboardManager {
     chart.updateOptions({
       series: [
         { name: 'Revenue', data: [total.revenue] },
-        { name: 'Profit', data: [total.profit] },
+        { name: 'Estimated profit (20%)', data: [total.profit] },
       ],
-      xaxis: { categories: ['This Year'] },
+      xaxis: { categories: ['Selected period'] },
     });
   }
 

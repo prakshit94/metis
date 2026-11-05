@@ -67,6 +67,9 @@ class Stock extends Model implements Auditable
      */
     public function getDeliveredQtyAttribute(): float
     {
+        if (array_key_exists('delivered_qty', $this->attributes)) {
+            return max(0.0, (float) $this->attributes['delivered_qty']);
+        }
         $delivered = (float) OrderItem::where('product_id', $this->product_id)
             ->whereHas('order', function ($q) {
                 $q->where('warehouse_id', $this->warehouse_id)

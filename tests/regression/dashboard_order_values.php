@@ -1,0 +1,81 @@
+<?php
+
+require __DIR__.'/bootstrap.php';
+
+use App\Modules\Core\Controllers\PageController;
+use App\Modules\Core\Services\DashboardOrderReport;
+use App\Modules\Orders\Models\Order;
+use App\Modules\Users\Models\User;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
+use Spatie\Permission\Models\Role;
+use Spatie\Permission\Models\Permission;
+use Carbon\Carbon;
+
+Artisan::call('migrate', ['--force'=>true]);
+Carbon::setTestNow(Carbon::parse('2026-11-05 12:00:00','Asia/Kolkata'));
+$admin=User::forceCreate(['name'=>'Report admin','email'=>'dashboard-report@example.invalid','password'=>bcrypt('test')]);
+setPermissionsTeamId(null);$admin->assignRole(Role::findOrCreate('Super Admin','web'));auth()->setUser($admin);
+$team=DB::table('teams')->insertGetId(['name'=>'Report team','code'=>'REPORT','state_name'=>'Gujarat']);
+$office=DB::table('offices')->insertGetId(['team_id'=>$team,'name'=>'Report office','code'=>'REPORT']);
+$make=function($status,$value,$state='Gujarat',$officeId=null,$date='2026-11-05 09:00:00',$owner=null,$type='sale',$wallet=0) use ($admin) {
+    return DB::table('orders')->insertGetId(['order_no'=>'REPORT-'.bin2hex(random_bytes(5)),'status'=>$status,'type'=>$type,'order_date'=>$date,'shipping_state'=>$state,'office_id'=>$officeId,'created_by'=>$owner ?? $admin->id,'total_amount'=>$value,'net_amount'=>$value,'wallet_amount_used'=>$wallet,'tax_amount'=>10,'discount_amount'=>5]);
+};
+$delivered=$make('delivered',100,'Gujarat',$office,wallet:20);
+$dispatched=$make('dispatched',200,'Rajasthan',$office);
+$cancelled=$make('cancelled',300);
+$future=$make('future_order',400);
+$returned=$make('returned',500);
+$completedReturn=$make('delivered',600);
+DB::table('order_returns')->insert([['order_id'=>$completedReturn,'return_no'=>'REPORT-RET-1','status'=>'completed'],['order_id'=>$completedReturn,'return_no'=>'REPORT-RET-2','status'=>'completed']]);
+$blank=$make('pending',50,'  ');
+$make('delivered',900,date:'2026-11-04 23:59:59');
+$make('delivered',1000,date:'2026-11-06 00:00:00');
+$make('delivered',700,type:'purchase');
+$deleted=$make('delivered',800);DB::table('orders')->where('id',$deleted)->update(['deleted_at'=>now()]);
+foreach ([[70,'completed',null],[10,'completed',null],[999,'pending',null],[333,'completed',now()]] as $index=>$row) DB::table('payments')->insert(['order_id'=>$delivered,'payment_no'=>'REPORT-PAY-'.$index,'amount'=>$row[0],'status'=>$row[1],'deleted_at'=>$row[2],'payment_date'=>'2026-11-06 10:00:00']);
+DB::table('refunds')->insert([['order_id'=>$completedReturn,'refund_no'=>'REPORT-RF-1','amount'=>25,'status'=>'completed'],['order_id'=>$completedReturn,'refund_no'=>'REPORT-RF-2','amount'=>888,'status'=>'pending']]);
+DB::table('payments')->insert(['order_id'=>$cancelled,'payment_no'=>'REPORT-CANCELLED-PAY','payment_date'=>'2026-11-05','amount'=>123,'status'=>'completed']);
+DB::table('refunds')->insert(['order_id'=>$cancelled,'refund_no'=>'REPORT-CANCELLED-RF','amount'=>45,'status'=>'completed']);
+$base=Order::where('order_date','>=','2026-11-05')->where('order_date','<','2026-11-06');
+DB::connection()->enableQueryLog();
+$report=app(DashboardOrderReport::class)->build($base);
+$queries=DB::getQueryLog(); DB::connection()->disableQueryLog();
+check(count($queries)===1,'state/office/status report uses one aggregate query and no per-order model hydration');
+check($report['totals']['orders']===6 && (float)$report['totals']['value']===1870.0,'report includes sale orders once and excludes purchase/soft-deleted/out-of-period orders');
+check((float)$report['totals']['booked']===350.0 && (float)$report['totals']['delivered']===100.0 && (float)$report['totals']['dispatched']===200.0,'booked/delivered/dispatched use net payable without adding wallet and exclude completed returns/cancellations/future orders');
+check((float)$report['totals']['paid']===80.0 && (float)$report['totals']['refunded']===25.0,'completed payments/refunds are summed without multiplying orders and ignore deleted/unfinished payments');
+check((float)$report['totals']['outstanding']===1770.0,'outstanding clamps per order against existing net payable without deducting wallet twice');
+foreach (['states','offices','statuses'] as $group) check(array_sum(array_column($report[$group],'orders'))===6 && (float)array_sum(array_column($report[$group],'value'))===1870.0,"$group totals reconcile to the complete report");
+check(count(array_filter($report['states'],fn($row)=>$row['name']==='Unassigned'))===1,'blank states are explicitly grouped as Unassigned');
+$officeRow=array_values(array_filter($report['offices'],fn($row)=>(int)$row['id']===$office))[0];
+check($officeRow['orders']===2 && (float)$officeRow['booked']===300.0,'office grouping uses saved order office rather than creator current assignment');
+check(!in_array('cancelled',array_column($report['statuses'],'name'),true),'cancelled status never appears in report groups');
+$cancelledOnly=app(DashboardOrderReport::class)->build((clone $base)->where('orders.id',$cancelled));
+check((float)array_sum($cancelledOnly['totals'])===0.0 && !$cancelledOnly['states'] && !$cancelledOnly['offices'] && !$cancelledOnly['statuses'],'cancelled-only cohort contributes no amounts, transactions, counts or groups');
+$scoped=app(DashboardOrderReport::class)->build((clone $base)->where('orders.id',$dispatched));
+check($scoped['totals']['orders']===1 && count($scoped['states'])===1,'aggregation preserves every authorization restriction supplied by dashboard query');
+$empty=app(DashboardOrderReport::class)->build((clone $base)->whereRaw('1=0'));
+check($empty['totals']['orders']===0 && !$empty['offices'],'empty scopes return safe zero values');
+$controller=app(PageController::class);
+invalid(fn()=>$controller->dashboard(requestFor(['filter'=>'anything'])),'unknown periods cannot cause an unbounded dashboard scan');
+invalid(fn()=>$controller->dashboard(requestFor(['filter'=>'custom','from'=>'2026-11-05','to'=>'2026-11-04'])),'reversed custom date range is rejected');
+invalid(fn()=>$controller->dashboard(requestFor(['filter'=>'custom','from'=>'2025-01-01','to'=>'2026-11-05'])),'custom reports are bounded to one month');
+$data=$controller->dashboard(requestFor(['filter'=>'today']))->getData(true);
+check($data['dashboardData']['reportPeriod']===['from'=>'2026-11-05','to'=>'2026-11-05'] && $data['dashboardData']['orderValueReport']['totals']['orders']===6,'dashboard JSON includes the scoped report and application-timezone date period');
+check((float)$data['metrics']['totalRevenue']===350.0,'headline Net order value equals Booked sales for the same eligible sales cohort');
+$yesterday=$controller->dashboard(requestFor(['filter'=>'yesterday']))->getData(true);
+check($yesterday['dashboardData']['orderValueReport']['totals']['orders']===1,'yesterday uses a half-open order-date boundary');
+$employee=User::forceCreate(['name'=>'Scoped seller','email'=>'dashboard-seller@example.invalid','password'=>bcrypt('test')]);
+$subordinate=User::forceCreate(['name'=>'Direct report','email'=>'dashboard-sub@example.invalid','password'=>bcrypt('test'),'manager_id'=>$employee->id]);
+foreach (['dashboard-view','orders.view.dispatched'] as $permission) $employee->givePermissionTo(Permission::findOrCreate($permission,'web'));
+$make('dispatched',12,owner:$employee->id);$make('dispatched',13,owner:$subordinate->id);$make('delivered',999,owner:$employee->id);
+auth()->setUser($employee);
+$visible=$controller->dashboard(requestFor(['filter'=>'today']))->getData(true)['dashboardData']['orderValueReport'];
+check($visible['totals']['orders']===2 && (float)$visible['totals']['value']===25.0,'real dashboard retains ownership, direct-report and status permissions for financial reports');
+auth()->setUser($admin);
+if ($path=getenv('METIS_DASHBOARD_RENDER')) {
+    $request=requestFor(['filter'=>'today']); $request->headers->set('Accept','text/html'); app()->instance('request',$request);app('session')->driver()->start();
+    file_put_contents($path,$controller->dashboard($request)->render());
+}
+Carbon::setTestNow();

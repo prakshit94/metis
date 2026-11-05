@@ -69,11 +69,11 @@
     <div class="d-flex justify-content-between align-items-center mb-4 mb-lg-5">
         <div>
             <h1 class="h3 mb-0">Stock Management</h1>
-            <p class="text-muted mb-0">Monitor and adjust real-time stock levels per warehouse</p>
+            <p class="text-muted mb-0">Monitor stock and pending demand by warehouse</p>
         </div>
         <div class="d-flex gap-2">
             @can('product-export')
-            <button type="button" class="btn btn-outline-secondary" @click="exportStock()">
+            <button type="button" class="btn btn-outline-secondary" @click="exportStock()" :disabled="exporting">
                 <i class="bi bi-download me-2"></i>Export
             </button>
             @endcan
@@ -81,10 +81,12 @@
         </div>
     </div>
 
+    <div class="alert alert-danger" x-show="error" x-text="error" x-cloak role="alert"></div>
+    <p class="small text-muted">Availability includes pending demand and configured overselling. Physical available = stock − reserved. Summary cards cover all levels in the selected warehouse/search.</p>
     {{-- ── Stats Widgets ───────────────────────────────────────── --}}
     <div class="row g-4 g-lg-5 mb-5">
         <div class="col-xl-2 col-lg-4 col-md-6">
-            <div class="card stats-card h-100 cursor-pointer border-start border-4 border-primary" @click="stockLevelFilter = ''; loadData()">
+            <div class="card stats-card h-100 cursor-pointer border-start border-4 border-primary" @click="stockLevelFilter = ''; currentPage = 1; loadData()">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-primary bg-opacity-10 text-primary me-3">
@@ -138,7 +140,7 @@
             </div>
         </div>
         <div class="col-xl-2 col-lg-4 col-md-6">
-            <div class="card stats-card h-100 cursor-pointer border-start border-4 border-info" @click="stockLevelFilter = 'in_stock'; loadData()">
+            <div class="card stats-card h-100 cursor-pointer border-start border-4 border-info" @click="stockLevelFilter = 'in_stock'; currentPage = 1; loadData()">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-success bg-opacity-10 text-success me-3">
@@ -156,7 +158,7 @@
             </div>
         </div>
         <div class="col-xl-2 col-lg-4 col-md-6">
-            <div class="card stats-card h-100 cursor-pointer border-start border-4 border-danger" @click="stockLevelFilter = 'low_stock'; loadData()">
+            <div class="card stats-card h-100 cursor-pointer border-start border-4 border-danger" @click="stockLevelFilter = 'low_stock'; currentPage = 1; loadData()">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-warning bg-opacity-10 text-warning me-3">
@@ -174,7 +176,7 @@
             </div>
         </div>
         <div class="col-xl-2 col-lg-4 col-md-6">
-            <div class="card stats-card h-100 cursor-pointer border-start border-4 border-secondary" @click="stockLevelFilter = 'out_of_stock'; loadData()">
+            <div class="card stats-card h-100 cursor-pointer border-start border-4 border-secondary" @click="stockLevelFilter = 'out_of_stock'; currentPage = 1; loadData()">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex align-items-center">
                         <div class="stats-icon bg-danger bg-opacity-10 text-danger me-3">
@@ -216,7 +218,7 @@
                             {{-- Warehouse Filter --}}
                             <select class="form-select form-select-sm"
                                     :value="warehouseFilter"
-                                    @change="warehouseFilter = $event.target.value ? parseInt($event.target.value) : ''; loadData()"
+                                    @change="warehouseFilter = $event.target.value ? parseInt($event.target.value) : ''; currentPage = 1; loadData()"
                                     style="width: 170px;">
                                 <option value="">All Warehouses</option>
                                 <template x-for="wh in warehouses" :key="wh.id">
@@ -226,7 +228,7 @@
                             {{-- Stock Level Filter --}}
                             <select class="form-select form-select-sm"
                                     x-model="stockLevelFilter"
-                                    @change="loadData()"
+                                    @change="currentPage = 1; loadData()"
                                     style="width: 150px;">
                                 <option value="">All Levels</option>
                                 <option value="in_stock">In Stock</option>
@@ -262,7 +264,7 @@
                         </div>
                         <div class="d-flex gap-2">
                             @can('product-export')
-                            <button class="btn btn-sm btn-secondary" @click="exportStock(true)">
+                            <button class="btn btn-sm btn-secondary" @click="exportStock(true)" :disabled="exporting">
                                 <i class="bi bi-download me-1"></i>Export Selected
                             </button>
                             @endcan
@@ -277,11 +279,11 @@
                             <tr class="table-light">
                                 <th colspan="3" class="text-center border-end">Product Info</th>
                                 <th colspan="4" class="text-center border-end bg-primary bg-opacity-10">Physical Inventory</th>
-                                <th colspan="12" class="text-center border-end bg-info bg-opacity-10">Order Pipeline (Chronological)</th>
+                                <th colspan="11" class="text-center border-end bg-info bg-opacity-10">Order Pipeline (Chronological)</th>
                                 <th colspan="6" class="text-center bg-warning bg-opacity-10">Returns Pipeline</th>
-                                @canany(['stockmanagement-edit', 'stocktransfer-create'])
+                                @can('stocktransfer-create')
                                 <th class="border-start"></th>
-                                @endcanany
+                                @endcan
                             </tr>
                             <tr>
                                 <th style="width: 50px;" class="ps-3 border-end">
@@ -296,7 +298,7 @@
                                 <!-- Physical Inventory -->
                                 <th @click="sortBy('quantity')" class="sortable text-center" title="Total physical stock"><i class="bi bi-inboxes me-1 text-secondary"></i>In Stock</th>
                                 <th @click="sortBy('reserved_qty')" class="sortable text-center" title="Stock reserved for orders"><i class="bi bi-bookmark-dash me-1 text-secondary"></i>Reserved</th>
-                                <th @click="sortBy('available')" class="sortable text-center" title="Available to sell (In Stock - Reserved)"><i class="bi bi-check-circle me-1 text-secondary"></i>Available For Sell</th>
+                                <th @click="sortBy('available')" class="sortable text-center" title="Availability forecast: stock minus reserved and pending demand, plus configured overselling"><i class="bi bi-check-circle me-1 text-secondary"></i>Available For Sell</th>
                                 <th @click="sortBy('damaged_qty')" class="sortable text-center border-end" title="Damaged or bad quantity"><i class="bi bi-exclamation-octagon me-1 text-secondary"></i>Bad Qty</th>
                                 
                                 <!-- Order Statuses Pipeline -->
@@ -320,15 +322,15 @@
                                 <th class="text-center" title="Return QC In Progress"><i class="bi bi-search me-1 text-secondary"></i>Ret QC</th>
                                 <th class="text-center border-end" title="Return Rejected"><i class="bi bi-x-square me-1 text-secondary"></i>Ret Rejected</th>
                                 
-                                @canany(['stockmanagement-edit', 'stocktransfer-create'])
+                                @can('stocktransfer-create')
                                 <th style="width: 120px;" class="text-end pe-4"><i class="bi bi-lightning-charge me-1 text-secondary"></i>Actions</th>
-                                @endcanany
+                                @endcan
                             </tr>
                         </thead>
                         <tbody>
                             <template x-if="paginatedItems.length === 0">
                                 <tr>
-                                    <td colspan="26" class="text-center py-5 text-muted">
+                                    <td colspan="{{ auth()->user()->can('stocktransfer-create') ? 25 : 24 }}" class="text-center py-5 text-muted">
                                         <div x-show="isLoading" class="spinner-border text-primary" role="status">
                                             <span class="visually-hidden">Loading...</span>
                                         </div>
@@ -389,11 +391,7 @@
                                     <td class="text-center">
                                         <div class="d-flex align-items-center justify-content-center gap-1">
                                             <span class="badge stock-badge"
-                                                  :class="{
-                                                      'in-stock':     parseFloat(item.quantity || 0) - parseFloat(item.reserved_qty || 0) > (item.product?.min_stock_level ?? 5),
-                                                      'low-stock':    parseFloat(item.quantity || 0) - parseFloat(item.reserved_qty || 0) > 0 && parseFloat(item.quantity || 0) - parseFloat(item.reserved_qty || 0) <= (item.product?.min_stock_level ?? 5),
-                                                      'out-of-stock': parseFloat(item.quantity || 0) - parseFloat(item.reserved_qty || 0) <= 0
-                                                  }"
+                                                  :class="stockBadgeClass(item)"
                                                   ><i class="bi bi-inboxes me-1"></i><span x-text="parseFloat(item.quantity || 0)"></span></span>
                                         </div>
                                     </td>
@@ -403,12 +401,8 @@
                                     <td class="text-center">
                                         <div class="d-flex align-items-center justify-content-center gap-1">
                                             <span class="badge stock-badge"
-                                                  :class="{
-                                                      'in-stock':     getAvailableForSell(item) > 5,
-                                                      'low-stock':    getAvailableForSell(item) > 0 && getAvailableForSell(item) <= 5,
-                                                      'out-of-stock': getAvailableForSell(item) <= 0
-                                                  }"
-                                                  ><i class="bi bi-check-circle me-1"></i><span x-text="parseFloat(getAvailableForSell(item)).toFixed(2)"></span></span>
+                                                  :class="stockBadgeClass(item)"
+                                                  ><i class="bi bi-check-circle me-1"></i><span :title="'Physical available: ' + getPhysicalAvailable(item).toFixed(2) + '; Pending demand: ' + Number(item.pending_qty || 0).toFixed(2)" x-text="parseFloat(getAvailableForSell(item)).toFixed(2)"></span></span>
                                         </div>
                                     </td>
                                     <td class="text-center border-end">
@@ -469,7 +463,7 @@
                                     <td class="text-center border-end">
                                         <span class="badge bg-danger-subtle text-danger border border-danger-subtle"><i class="bi bi-x-square me-1"></i><span x-text="parseFloat(item.return_rejected_qty || 0).toFixed(2)"></span></span>
                                     </td>
-                                    @canany(['stockmanagement-edit', 'stocktransfer-create'])
+                                    @can('stocktransfer-create')
                                     <td class="text-end pe-4">
                                         <div class="dropdown">
                                             <button class="btn btn-sm btn-outline-secondary dropdown-toggle"
@@ -489,7 +483,7 @@
                                             </ul>
                                         </div>
                                     </td>
-                                    @endcanany
+                                    @endcan
                                 </tr>
                             </template>
                         </tbody>

@@ -514,6 +514,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
     // Inventory API Routes
     Route::prefix('inventory')->name('api.inventory.')->group(function (): void {
         Route::get('/stocks', [StockManagementController::class, 'index'])->name('stocks.index');
+        Route::get('/stocks/export', [StockManagementController::class, 'export'])->name('stocks.export');
         Route::post('/stocks/set', [StockManagementController::class, 'setStock'])->name('stocks.set');
         Route::get('/stocks/show', [StockManagementController::class, 'show'])->name('stocks.show');
         Route::get('/stocks/warehouse-options', [StockManagementController::class, 'warehouseOptions'])->name('stocks.warehouse-options');
