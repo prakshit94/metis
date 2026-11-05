@@ -44,9 +44,12 @@ check(true, 'order entry accepts customers outside the assigned state');
 DB::table('parties')->where('id', $id)->update(['created_by' => null]);
 auth()->setUser($user);
 
-foreach (['8980145587', '9876543210', '+91 89801 45587'] as $phone) {
+foreach (['8980145587', '9876543210'] as $phone) {
     $result = app(CustomerController::class)->searchByPhone(requestFor(['phone' => $phone]))->getData(true);
-    check($result['found'] && str_contains($result['redirect'], 'customer_id='.$id), 'primary, alternate and country-prefixed phone lookup finds existing customer');
+    check($result['found'] && str_contains($result['redirect'], 'customer_id='.$id), 'exact 10-digit primary and alternate phone lookup finds existing customer');
+}
+foreach (['', '123456789', '12345678901', '+91 89801 45587', '89801 45587', 'abcdefghij', ['8980145587'], "8980145587\n"] as $invalidPhone) {
+    invalid(fn () => app(CustomerController::class)->searchByPhone(requestFor(['phone' => $invalidPhone])), 'phone search rejects missing, short, long and non-digit inputs');
 }
 // The profile history must include other agents/states and statuses the directory hides.
 $owner = User::forceCreate(['name' => 'Other agent', 'email' => 'other-lookup@example.invalid', 'password' => bcrypt('Test-only-password')]);

@@ -175,15 +175,14 @@ class CustomerController extends Controller implements HasMiddleware
      */
     public function searchByPhone(Request $request): JsonResponse
     {
-        $phone = $request->input('phone');
-        if (! $phone) {
-            return response()->json(['found' => false]);
-        }
-
-        $phone = preg_replace('/\D/', '', $phone);
-        if (strlen($phone) > 10) {
-            $phone = substr($phone, -10);
-        }
+        $validated = $request->validate([
+            'phone' => ['required', 'string', 'regex:/\A[0-9]{10}\z/'],
+        ], [
+            'phone.required' => 'Please enter exactly 10 digits.',
+            'phone.string' => 'Please enter exactly 10 digits.',
+            'phone.regex' => 'Please enter exactly 10 digits, without spaces or a country code.',
+        ]);
+        $phone = $validated['phone'];
 
         $user = $request->user();
         $isGlobalView = $user && ($user->hasRole(['Super Admin', 'Admin']) || $user->can('view-all-data') || $user->can('view_all_customer'));

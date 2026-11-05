@@ -23,12 +23,28 @@
 @media (max-width: 767px) {
     .business-dashboard .dashboard-toolbar { padding: 1rem; }
     .business-dashboard .dashboard-toolbar form { flex-basis: 100%; }
+    .business-dashboard .dashboard-toolbar-actions { width: 100%; justify-content: space-between; }
     .business-dashboard .dashboard-toolbar form > select { flex: 1; }
     .business-dashboard .dashboard-toolbar form > div { width: 100%; }
     .business-dashboard .dashboard-toolbar input[type=date] { flex: 1 1 140px; min-width: 0; }
     .business-dashboard .sales-report-search { max-width: none !important; width: 100%; }
     .business-dashboard .sales-report-footer nav { width: 100%; justify-content: space-between; }
     .business-dashboard .pagination { flex-wrap: wrap; gap: .25rem; }
+}
+.business-dashboard .customer-search-panel { max-width: 780px; margin: clamp(1rem, 4vw, 3rem) auto; border: 1px solid var(--bs-border-color); border-radius: 1.25rem; background: var(--bs-body-bg); box-shadow: 0 .5rem 2rem rgba(var(--bs-primary-rgb), .06); overflow: hidden; }
+.business-dashboard .customer-search-accent { height: 4px; background: var(--bs-primary); }
+.business-dashboard .customer-search-body { padding: clamp(1.25rem, 4vw, 3rem); }
+.business-dashboard .customer-search-avatar { width: 64px; height: 64px; border-radius: 1rem; overflow: hidden; background: var(--bs-tertiary-bg); }
+.business-dashboard .customer-search-controls { display: flex; gap: .75rem; align-items: stretch; }
+.business-dashboard .customer-phone-field { display: flex; align-items: center; flex: 1; min-width: 0; border: 1px solid var(--bs-border-color); background: var(--bs-body-bg); border-radius: .75rem; padding: 0 1rem; transition: border-color .15s, box-shadow .15s; }
+.business-dashboard .customer-phone-field:focus-within { border-color: var(--bs-primary); box-shadow: 0 0 0 .2rem rgba(var(--bs-primary-rgb), .12); }
+.business-dashboard .customer-phone-field input { min-width: 0; min-height: 54px; font-size: 1.05rem; font-variant-numeric: tabular-nums; background: transparent; border: 0; box-shadow: none; padding: .75rem; }
+.business-dashboard .customer-search-submit { border-radius: .75rem; min-height: 54px; padding: .75rem 1.5rem; font-weight: 600; }
+.business-dashboard .customer-search-error { border-radius: .75rem; padding: .75rem 1rem; background: rgba(var(--bs-danger-rgb), .06); border: 1px solid rgba(var(--bs-danger-rgb), .2); }
+@media (max-width: 575px) {
+    .business-dashboard .customer-search-controls { flex-direction: column; }
+    .business-dashboard .customer-search-submit { width: 100%; }
+    .business-dashboard .customer-search-heading { font-size: 1.5rem; }
 }
 </style>
 <script>
@@ -74,7 +90,8 @@ window.dashboardDateFilter = function(period, from, to) {
             </li>
         </ul>
     </div>
-        <div x-show="activeTab === 'dashboard'" x-transition.opacity.duration.300ms class="dashboard-toolbar dashboard-filters d-flex flex-wrap align-items-center gap-3 mb-4">
+    <div x-show="activeTab === 'dashboard'" x-transition.opacity.duration.300ms x-cloak>
+        <div class="dashboard-toolbar dashboard-filters d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
             <form method="GET" action="{{ route('dashboard') }}" class="d-flex flex-wrap align-items-center gap-2" x-data="dashboardDateFilter(@js($filter), @js($reportPeriod['from']), @js($reportPeriod['to']))">
             <label for="dashboardDateFilter" class="text-muted small fw-bold mb-0 text-nowrap"><i class="bi bi-calendar3 me-1"></i> Date Filter:</label>
             <select id="dashboardDateFilter" class="form-select form-select-sm fw-semibold shadow-sm border-0 bg-body-tertiary rounded-pill ps-3" style="min-width: 140px; cursor: pointer;" name="filter" x-model="period" @change="if (period !== 'custom') $nextTick(() => $el.form.requestSubmit()); else clampDates()">
@@ -97,49 +114,54 @@ window.dashboardDateFilter = function(period, from, to) {
             </div>
             </template>
             </form>
-            <button type="button" class="btn btn-outline-primary btn-sm rounded-pill px-3 ms-1 shadow-sm bg-body-tertiary" onclick="window.location.reload()" data-bs-toggle="tooltip" title="Refresh data">
+            <div class="dashboard-toolbar-actions d-flex flex-wrap align-items-center gap-3">
+            <button type="button" class="btn btn-outline-primary btn-sm rounded-pill px-3 shadow-sm bg-body-tertiary" onclick="window.location.reload()" data-bs-toggle="tooltip" title="Refresh data">
                 <i class="bi bi-arrow-clockwise icon-hover"></i>
             </button>
-            <div class="form-check form-switch m-0 ms-2 cursor-pointer d-flex align-items-center gap-2">
+            <div class="form-check form-switch m-0 cursor-pointer d-flex align-items-center gap-2">
                 <input class="form-check-input m-0" type="checkbox" role="switch" id="analyticsToggle" x-model="showAnalytics" style="cursor: pointer; width: 2.5em; height: 1.25em;">
                 <label class="form-check-label small fw-bold text-muted mb-0 ms-1" for="analyticsToggle" style="cursor: pointer; padding-top: 2px;">Analytics</label>
             </div>
+            </div>
         </div>
+    </div>
 
     <!-- Tab 1: Customer Search -->
     <div x-show="activeTab === 'search'" x-transition.opacity.duration.300ms>
-        <div class="card border-start border-4 border-primary shadow-sm rounded-4 overflow-hidden mt-4 bg-body-tertiary">
-            <div class="card-body p-4 p-md-5 text-center">
-                <div class="mb-4">
-                    <div class="d-inline-flex align-items-center justify-content-center bg-primary bg-opacity-10 text-primary rounded-circle mb-3 overflow-hidden" style="width: 80px; height: 80px;">
-                        <img src="{{ asset('assets/images/farmersprofileimage.png') }}" alt="Find a Customer" class="w-100 h-100 object-fit-cover">
+        <section class="customer-search-panel" aria-labelledby="customer-search-heading">
+            <div class="customer-search-accent" aria-hidden="true"></div>
+            <div class="customer-search-body">
+                <div class="d-flex align-items-center gap-3 mb-4">
+                    <div class="customer-search-avatar flex-shrink-0">
+                        <img src="{{ asset('assets/images/farmersprofileimage.png') }}" alt="" class="w-100 h-100 object-fit-cover">
                     </div>
-                    <h2 class="h3 fw-bold text-body mb-2">Find a Customer</h2>
-                    <p class="text-muted">Search by mobile number, customer ID, or name to quickly access records.</p>
+                    <div>
+                        <h2 id="customer-search-heading" class="customer-search-heading h3 fw-bold mb-1">Find a Customer</h2>
+                        <p class="text-muted mb-0">Search using their mobile number.</p>
+                    </div>
                 </div>
-                <div class="mx-auto position-relative" style="max-width: 650px;" x-data="customerSearchApp()">
-                    <div class="input-group input-group-lg shadow-sm rounded-pill overflow-hidden bg-body border">
-                        <span class="input-group-text border-0 bg-transparent fw-semibold text-body px-4" style="border-right: 1px solid var(--bs-border-color) !important;">
-                            <i class="bi bi-phone me-2"></i> Mobile
-                        </span>
-                        <input type="text" class="form-control border-0 shadow-none px-4 bg-transparent text-body" placeholder="Enter 10-digit mobile number..." x-model="searchPhone" @keydown.enter.prevent="searchCustomer()" inputmode="tel" autocomplete="tel">
-                        <button class="btn btn-primary px-4 px-md-5 fw-bold" type="button" @click="searchCustomer()" :disabled="isLoading">
-                            <span x-show="!isLoading"><i class="bi bi-search me-1 d-none d-sm-inline"></i> Search</span>
-                            <span x-show="isLoading" class="spinner-border spinner-border-sm" role="status" aria-hidden="true" style="display: none;"></span>
+                <div x-data="customerSearchApp()">
+                    <label for="customer-search-phone" class="form-label fw-semibold">Mobile number</label>
+                    <div class="customer-search-controls">
+                        <div class="customer-phone-field">
+                            <i class="bi bi-phone text-primary fs-5" aria-hidden="true"></i>
+                            <input id="customer-search-phone" type="text" class="form-control text-body" placeholder="Enter 10-digit number" x-model="searchPhone" @keydown.enter.prevent="searchCustomer()" inputmode="numeric" autocomplete="tel-national" minlength="10" maxlength="10" pattern="[0-9]{10}" aria-label="10-digit mobile number" :aria-invalid="!!errorMsg" aria-describedby="customer-phone-help customer-phone-error">
+                        </div>
+                        <button class="btn btn-primary customer-search-submit" type="button" @click="searchCustomer()" :disabled="isLoading" :aria-busy="isLoading">
+                            <span x-show="!isLoading"><i class="bi bi-search me-2" aria-hidden="true"></i>Find customer</span>
+                            <span x-show="isLoading" x-cloak><span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>Searching…</span>
                         </button>
                     </div>
-                    <div x-show="errorMsg" x-cloak class="position-absolute top-100 start-0 w-100 mt-2 text-danger small fw-bold bg-body p-3 rounded-4 shadow-lg border border-danger border-opacity-25" style="z-index: 1000; text-align: left;">
-                        <div class="d-flex align-items-center gap-2">
-                            <i class="bi bi-exclamation-triangle-fill"></i>
+                    <p id="customer-phone-help" class="small text-muted mt-2 mb-0">Exactly 10 digits, without spaces or a country code.</p>
+                    <div id="customer-phone-error" role="alert" x-show="errorMsg" x-cloak class="customer-search-error mt-3 text-danger small">
+                        <div class="d-flex align-items-start gap-2">
+                            <i class="bi bi-exclamation-circle mt-1" aria-hidden="true"></i>
                             <span x-text="errorMsg"></span>
                         </div>
                     </div>
                 </div>
-                <div class="mt-5 text-muted small">
-                    <p class="mb-0"><i class="bi bi-info-circle me-1"></i> Ensure you select the correct search criterion for best results.</p>
-                </div>
             </div>
-        </div>
+        </section>
     </div>
 
     <!-- Tab 2: Dashboard -->
@@ -651,11 +673,8 @@ window.dashboardDateFilter = function(period, from, to) {
                             },
                             searchCustomer() {
                                 if (this.isLoading) return;
-                                this.searchPhone = this.searchPhone.replace(/\D/g, '');
-                                if (this.searchPhone.length > 10) this.searchPhone = this.searchPhone.slice(-10);
-                                if (this.searchPhone.length !== 10) {
+                                if (!/^[0-9]{10}$/.test(this.searchPhone) || this.searchPhone.length !== 10) {
                                     this.errorMsg = 'Please enter exactly 10 digits.';
-                                    setTimeout(() => { this.errorMsg = ''; }, 3000);
                                     return;
                                 }
                                 

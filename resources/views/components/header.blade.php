@@ -335,58 +335,58 @@
 
 @php
                                         $webApps = [
-['route' => 'dashboard', 'icon' => 'bi-grid-1x2-fill', 'color' => 'primary', 'name' => 'Dashboard', 'permission' => 'dashboard-view'],
-    ['route' => 'inventory.dashboard', 'icon' => 'bi-buildings', 'color' => 'success', 'name' => 'Command Center', 'permission' => 'warehouse-dashboard-view'],
-    ['route' => 'analytics', 'icon' => 'bi-bar-chart-line-fill', 'color' => 'info', 'name' => 'Analytics', 'permission' => 'analytics-view'],
-    ['route' => 'reports', 'icon' => 'bi-file-earmark-bar-graph-fill', 'color' => 'warning', 'name' => 'Reports', 'permission' => 'reports-view'],
-    ['route' => 'targets.index', 'icon' => 'bi-award-fill', 'color' => 'danger', 'name' => 'Targets & Achv.', 'permissions' => ['target-view', 'target-view-all']],
-    ['route' => 'orders', 'icon' => 'bi-bag-check-fill', 'color' => 'secondary', 'name' => 'Orders', 'permission' => 'orders.view'],
-    ['route' => 'complaints.index', 'icon' => 'bi-headset', 'color' => 'dark', 'name' => 'Complaints', 'permission' => 'complaints.view'],
-    ['route' => 'promotions.coupons', 'icon' => 'bi-ticket-perforated-fill', 'color' => 'primary', 'name' => 'Coupon Codes', 'permission' => 'coupon-view'],
-    ['route' => 'promotions.offers', 'icon' => 'bi-star-fill', 'color' => 'success', 'name' => 'Offers & Deals', 'permission' => 'promotions-view'],
-    ['route' => 'referrals.programs.index', 'icon' => 'bi-diagram-3-fill', 'color' => 'info', 'name' => 'Referral Programs', 'permission' => 'promotions-view'],
-    ['route' => 'invoices.index', 'icon' => 'bi-receipt', 'color' => 'warning', 'name' => 'Invoices', 'permission' => 'invoices.view'],
-    ['route' => 'payments.index', 'icon' => 'bi-credit-card', 'color' => 'danger', 'name' => 'Payments', 'permission' => 'payments.view'],
-    ['route' => 'refunds.index', 'icon' => 'bi-cash-coin', 'color' => 'secondary', 'name' => 'Refunds', 'permission' => 'refunds.view'],
-    ['route' => 'returns.index', 'icon' => 'bi-arrow-return-left', 'color' => 'dark', 'name' => 'Returns', 'permission' => 'returns.view'],
-    ['route' => 'credit-notes.index', 'icon' => 'bi-receipt-cutoff', 'color' => 'primary', 'name' => 'Credit Notes', 'permission' => 'credit-notes.view'],
-    ['route' => 'shipping.shipments', 'icon' => 'bi-geo-alt-fill', 'color' => 'success', 'name' => 'Shipments & Tracking', 'permission' => 'shipping-view'],
-    ['route' => 'shipping.services', 'icon' => 'bi-gear-wide-connected', 'color' => 'info', 'name' => 'Shipping Services', 'permission' => 'shipping-view'],
-    ['route' => 'shipping.settings', 'icon' => 'bi-sliders', 'color' => 'warning', 'name' => 'Shipping Settings', 'permission' => 'shipping-view'],
-    ['route' => 'catalog.warehouses', 'icon' => 'bi-buildings-fill', 'color' => 'danger', 'name' => 'Warehouses', 'permission' => 'warehouse-view'],
-    ['route' => 'inventory.stock-management', 'icon' => 'bi-box-seam-fill', 'color' => 'secondary', 'name' => 'Stock Levels', 'permission' => 'stockmanagement-view'],
-    ['route' => 'inventory.stock-transfers', 'icon' => 'bi-arrow-left-right', 'color' => 'dark', 'name' => 'Stock Transfers', 'permission' => 'stocktransfer-view'],
-    ['route' => 'inventory.adjustments', 'icon' => 'bi-sliders2', 'color' => 'primary', 'name' => 'Adjustments', 'permission' => 'inventoryadjustment-view'],
-    ['route' => 'procurement.suppliers.index', 'icon' => 'bi-truck-flatbed', 'color' => 'success', 'name' => 'Suppliers', 'permission' => 'supplier-view'],
-    ['route' => 'procurement.purchase-orders.index', 'icon' => 'bi-receipt', 'color' => 'info', 'name' => 'Purchase Orders', 'permission' => 'purchaseorder-view'],
-    ['route' => 'procurement.goods-receipts.index', 'icon' => 'bi-clipboard-check', 'color' => 'warning', 'name' => 'Goods Receipts', 'permission' => 'goodsreceipt-view'],
-    ['route' => 'catalog.products', 'icon' => 'bi-box-seam-fill', 'color' => 'danger', 'name' => 'Products', 'permission' => 'product-view'],
-    ['route' => 'catalog.categories', 'icon' => 'bi-diagram-3-fill', 'color' => 'secondary', 'name' => 'Categories', 'permission' => 'category-view'],
-    ['route' => 'catalog.brands', 'icon' => 'bi-patch-check-fill', 'color' => 'dark', 'name' => 'Brands', 'permission' => 'brand-view'],
-    ['route' => 'catalog.attributes', 'icon' => 'bi-sliders2', 'color' => 'primary', 'name' => 'Attributes', 'permission' => 'productattribute-view'],
-    ['route' => 'catalog.uom', 'icon' => 'bi-rulers', 'color' => 'success', 'name' => 'Units of Measure', 'permission' => 'unitofmeasure-view'],
-    ['route' => 'catalog.tax-rates', 'icon' => 'bi-percent', 'color' => 'info', 'name' => 'Tax Rates', 'permission' => 'taxrate-view'],
-    ['route' => 'catalog.hsn-codes', 'icon' => 'bi-upc-scan', 'color' => 'warning', 'name' => 'HSN Codes', 'permission' => 'hsncode-view'],
-    ['route' => 'users', 'icon' => 'bi-person-fill-gear', 'color' => 'danger', 'name' => 'Users', 'permission' => 'user-view'],
-    ['route' => 'roles-permissions', 'icon' => 'bi-shield-lock-fill', 'color' => 'secondary', 'name' => 'Roles & Permissions', 'permission' => 'role-view'],
-    ['route' => 'teams', 'icon' => 'bi-buildings-fill', 'color' => 'dark', 'name' => 'States & Offices', 'permission' => 'team-view'],
-    ['route' => 'customers', 'icon' => 'bi-person-lines-fill', 'color' => 'primary', 'name' => 'Customers', 'super_admin_only' => true],
-    ['route' => 'customer-settings.index', 'icon' => 'bi-gear-wide-connected', 'color' => 'success', 'name' => 'Customer Settings', 'super_admin_only' => true],
-    ['route' => 'departments', 'icon' => 'bi-diagram-3-fill', 'color' => 'info', 'name' => 'Departments', 'permission' => 'department-view'],
-    ['route' => 'attendances', 'icon' => 'bi-calendar-check-fill', 'color' => 'warning', 'name' => 'Attendances', 'permission' => 'attendance-view'],
-    ['route' => 'leaves', 'icon' => 'bi-calendar-minus-fill', 'color' => 'danger', 'name' => 'Leave Management', 'permission' => 'leave-view'],
-    ['route' => 'villages', 'icon' => 'bi-geo-alt-fill', 'color' => 'secondary', 'name' => 'Villages', 'permission' => 'village-view'],
-    ['route' => 'order.reasons', 'icon' => 'bi-list-task', 'color' => 'dark', 'name' => 'Order Reasons', 'permission' => 'orderreason-view'],
-    ['route' => 'call-tags.index', 'icon' => 'bi-tags', 'color' => 'primary', 'name' => 'Call Tags', 'permission' => 'settings-view'],
-    ['route' => 'chat.index', 'icon' => 'bi-chat-text-fill', 'color' => 'success', 'name' => 'Team Chat', 'permission' => 'chat-view'],
-    ['route' => 'messages', 'icon' => 'bi-chat-dots-fill', 'color' => 'info', 'name' => 'Messages', 'super_admin_only' => true],
-    ['route' => 'calendar', 'icon' => 'bi-calendar-week-fill', 'color' => 'warning', 'name' => 'Calendar', 'super_admin_only' => true],
-    ['route' => 'files', 'icon' => 'bi-folder2-open', 'color' => 'danger', 'name' => 'Files', 'permission' => 'files-view'],
-    ['route' => 'forms', 'icon' => 'bi-ui-checks-grid', 'color' => 'secondary', 'name' => 'Forms', 'super_admin_only' => true],
-    ['route' => 'elements', 'icon' => 'bi-puzzle-fill', 'color' => 'dark', 'name' => 'UI Elements', 'permission' => 'settings-view'],
-    ['route' => 'security', 'icon' => 'bi-shield-fill-check', 'color' => 'primary', 'name' => 'Security', 'super_admin_only' => true],
-    ['route' => 'admin.audit-logs.index', 'icon' => 'bi-journal-medical', 'color' => 'success', 'name' => 'Audit Logs', 'super_admin_only' => true],
-    ['route' => 'help', 'icon' => 'bi-question-circle-fill', 'color' => 'info', 'name' => 'Help & Support', 'super_admin_only' => true],
+['group' => 'Overview', 'route' => 'dashboard', 'icon' => 'bi-grid-1x2-fill', 'color' => 'primary', 'name' => 'Dashboard', 'permission' => 'dashboard-view'],
+    ['group' => 'Overview', 'route' => 'inventory.dashboard', 'icon' => 'bi-buildings', 'color' => 'success', 'name' => 'Command Center', 'permission' => 'warehouse-dashboard-view'],
+    ['group' => 'Overview', 'route' => 'analytics', 'icon' => 'bi-bar-chart-line-fill', 'color' => 'info', 'name' => 'Analytics', 'permission' => 'analytics-view'],
+    ['group' => 'Overview', 'route' => 'reports', 'icon' => 'bi-file-earmark-bar-graph-fill', 'color' => 'warning', 'name' => 'Reports', 'permission' => 'reports-view'],
+    ['group' => 'Overview', 'route' => 'targets.index', 'icon' => 'bi-award-fill', 'color' => 'danger', 'name' => 'Targets & Achv.', 'permissions' => ['target-view', 'target-view-all']],
+    ['group' => 'Sales & promotions', 'route' => 'orders', 'icon' => 'bi-bag-check-fill', 'color' => 'secondary', 'name' => 'Orders', 'permission' => 'orders.view'],
+    ['group' => 'Sales & promotions', 'route' => 'complaints.index', 'icon' => 'bi-headset', 'color' => 'dark', 'name' => 'Complaints', 'permission' => 'complaints.view'],
+    ['group' => 'Sales & promotions', 'route' => 'promotions.coupons', 'icon' => 'bi-ticket-perforated-fill', 'color' => 'primary', 'name' => 'Coupon Codes', 'permission' => 'coupon-view'],
+    ['group' => 'Sales & promotions', 'route' => 'promotions.offers', 'icon' => 'bi-star-fill', 'color' => 'success', 'name' => 'Offers & Deals', 'permission' => 'promotions-view'],
+    ['group' => 'Sales & promotions', 'route' => 'referrals.programs.index', 'icon' => 'bi-diagram-3-fill', 'color' => 'info', 'name' => 'Referral Programs', 'permission' => 'promotions-view'],
+    ['group' => 'Billing & returns', 'route' => 'invoices.index', 'icon' => 'bi-receipt', 'color' => 'warning', 'name' => 'Invoices', 'permission' => 'invoices.view'],
+    ['group' => 'Billing & returns', 'route' => 'payments.index', 'icon' => 'bi-credit-card', 'color' => 'danger', 'name' => 'Payments', 'permission' => 'payments.view'],
+    ['group' => 'Billing & returns', 'route' => 'refunds.index', 'icon' => 'bi-cash-coin', 'color' => 'secondary', 'name' => 'Refunds', 'permission' => 'refunds.view'],
+    ['group' => 'Billing & returns', 'route' => 'returns.index', 'icon' => 'bi-arrow-return-left', 'color' => 'dark', 'name' => 'Returns', 'permission' => 'returns.view'],
+    ['group' => 'Billing & returns', 'route' => 'credit-notes.index', 'icon' => 'bi-receipt-cutoff', 'color' => 'primary', 'name' => 'Credit Notes', 'permission' => 'credit-notes.view'],
+    ['group' => 'Shipping & warehouses', 'route' => 'shipping.shipments', 'icon' => 'bi-geo-alt-fill', 'color' => 'success', 'name' => 'Shipments & Tracking', 'permission' => 'shipping-view'],
+    ['group' => 'Shipping & warehouses', 'route' => 'shipping.services', 'icon' => 'bi-gear-wide-connected', 'color' => 'info', 'name' => 'Shipping Services', 'permission' => 'shipping-view'],
+    ['group' => 'Shipping & warehouses', 'route' => 'shipping.settings', 'icon' => 'bi-sliders', 'color' => 'warning', 'name' => 'Shipping Settings', 'permission' => 'shipping-view'],
+    ['group' => 'Shipping & warehouses', 'route' => 'catalog.warehouses', 'icon' => 'bi-buildings-fill', 'color' => 'danger', 'name' => 'Warehouses', 'permission' => 'warehouse-view'],
+    ['group' => 'Stock management', 'route' => 'inventory.stock-management', 'icon' => 'bi-box-seam-fill', 'color' => 'secondary', 'name' => 'Stock Levels', 'permission' => 'stockmanagement-view'],
+    ['group' => 'Stock management', 'route' => 'inventory.stock-transfers', 'icon' => 'bi-arrow-left-right', 'color' => 'dark', 'name' => 'Stock Transfers', 'permission' => 'stocktransfer-view'],
+    ['group' => 'Stock management', 'route' => 'inventory.adjustments', 'icon' => 'bi-sliders2', 'color' => 'primary', 'name' => 'Adjustments', 'permission' => 'inventoryadjustment-view'],
+    ['group' => 'Purchasing', 'route' => 'procurement.suppliers.index', 'icon' => 'bi-truck-flatbed', 'color' => 'success', 'name' => 'Suppliers', 'permission' => 'supplier-view'],
+    ['group' => 'Purchasing', 'route' => 'procurement.purchase-orders.index', 'icon' => 'bi-receipt', 'color' => 'info', 'name' => 'Purchase Orders', 'permission' => 'purchaseorder-view'],
+    ['group' => 'Purchasing', 'route' => 'procurement.goods-receipts.index', 'icon' => 'bi-clipboard-check', 'color' => 'warning', 'name' => 'Goods Receipts', 'permission' => 'goodsreceipt-view'],
+    ['group' => 'Product catalog', 'route' => 'catalog.products', 'icon' => 'bi-box-seam-fill', 'color' => 'danger', 'name' => 'Products', 'permission' => 'product-view'],
+    ['group' => 'Product catalog', 'route' => 'catalog.categories', 'icon' => 'bi-diagram-3-fill', 'color' => 'secondary', 'name' => 'Categories', 'permission' => 'category-view'],
+    ['group' => 'Product catalog', 'route' => 'catalog.brands', 'icon' => 'bi-patch-check-fill', 'color' => 'dark', 'name' => 'Brands', 'permission' => 'brand-view'],
+    ['group' => 'Product catalog', 'route' => 'catalog.attributes', 'icon' => 'bi-sliders2', 'color' => 'primary', 'name' => 'Attributes', 'permission' => 'productattribute-view'],
+    ['group' => 'Product catalog', 'route' => 'catalog.uom', 'icon' => 'bi-rulers', 'color' => 'success', 'name' => 'Units of Measure', 'permission' => 'unitofmeasure-view'],
+    ['group' => 'Product catalog', 'route' => 'catalog.tax-rates', 'icon' => 'bi-percent', 'color' => 'info', 'name' => 'Tax Rates', 'permission' => 'taxrate-view'],
+    ['group' => 'Product catalog', 'route' => 'catalog.hsn-codes', 'icon' => 'bi-upc-scan', 'color' => 'warning', 'name' => 'HSN Codes', 'permission' => 'hsncode-view'],
+    ['group' => 'Users & customers', 'route' => 'users', 'icon' => 'bi-person-fill-gear', 'color' => 'danger', 'name' => 'Users', 'permission' => 'user-view'],
+    ['group' => 'Users & customers', 'route' => 'roles-permissions', 'icon' => 'bi-shield-lock-fill', 'color' => 'secondary', 'name' => 'Roles & Permissions', 'permission' => 'role-view'],
+    ['group' => 'Users & customers', 'route' => 'teams', 'icon' => 'bi-buildings-fill', 'color' => 'dark', 'name' => 'States & Offices', 'permission' => 'team-view'],
+    ['group' => 'Users & customers', 'route' => 'customers', 'icon' => 'bi-person-lines-fill', 'color' => 'primary', 'name' => 'Customers', 'super_admin_only' => true],
+    ['group' => 'Users & customers', 'route' => 'customer-settings.index', 'icon' => 'bi-gear-wide-connected', 'color' => 'success', 'name' => 'Customer Settings', 'super_admin_only' => true],
+    ['group' => 'Users & customers', 'route' => 'departments', 'icon' => 'bi-diagram-3-fill', 'color' => 'info', 'name' => 'Departments', 'permission' => 'department-view'],
+    ['group' => 'Attendance & leave', 'route' => 'attendances', 'icon' => 'bi-calendar-check-fill', 'color' => 'warning', 'name' => 'Attendances', 'permission' => 'attendance-view'],
+    ['group' => 'Attendance & leave', 'route' => 'leaves', 'icon' => 'bi-calendar-minus-fill', 'color' => 'danger', 'name' => 'Leave Management', 'permission' => 'leave-view'],
+    ['group' => 'Settings', 'route' => 'villages', 'icon' => 'bi-geo-alt-fill', 'color' => 'secondary', 'name' => 'Villages', 'permission' => 'village-view'],
+    ['group' => 'Settings', 'route' => 'order.reasons', 'icon' => 'bi-list-task', 'color' => 'dark', 'name' => 'Order Reasons', 'permission' => 'orderreason-view'],
+    ['group' => 'Settings', 'route' => 'call-tags.index', 'icon' => 'bi-tags', 'color' => 'primary', 'name' => 'Call Tags', 'permission' => 'settings-view'],
+    ['group' => 'Communication & tools', 'route' => 'chat.index', 'icon' => 'bi-chat-text-fill', 'color' => 'success', 'name' => 'Team Chat', 'permission' => 'chat-view'],
+    ['group' => 'Communication & tools', 'route' => 'messages', 'icon' => 'bi-chat-dots-fill', 'color' => 'info', 'name' => 'Messages', 'super_admin_only' => true],
+    ['group' => 'Communication & tools', 'route' => 'calendar', 'icon' => 'bi-calendar-week-fill', 'color' => 'warning', 'name' => 'Calendar', 'super_admin_only' => true],
+    ['group' => 'Communication & tools', 'route' => 'files', 'icon' => 'bi-folder2-open', 'color' => 'danger', 'name' => 'Files', 'permission' => 'files-view'],
+    ['group' => 'Communication & tools', 'route' => 'forms', 'icon' => 'bi-ui-checks-grid', 'color' => 'secondary', 'name' => 'Forms', 'super_admin_only' => true],
+    ['group' => 'Communication & tools', 'route' => 'elements', 'icon' => 'bi-puzzle-fill', 'color' => 'dark', 'name' => 'UI Elements', 'permission' => 'settings-view'],
+    ['group' => 'Security & support', 'route' => 'security', 'icon' => 'bi-shield-fill-check', 'color' => 'primary', 'name' => 'Security', 'super_admin_only' => true],
+    ['group' => 'Security & support', 'route' => 'admin.audit-logs.index', 'icon' => 'bi-journal-medical', 'color' => 'success', 'name' => 'Audit Logs', 'super_admin_only' => true],
+    ['group' => 'Security & support', 'route' => 'help', 'icon' => 'bi-question-circle-fill', 'color' => 'info', 'name' => 'Help & Support', 'super_admin_only' => true],
                     ];
                     $availableWebApps = [];
                     if (auth()->check()) {
@@ -414,24 +414,29 @@
                             aria-label="Quick Links">
                         <i class="bi bi-grid-3x3-gap-fill fs-5 text-secondary" aria-hidden="true"></i>
                     </button>
-                    <div class="dropdown-menu header-floating-menu dropdown-menu-end p-0 shadow-lg border-0 rounded-4 mt-3" aria-labelledby="webAppsMenuBtn" style="width: min(320px, calc(100vw - 1rem));">
+                    <div class="dropdown-menu header-floating-menu dropdown-menu-end p-0 shadow-lg border-0 rounded-4 mt-3" aria-labelledby="webAppsMenuBtn" style="width: min(520px, calc(100vw - 1rem));">
                         <div class="p-3 border-bottom bg-body-secondary bg-opacity-50 rounded-top-4">
                             <h6 class="m-0 fw-bold text-body text-uppercase" style="font-size: 11px; letter-spacing: 1px;">Quick Links</h6>
                         </div>
 
-                        <div class="p-3">
-                            <div class="row g-3 text-center custom-scrollbar" style="max-height: 400px; overflow-y: auto; overflow-x: hidden;">
-                                @foreach($availableWebApps as $app)
-                                <div class="col-4">
-                                    <a class="dropdown-item p-2 rounded-3 d-flex flex-column align-items-center gap-2 hover-bg-secondary" href="{{ route($app['route']) }}">
-                                        <div class="{{ $app['color'] === 'dark' ? 'bg-body-secondary text-body' : 'bg-'.$app['color'].' bg-opacity-10 text-'.$app['color'] }} rounded-circle d-flex justify-content-center align-items-center" style="width: 36px; height: 36px;">
-                                            <i class="bi {{ $app['icon'] }} fs-5"></i>
-                                        </div>
-                                        <span class="fw-semibold text-muted" style="font-size: 11px;">{{ $app['name'] }}</span>
-                                    </a>
+                        <div class="header-quick-links custom-scrollbar p-3">
+                            @foreach(collect($availableWebApps)->groupBy('group') as $groupName => $groupApps)
+                            <section class="header-link-group" aria-label="{{ $groupName }}">
+                                <h6 class="small fw-bold text-muted mb-2">{{ $groupName }}</h6>
+                                <div class="row g-1">
+                                    @foreach($groupApps as $app)
+                                    <div class="col-12 col-sm-6">
+                                        <a class="dropdown-item header-quick-link p-2 rounded-3 d-flex align-items-center gap-2 hover-bg-secondary text-wrap h-100" href="{{ route($app['route']) }}">
+                                            <span class="{{ $app['color'] === 'dark' ? 'bg-body-secondary text-body' : 'bg-'.$app['color'].' bg-opacity-10 text-'.$app['color'] }} rounded-2 d-flex justify-content-center align-items-center flex-shrink-0" style="width: 32px; height: 32px;">
+                                                <i class="bi {{ $app['icon'] }}" aria-hidden="true"></i>
+                                            </span>
+                                            <span class="small fw-semibold text-body">{{ $app['name'] }}</span>
+                                        </a>
+                                    </div>
+                                    @endforeach
                                 </div>
-                                @endforeach
-                            </div>
+                            </section>
+                            @endforeach
                         </div>
                     </div>
                 </div>
@@ -989,7 +994,7 @@
                         <i class="bi bi-chevron-down text-muted ms-1 d-none d-md-inline" style="font-size: 12px;"></i>
                     </button>
                     <ul class="dropdown-menu header-floating-menu dropdown-menu-end shadow-lg border-0 rounded-4 mt-3 py-2"
-                        aria-labelledby="userMenuBtn" style="width: min(280px, calc(100vw - 1rem)); min-width: min(240px, calc(100vw - 1rem));">
+                        aria-labelledby="userMenuBtn" style="max-height: calc(100dvh - 90px); overflow-y: auto; width: min(280px, calc(100vw - 1rem)); min-width: min(240px, calc(100vw - 1rem));">
                         
                         <li class="px-4 py-3 d-flex align-items-center gap-3 border-bottom mb-2">
                             <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center shadow-sm overflow-hidden" style="width: 48px; height: 48px;">
@@ -1007,6 +1012,21 @@
                             </div>
                         </li>
                         
+                        <li><h6 class="dropdown-header px-4 small text-muted">My account</h6></li>
+                        <li>
+                            <a class="dropdown-item px-4 py-2 d-flex align-items-center gap-3 text-body fw-semibold hover-bg-secondary"
+                               href="#"
+                               onclick="event.preventDefault(); window.dispatchEvent(new CustomEvent('open-profile-modal', { detail: {{ auth()->id() }} }));">
+                                <i class="bi bi-person text-muted fs-5"></i> Profile
+                            </a>
+                        </li>
+
+                        <li>
+                            <a class="dropdown-item px-4 py-2 d-flex align-items-center gap-3 text-body fw-semibold hover-bg-secondary" href="#" data-bs-toggle="modal" data-bs-target="#changePasswordModal">
+                                <i class="bi bi-key text-muted fs-5"></i> Change Password
+                            </a>
+                        </li>
+
                         <li class="px-4 pb-2 border-bottom mb-2 text-center" x-data="{ uploadingHeaderPhoto: false }">
                             <button type="button" class="btn btn-sm btn-link text-decoration-none fw-semibold" @click="$refs.headerPhotoInput.click()" :disabled="uploadingHeaderPhoto">
                                 <span x-show="!uploadingHeaderPhoto"><i class="bi bi-camera me-1"></i> Change Profile Photo</span>
@@ -1109,21 +1129,6 @@
                                 @endforeach
                             </li>
                         @endif
-                        <li>
-                            <a class="dropdown-item px-4 py-2 d-flex align-items-center gap-3 text-body fw-semibold hover-bg-secondary"
-                               href="#"
-                               onclick="event.preventDefault(); window.dispatchEvent(new CustomEvent('open-profile-modal', { detail: {{ auth()->id() }} }));">
-                                <i class="bi bi-person text-muted fs-5"></i> Profile
-                            </a>
-                        </li>
-
-                        <li>
-                            <a class="dropdown-item px-4 py-2 d-flex align-items-center gap-3 text-body fw-semibold hover-bg-secondary" href="#" data-bs-toggle="modal" data-bs-target="#changePasswordModal">
-                                <i class="bi bi-key text-muted fs-5"></i> Change Password
-                            </a>
-                        </li>
-
-                        
                         <li><hr class="dropdown-divider opacity-10 my-2"></li>
                         
                         <li>
@@ -1158,6 +1163,11 @@ html[data-bs-theme="dark"] .header-cart-product-image[src$="/product-placeholder
 .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
 .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(var(--bs-body-color-rgb), 0.1); border-radius: 4px; }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(var(--bs-body-color-rgb), 0.2); }
+
+.admin-header .header-quick-links { max-height: min(65vh, 560px); overflow-y: auto; overflow-x: hidden; }
+.admin-header .header-link-group + .header-link-group { border-top: 1px solid var(--bs-border-color); margin-top: .75rem; padding-top: .75rem; }
+.admin-header .header-quick-link { white-space: normal; line-height: 1.35; }
+.admin-header .header-quick-link:focus-visible { outline: 2px solid var(--bs-primary); outline-offset: -2px; }
 
 /* Fix Nav Tab Active States in dropdown */
 .nav-tabs-custom .nav-link.active {
